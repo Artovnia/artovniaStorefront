@@ -1,0 +1,1 @@
+export { InpostParcelSelector } from "./InpostParcelSelector"
