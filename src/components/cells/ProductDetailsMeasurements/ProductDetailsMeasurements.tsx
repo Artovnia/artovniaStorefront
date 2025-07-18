@@ -77,7 +77,7 @@ export const ProductDetailsMeasurements = ({
       fetchMeasurementsFromAPI(productId, selectedVariantId);
     });
     
-  }, [productId, selectedVariantId, locale]);
+  }, [productId, selectedVariantId, locale, findVariantMeasurements, fetchMeasurementsFromAPI]);
   
   console.log('ProductDetailsMeasurements rendering with:', {
     measurementsCount: measurements.length,

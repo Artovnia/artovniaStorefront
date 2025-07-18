@@ -23,17 +23,6 @@ export const VariantSelectionProvider = ({
   const pathname = usePathname()
   const searchParams = useSearchParams()
   
-  // Initialize from URL params if available
-  useEffect(() => {
-    const variantParam = searchParams.get('variant')
-    if (variantParam) {
-      setSelectedVariantId(variantParam)
-    } else if (initialVariantId) {
-      // If no variant in URL but we have an initial ID, update URL
-      updateUrlWithVariant(initialVariantId)
-    }
-  }, [initialVariantId])
-
   // Update URL with variant ID
   const updateUrlWithVariant = (id: string) => {
     if (!id) return
@@ -46,6 +35,17 @@ export const VariantSelectionProvider = ({
     // Update URL without forcing navigation
     router.replace(`${pathname}?${params.toString()}`, { scroll: false })
   }
+  
+  // Initialize from URL params if available
+  useEffect(() => {
+    const variantParam = searchParams.get('variant')
+    if (variantParam) {
+      setSelectedVariantId(variantParam)
+    } else if (initialVariantId) {
+      // If no variant in URL but we have an initial ID, update URL
+      updateUrlWithVariant(initialVariantId)
+    }
+  }, [initialVariantId, searchParams, updateUrlWithVariant])
 
   return (
     <VariantSelectionContext.Provider 

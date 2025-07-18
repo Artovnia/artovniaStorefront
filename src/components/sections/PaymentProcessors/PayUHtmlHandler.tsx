@@ -114,7 +114,7 @@ export const PayUHtmlHandler: React.FC<PayUHtmlHandlerProps> = ({ htmlContent, r
         }
       }
     }
-  }, [htmlContent, redirectUrl, extractedUrl, useDirectForm]);
+  }, [htmlContent, redirectUrl, extractedUrl, useDirectForm, extractPayUInfo, formContainerRef, iframeRef]);
   
   // If we have a redirect URL, show a loading message
   const finalRedirectUrl = redirectUrl && redirectUrl !== 'about:blank' ? redirectUrl : extractedUrl;

@@ -195,7 +195,7 @@ export const SizeFilter = () => {
     }
     
     helper.search()
-  }, [activePath, currentSizeFilters, attributePaths])
+  }, [activePath, currentSizeFilters, attributePaths, results])
   
   // Combine available sizes from multiple sources
   const allSizes = useMemo(() => {

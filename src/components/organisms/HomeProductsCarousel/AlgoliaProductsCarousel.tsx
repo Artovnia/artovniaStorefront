@@ -48,7 +48,7 @@ const ProductsListing = ({ locale }: { locale: string }) => {
     }).then(({ response }) => {
       setProd(response.products)
     })
-  }, [])
+  }, [locale])
 
   return (
     <>
@@ -65,18 +65,28 @@ const ProductsListing = ({ locale }: { locale: string }) => {
           <div className="w-full">
             <Carousel
               align="start"
-              items={items.map((hit) => (
-                <ProductCard
-                  key={hit.objectID}
-                  product={hit}
-                  api_product={prod?.find((p) => {
-                    const { cheapestPrice } = getProductPrice({
-                      product: p,
-                    })
-                    return p.id === hit.objectID && Boolean(cheapestPrice) && p
-                  })}
-                />
-              ))}
+              items={items.map((hit) => {
+                // Merge hit with the API product data if found
+                const apiProduct = prod?.find((p) => {
+                  const { cheapestPrice } = getProductPrice({
+                    product: p,
+                  })
+                  return p.id === hit.objectID && Boolean(cheapestPrice) && p
+                })
+                
+                // Combine the hit with any data from the API product
+                const mergedProduct = {
+                  ...hit,
+                  // Add any additional properties from apiProduct if needed
+                }
+                
+                return (
+                  <ProductCard
+                    key={hit.objectID}
+                    product={mergedProduct}
+                  />
+                )
+              })}
             />
           </div>
         )}

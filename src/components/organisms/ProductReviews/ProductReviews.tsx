@@ -347,7 +347,7 @@ export const ProductReviews = ({
         })
       }
     }
-  }, [productId, prefetchedReviews.length, isAuthenticated, customer])
+  }, [productId, prefetchedReviews.length, isAuthenticated, customer, fetchReviews, checkUserHasReviewed])
   
   if (loading) {
     return (

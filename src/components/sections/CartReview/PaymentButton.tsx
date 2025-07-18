@@ -210,7 +210,7 @@ const PayUPaymentButton: React.FC<PayUPaymentButtonProps> = ({
     }
     
     checkPaymentStatus()
-  }, [cart, activeSession, metadata])
+  }, [cart, activeSession, metadata, setErrorMessage])
   
   useEffect(() => {
     const checkRedirectStatus = async (): Promise<void> => {
@@ -231,7 +231,7 @@ const PayUPaymentButton: React.FC<PayUPaymentButtonProps> = ({
     }
     
     checkRedirectStatus()
-  }, [router])
+  }, [router, cart.id])
 
   const handlePayment = async (): Promise<void> => {
     if (submitting || hasRedirected || paymentInitiated || processingRef.current) {

@@ -96,7 +96,7 @@ const CartShippingMethodsSection: React.FC<ShippingProps> = ({
     if (missingSellerIds.length > 0 && !cart.shipping_methods?.length) {
       setMissingModal(true)
     }
-  }, [cart])
+  }, [cart, _shippingMethods, setMissingShippingSellers, setMissingModal])
 
   useEffect(() => {
     if (_shippingMethods?.length) {
@@ -116,7 +116,7 @@ const CartShippingMethodsSection: React.FC<ShippingProps> = ({
         })
       }
     }
-  }, [availableShippingMethods])
+  }, [availableShippingMethods, _shippingMethods, cart.id, setCalculatedPricesMap, setIsLoadingPrices])
 
   const handleSubmit = () => {
     router.push(pathname + "?step=payment", { scroll: false })

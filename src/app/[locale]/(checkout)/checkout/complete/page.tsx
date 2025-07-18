@@ -2,14 +2,22 @@
 import { completeCheckout } from "@/lib/data/checkout"
 import { redirect } from "next/navigation"
 import { Suspense } from "react"
+import { Metadata } from "next"
+
+export const metadata: Metadata = {
+  title: "Order Complete",
+  description: "Your order has been completed successfully"
+}
+
+interface PageProps {
+  params: { locale: string }
+  searchParams: { session_id?: string }
+}
 
 export default async function CheckoutCompletePage({
   searchParams,
   params,
-}: {
-  searchParams: { session_id?: string }
-  params: { locale: string }
-}) {
+}: PageProps) {
   return (
     <Suspense
       fallback={
@@ -58,10 +66,7 @@ function ErrorCheckout({ error }: { error: string }) {
 async function CheckoutCompleteContent({
   searchParams,
   params,
-}: {
-  searchParams: { session_id?: string }
-  params: { locale: string }
-}) {
+}: PageProps) {
   // Extract locale at the start, outside of try block so it's available everywhere
   const locale = params.locale || 'pl'
   

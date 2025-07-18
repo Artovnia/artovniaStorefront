@@ -143,7 +143,7 @@ export const useColorTaxonomy = () => {
     }
     
     fetchColors()
-  }, [])
+  }, [CACHE_KEY, CACHE_TIME, fetchColorTaxonomy, setColorTaxonomy, setIsLoading, setError])
 
   return {
     colorTaxonomy,

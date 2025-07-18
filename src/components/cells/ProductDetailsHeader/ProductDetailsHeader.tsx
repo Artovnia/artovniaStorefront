@@ -70,7 +70,7 @@ export const ProductDetailsHeader = ({
       setSelectedVariantId(currentVariantId)
       updateUrlWithVariant(currentVariantId)
     }
-  }, [currentVariantId, selectedVariantId])
+  }, [currentVariantId, selectedVariantId, setSelectedVariantId, updateUrlWithVariant])
   
   // Initialize with first variant if none selected
   useEffect(() => {
@@ -79,7 +79,7 @@ export const ProductDetailsHeader = ({
       setSelectedVariantId(firstVariantId)
       updateUrlWithVariant(firstVariantId)
     }
-  }, [product.variants, selectedVariantId])
+  }, [product.variants, selectedVariantId, setSelectedVariantId, updateUrlWithVariant])
 
   // get variant price
   const { variantPrice } = getProductPrice({

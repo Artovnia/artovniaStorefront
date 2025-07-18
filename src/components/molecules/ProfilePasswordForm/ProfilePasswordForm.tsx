@@ -81,7 +81,7 @@ const Form = ({
       "8chars": validation.errors.tooShort,
       symbolOrDigit: validation.errors.noDigitOrSymbol,
     })
-  }, [form.watch("newPassword")])
+  }, [form.watch("newPassword"), form])
 
   const {
     register,
