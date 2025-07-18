@@ -9,14 +9,13 @@ export const metadata: Metadata = {
   description: "Your order has been completed successfully"
 }
 
-// In Next.js 15.1.4, page props are typed differently
-interface PageProps {
-  params: { locale: string };
-  searchParams: { session_id?: string };
+// Using proper typing for Next.js 15.1.4 App Router pages
+type Props = {
+  params: { locale: string },
+  searchParams: { [key: string]: string | string[] | undefined }
 }
 
-export default function CheckoutCompletePage(props: PageProps) {
-  const { params, searchParams } = props;
+export default function CheckoutCompletePage({ params, searchParams }: Props) {
   return (
     <Suspense
       fallback={
@@ -29,7 +28,10 @@ export default function CheckoutCompletePage(props: PageProps) {
         </div>
       }
     >
-      <CheckoutCompleteContent locale={params.locale} sessionId={searchParams.session_id} />
+      <CheckoutCompleteContent 
+        locale={params.locale} 
+        sessionId={typeof searchParams.session_id === 'string' ? searchParams.session_id : undefined} 
+      />
     </Suspense>
   )
 }
