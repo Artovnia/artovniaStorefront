@@ -46,10 +46,11 @@ export const ReviewsToWrite = ({ reviews }: { reviews: Review[] }) => {
             >
               <div className="flex gap-2 max-lg:items-center lg:flex-col">
                 <img
-                  src={review.seller.photo}
+                  src={review.seller?.photo || '/images/placeholder.svg'}
+                  alt={`${review.seller?.name || 'Seller'} profile photo`}
                   className="size-8 border border-base-primary rounded-xs"
                 />
-                <p className="label-md text-primary">{review.seller.name}</p>
+                <p className="label-md text-primary">{review.seller?.name || 'Seller'}</p>
               </div>
               <div className="col-span-5 flex flex-col lg:flex-row justify-between lg:items-center gap-4">
                 <p className="text-md text-primary">

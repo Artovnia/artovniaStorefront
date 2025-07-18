@@ -1,6 +1,7 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useCallback } from "react"
+import Link from "next/link"
 import { notFound, useRouter, useSearchParams } from "next/navigation"
 
 // Define window with Medusa publishable key
@@ -115,12 +116,12 @@ function OrderConfirmedPage({ order }: { order: Order }) {
             </div>
             
             <div className="mt-8">
-              <a 
+              <Link 
                 href="/"
                 className="bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded transition-colors"
               >
                 Continue Shopping
-              </a>
+              </Link>
             </div>
           </div>
         </div>
@@ -138,7 +139,7 @@ export default function PaymentConfirmedPage({ params }: { params: { locale: str
   const [error, setError] = useState<string | null>(null);
   
   // Function to fetch order details
-  const fetchOrder = async (orderId: string) => {
+  const fetchOrder = useCallback(async (orderId: string) => {
     try {
       // Get the publishable API key from window object
       const publishableApiKey = window.__MEDUSA_PUBLISHABLE_KEY__;
@@ -175,10 +176,10 @@ export default function PaymentConfirmedPage({ params }: { params: { locale: str
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
   
   // Function to check payment status
-  const checkPaymentStatus = async (orderId: string) => {
+  const checkPaymentStatus = useCallback(async (orderId: string) => {
     try {
       // Get the publishable API key from window object
       const publishableApiKey = window.__MEDUSA_PUBLISHABLE_KEY__;
@@ -211,7 +212,7 @@ export default function PaymentConfirmedPage({ params }: { params: { locale: str
       console.error("Error checking payment status:", err);
       return false;
     }
-  };
+  }, []);
   
   useEffect(() => {
     // Get the order_id from searchParams
@@ -256,7 +257,7 @@ export default function PaymentConfirmedPage({ params }: { params: { locale: str
       // Cleanup interval on component unmount
       return () => clearInterval(checkInterval);
     }
-  }, [searchParams, router]);
+  }, [searchParams, router, fetchOrder, checkPaymentStatus]);
   
   if (loading) {
     return (
@@ -277,12 +278,12 @@ export default function PaymentConfirmedPage({ params }: { params: { locale: str
                 <p className="text-red-800">{error}</p>
               </div>
               <div className="mt-8">
-                <a 
+                <Link 
                   href="/checkout"
                   className="bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded transition-colors"
                 >
                   Return to Checkout
-                </a>
+                </Link>
               </div>
             </div>
           </div>

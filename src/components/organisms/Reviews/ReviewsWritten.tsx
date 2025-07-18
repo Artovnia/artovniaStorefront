@@ -48,6 +48,7 @@ export const ReviewsWritten = ({ reviews }: { reviews: Review[] }) => {
                 <div className="flex gap-2 max-lg:items-center lg:flex-col">
                   <img
                     src={review.seller.photo}
+                    alt={`${review.seller.name} profile photo`}
                     className="size-8 border border-base-primary rounded-xs"
                   />
                   <p className="label-md text-primary">{review.seller.name}</p>

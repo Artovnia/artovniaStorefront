@@ -339,7 +339,7 @@ export const InpostParcelSelector: React.FC<InpostParcelSelectorProps> = ({
                   {geowidgetLoaded && (
                     <div className="geowidget-container">
                       <div className="mb-3 p-3 bg-blue-50 border border-blue-200 rounded text-sm">
-                        💡 <strong>Jak wybrać paczkomat:</strong> Kliknij na paczkomat na mapie, a następnie kliknij przycisk "Wybierz" w okienku informacyjnym.
+                        💡 <strong>Jak wybrać paczkomat:</strong> Kliknij na paczkomat na mapie, a następnie kliknij przycisk &quot;Wybierz&quot; w okienku informacyjnym.
                       </div>
                       <InpostGeowidget
                         token={tokenStatus.geowidgetToken}
