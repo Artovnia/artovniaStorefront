@@ -9,13 +9,17 @@ export const metadata: Metadata = {
   description: "Your order has been completed successfully"
 }
 
-// Using proper typing for Next.js 15.1.4 App Router pages
+// Correct typing for Next.js 15.1.4 App Router pages
 type Props = {
-  params: { locale: string },
-  searchParams: { [key: string]: string | string[] | undefined }
+  params: Promise<{ locale: string }>,
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>
 }
 
-export default function CheckoutCompletePage({ params, searchParams }: Props) {
+export default async function CheckoutCompletePage({ params, searchParams }: Props) {
+  // Await the params and searchParams as they are now Promises in Next.js 15
+  const resolvedParams = await params;
+  const resolvedSearchParams = await searchParams;
+
   return (
     <Suspense
       fallback={
@@ -29,8 +33,8 @@ export default function CheckoutCompletePage({ params, searchParams }: Props) {
       }
     >
       <CheckoutCompleteContent 
-        locale={params.locale} 
-        sessionId={typeof searchParams.session_id === 'string' ? searchParams.session_id : undefined} 
+        locale={resolvedParams.locale} 
+        sessionId={typeof resolvedSearchParams.session_id === 'string' ? resolvedSearchParams.session_id : undefined} 
       />
     </Suspense>
   )
