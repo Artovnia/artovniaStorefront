@@ -110,6 +110,16 @@ export const SingleOrderReturn = ({
   const [height, setHeight] = useState(0)
   const contentRef = useRef<HTMLDivElement>(null)
   
+  // Hook effects need to be called at the top level - use conditions inside the hook
+  useEffect(() => {
+    // Only calculate height if we have data and the content area exists
+    if (isOpen && contentRef.current && item?.order) {
+      setHeight(contentRef.current.scrollHeight);
+    } else {
+      setHeight(0);
+    }
+  }, [isOpen, item?.order]);
+  
   // If order data is completely missing, show a fallback UI
   if (!item?.order) {
     return (

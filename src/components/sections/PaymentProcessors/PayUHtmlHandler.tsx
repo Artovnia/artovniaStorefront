@@ -161,7 +161,7 @@ export const PayUHtmlHandler: React.FC<PayUHtmlHandlerProps> = ({ htmlContent, r
         sandbox="allow-forms allow-scripts allow-same-origin allow-top-navigation allow-popups"
       />
       <div className="mt-4 text-center text-sm text-gray-500">
-        <p>If the payment form doesn't load automatically, please refresh the page or try again later.</p>
+        <p>If the payment form doesn&apos;t load automatically, please refresh the page or try again later.</p>
       </div>
     </div>
   );

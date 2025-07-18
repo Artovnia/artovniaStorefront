@@ -197,7 +197,7 @@ export const PayUCardContainer = ({
             Secure payment via {paymentInfo.title}
           </Text>
           <Text className="text-ui-fg-subtle">
-            You will be redirected to PayU's secure payment page to complete your {paymentMethodType} payment after reviewing your order.
+            You will be redirected to PayU&apos;s secure payment page to complete your {paymentMethodType} payment after reviewing your order.
           </Text>
         </div>
       )}

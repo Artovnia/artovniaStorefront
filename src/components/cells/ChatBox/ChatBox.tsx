@@ -65,7 +65,7 @@ export function ChatBox({
     })
 
     return () => session?.destroy()
-  }, [currentUser, supportUser])
+  }, [currentUser, supportUser, subject, order_id, product_id])
 
   return <div className="w-full h-[500px]" ref={chatboxRef} />
 }

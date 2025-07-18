@@ -2,6 +2,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import Link from "next/link"
 import { Button } from "@/components/atoms"
 import { StarRating } from "@/components/atoms/StarRating/StarRating"
 import { StarIcon } from '@/icons'
@@ -258,14 +259,14 @@ const LoginPrompt = (): JSX.Element => (
     <p className="text-ui-fg-subtle mb-4">
       Zaloguj się, aby móc dodać recenzję tego produktu
     </p>
-    <a 
+    <Link 
       href="/account/login" 
       className="inline-block"
     >
       <Button variant="filled" size="large">
         Zaloguj się
       </Button>
-    </a>
+    </Link>
   </div>
 )
 

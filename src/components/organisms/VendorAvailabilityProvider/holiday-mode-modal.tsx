@@ -74,7 +74,7 @@ export default function HolidayModeModal({
               <div>
                 <p className="font-medium mb-1">Wiadomość od sprzedawcy:</p>
                 <p className="text-gray-600 bg-gray-50 p-3 rounded-md italic">
-                  "{holidayMode.holiday_message}"
+                  &quot;{holidayMode.holiday_message}&quot;
                 </p>
               </div>
             )}
