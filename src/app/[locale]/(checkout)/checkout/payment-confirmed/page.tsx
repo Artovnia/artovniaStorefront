@@ -130,13 +130,26 @@ function OrderConfirmedPage({ order }: { order: Order }) {
   )
 }
 
-// Main client component
-export default function PaymentConfirmedPage({ params }: { params: { locale: string } }) {
+// Updated Props type for Next.js 15
+type Props = {
+  params: Promise<{ locale: string }>
+}
+
+// Main client component - updated for Next.js 15
+export default function PaymentConfirmedPage({ params }: Props) {
   const searchParams = useSearchParams();
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [order, setOrder] = useState<Order | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [locale, setLocale] = useState<string>('');
+  
+  // Resolve params on component mount
+  useEffect(() => {
+    params.then(resolvedParams => {
+      setLocale(resolvedParams.locale);
+    });
+  }, [params]);
   
   // Function to fetch order details
   const fetchOrder = useCallback(async (orderId: string) => {
