@@ -34,7 +34,7 @@ import { ReviewForm } from "./ReviewForm/ReviewForm"
 import { ProfileDetails } from "./ProfileDetails/ProfileDetails"
 import { RangeSlider } from "./RangeSlider/RangeSlider"
 import { ProfilePasswordForm } from "./ProfilePasswordForm/ProfilePasswordForm"
-import LocalizedLink from "./LocalizedLink/LocalizedLink"
+import LocalizedClientLink from "./LocalizedLink/LocalizedLink"
 import { ProductGPSR } from "./ProductGPSR/ProductGPSR"
 import { InpostParcelSelector } from "./InpostParcelSelector/InpostParcelSelector"
 import { InpostParcelInfo } from "./InpostParcelInfo/InpostParcelInfo"
@@ -76,8 +76,10 @@ export {
   ProfileDetails,
   RangeSlider,
   ProfilePasswordForm,
-  LocalizedLink,
   ProductGPSR,
   InpostParcelSelector,
   InpostParcelInfo,
 }
+
+// Re-export LocalizedLink as a named export
+export { default as LocalizedLink } from "./LocalizedLink/LocalizedLink"
