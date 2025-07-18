@@ -46,21 +46,6 @@ export const InpostParcelSelector: React.FC<InpostParcelSelectorProps> = ({
     setIsModalOpen(false)
   }, [onSelect])
 
-  const handleSearchInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    setSearchQuery(value);
-    
-    if (searchTimeoutRef.current) {
-      clearTimeout(searchTimeoutRef.current);
-    }
-    
-    searchTimeoutRef.current = setTimeout(() => {
-      if (value.trim().length > 2) {
-        handleSearch({ preventDefault: () => {} } as any);
-      }
-    }, 500);
-  }, []);
-
   const handleSearch = useCallback(async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     
@@ -86,6 +71,21 @@ export const InpostParcelSelector: React.FC<InpostParcelSelectorProps> = ({
       setIsLoading(false)
     }
   }, [searchQuery])
+
+  const handleSearchInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setSearchQuery(value);
+    
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
+    
+    searchTimeoutRef.current = setTimeout(() => {
+      if (value.trim().length > 2) {
+        handleSearch({ preventDefault: () => {} } as any);
+      }
+    }, 500);
+  }, [handleSearch]);
 
   const handleFindNearby = useCallback(async () => {
     setIsLoadingNearby(true)
@@ -127,21 +127,29 @@ export const InpostParcelSelector: React.FC<InpostParcelSelectorProps> = ({
     setError(null)
     
     try {
-      const success = await loadGeowidgetResources()
-      if (success) {
-        setupPointSelectionHandler(handleSelectParcel)
-        setGeowidgetLoaded(true)
-        console.log('Geowidget loaded successfully')
-      } else {
-        throw new Error('Failed to load geowidget resources')
-      }
+      await loadGeowidgetResources()
+      setupPointSelectionHandler((pointData: any) => {
+        if (pointData && pointData.name) {
+          const parcelData: InpostParcelData = {
+            machineId: pointData.name,
+            machineName: pointData.name,
+            machineAddress: pointData.address.line1,
+            machinePostCode: pointData.address.line2?.split(' ')[0] || '',
+            machineCity: pointData.address.line2?.split(' ').slice(1).join(' ') || ''
+            // Removed machineType as it's not in the interface
+            // Additional data can be added to metadata if needed
+          }
+          handleSelectParcel(parcelData)
+        }
+      })
+      setGeowidgetLoaded(true)
     } catch (error) {
-      console.error('Geowidget loading error:', error)
-      setError('Nie udało się załadować mapy. Użyj wyszukiwania.')
+      console.error('Error loading geowidget:', error)
+      setError('Nie udało się załadować mapy. Spróbuj ponownie później.')
     } finally {
       setGeowidgetLoading(false)
     }
-  }, [handleSelectParcel, geowidgetLoaded, geowidgetLoading, tokenStatus.geowidgetTokenAvailable])
+  }, [geowidgetLoaded, geowidgetLoading, tokenStatus.geowidgetTokenAvailable, handleSelectParcel])
 
   const handleOpenModal = useCallback(() => {
     setIsModalOpen(true)

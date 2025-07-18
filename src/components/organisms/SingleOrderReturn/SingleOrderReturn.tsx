@@ -120,6 +120,17 @@ export const SingleOrderReturn = ({
     }
   }, [isOpen, item?.order]);
   
+  // Second effect for scroll height calculation with timeout
+  useEffect(() => {
+    if (isOpen && contentRef.current) {
+      setTimeout(() => {
+        if (contentRef.current) {
+          setHeight(contentRef.current.scrollHeight)
+        }
+      }, 100)
+    }
+  }, [isOpen]);
+  
   // If order data is completely missing, show a fallback UI
   if (!item?.order) {
     return (
@@ -144,13 +155,7 @@ export const SingleOrderReturn = ({
     )
   }
 
-  useEffect(() => {
-    setTimeout(() => {
-      if (contentRef.current) {
-        setHeight(contentRef.current.scrollHeight)
-      }
-    }, 100)
-  }, [isOpen])
+  // useEffect was moved to the top level
 
   // Add null checking for item.order and its items
   const filteredItems = item.order?.items?.filter((orderItem: any) =>

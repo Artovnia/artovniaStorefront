@@ -1,4 +1,5 @@
 import React from "react"
+import Image from "next/image"
 import { CreditCard, CreditCardSolid, Google } from "@medusajs/icons"
 
 // Common icon size for consistency
@@ -39,10 +40,12 @@ const SizedGoogle: React.FC<IconProps> = ({ width = ICON_SIZE.width, height = IC
 
 const BlikIcon: React.FC<IconProps> = ({ width = ICON_SIZE.width, height = ICON_SIZE.height }) => (
   <div style={{ width, height, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-    <img 
+    <Image 
       src="https://cdn.brandfetch.io/idtcy388S0/theme/dark/logo.svg" 
       alt="BLIK" 
       style={{ maxWidth: '100%', maxHeight: '100%', width: 'auto', height: 'auto' }} 
+      width={34}
+      height={34}
     />
   </div>
 )

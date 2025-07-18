@@ -4,6 +4,7 @@ import { retrieveCustomer } from "@/lib/data/customer"
 import { getMessageThread } from "@/lib/data/actions/message-actions"
 import { Divider } from "@/components/atoms"
 import Link from "next/link"
+import Image from "next/image"
 import { notFound } from "next/navigation"
 import { MessageContainer } from "./message-container"
 import { MarkAsRead } from "./mark-as-read"
@@ -70,10 +71,12 @@ export default async function MessageThreadPage(props: {
               <div className="flex items-center gap-3 mb-3">
                 {messageThread.seller?.photo ? (
                   <div className="w-10 h-10 rounded-full overflow-hidden bg-gray-100">
-                    <img 
+                    <Image 
                       src={messageThread.seller.photo} 
                       alt={messageThread.seller.name || 'Sprzedawca'}
                       className="w-full h-full object-cover"
+                      width={40}
+                      height={40}
                     />
                   </div>
                 ) : (

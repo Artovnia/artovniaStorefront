@@ -6,6 +6,7 @@ import { Review } from "@/lib/data/reviews"
 import { cn } from "@/lib/utils"
 import { isEmpty } from "lodash"
 import { usePathname } from "next/navigation"
+import Image from "next/image"
 
 export const ReviewsWritten = ({ reviews }: { reviews: Review[] }) => {
   const pathname = usePathname()
@@ -46,10 +47,12 @@ export const ReviewsWritten = ({ reviews }: { reviews: Review[] }) => {
             >
               {review.seller && (
                 <div className="flex gap-2 max-lg:items-center lg:flex-col">
-                  <img
+                  <Image
                     src={review.seller.photo}
                     alt={`${review.seller.name} profile photo`}
                     className="size-8 border border-base-primary rounded-xs"
+                    width={32}
+                    height={32}
                   />
                   <p className="label-md text-primary">{review.seller.name}</p>
                 </div>

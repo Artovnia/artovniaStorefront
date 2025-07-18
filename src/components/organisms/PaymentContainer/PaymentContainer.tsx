@@ -141,12 +141,15 @@ export const PayUCardContainer = ({
   setError: (error: string | null) => void
   setCardComplete: (complete: boolean) => void
 }) => {
-  // Get payment method info from the map or create a default one
-  const paymentInfo = paymentInfoMap[paymentProviderId] || { 
-    title: "PayU", 
-    icon: <CreditCardWrapper /> 
-  }
-  
+  // Get payment method info from the map or create a default one using useMemo to prevent re-rendering
+  const paymentInfo = useMemo(() => {
+    return paymentInfoMap[paymentProviderId] || { 
+      title: "PayU", 
+      icon: <CreditCardWrapper /> 
+    };
+  }, [paymentProviderId, paymentInfoMap])
+
+
   // Extract payment method type from the provider ID (card, blik, transfer)
   const getPaymentMethodType = () => {
     if (paymentProviderId.includes('-card')) {

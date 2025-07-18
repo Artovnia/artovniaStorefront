@@ -24,6 +24,9 @@ export const InpostGeowidget: React.FC<InpostGeowidgetProps> = ({
   useEffect(() => {
     if (!containerRef.current) return;
 
+    // Store ref value in variable inside the effect
+    const container = containerRef.current;
+
     // Create the custom element
     const geowidget = document.createElement('inpost-geowidget');
     geowidget.setAttribute('token', token);
@@ -34,12 +37,12 @@ export const InpostGeowidget: React.FC<InpostGeowidgetProps> = ({
     }
 
     // Clear container and append the element
-    containerRef.current.innerHTML = '';
-    containerRef.current.appendChild(geowidget);
+    container.innerHTML = '';
+    container.appendChild(geowidget);
 
     return () => {
-      if (containerRef.current) {
-        containerRef.current.innerHTML = '';
+      if (container) {
+        container.innerHTML = '';
       }
     };
   }, [token, language, config, onpoint]);

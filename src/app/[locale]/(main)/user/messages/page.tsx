@@ -4,6 +4,7 @@ import { retrieveCustomer } from "@/lib/data/customer"
 import { listMessageThreads } from "@/lib/data/actions/message-actions"
 import { MessageThread, MessageSender } from "@/types/messages"
 import Link from "next/link"
+import Image from "next/image"
 import { format } from "date-fns"
 import { isEmpty } from "lodash"
 import { MessagePagination } from "./message-pagination"
@@ -137,10 +138,12 @@ export default async function MessagesPage({
                           {/* Seller avatar/photo */}
                           {thread.seller?.photo ? (
                             <div className="w-12 h-12 rounded-full overflow-hidden flex-shrink-0 bg-gray-100">
-                              <img 
+                              <Image 
                                 src={thread.seller.photo} 
                                 alt={thread.seller.name || 'Sprzedawca'}
                                 className="w-full h-full object-cover"
+                                width={48}
+                                height={48}
                               />
                             </div>
                           ) : (

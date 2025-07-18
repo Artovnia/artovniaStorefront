@@ -4,6 +4,7 @@ import { Modal, ReviewForm } from "@/components/molecules"
 import { isEmpty } from "lodash"
 import { usePathname } from "next/navigation"
 import { useState } from "react"
+import Image from "next/image"
 import { Review } from "@/lib/data/reviews"
 import { navigation } from "./navigation"
 
@@ -45,10 +46,12 @@ export const ReviewsToWrite = ({ reviews }: { reviews: Review[] }) => {
               key={review.id}
             >
               <div className="flex gap-2 max-lg:items-center lg:flex-col">
-                <img
+                <Image
                   src={review.seller?.photo || '/images/placeholder.svg'}
                   alt={`${review.seller?.name || 'Seller'} profile photo`}
                   className="size-8 border border-base-primary rounded-xs"
+                  width={32}
+                  height={32}
                 />
                 <p className="label-md text-primary">{review.seller?.name || 'Seller'}</p>
               </div>
@@ -59,7 +62,7 @@ export const ReviewsToWrite = ({ reviews }: { reviews: Review[] }) => {
                   Your feedback helps other buyers make informed decisions.
                 </p>
                 <Button
-                  onClick={() => setShowForm(review.seller.id)}
+                  onClick={() => setShowForm(review.seller?.id || "")}
                   className="w-fit uppercase"
                 >
                   Write review
