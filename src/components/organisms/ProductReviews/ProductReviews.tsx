@@ -1,7 +1,7 @@
 // src/components/organisms/ProductReviews/ProductReviews.tsx
 "use client"
 
-import { useEffect, useState } from "react"
+import { useCallback, useEffect, useState } from "react"
 import Link from "next/link"
 import { Button } from "@/components/atoms"
 import { StarRating } from "@/components/atoms/StarRating/StarRating"
@@ -286,9 +286,9 @@ export const ProductReviews = ({
   
   console.log('🗂 Client ProductReviews component initialized for product:', productId)
   
-  // Function to check if the user has already reviewed this product
-  const checkUserHasReviewed = async (): Promise<void> => {
-    if (!isAuthenticated || !customer || !productId) return
+  // Function to check if the user has already reviewed this product - wrapped in useCallback
+  const checkUserHasReviewed = useCallback(async (): Promise<void> => {
+    console.log('🔍 Checking if user has already reviewed this product:', productId)
     
     setCheckingUserReview(true)
     try {
@@ -305,9 +305,9 @@ export const ProductReviews = ({
     } finally {
       setCheckingUserReview(false)
     }
-  }
+  }, [productId, setCheckingUserReview, setUserReview])
   
-  const fetchReviews = async (): Promise<void> => {
+  const fetchReviews = useCallback(async (): Promise<void> => {
     console.log('🔄 Fetching reviews for product:', productId)
     setLoading(true)
     
@@ -327,7 +327,7 @@ export const ProductReviews = ({
     } finally {
       setLoading(false)
     }
-  }
+  }, [productId, setLoading, setReviews, isAuthenticated, customer, checkUserHasReviewed])
   
   const onReviewAdded = (): void => {
     console.log('✨ Review added, refreshing reviews list')

@@ -5,7 +5,7 @@ import {
   ProdutMeasurementRow,
 } from '@/components/molecules';
 import { SingleProductMeasurement } from '@/types/product';
-import { useEffect, useMemo, useState, useTransition } from 'react';
+import { useCallback, useEffect, useMemo, useState, useTransition } from 'react';
 import { useVariantSelection } from '@/components/context/VariantSelectionContext';
 import { getProductMeasurements } from '@/lib/data/measurements';
 
@@ -29,8 +29,8 @@ export const ProductDetailsMeasurements = ({
   const [isLoading, setIsLoading] = useState(false);
   const [isPending, startTransition] = useTransition();
   
-  // Helper function to find measurements for a specific variant
-  const findVariantMeasurements = (variantId: string) => {
+  // Helper function to find measurements for a specific variant - wrapped in useCallback
+  const findVariantMeasurements = useCallback((variantId: string) => {
     // Check if we have measurements for this variant in our data already
     const variantMeasurements = initialMeasurements.filter(m => m.variantId === variantId);
     // Also get product-level measurements that don't have a variant ID
@@ -38,10 +38,10 @@ export const ProductDetailsMeasurements = ({
     
     // Return variant measurements + product measurements as fallback
     return variantMeasurements.length > 0 ? variantMeasurements : productMeasurements;
-  };
+  }, [initialMeasurements]);
   
-  // Function to fetch measurements from API
-  const fetchMeasurementsFromAPI = async (productId: string, variantId: string) => {
+  // Function to fetch measurements from API - wrapped in useCallback
+  const fetchMeasurementsFromAPI = useCallback(async (productId: string, variantId: string) => {
     if (!productId || !variantId) return false;
     
     setIsLoading(true);
@@ -57,7 +57,7 @@ export const ProductDetailsMeasurements = ({
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [locale, setIsLoading, setMeasurements]);
   
   // Update measurements when variant changes
   useEffect(() => {

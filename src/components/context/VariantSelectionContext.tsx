@@ -1,6 +1,6 @@
 "use client"
 
-import React, { createContext, useContext, useState, useEffect } from "react"
+import React, { createContext, useContext, useState, useEffect, useCallback } from "react"
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
 
 type VariantSelectionContextType = {
@@ -23,8 +23,8 @@ export const VariantSelectionProvider = ({
   const pathname = usePathname()
   const searchParams = useSearchParams()
   
-  // Update URL with variant ID
-  const updateUrlWithVariant = (id: string) => {
+  // Update URL with variant ID - wrapped in useCallback
+  const updateUrlWithVariant = useCallback((id: string) => {
     if (!id) return
     
     const params = new URLSearchParams(searchParams.toString())
@@ -34,7 +34,7 @@ export const VariantSelectionProvider = ({
     
     // Update URL without forcing navigation
     router.replace(`${pathname}?${params.toString()}`, { scroll: false })
-  }
+  }, [searchParams, router, pathname])
   
   // Initialize from URL params if available
   useEffect(() => {
