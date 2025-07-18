@@ -9,26 +9,17 @@ export const metadata: Metadata = {
   description: "Your order has been completed successfully"
 }
 
-// These are needed for Next.js 15+ compatibility
+// Let Next.js infer the types instead of defining our own
 type SearchParams = { session_id?: string }
-type Params = { locale: string }
 
-// Updated to match Next.js 15.1.4 expectations for app router pages
-interface PageProps {
-  params: Params;
-  searchParams: SearchParams;
-}
-
-// Define the component props type separately from Next.js-generated PageProps
-type ComponentProps = {
-  params: Params;
-  searchParams: SearchParams;
-}
-
+// Using Next.js's page interfaces directly without explicit type imports
 export default function CheckoutCompletePage({
-  searchParams,
   params,
-}: ComponentProps) {
+  searchParams,
+}: {
+  params: { locale: string };
+  searchParams: { session_id?: string };
+}) {
   return (
     <Suspense
       fallback={
@@ -41,7 +32,7 @@ export default function CheckoutCompletePage({
         </div>
       }
     >
-      <CheckoutCompleteContent searchParams={searchParams} params={params} />
+      <CheckoutCompleteContent locale={params.locale} sessionId={searchParams.session_id} />
     </Suspense>
   )
 }
@@ -74,16 +65,16 @@ function ErrorCheckout({ error }: { error: string }) {
   );
 }
 
+// Simplified props to avoid type conflicts with Next.js internal types
 async function CheckoutCompleteContent({
-  searchParams,
-  params,
-}: ComponentProps) {
-  // Extract locale at the start, outside of try block so it's available everywhere
-  const locale = params.locale || 'pl'
+  locale = 'pl',
+  sessionId,
+}: {
+  locale: string;
+  sessionId?: string;
+}) {
   
-  try {
-    const sessionId = searchParams.session_id
-    
+  try {    
     if (!sessionId) {
       redirect(`/${locale}/cart?error=no-session`)
       return <ProcessingCheckout />;
