@@ -9,17 +9,14 @@ export const metadata: Metadata = {
   description: "Your order has been completed successfully"
 }
 
-// Let Next.js infer the types instead of defining our own
-type SearchParams = { session_id?: string }
-
-// Using Next.js's page interfaces directly without explicit type imports
-export default function CheckoutCompletePage({
-  params,
-  searchParams,
-}: {
+// In Next.js 15.1.4, page props are typed differently
+interface PageProps {
   params: { locale: string };
   searchParams: { session_id?: string };
-}) {
+}
+
+export default function CheckoutCompletePage(props: PageProps) {
+  const { params, searchParams } = props;
   return (
     <Suspense
       fallback={
