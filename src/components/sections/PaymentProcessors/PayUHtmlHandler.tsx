@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 
 interface PayUHtmlHandlerProps {
   htmlContent: string;
@@ -18,8 +18,8 @@ export const PayUHtmlHandler: React.FC<PayUHtmlHandlerProps> = ({ htmlContent, r
   const [extractedUrl, setExtractedUrl] = useState<string | undefined>(undefined);
   const [useDirectForm, setUseDirectForm] = useState(false);
   
-  // Function to extract form and redirect info from HTML
-  const extractPayUInfo = () => {
+  // Function to extract form and redirect info from HTML - wrapped in useCallback
+  const extractPayUInfo = useCallback(() => {
     // Try to find a form
     const hasForm = htmlContent.includes('<form');
     
@@ -40,7 +40,7 @@ export const PayUHtmlHandler: React.FC<PayUHtmlHandlerProps> = ({ htmlContent, r
       }
       
       // Look for script redirect
-      const scriptRedirect = htmlContent.match(/window\.location(?:\.href)?\s*=\s*['"]([^'"]+)['"];/i);
+      const scriptRedirect = htmlContent.match(/window\.location(?:\.href)?\s*=\s*['"]([^'"]+)['"]/i);
       if (scriptRedirect && scriptRedirect[1]) {
         console.log('Found script redirect URL:', scriptRedirect[1]);
         setExtractedUrl(scriptRedirect[1]);
@@ -51,7 +51,7 @@ export const PayUHtmlHandler: React.FC<PayUHtmlHandlerProps> = ({ htmlContent, r
     if (hasForm) {
       setUseDirectForm(true);
     }
-  };
+  }, [htmlContent, redirectUrl, setExtractedUrl, setUseDirectForm]);
   
   useEffect(() => {
     // Extract any URLs or forms from the HTML

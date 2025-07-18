@@ -9,20 +9,20 @@ export const metadata: Metadata = {
   description: "Your order has been completed successfully"
 }
 
-// Ensure proper typing for Next.js 15+
-interface PageProps {
-  params: { locale: string }
-  searchParams: { session_id?: string }
-}
-
 // This is needed because Next.js 15+ expects specific PageProps format
 type SearchParams = { session_id?: string }
 type Params = { locale: string }
 
+// Define the props for the page component - must match Next.js 15+ expectations
+type PageProps = {
+  params: Params;
+  searchParams: SearchParams;
+}
+
 export default async function CheckoutCompletePage({
   searchParams,
   params,
-}: { searchParams: SearchParams; params: Params }) {
+}: PageProps) {
   return (
     <Suspense
       fallback={
@@ -71,7 +71,7 @@ function ErrorCheckout({ error }: { error: string }) {
 async function CheckoutCompleteContent({
   searchParams,
   params,
-}: { searchParams: SearchParams; params: Params }) {
+}: PageProps) {
   // Extract locale at the start, outside of try block so it's available everywhere
   const locale = params.locale || 'pl'
   

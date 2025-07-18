@@ -70,9 +70,11 @@ const Form = ({
     symbolOrDigit: false,
   })
 
+  // Use watch outside of useEffect for proper dependency tracking
+  const newPassword = form.watch("newPassword")
+  
   useEffect(() => {
-    const password = form.getValues("newPassword")
-    const validation = validatePassword(password)
+    const validation = validatePassword(newPassword)
 
     setNewPasswordError({
       isValid: validation.isValid,
@@ -81,7 +83,7 @@ const Form = ({
       "8chars": validation.errors.tooShort,
       symbolOrDigit: validation.errors.noDigitOrSymbol,
     })
-  }, [form.watch("newPassword"), form])
+  }, [newPassword])
 
   const {
     register,
