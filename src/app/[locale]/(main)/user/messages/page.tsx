@@ -29,13 +29,14 @@ const BellIcon = ({ className = "" }: { className?: string }) => (
   </svg>
 )
 
-export default async function MessagesPage({
-  searchParams,
-}: {
-  searchParams: { page?: string }
-}) {
-  // Properly handle searchParams as an async value
-  const resolvedParams = await Promise.resolve(searchParams)
+// Define the correct type for Next.js 15
+type PageProps = {
+  searchParams: Promise<{ page?: string }>
+}
+
+export default async function MessagesPage({ searchParams }: PageProps) {
+  // Properly await the searchParams Promise
+  const resolvedParams = await searchParams
   
   const user = await retrieveCustomer()
 
