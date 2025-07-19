@@ -11,12 +11,14 @@ import { MarkAsRead } from "./mark-as-read"
 import { sdk } from "@/lib/config"
 import { getAuthHeaders } from "@/lib/data/cookies"
 
-export default async function MessageThreadPage(props: {
-  params: { thread_id: string; locale: string }
-}) {
-  // Properly extract and await the params
-  const params = await Promise.resolve(props.params);
-  const thread_id = params.thread_id
+// Define the correct type for Next.js 15
+type PageProps = {
+  params: Promise<{ thread_id: string; locale: string }>
+}
+
+export default async function MessageThreadPage(props: PageProps) {
+  // Properly await the params Promise
+  const { thread_id, locale } = await props.params
   
   const user = await retrieveCustomer()
 
