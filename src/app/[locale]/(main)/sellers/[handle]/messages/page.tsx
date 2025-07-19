@@ -6,11 +6,9 @@ import { notFound } from "next/navigation"
 import { Metadata } from "next"
 
 export async function generateMetadata(
-  props: { params: { handle: string; locale: string; } }
+  { params }: { params: { handle: string; locale: string } }
 ): Promise<Metadata> {
   try {
-    // We need to await the params to avoid the Next.js error
-    const params = await Promise.resolve(props.params)
     const handle = params.handle
     
     const seller = await getSellerByHandle(handle)
@@ -36,11 +34,9 @@ export async function generateMetadata(
 }
 
 export default async function SellerMessagesPage(
-  props: { params: { handle: string; locale: string; } }
+  { params }: { params: { handle: string; locale: string } }
 ) {
   try {
-    // We need to await the params to avoid the Next.js error
-    const params = await Promise.resolve(props.params)
     const handle = params.handle
     const locale = params.locale
     
