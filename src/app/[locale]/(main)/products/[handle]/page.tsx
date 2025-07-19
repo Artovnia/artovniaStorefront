@@ -7,6 +7,15 @@ import { listRegions } from "@/lib/data/regions"
 // Set revalidation period for incremental static regeneration
 export const revalidate = 3600 // Revalidate every hour
 
+// Import the base StoreProduct type and extend it
+import type { StoreProduct } from "@medusajs/types"
+
+// Type for product with handle - extending the base StoreProduct type
+type ProductWithHandle = StoreProduct & { 
+  handle: string;
+  seller?: any;
+}
+
 /**
  * Generate static paths for all products at build time
  * This significantly improves performance by pre-rendering pages
@@ -37,10 +46,14 @@ export async function generateStaticParams() {
     // Create params for each product in each locale
     return productsByLocale
       .flatMap(({ locale, products }) =>
-        products.map(product => ({
-          locale,
-          handle: product.handle,
-        }))
+        products
+          .filter((product) => 
+            product && 'handle' in product && typeof (product as any).handle === 'string'
+          )
+          .map(product => ({
+            locale,
+            handle: (product as any).handle,
+          }))
       )
       .filter(param => param.handle)
   } catch (error) {
@@ -58,12 +71,29 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { handle, locale } = await params
 
-  const prod = await listProducts({
-    countryCode: locale,
-    queryParams: { handle },
-  }).then(({ response }) => response.products[0])
+  try {
+    const { response } = await listProducts({
+      countryCode: locale,
+      queryParams: { handle },
+    })
 
-  return generateProductMetadata(prod)
+    const product = response.products[0]
+    
+    if (!product) {
+      return {
+        title: "Product Not Found",
+        description: "The requested product could not be found.",
+      }
+    }
+
+    return generateProductMetadata(product)
+  } catch (error) {
+    console.error("Error generating product metadata:", error)
+    return {
+      title: "Product",
+      description: "Product page",
+    }
+  }
 }
 
 export default async function ProductPage({
