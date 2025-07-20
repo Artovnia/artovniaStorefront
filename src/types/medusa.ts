@@ -19,6 +19,9 @@ declare module "@medusajs/types" {
       
       // Standard properties that should be in the original type but need to be explicitly declared
       id: string
+      handle: string
+      thumbnail?: string
+      title: string
       variants: {
         id: string
         title: string | null
