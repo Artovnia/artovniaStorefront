@@ -21,7 +21,7 @@ export async function sendMessageToSeller(data: {
     }
     
     // If there are no auth headers, the user is not authenticated
-    if (!headers || !headers.authorization) {
+    if (!headers || !('authorization' in headers)) {
       return { 
         success: false, 
         error: 'User not authenticated' 
@@ -30,7 +30,7 @@ export async function sendMessageToSeller(data: {
 
     console.log('Creating message thread with seller:', { 
       sellerId: data.seller_id,
-      hasAuthorization: !!headers.authorization
+      hasAuthorization: 'authorization' in headers
     })
 
     // Use the correct endpoint for creating a message thread

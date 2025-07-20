@@ -26,13 +26,13 @@ export async function createMessageThread(data: {
     }
     
     // If there are no auth headers, the user is not authenticated
-    if (!headers || !headers.authorization) {
+    if (!headers || !('authorization' in headers)) {
       throw new Error('User not authenticated')
     }
 
     console.log('Creating message thread with headers:', { 
-      hasAuthorization: !!headers.authorization,
-      authHeaderLength: headers.authorization ? headers.authorization.length : 0 
+      hasAuthorization: 'authorization' in headers,
+      authHeaderLength: 'authorization' in headers ? headers.authorization.length : 0 
     })
 
     // Use the correct endpoint for creating a message thread
