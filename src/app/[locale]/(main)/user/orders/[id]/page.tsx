@@ -8,6 +8,7 @@ import { redirect } from "next/navigation"
 import { format } from "date-fns"
 import { retrieveOrder } from "@/lib/data/orders"
 import { OrderDetailsSection } from "@/components/sections/OrderDetailsSection/OrderDetailsSection"
+import type { Order } from "@/lib/utils/order-transformations"
 
 export default async function UserPage({
   params,
@@ -17,7 +18,7 @@ export default async function UserPage({
   const { id } = await params
 
   const user = await retrieveCustomer()
-  const order = await retrieveOrder(id)
+  const order = await retrieveOrder(id) as unknown as Order
 
   if (!user) return redirect("/login")
   if (!order) return redirect("/user/orders")
