@@ -118,11 +118,11 @@ export function VendorAvailabilityProvider({
     setShowHolidayModal(false)
   }
   
-  const contextValue = {
+  const contextValue: VendorAvailabilityContextType = {
     isLoading,
-    availability,
-    holidayMode,
-    suspension,
+    availability: availability || null,
+    holidayMode: holidayMode || null,
+    suspension: suspension || null,
     isAvailable,
     showHolidayModal,
     openHolidayModal,
