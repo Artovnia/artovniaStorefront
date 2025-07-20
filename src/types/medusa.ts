@@ -16,6 +16,7 @@ declare module "@medusajs/types" {
       // Custom fields added in our implementation
       attribute_values?: AdditionalAttributeProps[]
       seller?: SellerProps
+      metadata?: Record<string, any>
       
       // Standard properties that should be in the original type but need to be explicitly declared
       id: string
