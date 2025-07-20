@@ -19,21 +19,41 @@ import { Wishlist } from "@/types/wishlist"
 import { Badge } from "@/components/atoms"
 
 export const Header = async () => {
+  // Use try-catch for each data-fetching operation to handle errors gracefully
   const cart = await retrieveCart().catch(() => null)
-  const user = await retrieveCustomer()
+  
+  // Fetch user data with error handling
+  let user = null;
+  try {
+    user = await retrieveCustomer()
+  } catch (error) {
+    console.error("Error retrieving customer:", error)
+  }
+  
+  // Fetch wishlist with error handling
   let wishlist: Wishlist[] = []
   if (user) {
-    const response = await getUserWishlists()
-    wishlist = response.wishlists
+    try {
+      const response = await getUserWishlists()
+      wishlist = response?.wishlists || []
+    } catch (error) {
+      console.error("Error retrieving wishlists:", error)
+    }
   }
 
-  const wishlistCount = wishlist?.[0]?.products.length || 0
+  const wishlistCount = wishlist?.[0]?.products?.length || 0
 
-  const { categories, parentCategories } = (await listCategories({
-    headingCategories: PARENT_CATEGORIES,
-  })) as {
-    categories: HttpTypes.StoreProductCategory[]
-    parentCategories: HttpTypes.StoreProductCategory[]
+  // Fetch categories with error handling
+  let categories: HttpTypes.StoreProductCategory[] = []
+  let parentCategories: HttpTypes.StoreProductCategory[] = []
+  try {
+    const categoryData = await listCategories({
+      headingCategories: PARENT_CATEGORIES,
+    })
+    categories = categoryData?.categories || []
+    parentCategories = categoryData?.parentCategories || []
+  } catch (error) {
+    console.error("Error retrieving categories:", error)
   }
 
   return (

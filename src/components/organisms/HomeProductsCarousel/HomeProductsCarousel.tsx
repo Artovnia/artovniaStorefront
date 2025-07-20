@@ -3,8 +3,7 @@ import { ProductCard } from "../ProductCard/ProductCard"
 import { listProducts } from "@/lib/data/products"
 import { Product } from "@/types/product"
 import { HttpTypes } from "@medusajs/types"
-import { getProductPrice } from "@/lib/helpers/get-product-price"
-import { BaseHit, Hit } from "instantsearch.js"
+import { Hit } from "instantsearch.js"
 
 export const HomeProductsCarousel = async ({
   locale,
@@ -15,43 +14,59 @@ export const HomeProductsCarousel = async ({
   sellerProducts: Product[]
   home: boolean
 }) => {
-  const {
-    response: { products },
-  } = await listProducts({
-    countryCode: locale,
-    queryParams: {
-      limit: home ? 4 : 99999,
-      order: "created_at",
-    },
-  })
-
-  if (!products.length && !sellerProducts.length) return null
-
-  return (
-    <div className="flex justify-center w-full">
-      <Carousel
-        align="start"
-        items={(sellerProducts.length ? sellerProducts : products).map(
-          (product) => (
-            <ProductCard
-              key={product.id}
-              product={home 
-                ? product as unknown as Hit<HttpTypes.StoreProduct>
-                : products.find((p) => {
-                      const { cheapestPrice } = getProductPrice({
-                        product: p,
-                      })
-                      return (
-                        cheapestPrice &&
-                        p.id === product.id &&
-                        Boolean(cheapestPrice)
-                      )
-                    }) as unknown as Hit<HttpTypes.StoreProduct> || product as unknown as Hit<HttpTypes.StoreProduct>
-              }
-            />
-          )
-        )}
-      />
-    </div>
-  )
+  try {
+    // Only fetch products if we need them (when sellerProducts is empty)
+    let products: any[] = [];
+    
+    if (!sellerProducts || sellerProducts.length === 0) {
+      const result = await listProducts({
+        countryCode: locale,
+        queryParams: {
+          limit: home ? 4 : 30, // Reduce limit to prevent too many products
+          order: "created_at",
+        },
+      });
+      
+      if (result && result.response && result.response.products) {
+        products = result.response.products;
+      }
+    }
+    
+    const displayProducts = sellerProducts?.length ? sellerProducts : products;
+    
+    if (!displayProducts.length) return null;
+    
+    // Create array of product cards
+    const productCards = displayProducts.map(product => {
+      if (!product || !product.id) return null;
+      
+      // Safely type-cast the product
+      const typedProduct = {
+        ...product,
+        id: product.id?.toString() || "",
+        handle: product.handle || product.id?.toString() || "",
+        title: product.title || "",
+        thumbnail: product.thumbnail || ""
+      };
+      
+      return (
+        <ProductCard
+          key={typedProduct.id}
+          product={typedProduct as unknown as Hit<HttpTypes.StoreProduct>}
+        />
+      );
+    }).filter(Boolean); // Filter out any null items
+    
+    return (
+      <div className="flex justify-center w-full">
+        <Carousel
+          align="start"
+          items={productCards}
+        />
+      </div>
+    );
+  } catch (error) {
+    console.error("Error in HomeProductsCarousel:", error);
+    return null; // Return null on error to prevent component crashes
+  }
 }

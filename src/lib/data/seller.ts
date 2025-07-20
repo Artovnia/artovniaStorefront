@@ -7,7 +7,7 @@ export const getSellerByHandle = async (handle: string): Promise<SellerProps | n
       .fetch<{ seller: SellerProps }>(`/store/seller/${handle}`, {
         query: {
           fields:
-            "+created_at,+rating,+email,*reviews,*reviews.customer,*reviews.seller",
+            "+created_at,+rating,+email", // Removed *reviews references
         },
         cache: "force-cache",
       });
@@ -16,7 +16,7 @@ export const getSellerByHandle = async (handle: string): Promise<SellerProps | n
       
     const response = {
       ...seller,
-      reviews: seller.reviews?.filter((item) => item !== null) ?? [],
+      reviews: [], // Initialize with empty array since reviews are fetched separately
     };
 
     return response as SellerProps;
