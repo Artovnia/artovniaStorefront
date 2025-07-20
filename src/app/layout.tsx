@@ -17,15 +17,15 @@ export const metadata: Metadata = {
   title: {
     template: `%s | ${
       process.env.NEXT_PUBLIC_SITE_NAME ||
-      'Mercur B2C Demo - Marketplace Storefront'
+      'Artovnia - market rękodzieła i sztuki'
     }`,
     default:
       process.env.NEXT_PUBLIC_SITE_NAME ||
-      'Mercur B2C Demo - Marketplace Storefront',
+      'Artovnia - market rękodzieła i sztuki',
   },
   description:
     process.env.NEXT_PUBLIC_SITE_DESCRIPTION ||
-    'Mercur B2C Demo - Marketplace Storefront',
+    'Artovnia - market rękodzieła i sztuki',
   metadataBase: new URL(
     process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"
   ),
