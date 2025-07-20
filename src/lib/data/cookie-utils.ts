@@ -3,7 +3,7 @@
  * This file provides cookie handling functions that are compatible with both routing systems
  */
 
-import { parse } from 'cookies-next';
+import { getCookie } from 'cookies-next';
 
 /**
  * Gets the auth token from cookies in a way that works with both App Router and Pages Router
@@ -12,8 +12,8 @@ import { parse } from 'cookies-next';
 export function getAuthToken(): string | undefined {
   // Check if we're in a browser environment
   if (typeof window !== 'undefined' && typeof document !== 'undefined') {
-    const cookies = parse(document.cookie);
-    return cookies['_medusa_jwt'];
+    // Use getCookie directly for the specific key
+    return getCookie('_medusa_jwt') as string | undefined;
   }
   
   // In server environment without next/headers, we can't access cookies directly
@@ -40,8 +40,8 @@ export function getCompatAuthHeaders(): { authorization: string } | {} {
 export function getCompatCartId(): string | undefined {
   // Check if we're in a browser environment
   if (typeof window !== 'undefined' && typeof document !== 'undefined') {
-    const cookies = parse(document.cookie);
-    return cookies['_medusa_cart_id'];
+    // Use getCookie directly for the specific key
+    return getCookie('_medusa_cart_id') as string | undefined;
   }
   
   // In server environment without next/headers, we can't access cookies directly

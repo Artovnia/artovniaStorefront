@@ -1,6 +1,7 @@
 /**
  * Type definitions for cart-related functions
  */
+import { HttpTypes } from "@medusajs/types"
 
 /**
  * Response type for payment processing
