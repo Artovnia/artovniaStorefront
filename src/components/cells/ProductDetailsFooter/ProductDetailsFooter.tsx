@@ -3,14 +3,21 @@ import {
   ProductReportButton,
   ProductTags,
 } from '@/components/molecules';
-import { HttpTypes } from '@medusajs/types';
+
+// Define the product tag type that matches what the component expects
+type ProductTag = {
+  id: string
+  value: string
+  created_at: string
+  updated_at: string
+}
 
 export const ProductDetailsFooter = ({
   tags = [],
   posted,
 }: {
-  tags?: HttpTypes.StoreProductTag[];
-  posted: HttpTypes.StoreProduct['created_at'];
+  tags?: ProductTag[];
+  posted: string | null;
 }) => {
   return (
     <>

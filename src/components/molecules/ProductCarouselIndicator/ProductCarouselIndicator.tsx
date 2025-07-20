@@ -1,17 +1,26 @@
 "use client"
 import Image from "next/image"
-import { HttpTypes } from "@medusajs/types"
 import { EmblaCarouselType } from "embla-carousel"
 import { useCallback, useEffect, useState } from "react"
 import { cn } from "@/lib/utils"
 import { Indicator } from "@/components/atoms"
 import useEmblaCarousel from "embla-carousel-react"
 
+// Define the ProductImage type for carousel images
+type ProductImage = {
+  id: string
+  url: string
+  created_at?: string
+  updated_at?: string
+  deleted_at?: string | null
+  metadata?: Record<string, any> | null
+}
+
 export const ProductCarouselIndicator = ({
   slides = [],
   embla: parentEmbla,
 }: {
-  slides: HttpTypes.StoreProduct["images"]
+  slides: ProductImage[]
   embla?: EmblaCarouselType
 }) => {
   const [selectedIndex, setSelectedIndex] = useState(0)

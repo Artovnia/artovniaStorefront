@@ -15,13 +15,36 @@ import { useVendorAvailability } from "../../organisms/VendorAvailabilityProvide
 import { InformationCircleSolid } from "@medusajs/icons"
 import { useVariantSelection } from "../../context/VariantSelectionContext"
 
+// Define extended types for product and variants
+type ExtendedStoreProduct = HttpTypes.StoreProduct & {
+  seller?: SellerProps
+  variants?: ExtendedProductVariant[]
+  title: string
+  id: string
+}
+
+type ExtendedProductVariant = HttpTypes.StoreProductVariant & {
+  id: string
+  title?: string
+  inventory_quantity?: number
+  calculated_price?: any
+  options?: ExtendedProductOptionValue[]
+}
+
+type ExtendedProductOptionValue = HttpTypes.StoreProductOptionValue & {
+  option?: {
+    title: string
+  }
+  value: string
+}
+
 const optionsAsKeymap = (
-  variantOptions: HttpTypes.StoreProductVariant["options"]
+  variantOptions: ExtendedProductOptionValue[] | undefined
 ) => {
   return variantOptions?.reduce(
     (
       acc: Record<string, string>,
-      varopt: HttpTypes.StoreProductOptionValue
+      varopt: ExtendedProductOptionValue
     ) => {
       acc[varopt.option?.title.toLowerCase() || ""] = varopt.value
 
@@ -37,7 +60,7 @@ export const ProductDetailsHeader = ({
   user,
   wishlist,
 }: {
-  product: HttpTypes.StoreProduct & { seller?: SellerProps }
+  product: ExtendedStoreProduct
   locale: string
   user: HttpTypes.StoreCustomer | null
   wishlist?: Wishlist[]

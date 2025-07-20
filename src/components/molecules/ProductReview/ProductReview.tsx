@@ -75,7 +75,7 @@ export const ProductReview = ({ review }: { review: ProductReviewData }) => {
           <span className="text-secondary notranslate">{displayDate}</span>
         </div>
         <div className="flex py-2">
-          <StarRating rating={review.rating} size="small" />
+          <StarRating rate={review.rating} starSize={16} />
         </div>
         <p>{customerNote}</p>
       </div>

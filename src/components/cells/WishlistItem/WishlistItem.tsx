@@ -7,15 +7,22 @@ import { convertToLocale } from "@/lib/helpers/money"
 import { Button } from "@/components/atoms"
 import clsx from "clsx"
 
+// Define extended product type with required properties
+type ExtendedStoreProduct = HttpTypes.StoreProduct & {
+  calculated_amount: number
+  currency_code: string
+  handle: string
+  thumbnail: string | null
+  title: string
+  id: string
+}
+
 export const WishlistItem = ({
   product,
   wishlist,
   user,
 }: {
-  product: HttpTypes.StoreProduct & {
-    calculated_amount: number
-    currency_code: string
-  }
+  product: ExtendedStoreProduct
   wishlist: Wishlist[]
   user?: HttpTypes.StoreCustomer | null
 }) => {

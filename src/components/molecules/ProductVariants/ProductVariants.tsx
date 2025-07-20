@@ -4,13 +4,28 @@ import { HttpTypes } from "@medusajs/types"
 
 import { Chip } from "@/components/atoms"
 import useUpdateSearchParams from "@/hooks/useUpdateSearchParams"
-import { BaseHit, Hit } from "instantsearch.js"
+
+// Define proper types for product options and values
+type ProductOption = {
+  id: string
+  title: string
+  values?: ProductOptionValue[]
+}
+
+type ProductOptionValue = {
+  id: string
+  value: string
+}
+
+type ExtendedStoreProduct = HttpTypes.StoreProduct & {
+  options?: ProductOption[]
+}
 
 export const ProductVariants = ({
   product,
   selectedVariant,
 }: {
-  product: HttpTypes.StoreProduct
+  product: ExtendedStoreProduct
   selectedVariant: Record<string, string>
 }) => {
   const updateSearchParams = useUpdateSearchParams()
@@ -23,7 +38,7 @@ export const ProductVariants = ({
   return (
     <div className="my-4 space-y-2">
       {(product.options || []).map(
-        ({ id, title, values }: HttpTypes.StoreProductOption) => (
+        ({ id, title, values }: ProductOption) => (
           <div key={id}>
             <span className="label-md text-secondary">{title}: </span>
             <span className="label-md text-primary">
@@ -34,7 +49,7 @@ export const ProductVariants = ({
                 ({
                   id,
                   value,
-                }: Partial<Hit<HttpTypes.StoreProductOptionValue>>) => (
+                }: ProductOptionValue) => (
                   <Chip
                     key={id}
                     selected={selectedVariant[title.toLowerCase()] === value}
