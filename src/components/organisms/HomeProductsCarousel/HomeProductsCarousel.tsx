@@ -4,6 +4,7 @@ import { listProducts } from "@/lib/data/products"
 import { Product } from "@/types/product"
 import { HttpTypes } from "@medusajs/types"
 import { getProductPrice } from "@/lib/helpers/get-product-price"
+import { BaseHit, Hit } from "instantsearch.js"
 
 export const HomeProductsCarousel = async ({
   locale,
@@ -34,11 +35,9 @@ export const HomeProductsCarousel = async ({
           (product) => (
             <ProductCard
               key={product.id}
-              product={product}
-              api_product={
-                home
-                  ? (product as HttpTypes.StoreProduct)
-                  : products.find((p) => {
+              product={home 
+                ? product as unknown as Hit<HttpTypes.StoreProduct>
+                : products.find((p) => {
                       const { cheapestPrice } = getProductPrice({
                         product: p,
                       })
@@ -47,7 +46,7 @@ export const HomeProductsCarousel = async ({
                         p.id === product.id &&
                         Boolean(cheapestPrice)
                       )
-                    })
+                    }) as unknown as Hit<HttpTypes.StoreProduct> || product as unknown as Hit<HttpTypes.StoreProduct>
               }
             />
           )
