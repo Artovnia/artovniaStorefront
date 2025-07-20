@@ -30,7 +30,7 @@ export default async function Page() {
     const needReview = Object.entries(sellerOrderCounts).map(
       ([sellerId, count]) => {
         const reviewsCount = sellerReviews.filter(
-          (review) => review.seller.id === sellerId
+          (review) => review.seller?.id === sellerId
         ).length
 
         let needReview = false
