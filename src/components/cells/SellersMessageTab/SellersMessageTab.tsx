@@ -39,8 +39,8 @@ export const SellersMessageTab = ({
         formData.content
       )
       
-      if (response.data?.thread?.id) {
-        router.push(`/user/messages/${response.data.thread.id}`)
+      if (response?.id) {
+        router.push(`/user/messages/${response.id}`)
       } else {
         router.push("/user/messages")
       }
