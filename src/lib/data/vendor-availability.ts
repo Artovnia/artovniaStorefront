@@ -69,7 +69,7 @@ export async function getVendorAvailability(vendorId: string): Promise<VendorAva
     const response = await fetch(
       `${MEDUSA_BACKEND_URL}/store/vendors/${vendorId}/availability`,
       {
-        cache: "no-store",
+        next: { revalidate: 3600 }, // Cache for 1 hour (ISR compatible)
         headers: getHeaders(),
         // Add timeout to avoid hanging requests
         signal: AbortSignal.timeout(10000) // 10 second timeout
@@ -132,7 +132,7 @@ export async function getVendorHolidayMode(vendorId: string): Promise<VendorHoli
     const response = await fetch(
       `${MEDUSA_BACKEND_URL}/store/vendors/${vendorId}/holiday`,
       {
-        cache: "no-store",
+        next: { revalidate: 3600 }, // Cache for 1 hour (ISR compatible)
         headers: getHeaders(),
         signal: AbortSignal.timeout(10000)
       }
@@ -234,7 +234,7 @@ export async function getVendorSuspension(vendorId: string): Promise<VendorSuspe
     const response = await fetch(
       `${MEDUSA_BACKEND_URL}/store/vendors/${vendorId}/suspension`,
       {
-        cache: "no-store",
+        next: { revalidate: 3600 }, // Cache for 1 hour (ISR compatible)
         headers: getHeaders(),
         signal: AbortSignal.timeout(10000)
       }
