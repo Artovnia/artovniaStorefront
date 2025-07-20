@@ -10,21 +10,23 @@ export const ReviewCard = ({ review }: { review: Review }) => {
       className="flex flex-col gap-6 lg:grid lg:grid-cols-6 px-4"
       key={review.id}
     >
-      <div className="flex gap-2 max-lg:items-center lg:flex-col">
-        {review.seller.photo ? (
-          <Image
-            alt="Seller photo"
-            src={review.seller.photo}
-            className="size-8 border border-base-primary rounded-xs"
-          />
-        ) : null}
-        <p className="label-md text-primary">{review.seller.name}</p>
-      </div>
+      {review.seller && (
+        <div className="flex gap-2 max-lg:items-center lg:flex-col">
+          {review.seller?.photo ? (
+            <Image
+              alt="Seller photo"
+              src={review.seller.photo}
+              className="size-8 border border-base-primary rounded-xs"
+            />
+          ) : null}
+          <p className="label-md text-primary">{review.seller?.name}</p>
+        </div>
+      )}
       <div className="col-span-5 flex flex-col lg:flex-row justify-between lg:items-center gap-4">
         <div
           className={cn(
             "flex flex-col gap-2 px-4",
-            review?.seller ? "col-span-5" : "col-span-6"
+            review.seller ? "col-span-5" : "col-span-6"
           )}
         >
           <div className="flex gap-3 items-center">
