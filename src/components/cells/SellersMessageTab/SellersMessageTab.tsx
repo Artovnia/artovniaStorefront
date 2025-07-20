@@ -34,14 +34,10 @@ export const SellersMessageTab = ({
     setIsSubmitting(true)
     
     try {
-      const response = await createMessageThread({
-        subject: formData.subject,
-        type: formData.type,
-        seller_id: seller_id, // Include seller_id to associate the message with this seller
-        initial_message: {
-          content: formData.content
-        }
-      })
+      const response = await createMessageThread(
+        seller_id,
+        formData.content
+      )
       
       if (response.data?.thread?.id) {
         router.push(`/user/messages/${response.data.thread.id}`)
