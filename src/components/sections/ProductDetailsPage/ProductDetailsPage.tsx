@@ -56,7 +56,13 @@ export const ProductDetailsPage = async ({
           <ProductGallery images={prod?.images || []} />
         </div>
         <div className="md:w-1/2 md:px-2">
-          <ProductDetails product={prod} locale={locale} />
+          {prod.seller ? (
+            <ProductDetails product={{...prod, seller: prod.seller}} locale={locale} />
+          ) : (
+            <div className="p-4 bg-red-50 text-red-800 rounded">
+              Seller information is missing for this product.
+            </div>
+          )}
         </div>
       </div>
       <div className="my-8">

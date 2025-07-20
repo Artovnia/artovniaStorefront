@@ -22,6 +22,7 @@ declare module "@medusajs/types" {
       handle: string
       thumbnail?: string
       title: string
+      images?: any[]
       variants: {
         id: string
         title: string | null
