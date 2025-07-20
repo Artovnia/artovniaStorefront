@@ -2,7 +2,7 @@
 
 import { sdk } from "../config"
 import { getAuthHeaders } from "./auth-actions"
-import { Message, MessageThread } from "@/types/seller"
+import type { Message, MessageThread } from "@/types/messages"
 
 /**
  * Fetches all message threads for the current user
