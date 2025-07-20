@@ -4,21 +4,12 @@ import useEmblaCarousel from "embla-carousel-react"
 import Image from "next/image"
 import { ProductCarouselIndicator } from "@/components/molecules"
 import { useScreenSize } from "@/hooks/useScreenSize"
-
-// Define the correct image type based on Medusa's structure
-type ProductImage = {
-  id: string
-  url: string
-  created_at?: string
-  updated_at?: string
-  deleted_at?: string | null
-  metadata?: Record<string, any> | null
-}
+import { MedusaProductImage } from "@/types/product"
 
 export const ProductCarousel = ({
   slides = [],
 }: {
-  slides: ProductImage[]
+  slides: MedusaProductImage[]
 }) => {
   const screenSize = useScreenSize()
 

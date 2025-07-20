@@ -1,12 +1,6 @@
 // src/components/sections/OrderConfirmedSection/OrderConfirmedSection.tsx
-import OrderDetails from "@/components/organisms/OrderDefails/OrderDetails"
-import OrderShipping from "@/components/organisms/OrderDefails/OrderShipping"
-import OrderTotals from "@/components/organisms/OrderDefails/OrderTotals"
-import OrderItems from "@/components/organisms/OrderItems/OrderItems"
-import { HttpTypes } from "@medusajs/types"
 import { Container, Heading, Text } from "@medusajs/ui"
 import React from "react"
-import { useMediaQuery } from "react-responsive"
 import SVGWrapper from "@/components/atoms/SVGWrapper/SVGWrapper"
 
 interface OrderConfirmedSectionProps {

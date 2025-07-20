@@ -1,10 +1,10 @@
 import { GalleryCarousel } from '@/components/organisms';
-import { HttpTypes } from '@medusajs/types';
+import { MedusaProductImage } from '@/types/product';
 
 export const ProductGallery = ({
   images,
 }: {
-  images: HttpTypes.StoreProduct['images'];
+  images: MedusaProductImage[];
 }) => {
   return (
     <div>

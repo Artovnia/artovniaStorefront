@@ -1,10 +1,10 @@
 import { ProductCarousel } from '@/components/cells';
-import { HttpTypes } from '@medusajs/types';
+import { MedusaProductImage } from '@/types/product';
 
 export const GalleryCarousel = ({
   images,
 }: {
-  images: HttpTypes.StoreProduct['images'];
+  images: MedusaProductImage[];
 }) => {
   return (
     <div className='border w-full p-1 rounded-sm'>

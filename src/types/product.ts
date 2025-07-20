@@ -30,6 +30,16 @@ export interface SingleProductImage {
   alt: string
 }
 
+// MedusaProductImage - Unified type for product images from Medusa API
+export interface MedusaProductImage {
+  id: string
+  url: string
+  created_at?: string
+  updated_at?: string
+  deleted_at?: string | null
+  metadata?: Record<string, any> | null
+}
+
 export interface SingleProductReview {
   id: string
   rating: number

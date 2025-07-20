@@ -5,24 +5,17 @@ import { useCallback, useEffect, useState } from "react"
 import { cn } from "@/lib/utils"
 import { Indicator } from "@/components/atoms"
 import useEmblaCarousel from "embla-carousel-react"
+import { MedusaProductImage } from "@/types/product"
 
-// Define the ProductImage type for carousel images
-type ProductImage = {
-  id: string
-  url: string
-  created_at?: string
-  updated_at?: string
-  deleted_at?: string | null
-  metadata?: Record<string, any> | null
+interface ProductCarouselIndicatorProps {
+  slides: MedusaProductImage[]
+  embla?: EmblaCarouselType
 }
 
 export const ProductCarouselIndicator = ({
   slides = [],
   embla: parentEmbla,
-}: {
-  slides: ProductImage[]
-  embla?: EmblaCarouselType
-}) => {
+}: ProductCarouselIndicatorProps) => {
   const [selectedIndex, setSelectedIndex] = useState(0)
 
   const [emblaRef, emblaApi] = useEmblaCarousel({
