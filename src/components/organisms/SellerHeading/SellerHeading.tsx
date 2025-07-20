@@ -1,7 +1,7 @@
 import { SellerInfo } from "@/components/molecules"
 import { SellerProps } from "@/types/seller"
-import { Chat } from "../Chat/Chat"
 import { HttpTypes } from "@medusajs/types"
+import { SellerMessageTab } from "@/components/cells/SellerMessageTab/SellerMessageTab"
 
 export const SellerHeading = ({
   seller,
@@ -15,11 +15,10 @@ export const SellerHeading = ({
       <SellerInfo seller={seller} />
       {user && (
         <div className="flex items-center gap-2 mt-4 lg:mt-0">
-          <Chat
-            user={user}
-            seller={seller}
-            icon
-            buttonClassNames="w-10 h-10 flex justify-center items-center p-0"
+          <SellerMessageTab
+            seller_id={seller.id}
+            seller_name={seller.name}
+            isAuthenticated={user !== null}
           />
         </div>
       )}

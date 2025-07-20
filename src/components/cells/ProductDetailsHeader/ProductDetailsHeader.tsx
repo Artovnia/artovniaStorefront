@@ -7,7 +7,6 @@ import useGetAllSearchParams from "../../../hooks/useGetAllSearchParams"
 import { getProductPrice } from "../../../lib/helpers/get-product-price"
 import { useState, useEffect } from "react"
 import { addToCart } from "../../../lib/data/cart"
-import { Chat } from "../../../components/organisms/Chat/Chat"
 import { SellerProps } from "../../../types/seller"
 import { WishlistButton } from "../WishlistButton/WishlistButton"
 import { Wishlist } from "../../../types/wishlist"
@@ -210,16 +209,6 @@ export const ProductDetailsHeader = ({
           </button>
         )}
       </div>
-      {/* Seller message */}
-
-      {user && product.seller && (
-        <Chat
-          user={user}
-          seller={product.seller}
-          buttonClassNames="w-full uppercase"
-          product={product}
-        />
-      )}
     </div>
   )
 }

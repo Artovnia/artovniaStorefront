@@ -1,9 +1,9 @@
 import { Avatar } from "@/components/atoms"
-import { Chat } from "../Chat/Chat"
 import { retrieveCustomer } from "@/lib/data/customer"
 import { OrderParcelItems } from "@/components/molecules/OrderParcelItems/OrderParcelItems"
 import { OrderParcelStatus } from "@/components/molecules/OrderParcelStatus/OrderParcelStatus"
 import { OrderParcelActions } from "@/components/molecules/OrderParcelActions/OrderParcelActions"
+import { SellerMessageTab } from "@/components/cells/SellerMessageTab/SellerMessageTab"
 
 export const OrderParcels = async ({ orders }: { orders: any[] }) => {
   const user = await retrieveCustomer()
@@ -25,11 +25,10 @@ export const OrderParcels = async ({ orders }: { orders: any[] }) => {
                 <p className="text-primary">{order.seller?.name || 'Seller'}</p>
               </div>
               {order.seller && (
-                <Chat
-                  user={user}
-                  seller={order.seller}
-                  order_id={order.id}
-                  buttonClassNames="label-md text-action-on-secondary uppercase flex items-center gap-2"
+                <SellerMessageTab
+                  seller_id={order.seller.id}
+                  seller_name={order.seller.name}
+                  isAuthenticated={user !== null}
                 />
               )}
             </div>

@@ -12,7 +12,7 @@ import { cn } from "@/lib/utils"
 import { CollapseIcon } from "@/icons"
 import { convertToLocale } from "@/lib/helpers/money"
 import { retrieveReturnReasons } from "@/lib/data/orders"
-import { Chat } from "../Chat/Chat"
+import { SellerMessageTab } from "@/components/cells/SellerMessageTab/SellerMessageTab"
 import Image from "next/image"
 
 // Keep English values for component functionality
@@ -264,11 +264,10 @@ export const SingleOrderReturn = ({
                   />
                   <p className="label-lg text-primary">{item.order.seller.name}</p>
                 </div>
-                <Chat
-                  user={user}
-                  seller={item.order.seller}
-                  buttonClassNames="uppercase"
-                  order_id={item.order.id}
+                <SellerMessageTab
+                  seller_id={item.order.seller.id}
+                  seller_name={item.order.seller.name}
+                  isAuthenticated={user !== null}
                 />
               </>
             ) : (
