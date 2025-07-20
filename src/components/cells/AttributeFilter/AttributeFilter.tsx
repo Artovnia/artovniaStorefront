@@ -1,8 +1,8 @@
 "use client"
 
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useState } from "react"
 import { Chip } from "@/components/atoms"
-import { Accordion, SelectField, RangeSlider } from "@/components/molecules"
+import { Accordion, RangeSlider } from "@/components/molecules"
 import useFilters from "@/hooks/useFilters"
 import useUpdateSearchParams from "@/hooks/useUpdateSearchParams"
 import { useSearchParams } from "next/navigation"
@@ -41,7 +41,7 @@ export const AttributeFilter = ({ attribute, physicalAttribute }: AttributeFilte
   
   // Filter state management based on attribute type
   const filterKey = attribute?.handle || physicalAttribute?.type || ""
-  const { updateFilters, isFilterActive, getActiveFilters } = useFilters(filterKey)
+  const { updateFilters, isFilterActive, filters } = useFilters(filterKey)
   
   // Range filter state (for numerical and physical attributes)
   const [rangeValues, setRangeValues] = useState<[number, number]>([0, 100])
