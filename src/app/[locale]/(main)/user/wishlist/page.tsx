@@ -52,9 +52,21 @@ export default async function Wishlist() {
                   <WishlistItem
                     key={product.id}
                     product={
-                      product as HttpTypes.StoreProduct & {
+                      {
+                        ...product,
+                        calculated_amount: (product as any).calculated_amount || 0,
+                        currency_code: (product as any).currency_code || 'USD',
+                        handle: (product as any).handle || product.id || '',
+                        thumbnail: (product as any).thumbnail || null,
+                        title: (product as any).title || product.id || '',
+                        id: product.id || ''
+                      } as HttpTypes.StoreProduct & {
                         calculated_amount: number
                         currency_code: string
+                        handle: string
+                        thumbnail: string | null
+                        title: string
+                        id: string
                       }
                     }
                     wishlist={wishlist}

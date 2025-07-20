@@ -60,7 +60,7 @@ export const ProductDetails = async ({
     <div>
       <ProductDetailsClient initialVariantId={selectedVariantId}>
         <ProductDetailsHeader
-          product={product}
+          product={product as any}
           locale={locale}
           user={user}
           wishlist={wishlist}
@@ -83,7 +83,7 @@ export const ProductDetails = async ({
       <ProductDetailsShipping />
       <ProductDetailsFooter
         tags={product?.tags || []}
-        posted={product?.created_at}
+        posted={product?.created_at || null}
       />
       <ProductDetailsSellerReviews seller={product.seller} />
       <Suspense fallback={
