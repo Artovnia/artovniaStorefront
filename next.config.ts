@@ -2,6 +2,13 @@ import type { NextConfig } from "next"
 import createNextIntlPlugin from "next-intl/plugin"
 
 const nextConfig: NextConfig = {
+  // Add this to help debug environment variables during build
+  generateBuildId: async () => {
+    console.log('Environment variables during build:');
+    console.log('NEXT_PUBLIC_SITE_NAME:', process.env.NEXT_PUBLIC_SITE_NAME);
+    console.log('NEXT_PUBLIC_SITE_DESCRIPTION:', process.env.NEXT_PUBLIC_SITE_DESCRIPTION);
+    return null; // Use default build ID
+  },
   trailingSlash: false,
   reactStrictMode: true,
   // Optimize page loading and navigation
