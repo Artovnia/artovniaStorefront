@@ -7,11 +7,14 @@ import { OrderReturnRequests } from "@/components/sections/OrderReturnRequests/O
 import { retrieveCustomer } from "@/lib/data/customer"
 import { getReturns } from "@/lib/data/orders"
 
-export default async function ReturnsPage({
-  searchParams,
-}: {
+interface ReturnsPageProps {
+  params: { locale: string }
   searchParams: { page?: string; return?: string }
-}) {
+}
+
+export default async function ReturnsPage(
+  { searchParams }: ReturnsPageProps
+) {
   try {
   // Get returns data with error handling
   const { order_return_requests = [] } = await getReturns()
