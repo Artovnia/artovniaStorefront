@@ -7,13 +7,13 @@ import { OrderReturnRequests } from "@/components/sections/OrderReturnRequests/O
 import { retrieveCustomer } from "@/lib/data/customer"
 import { getReturns } from "@/lib/data/orders"
 
-interface ReturnsPageProps {
-  params: { locale: string }
-  searchParams: { page?: string; return?: string }
+type PageProps = {
+  params: Promise<{ locale: string }>
+  searchParams: Promise<{ page?: string; return?: string }>
 }
 
 export default async function ReturnsPage(
-  { searchParams }: ReturnsPageProps
+  { params, searchParams }: PageProps
 ) {
   try {
   // Get returns data with error handling
@@ -24,9 +24,10 @@ export default async function ReturnsPage(
   
   const user = await retrieveCustomer()
 
-  // Access searchParams directly - it's not a Promise in Next.js 15
-  const page = searchParams.page
-  const returnId = searchParams.return
+  // Await the searchParams Promise
+  const resolvedParams = await searchParams
+  const page = resolvedParams.page
+  const returnId = resolvedParams.return
 
   // Improved sorting logic that works with potentially incomplete data
   const sortedReturns = [...(order_return_requests || [])].sort((a, b) => {
