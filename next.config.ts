@@ -7,6 +7,8 @@ const nextConfig: NextConfig = {
     console.log('Environment variables during build:');
     console.log('NEXT_PUBLIC_SITE_NAME:', process.env.NEXT_PUBLIC_SITE_NAME);
     console.log('NEXT_PUBLIC_SITE_DESCRIPTION:', process.env.NEXT_PUBLIC_SITE_DESCRIPTION);
+    console.log('NEXT_PUBLIC_ALGOLIA_ID:', process.env.NEXT_PUBLIC_ALGOLIA_ID);
+    console.log('NEXT_PUBLIC_ALGOLIA_SEARCH_KEY:', process.env.NEXT_PUBLIC_ALGOLIA_SEARCH_KEY);
     return null; // Use default build ID
   },
   trailingSlash: false,
