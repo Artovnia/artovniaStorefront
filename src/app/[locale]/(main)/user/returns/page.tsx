@@ -21,10 +21,9 @@ export default async function ReturnsPage({
   
   const user = await retrieveCustomer()
 
-  // For Next.js 15, ensure searchParams is awaited before using
-  const params = await searchParams
-  const page = params.page
-  const returnId = params.return
+  // Access searchParams directly - it's not a Promise in Next.js 15
+  const page = searchParams.page
+  const returnId = searchParams.return
 
   // Improved sorting logic that works with potentially incomplete data
   const sortedReturns = [...(order_return_requests || [])].sort((a, b) => {
