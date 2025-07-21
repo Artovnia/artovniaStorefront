@@ -31,17 +31,22 @@ export type Order = HttpTypes.StoreOrder & {
 }
 
 const getReviews = async () => {
-  const headers = {
-    ...(await getAuthHeaders()),
+  try {
+    const headers = {
+      ...(await getAuthHeaders()),
+    }
+
+    const response = await sdk.client.fetch("/store/reviews", {
+      headers,
+      query: { fields: "*seller,+customer.id,+order_id" },
+      method: "GET",
+    }) as { reviews: Review[] }; // Fix: Properly type the response
+
+    return response
+  } catch (err) {
+    console.error("Error fetching reviews:", err)
+    return { reviews: [] } // Return empty reviews array on error
   }
-
-  const response = await sdk.client.fetch("/store/reviews", {
-    headers,
-    query: { fields: "*seller,+customer.id,+order_id" },
-    method: "GET",
-  }) as { reviews: Review[] }; // Fix: Properly type the response
-
-  return response
 }
 
 /**

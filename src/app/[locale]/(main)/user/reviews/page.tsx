@@ -9,12 +9,27 @@ export default async function Page() {
 
   if (!user) return <LoginForm />
 
-  const orders = await listOrders()
-  const { reviews } = await getReviews()
+  // Add try/catch to handle potential errors in data fetching
+  try {
+    const orders = await listOrders()
+    const { reviews = [] } = await getReviews() // Provide default empty array
 
-  if (!orders || !reviews) return null
-
-  const reviewsToWrite = orders.reduce((acc: any[], order) => {
+    // Ensure both orders and reviews are arrays before proceeding
+    if (!Array.isArray(orders) || !Array.isArray(reviews)) {
+      console.error('Invalid data format: orders or reviews is not an array')
+      return (
+        <main className="container">
+          <div className="grid grid-cols-1 md:grid-cols-4 mt-6 gap-5 md:gap-8">
+            <UserNavigation />
+            <div className="md:col-span-3">
+              <p>Unable to load your reviews at this time. Please try again later.</p>
+            </div>
+          </div>
+        </main>
+      )
+    }
+  
+    const reviewsToWrite = orders.reduce((acc: any[], order) => {
     if (!order.seller) return acc
 
     const hasReview = reviews.some(
@@ -41,4 +56,17 @@ export default async function Page() {
       </div>
     </main>
   )
+  } catch (error) {
+    console.error('Error in reviews page:', error)
+    return (
+      <main className="container">
+        <div className="grid grid-cols-1 md:grid-cols-4 mt-6 gap-5 md:gap-8">
+          <UserNavigation />
+          <div className="md:col-span-3">
+            <p>Unable to load your reviews at this time. Please try again later.</p>
+          </div>
+        </div>
+      </main>
+    )
+  }
 }
