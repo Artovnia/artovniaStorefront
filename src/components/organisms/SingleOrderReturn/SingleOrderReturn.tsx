@@ -39,7 +39,7 @@ interface ReturnReason {
 
 // Fallback function to format reason ID into readable text if API fetch fails
 const formatReasonId = (id: string): string => {
-  if (!id) return "Unknown reason";
+  if (!id) return "Nieznany powód";
   
   // Remove prefix if exists
   const withoutPrefix = id.startsWith('rr_') ? id.substring(3) : id
@@ -92,17 +92,25 @@ export const SingleOrderReturn = ({
   const getReasonLabel = (reasonId: string): string => {
     if (!reasonId) return "Brak powodu zwrotu"
     
-    // Find the reason in our fetched reasons list
-    const matchingReason = returnReasons.find(reason => 
-      reason.id === reasonId || reason.value === reasonId
-    )
+    // Simple exact match - this should work with the fixed API response
+    const matchingReason = returnReasons.find(reason => reason.id === reasonId)
     
     // Return the label if found
     if (matchingReason) {
       return matchingReason.label
     }
     
-    // If not found, format the ID into a readable label
+    // If not found, try more permissive matching
+    const fuzzyMatchReason = returnReasons.find(reason => 
+      reason.value === reasonId || 
+      (reason.id && reasonId && reason.id.replace('rr_', '') === reasonId.replace('rr_', ''))
+    )
+    
+    if (fuzzyMatchReason) {
+      return fuzzyMatchReason.label
+    }
+    
+    // If still not found, format the ID into a readable label
     return formatReasonId(reasonId)
   }
 
@@ -158,35 +166,57 @@ export const SingleOrderReturn = ({
   // useEffect was moved to the top level
 
   // Add null checking for item.order and its items
-  const filteredItems = item.order?.items?.filter((orderItem: any) =>
-    item.line_items?.some(
-      (lineItem: any) => lineItem?.line_item_id === orderItem?.id
-    )
-  ) || []
+  // TEMPORARY: Show all order items since line_items is empty
+  const filteredItems = item.order?.items || []
+  
+  // Original filtering logic (commented out until line_items are fixed):
+  // const filteredItems = item.order?.items?.filter((orderItem: any) =>
+  //   item.line_items?.some(
+  //     (lineItem: any) => lineItem?.line_item_id === orderItem?.id
+  //   )
+  // ) || []
+
+  // Debug: Log the data structure to see what we're working with
+  console.log('Return request item:', item)
+  console.log('Order items:', item.order?.items)
+  console.log('Filtered items:', filteredItems)
+  console.log('Line items:', item.line_items)
+  console.log('Return reasons:', returnReasons)
 
   const currency_code = item?.order?.currency_code || "usd"
 
-  // EXTREMELY SIMPLIFIED APPROACH
-  // 1. Calculate the sum of returned products (from line items) with null checking
-  const itemsTotal = item?.line_items?.reduce((acc: number, lineItem: any) => {
-    // Check if we have valid line item
-    if (!lineItem) return acc;
-    
-    // Find the corresponding order item to get the unit price
-    const orderItem = item?.order?.items?.find((oi: any) => oi?.id === lineItem?.line_item_id);
-    if (!orderItem) return acc;
-    
-    // Multiply unit price by quantity being returned (with null checks)
-    const unitPrice = orderItem?.unit_price || 0;
-    const quantity = lineItem?.quantity || 0;
-    return acc + (unitPrice * quantity);
-  }, 0) || 0;
+  // CALCULATE TOTALS - Handle both cases: with line_items and without
+  let itemsTotal = 0;
   
-  // 2. Get shipping cost with comprehensive null checking
-  const shippingCost = item?.order?.shipping_methods?.[0]?.price || 
-                      item?.order?.shipping_total || 
-                      item?.order?.shipping_price || 
-                      0;
+  if (item?.line_items && item.line_items.length > 0) {
+    // 1. Calculate the sum of returned products (from line items) with null checking
+    itemsTotal = item.line_items.reduce((acc: number, lineItem: any) => {
+      // Check if we have valid line item
+      if (!lineItem) return acc;
+      
+      // Find the corresponding order item to get the unit price
+      const orderItem = item?.order?.items?.find((oi: any) => oi?.id === lineItem?.line_item_id);
+      if (!orderItem) return acc;
+      
+      // Multiply unit price by quantity being returned (with null checks)
+      const unitPrice = orderItem?.unit_price || 0;
+      const quantity = lineItem?.quantity || 0;
+      return acc + (unitPrice * quantity);
+    }, 0) || 0;
+  } else {
+    // FALLBACK: When line_items is empty, calculate total from all order items
+    // This is temporary until line_items backend issue is fixed
+    itemsTotal = filteredItems.reduce((acc: number, orderItem: any) => {
+      const unitPrice = orderItem?.unit_price || 0;
+      const quantity = orderItem?.quantity || 1; // Default to 1 if quantity not available
+      return acc + (unitPrice * quantity);
+    }, 0) || 0;
+  }
+  
+  // 2. Get shipping cost - simplify to just use shipping_total from order
+  const shippingTotal = item?.order?.shipping_total
+  const shippingCost = typeof shippingTotal === 'number' ? shippingTotal : 0;
+
   
   // 3. Simple addition - make sure shipping cost is definitely included and values are valid numbers
   // Use Number() to force numeric values
@@ -215,7 +245,7 @@ export const SingleOrderReturn = ({
         <div className="flex flex-col gap-2 items-center">
           <p className="label-sm text-secondary">
             Data prośby zwrotu:{" "}
-            {format(item.line_items[0].created_at, "MMM dd, yyyy")}
+            {item?.created_at ? format(new Date(item.created_at), "MMM dd, yyyy") : "Brak daty"}
           </p>
         </div>
       </Card>
@@ -260,7 +290,7 @@ export const SingleOrderReturn = ({
               <>
                 <div className="flex items-center gap-2">
                   <Avatar
-                    src={item.order.seller.photo || "/talkjs-placeholder.jpg"}
+                    src={item.order.seller.photo || item.order.seller.avatar || "/talkjs-placeholder.jpg"}
                   />
                   <p className="label-lg text-primary">{item.order.seller.name}</p>
                 </div>
@@ -282,6 +312,7 @@ export const SingleOrderReturn = ({
             <div className="flex flex-col gap-4 w-full">
               {filteredItems.map((orderItem: any) => {
                 // Find the corresponding line item with the return reason, with null checking
+                // TEMPORARY: Since line_items is empty, returnLineItem will be undefined
                 const returnLineItem = item?.line_items?.find(
                   (li: any) => li?.line_item_id === orderItem?.id
                 );
@@ -321,7 +352,8 @@ export const SingleOrderReturn = ({
                           // Use our helper function to get the correct label
                           getReasonLabel(returnLineItem.reason_id)
                         ) : (
-                          "Brak powodu zwrotu"
+                          // Default fallback for missing reason
+                          'Powód zwrotu niedostępny'
                         )}
                       </Badge>
                     </p>

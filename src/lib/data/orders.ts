@@ -257,29 +257,34 @@ export const listOrders = async (
 
     console.log('Listing orders with params:', { limit, offset, filters })
 
-    const response = await sdk.client.fetch<{
-      orders: Array<HttpTypes.StoreOrder & { 
-        seller: { id: string; name: string; reviews?: any[] }
-        reviews: any[]
-      }>
-    }>(`/store/orders`, {
-      method: "GET",
-      query: {
-        limit,
-        offset,
-        order: "-created_at",
-        fields: "*items,+items.metadata,*items.variant,*items.product,*seller,*reviews,*order_set",
-        ...filters,
-      },
-      headers,
-      next,
-      cache: "no-cache",
-    })
-
-    console.log(`Retrieved ${response.orders?.length || 0} orders`)
-    return response.orders || []
+    try {
+      const response = await sdk.client.fetch<{
+        orders: Array<HttpTypes.StoreOrder & { 
+          seller: { id: string; name: string }
+          // reviews temporarily removed due to backend issue
+        }>
+      }>(`/store/orders`, {
+        method: "GET",
+        query: {
+          limit,
+          offset,
+          order: "-created_at",
+          // Removed *reviews until backend relation is fixed
+          fields: "*items,+items.metadata,*items.variant,*items.product,*seller,*order_set",
+          ...filters,
+        },
+        headers,
+        next,
+        cache: "no-cache",
+      })
+      console.log(`Retrieved ${response.orders?.length || 0} orders`)
+      return response.orders || []
+    } catch (apiError) {
+      console.error("API Error listing orders:", apiError)
+      return []
+    }
   } catch (err) {
-    console.error("Error listing orders:", err)
+    console.error("Error in listOrders:", err)
     return []
   }
 }
@@ -394,26 +399,109 @@ export const createReturnRequest = async (data: any) => {
 
 /**
  * Get returns for the current user
+ * This function gracefully handles backend errors when the returns API is not fully implemented
+ * Will try both possible API endpoints: /store/return-request and /store/returns
  */
 export const getReturns = async () => {
   try {
     const headers = await getAuthHeaders()
-
-    console.log('Fetching returns...')
-
-    const response = await sdk.client.fetch<{
-      order_return_requests: Array<any>
-    }>(`/store/return-request`, {
-      method: "GET",
-      headers,
-      cache: "force-cache",
+    
+    // Log authentication status for debugging
+    console.log('Fetching returns with auth headers:', {
+      hasAuthToken: 'authorization' in headers,
+      hasPublishableKey: !!headers['x-publishable-api-key']
     })
-
-    console.log(`Retrieved ${response.order_return_requests?.length || 0} returns`)
-    return response
-  } catch (error) {
-    console.error("Error fetching returns:", error)
-    throw medusaError(error)
+    
+    // First try the /store/return-request endpoint
+    try {
+      console.log('Attempting to fetch from /store/return-request first')
+      
+      // For Next.js 15 and Vercel compatibility
+      const response = await sdk.client.fetch<{
+        order_return_requests: Array<any>
+      }>(`/store/return-request`, {
+        method: "GET",
+        headers,
+        cache: "no-store", // Ensure fresh data on each request
+        credentials: "include", // Include cookies for authentication
+        next: { revalidate: 0 }, // Next.js 15 cache busting
+      })
+      
+      if (response && response.order_return_requests) {
+        // Always return an array even if backend returns null
+        const returnRequests = Array.isArray(response.order_return_requests) ? 
+          response.order_return_requests : [];
+          
+        console.log(`Retrieved ${returnRequests.length} return requests from /store/return-request`)
+        
+        // Show details of first return for debugging
+        if (returnRequests.length > 0) {
+          const sampleReturn = returnRequests[0];
+          console.log('Sample return data:', {
+            id: sampleReturn.id,
+            status: sampleReturn.status,
+            customer_id: sampleReturn.customer_id,
+            order_id: sampleReturn.order_id,
+            created_at: sampleReturn.created_at,
+            has_line_items: Array.isArray(sampleReturn.line_items) && sampleReturn.line_items.length > 0
+          })
+          return { order_return_requests: returnRequests }
+        }
+        
+        // If we got an empty array, continue to try the other endpoint
+        if (returnRequests.length === 0) {
+          console.log('Got empty array from /store/return-request, trying /store/returns next')
+        } else {
+          return { order_return_requests: returnRequests }
+        }
+      }
+    } catch (firstError) {
+      console.error("Error fetching from /store/return-request:", firstError)
+      console.log('Trying fallback to /store/returns endpoint')
+      // Continue to the next endpoint
+    }
+    
+    // Try the alternate /store/returns endpoint if first one failed or returned empty
+    try {
+      console.log('Attempting to fetch from /store/returns')
+      
+      const response = await sdk.client.fetch<{
+        returns: Array<any>
+      }>(`/store/returns`, {
+        method: "GET",
+        headers,
+        cache: "no-store",
+        credentials: "include",
+        next: { revalidate: 0 },
+      })
+      
+      if (response && response.returns) {
+        const returns = Array.isArray(response.returns) ? response.returns : [];
+        console.log(`Retrieved ${returns.length} returns from /store/returns`)
+        
+        // Transform returns to match expected format if needed
+        const transformedReturns = returns.map(returnItem => ({
+          ...returnItem,
+          // Add any missing fields to match the expected format
+          id: returnItem.id || `temp_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
+          status: returnItem.status || 'pending',
+          // Ensure line_items is always an array
+          line_items: Array.isArray(returnItem.items) ? returnItem.items : []
+        }));
+        
+        return { order_return_requests: transformedReturns }
+      }
+    } catch (secondError) {
+      console.error("Error fetching from /store/returns:", secondError)
+    }
+    
+    // If both endpoints failed, return empty array
+    console.log('Both API endpoints failed or returned empty, using empty array fallback')
+    return { order_return_requests: [] }
+    
+  } catch (error: any) {
+    console.error("Error in getReturns setup:", error?.message || error)
+    return { order_return_requests: [] }
   }
 }
 
@@ -451,18 +539,32 @@ export const retrieveReturnReasons = async () => {
 
     console.log('Fetching return reasons...')
 
+    // Use the proper endpoint for return reasons
     const response = await sdk.client.fetch<{
-      return_reasons: Array<HttpTypes.StoreReturnReason>
+      return_reasons: Array<{
+        id: string
+        value: string
+        label: string
+        description?: string | null
+      }>
     }>(`/store/return-reasons`, {
       method: "GET",
       headers,
-      cache: "force-cache",
+      next: { revalidate: 0 }, // Always fetch fresh data
     })
 
-    console.log(`Retrieved ${response.return_reasons?.length || 0} return reasons`)
+    console.log(`Retrieved ${response.return_reasons?.length || 0} return reasons:`, response.return_reasons)
+    
+    if (!response.return_reasons) {
+      console.warn('No return reasons found in response')
+      return []
+    }
+
+    // Return the complete array of return reasons with proper structure
     return response.return_reasons
   } catch (error) {
     console.error("Error fetching return reasons:", error)
-    throw medusaError(error)
+    // Return an empty array instead of throwing to prevent UI breaks
+    return []
   }
 }

@@ -1,3 +1,7 @@
+// Force dynamic rendering to ensure fresh data on each request
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+
 import { UserNavigation } from "@/components/molecules/UserNavigation/UserNavigation"
 import { OrderReturnRequests } from "@/components/sections/OrderReturnRequests/OrderReturnRequests"
 import { retrieveCustomer } from "@/lib/data/customer"
@@ -6,8 +10,9 @@ import { getReturns } from "@/lib/data/orders"
 export default async function ReturnsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ page: string; return: string }>
+  searchParams: { page?: string; return?: string }
 }) {
+  try {
   // Get returns data with error handling
   const { order_return_requests = [] } = await getReturns()
 
@@ -16,7 +21,10 @@ export default async function ReturnsPage({
   
   const user = await retrieveCustomer()
 
-  const { page, return: returnId } = await searchParams
+  // For Next.js 15, ensure searchParams is awaited before using
+  const params = await searchParams
+  const page = params.page
+  const returnId = params.return
 
   // Improved sorting logic that works with potentially incomplete data
   const sortedReturns = [...(order_return_requests || [])].sort((a, b) => {
@@ -60,12 +68,27 @@ export default async function ReturnsPage({
           <h1 className="heading-md uppercase">Zwroty</h1>
           <OrderReturnRequests
             returns={sortedReturns}
-            user={user}
-            page={page}
+            user={user || null}
+            page={page || ""}
             currentReturn={returnId || ""}
           />
         </div>
       </div>
     </main>
   )
+  } catch (error) {
+    console.error("Error rendering returns page:", error)
+    // Add error fallback UI
+    return (
+      <main className="container">
+        <div className="grid grid-cols-1 md:grid-cols-4 mt-6 gap-5 md:gap-8">
+          <UserNavigation />
+          <div className="md:col-span-3">
+            <h1 className="heading-md uppercase">Zwroty</h1>
+            <p>Wystąpił problem podczas ładowania zwrotów. Spróbuj ponownie później.</p>
+          </div>
+        </div>
+      </main>
+    )
+  }
 }
