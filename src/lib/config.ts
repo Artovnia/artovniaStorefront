@@ -21,7 +21,43 @@ export const sdk = new Medusa({
   publishableKey: process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY,
 })
 
-// For debugging in production
-if (typeof window !== 'undefined' && process.env.NODE_ENV === 'production') {
-  console.log('🔌 SDK Base URL:', getBaseUrl())
+// Enhanced debugging for both development and production
+if (typeof window !== 'undefined') {
+  // Log the environment variables and final baseUrl
+  console.log('🔌 SDK Configuration:', {
+    baseUrl: getBaseUrl(),
+    environment: process.env.NODE_ENV,
+    NEXT_PUBLIC_MEDUSA_BACKEND_URL: process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL,
+    hasPublishableKey: !!process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY,
+    runtime: 'browser'
+  })
+  
+  // Log all API requests in production to debug CORS issues
+  if (process.env.NODE_ENV === 'production') {
+    const originalFetch = window.fetch;
+    window.fetch = function(input: RequestInfo | URL, init?: RequestInit) {
+      // Get URL string regardless of input type
+      const urlString = typeof input === 'string' ? input : 
+                      input instanceof URL ? input.toString() : 
+                      input instanceof Request ? input.url : '';
+      
+      if (urlString.includes('/store/product-colors') || urlString.includes('/store/attributes')) {
+        console.log('🌐 Fetch API call:', {
+          url: urlString,
+          headers: init?.headers,
+          method: init?.method
+        });
+      }
+      return originalFetch(input, init);
+    };
+  }
+} else {
+  // Server-side logging
+  console.log('🔌 Server SDK Configuration:', {
+    baseUrl: getBaseUrl(),
+    environment: process.env.NODE_ENV,
+    hasMedusaBackendUrl: !!process.env.MEDUSA_BACKEND_URL,
+    hasPublishableKey: !!process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY,
+    runtime: 'server'
+  })
 }
