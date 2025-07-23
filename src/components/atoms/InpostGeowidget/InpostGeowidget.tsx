@@ -24,15 +24,20 @@ export const InpostGeowidget: React.FC<InpostGeowidgetProps> = ({
   useEffect(() => {
     if (!containerRef.current) return;
     console.log('InpostGeowidget: Initializing with token length:', token?.length);
-
-    // Add global EasyPack config to help with initialization
-    if (!(window as any).easyPackConfig) {
-      (window as any).easyPackConfig = {
-        instance: 'pl',
-        apiEndpoint: 'https://api.inpost.pl/v2',
-        defaultLocale: language || 'pl',
-        mapType: 'osm',
-        searchType: 'osm',
+    
+    // Set up global InPost configuration
+    try {
+      // Create the global InPost namespace if it doesn't exist
+      if (!(window as any).InPost) {
+        (window as any).InPost = {};
+      }
+      
+      // Configure InPost settings (official configuration format)
+      (window as any).InPost.config = {
+        apiUrl: 'https://api.inpost.pl/v2',
+        token: token,
+        language: language || 'pl',
+        config: config || 'parcelcollect,modern',
         points: {
           types: ['parcel_locker'],
           functions: ['parcel_collect']
@@ -40,17 +45,18 @@ export const InpostGeowidget: React.FC<InpostGeowidgetProps> = ({
         map: {
           initialTypes: ['parcel_locker'],
           defaultDistance: 10,
-          defaultSearchType: 'osm',
           useGeolocation: true
         },
         display: {
           showTypesFilters: true,
           showSearchBar: true,
-          showPointInfo: true,
+          showPointInfo: true
         }
       };
       
-      console.log('InpostGeowidget: Added easyPackConfig to window');
+      console.log('InpostGeowidget: Added InPost config to window');
+    } catch (error) {
+      console.error('InpostGeowidget: Error setting up InPost config:', error);
     }
 
     // Store ref value in variable inside the effect
