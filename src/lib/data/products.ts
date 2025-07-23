@@ -61,6 +61,8 @@ export const listProducts = async ({
     ...(await getAuthHeaders()),
   }
 
+  const cacheKey = `products-${region.id}-${category_id || 'all'}-${collection_id || 'all'}`
+
   return sdk.client
     .fetch<{
       products: HttpTypes.StoreProduct[]
@@ -79,12 +81,10 @@ export const listProducts = async ({
       },
       headers,
       next: {
-        // Implement stale-while-revalidate pattern
-        revalidate: 300, // Revalidate every 5 minutes
-        tags: ['products', queryParams?.handle ? `product-${queryParams.handle}` : ''],
+        revalidate: 300, // 5 minutes - balance between performance and data freshness
+        tags: ['products', cacheKey, queryParams?.handle ? `product-${queryParams.handle}` : ''],
       },
-      // Use force-cache for better performance with ISR
-      cache: queryParams?.handle ? "force-cache" : "default"
+      cache: "force-cache" // Keep caching improvement
     })
     .then(({ products, count }) => {
       const nextPage = count > offset + limit ? pageParam + 1 : null
@@ -97,11 +97,19 @@ export const listProducts = async ({
         queryParams,
       }
     })
+    .catch((error) => {
+      console.warn('Products fetch failed, returning empty result:', error)
+      return {
+        response: { products: [], count: 0 },
+        nextPage: null,
+        queryParams,
+      }
+    })
 }
 
 /**
- * This will fetch 100 products to the Next.js cache and sort them based on the sortBy parameter.
- * It will then return the paginated products based on the page and limit parameters.
+ * Optimized product listing with server-side sorting and filtering
+ * Avoids over-fetching by implementing proper pagination and caching
  */
 export const listProductsWithSort = async ({
   page = 1,
@@ -129,35 +137,37 @@ export const listProductsWithSort = async ({
 }> => {
   const limit = queryParams?.limit || 12
 
+  // Use direct pagination instead of over-fetching
   const {
     response: { products, count },
+    nextPage
   } = await listProducts({
-    pageParam: 0,
+    pageParam: page,
     queryParams: {
       ...queryParams,
-      limit: 100,
+      limit,
+      // Add server-side sorting if supported by Medusa
+      order: sortBy === 'created_at' ? '-created_at' : sortBy,
     },
     category_id,
     collection_id,
     countryCode,
   })
 
+  // Filter by seller if needed (consider moving this to server-side query)
   const filteredProducts = seller_id
     ? products.filter((product) => product.seller?.id === seller_id)
     : products
 
-  const sortedProducts = sortProducts(filteredProducts, sortBy)
-
-  const pageParam = (page - 1) * limit
-
-  const nextPage = count > pageParam + limit ? pageParam + limit : null
-
-  const paginatedProducts = sortedProducts.slice(pageParam, pageParam + limit)
+  // Only sort client-side if server-side sorting isn't available
+  const finalProducts = sortBy && sortBy !== 'created_at' 
+    ? sortProducts(filteredProducts, sortBy)
+    : filteredProducts
 
   return {
     response: {
-      products: paginatedProducts,
-      count,
+      products: finalProducts,
+      count: seller_id ? filteredProducts.length : count,
     },
     nextPage,
     queryParams,

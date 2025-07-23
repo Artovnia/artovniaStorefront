@@ -1,7 +1,8 @@
 "use client"
 
-import React, { createContext, useContext, useState, useEffect, useCallback } from "react"
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo, useRef } from "react"
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
+import { performanceMonitor } from "@/lib/utils/performance"
 
 type VariantSelectionContextType = {
   selectedVariantId: string
@@ -22,39 +23,74 @@ export const VariantSelectionProvider = ({
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
+  const isInitializedRef = useRef(false)
+  const lastVariantIdRef = useRef<string>('')
   
-  // Update URL with variant ID - wrapped in useCallback
+  // Performance tracking
+  const measureRender = performanceMonitor.measureRender('VariantSelectionProvider')
+  
+  // Debounced URL update to prevent excessive navigation calls
+  const debouncedUpdateUrl = useMemo(() => 
+    performanceMonitor.debounce((id: string) => {
+      if (!id || id === lastVariantIdRef.current) return
+      
+      const params = new URLSearchParams(searchParams.toString())
+      params.set('variant', id)
+      
+      // Update URL without forcing navigation
+      router.replace(`${pathname}?${params.toString()}`, { scroll: false })
+      lastVariantIdRef.current = id
+      
+      console.log(`🔄 URL updated with variant: ${id}`);
+    }, 300), // 300ms debounce
+    [searchParams, router, pathname]
+  )
+  
+  // Memoized update function to prevent unnecessary re-renders
   const updateUrlWithVariant = useCallback((id: string) => {
-    if (!id) return
-    
-    const params = new URLSearchParams(searchParams.toString())
-    
-    // Update or add the variant parameter
-    params.set('variant', id)
-    
-    // Update URL without forcing navigation
-    router.replace(`${pathname}?${params.toString()}`, { scroll: false })
-  }, [searchParams, router, pathname])
+    if (!id || id === lastVariantIdRef.current) return
+    debouncedUpdateUrl(id)
+  }, [debouncedUpdateUrl])
   
-  // Initialize from URL params if available
+  // Optimized initialization - only run once
   useEffect(() => {
+    if (isInitializedRef.current) return
+    
     const variantParam = searchParams.get('variant')
-    if (variantParam) {
+    
+    if (variantParam && variantParam !== selectedVariantId) {
       setSelectedVariantId(variantParam)
-    } else if (initialVariantId) {
+      lastVariantIdRef.current = variantParam
+      console.log(`🎯 Initialized from URL param: ${variantParam}`);
+    } else if (initialVariantId && !variantParam) {
       // If no variant in URL but we have an initial ID, update URL
       updateUrlWithVariant(initialVariantId)
+      console.log(`🎯 Initialized with initial variant: ${initialVariantId}`);
     }
-  }, [initialVariantId, searchParams, updateUrlWithVariant])
+    
+    isInitializedRef.current = true
+  }, [initialVariantId, searchParams, updateUrlWithVariant, selectedVariantId])
+
+  // Memoized context value to prevent unnecessary re-renders
+  const contextValue = useMemo(() => ({
+    selectedVariantId,
+    setSelectedVariantId: (id: string) => {
+      if (id === selectedVariantId) return // Prevent unnecessary updates
+      
+      console.log(`🔄 Variant selection changed: ${selectedVariantId} → ${id}`);
+      setSelectedVariantId(id)
+      updateUrlWithVariant(id)
+    },
+    updateUrlWithVariant
+  }), [selectedVariantId, updateUrlWithVariant])
+  
+  // Track render performance
+  useEffect(() => {
+    measureRender()
+  })
 
   return (
-    <VariantSelectionContext.Provider 
-      value={{ 
-        selectedVariantId, 
-        setSelectedVariantId,
-        updateUrlWithVariant
-      }}
-    >
+    <VariantSelectionContext.Provider value={contextValue}>
       {children}
     </VariantSelectionContext.Provider>
   )

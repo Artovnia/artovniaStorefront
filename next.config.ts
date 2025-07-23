@@ -2,31 +2,129 @@ import type { NextConfig } from "next"
 import createNextIntlPlugin from "next-intl/plugin"
 
 const nextConfig: NextConfig = {
-  // Add this to help debug environment variables during build
-  generateBuildId: async () => {
-    console.log('Environment variables during build:');
-    console.log('NEXT_PUBLIC_SITE_NAME:', process.env.NEXT_PUBLIC_SITE_NAME);
-    console.log('NEXT_PUBLIC_SITE_DESCRIPTION:', process.env.NEXT_PUBLIC_SITE_DESCRIPTION);
-    console.log('NEXT_PUBLIC_ALGOLIA_ID:', process.env.NEXT_PUBLIC_ALGOLIA_ID);
-    console.log('NEXT_PUBLIC_ALGOLIA_SEARCH_KEY:', process.env.NEXT_PUBLIC_ALGOLIA_SEARCH_KEY);
-    return null; // Use default build ID
-  },
   trailingSlash: false,
   reactStrictMode: true,
-  // Optimize page loading and navigation
+  
+  // Performance optimizations
+  poweredByHeader: false,
+  compress: true,
+  
   experimental: {
-    // Enable optimistic updates for faster navigation
+    optimizeCss: true,
+    // Client-side optimizations
     optimisticClientCache: true,
+    // Enable modern bundling
+    esmExternals: true,
   },
-  // Optimize server components
-  serverExternalPackages: [],
-  // Improve performance by disabling unnecessary features in development
+  
+  // Bundle analysis and optimization
+  productionBrowserSourceMaps: false,
+  
+  // Server external packages (moved from experimental)
+  serverExternalPackages: [
+    '@medusajs/js-sdk',
+    'algoliasearch',
+  ],
+  
+  // Advanced webpack optimizations for performance
   webpack: (config, { dev, isServer }) => {
-    if (dev && !isServer) {
-      // Disable React DevTools in development for better performance
-      config.resolve.alias['react-dom$'] = 'react-dom/profiling';
-      config.resolve.alias['scheduler/tracing'] = 'scheduler/tracing-profiling';
+    // Performance optimizations for both dev and prod
+    if (!isServer) {
+      // Reduce bundle size with better tree shaking
+      config.optimization = {
+        ...config.optimization,
+        // Note: usedExports conflicts with cacheUnaffected in Next.js 15
+        // Tree shaking is handled by Next.js internally
+        sideEffects: false,
+        
+        splitChunks: {
+          chunks: 'all',
+          minSize: 20000,
+          maxSize: dev ? 500000 : 200000, // Larger chunks in dev for faster builds
+          cacheGroups: {
+            // Framework chunk (React, Next.js core)
+            framework: {
+              test: /[\/]node_modules[\/](react|react-dom|scheduler|next)[\/]/,
+              name: 'framework',
+              priority: 40,
+              chunks: 'all',
+              enforce: true,
+            },
+            
+            // Medusa SDK - separate chunk for better caching
+            medusaSDK: {
+              test: /[\/]node_modules[\/]@medusajs[\/]/,
+              name: 'medusa-sdk',
+              priority: 35,
+              chunks: 'all',
+              maxSize: 150000,
+            },
+            
+            // Search libraries
+            search: {
+              test: /[\/]node_modules[\/](algoliasearch|react-instantsearch)[\/]/,
+              name: 'search',
+              priority: 30,
+              chunks: 'all',
+              maxSize: 150000,
+            },
+            
+            // UI libraries
+            ui: {
+              test: /[\/]node_modules[\/](@headlessui|@medusajs\/ui|embla-carousel)[\/]/,
+              name: 'ui',
+              priority: 25,
+              chunks: 'all',
+              maxSize: 100000,
+            },
+            
+            // Utilities and smaller libraries
+            lib: {
+              test: /[\/]node_modules[\/](lodash|clsx|date-fns|uuid)[\/]/,
+              name: 'lib',
+              priority: 20,
+              chunks: 'all',
+              maxSize: 80000,
+            },
+            
+            // General vendor chunk for remaining libraries
+            vendors: {
+              test: /[\/]node_modules[\/]/,
+              name: 'vendors',
+              priority: 10,
+              chunks: 'all',
+              maxSize: 120000,
+              minChunks: 2,
+            },
+            
+            // Default chunk
+            default: {
+              minChunks: 2,
+              priority: -20,
+              reuseExistingChunk: true,
+              maxSize: 100000,
+            },
+          },
+        },
+      };
     }
+    
+    // Development optimizations
+    if (dev) {
+      // Faster builds in development
+      config.optimization.removeAvailableModules = false;
+      config.optimization.removeEmptyChunks = false;
+      config.optimization.splitChunks = {
+        ...config.optimization.splitChunks,
+        cacheGroups: {
+          default: false,
+          vendors: false,
+        },
+      };
+    }
+    
+    // Module resolution optimizations (removed lodash alias to prevent import conflicts)
+    
     return config;
   },
   images: {

@@ -15,6 +15,12 @@ export const convertToLocale = ({
   maximumFractionDigits,
   locale = "en-US",
 }: ConvertToLocaleParams) => {
+  // Handle undefined/null amounts
+  if (amount === undefined || amount === null || isNaN(amount)) {
+    console.warn('convertToLocale received invalid amount:', amount);
+    return '0';
+  }
+  
   return currency_code && !isEmpty(currency_code)
     ? new Intl.NumberFormat(locale, {
         style: "currency",

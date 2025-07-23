@@ -3,49 +3,63 @@
 import { sdk } from "../config"
 import { getAuthHeaders } from "./cookies"
 import { SingleProductMeasurement } from "@/types/product"
+import { measurementDeduplicator, performanceMonitor } from "../utils/performance"
 
 /**
  * Gets a product and its variants by ID with all measurements included
+ * Uses request deduplication to prevent multiple identical API calls
  */
 async function getProductWithMeasurements(productId: string) {
-  try {
-    const headers = {
-      ...(await getAuthHeaders()),
+  const cacheKey = `product-measurements-${productId}`;
+  
+  return measurementDeduplicator.dedupe(
+    cacheKey,
+    async () => {
+      try {
+        const headers = {
+          ...(await getAuthHeaders()),
+        }
+
+        // Fetch product with all measurement fields
+        const response = await sdk.client.fetch<{
+          product: {
+            id: string
+            weight?: number | null
+            length?: number | null
+            height?: number | null
+            width?: number | null
+            variants: Array<{
+              id: string
+              weight?: number | null
+              length?: number | null
+              height?: number | null
+              width?: number | null
+            }>
+          }
+        }>(`/store/products/${productId}`, {
+          method: "GET",
+          headers,
+          query: {
+            fields: "id,weight,length,height,width,variants.id,variants.weight,variants.length,variants.height,variants.width"
+          },
+          next: {
+            revalidate: 3600, // Cache for 1 hour
+            tags: ['product-measurements', `product-${productId}`],
+          }
+        })
+
+        console.log(`✅ Fetched product measurements: ${productId}`);
+        return response.product
+      } catch (error) {
+        console.error(`Error fetching product with measurements for product ${productId}:`, error)
+        return null
+      }
+    },
+    {
+      useCache: true,
+      priority: 'high' // Measurements are critical for product display
     }
-
-    // Fetch product with all measurement fields
-    const response = await sdk.client.fetch<{
-      product: {
-        id: string
-        weight?: number | null
-        length?: number | null
-        height?: number | null
-        width?: number | null
-        variants: Array<{
-          id: string
-          weight?: number | null
-          length?: number | null
-          height?: number | null
-          width?: number | null
-        }>
-      }
-    }>(`/store/products/${productId}`, {
-      method: "GET",
-      headers,
-      query: {
-        fields: "id,weight,length,height,width,variants.id,variants.weight,variants.length,variants.height,variants.width"
-      },
-      next: {
-        revalidate: 3600, // Cache for 1 hour
-        tags: ['product-measurements', `product-${productId}`],
-      }
-    })
-
-    return response.product
-  } catch (error) {
-    console.error(`Error fetching product with measurements for product ${productId}:`, error)
-    return null
-  }
+  );
 }
 
 // Translations for dimension labels
@@ -111,19 +125,33 @@ function formatMeasurement(
 
 /**
  * Get measurements from a product and all its variants
+ * Optimized with caching and deduplication to prevent multiple API calls
  */
 export const getProductMeasurements = async (
   productId: string,
   selectedVariantId?: string,
   locale: string = 'en'
 ): Promise<SingleProductMeasurement[]> => {
-  console.log(`DEBUG MEASUREMENTS - Starting getProductMeasurements with:`, { productId, selectedVariantId, locale });
+  const measureRender = performanceMonitor.measureRender('getProductMeasurements');
+  const cacheKey = `measurements-${productId}-${selectedVariantId || 'no-variant'}-${locale}`;
+  
+  // Check if we have cached measurements first
+  const cached = measurementDeduplicator.getCached<SingleProductMeasurement[]>(cacheKey);
+  if (cached) {
+    console.log(`💾 Using cached measurements for ${productId}`);
+    measureRender();
+    return cached;
+  }
+  
+  console.log(`🔍 Processing measurements for:`, { productId, selectedVariantId, locale });
   try {
-    // Fetch the product with all measurement fields
+    // Fetch the product with all measurement fields (uses deduplication)
     const product = await getProductWithMeasurements(productId)
     if (!product) {
       console.error(`Could not find product ${productId}`)
-      return []
+      const emptyResult: SingleProductMeasurement[] = [];
+      measureRender();
+      return emptyResult;
     }
     
     console.log(`Product measurements data:`, {
@@ -233,22 +261,41 @@ export const getProductMeasurements = async (
       // Combine variant measurements with product fallbacks
       const result = [...selectedVariantMeasurements, ...productFallbacks];
       
-      console.log(`DEBUG MEASUREMENTS - Final result for variant ${selectedVariantId}:`, {
+      console.log(`📊 Final result for variant ${selectedVariantId}:`, {
         variantMeasurements: selectedVariantMeasurements.length,
         productFallbacks: productFallbacks.length,
         totalMeasurements: result.length,
         result: result.map(m => ({ label: m.label, variantId: m.variantId || 'product' }))
       });
       
+      // Cache the result for future requests
+      measurementDeduplicator.dedupe(
+        cacheKey,
+        async () => result,
+        { useCache: true }
+      );
+      
+      measureRender();
       return result;
     }
     
     // If no variant is selected, return all product-level measurements
-    console.log(`DEBUG MEASUREMENTS - No variant selected, returning ${productLevelMeasurements.length} product-level measurements`);
+    console.log(`📊 No variant selected, returning ${productLevelMeasurements.length} product-level measurements`);
+    
+    // Cache the result for future requests
+    measurementDeduplicator.dedupe(
+      cacheKey,
+      async () => productLevelMeasurements,
+      { useCache: true }
+    );
+    
+    measureRender();
     return productLevelMeasurements;
     
   } catch (error) {
     console.error(`Error getting measurements for product ${productId}:`, error)
-    return []
+    const emptyResult: SingleProductMeasurement[] = [];
+    measureRender();
+    return emptyResult;
   }
 }

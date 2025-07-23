@@ -62,10 +62,18 @@ const removeBrowserCookie = (name: string) => {
   document.cookie = `${name}=; Max-Age=-1; Path=/`;
 };
 
+// Cache for auth headers to reduce repeated computations
+let authHeadersCache: { headers: any; timestamp: number } | null = null;
+const CACHE_DURATION = 30000; // 30 seconds
+
 export const getAuthHeaders = async (): Promise<
   { authorization: string; 'x-publishable-api-key': string } | { 'x-publishable-api-key': string }
 > => {
-  // Get the publishable API key
+  // Check cache first
+  if (authHeadersCache && (Date.now() - authHeadersCache.timestamp) < CACHE_DURATION) {
+    return authHeadersCache.headers;
+  }
+  
   const publishableKey = await getPublishableApiKey();
   
   // Make the publishable key available globally for client components
@@ -77,38 +85,39 @@ export const getAuthHeaders = async (): Promise<
   // Skip cookie access during static generation
   if (process.env.NEXT_PHASE === 'phase-production-build' || 
       process.env.NEXT_PHASE === 'phase-export') {
-    return { 'x-publishable-api-key': publishableKey };
+    const headers = { 'x-publishable-api-key': publishableKey };
+    authHeadersCache = { headers, timestamp: Date.now() };
+    return headers;
   }
   
   try {
     let token: string | null = null;
     
-    // Try to get the token from server cookies first
-    const serverCookies = await getServerCookies();
-    
-    if (serverCookies) {
-      token = serverCookies.get('_medusa_jwt')?.value || null;
-    } 
-    // If no server cookies or no token, try browser cookies
-    else if (isBrowser) {
+    // Simplified token retrieval - prioritize server-side
+    if (!isBrowser) {
+      const serverCookies = await getServerCookies();
+      token = serverCookies?.get('_medusa_jwt')?.value || null;
+    } else {
       token = getBrowserCookie('_medusa_jwt');
     }
 
-    if (token) {
-      return { 
-        authorization: `Bearer ${token}`,
-        'x-publishable-api-key': publishableKey
-      };
-    }
+    const headers = token ? {
+      authorization: `Bearer ${token}`,
+      'x-publishable-api-key': publishableKey
+    } : {
+      'x-publishable-api-key': publishableKey
+    };
+    
+    // Cache the result
+    authHeadersCache = { headers, timestamp: Date.now() };
+    return headers;
+    
   } catch (error) {
-    // During static generation or outside request context, don't log the error
-    if (!(error instanceof Error) || !error.message.includes('outside a request scope')) {
-      console.warn('Error getting auth headers:', error);
-    }
+    // Simplified error handling
+    const headers = { 'x-publishable-api-key': publishableKey };
+    authHeadersCache = { headers, timestamp: Date.now() };
+    return headers;
   }
-  
-  // If no token was found or there was an error, just return the publishable key
-  return { 'x-publishable-api-key': publishableKey };
 };
 
 // Add the missing retrieveCustomer function with proper typing
