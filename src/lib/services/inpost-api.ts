@@ -250,22 +250,39 @@ export async function searchParcelMachines(query: string): Promise<InpostParcelD
   
   try {
     // Use the actual InPost API
-    const response = await fetch(`${INPOST_API_BASE_URL}/points?name=${encodeURIComponent(query)}&type=parcel_locker`);
+    const params = new URLSearchParams({
+      name: query,
+      type: 'parcel_locker',
+      function: 'parcel_collect',
+      fields: 'name,location_description,address,status',
+      status: 'Operating'
+    });
+    
+    console.log(`Making API request to: ${INPOST_API_BASE_URL}/points?${params}`);
+    
+    const response = await fetch(`${INPOST_API_BASE_URL}/points?${params}`, {
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json'
+      }
+    });
     
     if (!response.ok) {
-      throw new Error(`InPost API returned ${response.status}`);
+      throw new Error(`InPost API returned ${response.status}: ${await response.text()}`);
     }
     
     const data = await response.json();
+    console.log('API response structure:', JSON.stringify(data).substring(0, 200) + '...');
     
     // Transform API response to our internal format
-    const results = data.items?.map((point: any) => ({
-      machineId: point.name,
-      machineName: point.name,
-      machineAddress: point.address?.street || '',
+    const items = data.items || data.points || [];
+    const results = items.map((point: any) => ({
+      machineId: point.name || point.id || '',
+      machineName: point.name || point.id || '',
+      machineAddress: point.address?.street || point.location_description || '',
       machinePostCode: point.address?.post_code || '',
       machineCity: point.address?.city || ''
-    })) || [];
+    }));
     
     console.log(`API search for "${query}" returned ${results.length} results`);
     return results;
@@ -290,29 +307,45 @@ export async function getNearbyParcelMachines(
     }
     
     // Use the actual InPost API to get nearby parcel machines
-    const response = await fetch(
-      `${INPOST_API_BASE_URL}/points?relative_point=${latitude},${longitude}&max_distance=${maxDistance}&type=parcel_locker`
-    );
+    const params = new URLSearchParams({
+      relative_point: `${latitude},${longitude}`,
+      max_distance: maxDistance.toString(),
+      type: 'parcel_locker',
+      function: 'parcel_collect',
+      fields: 'name,location_description,address,status,location',
+      status: 'Operating'
+    });
+    
+    console.log(`Making nearby API request to: ${INPOST_API_BASE_URL}/points?${params}`);
+    
+    const response = await fetch(`${INPOST_API_BASE_URL}/points?${params}`, {
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json'
+      }
+    });
     
     if (!response.ok) {
-      throw new Error(`InPost API returned ${response.status}`);
+      throw new Error(`InPost API returned ${response.status}: ${await response.text()}`);
     }
     
     const data = await response.json();
+    console.log('API nearby response structure:', JSON.stringify(data).substring(0, 200) + '...');
     
     // Transform API response to our internal format
-    const results = data.items?.map((point: any) => ({
-      machineId: point.name,
-      machineName: point.name,
-      machineAddress: point.address?.street || '',
+    const items = data.items || data.points || [];
+    const results = items.map((point: any) => ({
+      machineId: point.name || point.id || '',
+      machineName: point.name || point.id || '',
+      machineAddress: point.address?.street || point.location_description || '',
       machinePostCode: point.address?.post_code || '',
       machineCity: point.address?.city || ''
-    })) || [];
+    }));
     
     console.log(`API nearby search returned ${results.length} results`);
     return results;
   } catch (error) {
-    console.warn("Nearby search failed, using mock data:", error);
+    console.error('Error getting nearby parcel machines:', error);
     // Fall back to mock data if API fails
     return getMockNearbyParcelMachines();
   }

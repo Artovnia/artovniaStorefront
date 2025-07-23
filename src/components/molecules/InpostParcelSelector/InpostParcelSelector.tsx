@@ -212,10 +212,10 @@ export const InpostParcelSelector: React.FC<InpostParcelSelectorProps> = ({
       )}
 
       {isModalOpen && (
-        <div className="inpost-modal-overlay">
-          <div className="inpost-modal-backdrop" onClick={handleCloseModal} />
-          <div className="inpost-modal-container">
-            <div className="inpost-modal-header">
+        <div className="inpost-modal-overlay fixed inset-0 z-50 flex items-center justify-center">
+          <div className="inpost-modal-backdrop fixed inset-0 bg-black bg-opacity-50" onClick={handleCloseModal} />
+          <div className="inpost-modal-container bg-white rounded-lg shadow-lg w-full max-w-4xl max-h-[90vh] flex flex-col relative z-10">
+            <div className="inpost-modal-header flex justify-between items-center p-4 border-b">
               <h2 className="text-xl font-semibold">Wybierz paczkomat InPost</h2>
               <button 
                 onClick={handleCloseModal}
@@ -225,7 +225,7 @@ export const InpostParcelSelector: React.FC<InpostParcelSelectorProps> = ({
               </button>
             </div>
             
-            <div className="inpost-modal-content">
+            <div className="inpost-modal-content flex-1 overflow-auto p-4">
               {/* Tab Navigation */}
               <div className="flex mb-3 border-b flex-shrink-0">
                 <button
@@ -345,18 +345,20 @@ export const InpostParcelSelector: React.FC<InpostParcelSelectorProps> = ({
                   )}
                   
                   {geowidgetLoaded && (
-                    <div className="geowidget-container">
+                    <div className="geowidget-container h-full flex flex-col">
                       <div className="mb-3 p-3 bg-blue-50 border border-blue-200 rounded text-sm">
                         💡 <strong>Jak wybrać paczkomat:</strong> Kliknij na paczkomat na mapie, a następnie kliknij przycisk &quot;Wybierz&quot; w okienku informacyjnym.
                       </div>
-                      <InpostGeowidget
-                        token={tokenStatus.geowidgetToken}
-                        language="pl"
-                        config="parcelcollect,modern"
-                        onpoint="onPointSelect"
-                        className="w-full h-96"
-                        style={{ border: '1px solid #e2e8f0', borderRadius: '4px' }}
-                      />
+                      <div className="relative flex-1 min-h-[500px]">
+                        <InpostGeowidget
+                          token={tokenStatus.geowidgetToken}
+                          language="pl"
+                          config="parcelcollect,modern,fullscreen"
+                          onpoint="onPointSelect"
+                          className="w-full h-full absolute inset-0"
+                          style={{ border: '1px solid #e2e8f0', borderRadius: '4px' }}
+                        />
+                      </div>
                     </div>
                   )}
                 </div>

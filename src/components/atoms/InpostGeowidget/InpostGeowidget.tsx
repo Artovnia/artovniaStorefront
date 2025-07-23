@@ -25,6 +25,34 @@ export const InpostGeowidget: React.FC<InpostGeowidgetProps> = ({
     if (!containerRef.current) return;
     console.log('InpostGeowidget: Initializing with token length:', token?.length);
 
+    // Add global EasyPack config to help with initialization
+    if (!(window as any).easyPackConfig) {
+      (window as any).easyPackConfig = {
+        instance: 'pl',
+        apiEndpoint: 'https://api.inpost.pl/v2',
+        defaultLocale: language || 'pl',
+        mapType: 'osm',
+        searchType: 'osm',
+        points: {
+          types: ['parcel_locker'],
+          functions: ['parcel_collect']
+        },
+        map: {
+          initialTypes: ['parcel_locker'],
+          defaultDistance: 10,
+          defaultSearchType: 'osm',
+          useGeolocation: true
+        },
+        display: {
+          showTypesFilters: true,
+          showSearchBar: true,
+          showPointInfo: true,
+        }
+      };
+      
+      console.log('InpostGeowidget: Added easyPackConfig to window');
+    }
+
     // Store ref value in variable inside the effect
     const container = containerRef.current;
 
@@ -43,11 +71,24 @@ export const InpostGeowidget: React.FC<InpostGeowidgetProps> = ({
           config,
           onpoint
         });
+
+        // Define onPointSelect globally to ensure it's available
+        (window as any).onPointSelect = (point: any) => {
+          console.log('Global onPointSelect called with point:', point);
+          const callback = (window as any).__inpostPointCallback;
+          if (callback && typeof callback === 'function') {
+            try {
+              callback(point);
+            } catch (err) {
+              console.error('Error in __inpostPointCallback:', err);
+            }
+          }
+        };
         
         const geowidget = document.createElement('inpost-geowidget');
         geowidget.setAttribute('token', token);
-        geowidget.setAttribute('language', language);
-        geowidget.setAttribute('config', config);
+        geowidget.setAttribute('language', language || 'pl');
+        geowidget.setAttribute('config', config || 'parcelcollect,modern');
         if (onpoint) {
           geowidget.setAttribute('onpoint', onpoint);
         }
@@ -64,7 +105,7 @@ export const InpostGeowidget: React.FC<InpostGeowidgetProps> = ({
       } catch (error) {
         console.error('InpostGeowidget: Error during initialization:', error);
       }
-    }, 300);
+    }, 500); // Increased timeout for better stability
 
     return () => {
       if (container) {
