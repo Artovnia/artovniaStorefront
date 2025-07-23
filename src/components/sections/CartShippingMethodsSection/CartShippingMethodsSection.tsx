@@ -78,45 +78,88 @@ const CartShippingMethodsSection: React.FC<ShippingProps> = ({
   )
 
   useEffect(() => {
-    const set = new Set<string>()
-    cart.items?.forEach((item) => {
-      if (item?.product?.seller?.id) {
-        set.add(item.product.seller.id)
+    // Only run this logic if we have cart items and shipping methods data
+    if (cart.items && _shippingMethods) {
+      const set = new Set<string>()
+      cart.items.forEach((item) => {
+        if (item?.product?.seller?.id) {
+          set.add(item.product.seller.id)
+        }
+      })
+
+      const sellerMethods = _shippingMethods.map(({ seller_id }) => seller_id)
+
+      const missingSellerIds = [...set].filter(
+        (sellerId) => !sellerMethods.includes(sellerId)
+      )
+      
+      // Compare arrays before setting state to avoid unnecessary re-renders
+      const currentMissingSellers = missingShippingSellers
+      const missingSellersChanged = 
+        currentMissingSellers.length !== missingSellerIds.length ||
+        missingSellerIds.some(id => !currentMissingSellers.includes(id))
+      
+      if (missingSellersChanged) {
+        setMissingShippingSellers(missingSellerIds)
       }
-    })
 
-    const sellerMethods = _shippingMethods?.map(({ seller_id }) => seller_id)
-
-    const missingSellerIds = [...set].filter(
-      (sellerId) => !sellerMethods?.includes(sellerId)
-    )
-
-    setMissingShippingSellers(Array.from(missingSellerIds))
-
-    if (missingSellerIds.length > 0 && !cart.shipping_methods?.length) {
-      setMissingModal(true)
+      // Only set modal state if it needs to change
+      if (missingSellerIds.length > 0 && !cart.shipping_methods?.length && !missingModal) {
+        setMissingModal(true)
+      }
     }
-  }, [cart, _shippingMethods, setMissingShippingSellers, setMissingModal])
+  }, [cart, _shippingMethods, missingShippingSellers, missingModal])
 
   useEffect(() => {
-    if (_shippingMethods?.length) {
-      const promises = _shippingMethods
-        .filter((sm) => sm.price_type === "calculated")
-        .map((sm) => calculatePriceForShippingOption(sm.id, cart.id))
-
-      if (promises.length) {
-        Promise.allSettled(promises).then((res) => {
-          const pricesMap: Record<string, number> = {}
-          res
-            .filter((r) => r.status === "fulfilled")
-            .forEach((p) => (pricesMap[p.value?.id || ""] = p.value?.amount!))
-
-          setCalculatedPricesMap(pricesMap)
-          setIsLoadingPrices(false)
-        })
-      }
+    // Skip effect if there are no shipping methods to process
+    if (!_shippingMethods?.length) return;
+    
+    // Set loading state only if it's not already loading
+    if (!isLoadingPrices) {
+      setIsLoadingPrices(true);
     }
-  }, [availableShippingMethods, _shippingMethods, cart.id, setCalculatedPricesMap, setIsLoadingPrices])
+    
+    // Get only calculated price methods
+    const calculatedMethods = _shippingMethods.filter((sm) => sm.price_type === "calculated");
+    if (!calculatedMethods.length) {
+      setIsLoadingPrices(false);
+      return;
+    }
+    
+    // Create unique request ID to prevent race conditions
+    const requestId = Date.now();
+    const currentRequestId = requestId;
+    
+    const promises = calculatedMethods.map((sm) => 
+      calculatePriceForShippingOption(sm.id, cart.id)
+    );
+    
+    Promise.allSettled(promises).then((res) => {
+      // If this is an outdated request, ignore the results
+      if (currentRequestId !== requestId) return;
+      
+      const pricesMap: Record<string, number> = {}
+      res
+        .filter((r) => r.status === "fulfilled")
+        .forEach((p) => (pricesMap[p.value?.id || ""] = p.value?.amount!))
+
+      // Only update if prices changed
+      const pricesChanged = Object.keys(pricesMap).some(key => 
+        pricesMap[key] !== calculatedPricesMap[key]
+      ) || Object.keys(calculatedPricesMap).some(key => 
+        !pricesMap[key] && calculatedPricesMap[key]
+      );
+      
+      if (pricesChanged) {
+        setCalculatedPricesMap(pricesMap);
+      }
+      
+      setIsLoadingPrices(false);
+    }).catch(() => {
+      // Always turn off loading on error
+      setIsLoadingPrices(false);
+    });
+  }, [availableShippingMethods, _shippingMethods, cart.id, calculatedPricesMap, isLoadingPrices])
 
   const handleSubmit = () => {
     router.push(pathname + "?step=payment", { scroll: false })

@@ -37,12 +37,28 @@ export const PriceFilter = () => {
 
   const updateMinPriceHandler = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
-    updateSearchParams("min_price", min)
+    // Track what we're doing with logs
+    console.log("Setting min_price to:", min)
+    // Need to make sure we're setting a value Algolia can handle
+    if (min && !isNaN(Number(min))) {
+      updateSearchParams("min_price", min)
+    } else {
+      // Clear the parameter if it's not a valid number
+      updateSearchParams("min_price", "")
+    }
   }
 
   const updateMaxPriceHandler = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
-    updateSearchParams("max_price", max)
+    // Track what we're doing with logs
+    console.log("Setting max_price to:", max)
+    // Need to make sure we're setting a value Algolia can handle
+    if (max && !isNaN(Number(max))) {
+      updateSearchParams("max_price", max)
+    } else {
+      // Clear the parameter if it's not a valid number
+      updateSearchParams("max_price", "")
+    }
   }
 
   return (

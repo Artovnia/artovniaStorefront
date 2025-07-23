@@ -8,9 +8,9 @@ const IS_NGROK = !!NGROK_URL;
 // API tokens
 const GEOWIDGET_TOKEN = process.env.NEXT_PUBLIC_GEOWIDGET_TOKEN || "";
 
-// InPost Geowidget URLs - Using Sandbox Environment
-const GEOWIDGET_CSS_URL = "https://sandbox-easy-geowidget-sdk.easypack24.net/inpost-geowidget.css";
-const GEOWIDGET_JS_URL = "https://sandbox-easy-geowidget-sdk.easypack24.net/inpost-geowidget.js";
+// InPost Geowidget URLs - Production Environment
+const GEOWIDGET_CSS_URL = "https://easy-geowidget-sdk.easypack24.net/inpost-geowidget.css";
+const GEOWIDGET_JS_URL = "https://easy-geowidget-sdk.easypack24.net/inpost-geowidget.js";
 
 export interface InpostParcelData {
   machineId: string;
@@ -203,29 +203,46 @@ export function cleanupGeowidget(): void {
   delete (window as any).onPointSelect;
 }
 
-// Search functions with mock data for production
-let searchTimeout: NodeJS.Timeout;
+// Search functions for InPost parcel machines
+let searchTimeout: NodeJS.Timeout | null = null;
+
+// InPost API endpoints
+const INPOST_API_BASE_URL = "https://api-shipx-pl.easypack24.net/v1";
 
 export async function searchParcelMachines(query: string): Promise<InpostParcelData[]> {
-  if (!query || query.trim().length === 0) {
-    return [];
-  }
+  console.log(`Searching for parcel machines with query: ${query}`);
   
   if (searchTimeout) {
     clearTimeout(searchTimeout);
   }
   
-  return new Promise((resolve) => {
-    searchTimeout = setTimeout(async () => {
-      try {
-        const results = getMockParcelMachines(query);
-        resolve(results);
-      } catch (error) {
-        console.warn("Search failed, using mock data:", error);
-        resolve(getMockParcelMachines(query));
-      }
-    }, 300);
-  });
+  try {
+    // Use the actual InPost API
+    const response = await fetch(`${INPOST_API_BASE_URL}/points?name=${encodeURIComponent(query)}&type=parcel_locker`);
+    
+    if (!response.ok) {
+      throw new Error(`InPost API returned ${response.status}`);
+    }
+    
+    const data = await response.json();
+    
+    // Transform API response to our internal format
+    const results = data.items?.map((point: any) => ({
+      machineId: point.name,
+      machineName: point.name,
+      machineAddress: point.address?.street || '',
+      machinePostCode: point.address?.post_code || '',
+      machineCity: point.address?.city || ''
+    })) || [];
+    
+    console.log(`API search for "${query}" returned ${results.length} results`);
+    return results;
+  } catch (error) {
+    console.error('Error searching for parcel machines:', error);
+    // Fall back to mock data if API fails
+    console.warn('Falling back to mock data');
+    return getMockParcelMachines(query);
+  }
 }
 
 export async function getNearbyParcelMachines(
@@ -233,14 +250,43 @@ export async function getNearbyParcelMachines(
   longitude?: number, 
   maxDistance: number = 10
 ): Promise<InpostParcelData[]> {
+  console.log(`Searching for nearby parcel machines at lat: ${latitude}, lng: ${longitude}`);
+  
   try {
-    return getMockNearbyParcelMachines();
+    if (!latitude || !longitude) {
+      throw new Error('No coordinates provided');
+    }
+    
+    // Use the actual InPost API to get nearby parcel machines
+    const response = await fetch(
+      `${INPOST_API_BASE_URL}/points?relative_point=${latitude},${longitude}&max_distance=${maxDistance}&type=parcel_locker`
+    );
+    
+    if (!response.ok) {
+      throw new Error(`InPost API returned ${response.status}`);
+    }
+    
+    const data = await response.json();
+    
+    // Transform API response to our internal format
+    const results = data.items?.map((point: any) => ({
+      machineId: point.name,
+      machineName: point.name,
+      machineAddress: point.address?.street || '',
+      machinePostCode: point.address?.post_code || '',
+      machineCity: point.address?.city || ''
+    })) || [];
+    
+    console.log(`API nearby search returned ${results.length} results`);
+    return results;
   } catch (error) {
     console.warn("Nearby search failed, using mock data:", error);
+    // Fall back to mock data if API fails
     return getMockNearbyParcelMachines();
   }
 }
 
+// Mock data functions - only used as fallbacks if the API calls fail
 function getMockParcelMachines(query: string): InpostParcelData[] {
   const mockData = [
     { machineId: "WAW001", machineName: "WAW001", machineAddress: "ul. Marszałkowska 1", machinePostCode: "00-001", machineCity: "Warszawa" },
