@@ -25,39 +25,20 @@ export const InpostGeowidget: React.FC<InpostGeowidgetProps> = ({
     if (!containerRef.current) return;
     console.log('InpostGeowidget: Initializing with token length:', token?.length);
     
-    // Set up global InPost configuration
-    try {
-      // Create the global InPost namespace if it doesn't exist
-      if (!(window as any).InPost) {
-        (window as any).InPost = {};
-      }
-      
-      // Configure InPost settings (official configuration format)
-      (window as any).InPost.config = {
-        apiUrl: 'https://api.inpost.pl/v2',
-        token: token,
-        language: language || 'pl',
-        config: config || 'parcelcollect,modern',
-        points: {
-          types: ['parcel_locker'],
-          functions: ['parcel_collect']
-        },
-        map: {
-          initialTypes: ['parcel_locker'],
-          defaultDistance: 10,
-          useGeolocation: true
-        },
-        display: {
-          showTypesFilters: true,
-          showSearchBar: true,
-          showPointInfo: true
+    // Set up the global point selection function as per documentation
+    (window as any).afterPointSelected = (point: any) => {
+      console.log('afterPointSelected called with point:', point);
+      const callback = (window as any).__inpostPointCallback;
+      if (callback && typeof callback === 'function') {
+        try {
+          callback(point);
+        } catch (err) {
+          console.error('Error in __inpostPointCallback:', err);
         }
-      };
-      
-      console.log('InpostGeowidget: Added InPost config to window');
-    } catch (error) {
-      console.error('InpostGeowidget: Error setting up InPost config:', error);
-    }
+      }
+    };
+    
+    console.log('InpostGeowidget: Global afterPointSelected function set up');
 
     // Store ref value in variable inside the effect
     const container = containerRef.current;
@@ -78,26 +59,15 @@ export const InpostGeowidget: React.FC<InpostGeowidgetProps> = ({
           onpoint
         });
 
-        // Define onPointSelect globally to ensure it's available
-        (window as any).onPointSelect = (point: any) => {
-          console.log('Global onPointSelect called with point:', point);
-          const callback = (window as any).__inpostPointCallback;
-          if (callback && typeof callback === 'function') {
-            try {
-              callback(point);
-            } catch (err) {
-              console.error('Error in __inpostPointCallback:', err);
-            }
-          }
-        };
-        
+        // Create the geowidget element with correct attributes per documentation
         const geowidget = document.createElement('inpost-geowidget');
         geowidget.setAttribute('token', token);
         geowidget.setAttribute('language', language || 'pl');
-        geowidget.setAttribute('config', config || 'parcelcollect,modern');
-        if (onpoint) {
-          geowidget.setAttribute('onpoint', onpoint);
-        }
+        geowidget.setAttribute('config', 'parcelcollect'); // Use simple config as per docs
+        
+        // Use the global function name for point selection (basic integration)
+        // The widget will call window.afterPointSelected when a point is selected
+        // No need to set onpoint attribute - using global function approach
 
         // Add error handling
         geowidget.addEventListener('error', (e) => {

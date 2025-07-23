@@ -48,38 +48,17 @@ export function loadGeowidgetResources(): Promise<boolean> {
     return Promise.resolve(false);
   }
   
-  // Initialize global configuration for InPost before loading the scripts
-  // This is critical for the geowidget to function properly
-  if (!(window as any).InPost) {
-    (window as any).InPost = {};
-  }
-  
-  // Set the expected configuration object
-  (window as any).easyPackAsyncInit = function() {
-    console.log('easyPackAsyncInit called');
-    (window as any).easyPack = (window as any).easyPack || {};
-    (window as any).easyPack.config = {
-      points: {
-        types: ['parcel_locker'],
-        functions: ['parcel_collect']
-      },
-      map: {
-        initialTypes: ['parcel_locker'],
-        defaultDistance: 10,
-        useGeolocation: true
-      },
-      display: {
-        showTypesFilters: true,
-        showSearchBar: true,
-        showPointInfo: true
-      },
-      langSelection: false,
-      defaultLocale: 'pl',
-      apiEndpoint: 'https://api.inpost.pl/v2',
-      instance: 'pl',
-      token: GEOWIDGET_TOKEN
-    };
+  // Set up global point selection callback as per documentation
+  // The geowidget will call window.afterPointSelected when a point is selected
+  (window as any).afterPointSelected = (point: any) => {
+    console.log('Global afterPointSelected called:', point);
+    const callback = (window as any).__inpostPointCallback;
+    if (callback) {
+      handlePointData(point, callback);
+    }
   };
+  
+  console.log('Global afterPointSelected function set up');
 
   loadingPromise = new Promise((resolve) => {
     let cssLoaded = false;
@@ -94,10 +73,6 @@ export function loadGeowidgetResources(): Promise<boolean> {
             // Check if the InPost namespace is available
             if (typeof (window as any).InPost !== 'undefined') {
               console.log('InPost namespace found, geowidget should be available');
-              // Call easyPackAsyncInit manually in case it wasn't called
-              if (typeof (window as any).easyPackAsyncInit === 'function') {
-                (window as any).easyPackAsyncInit();
-              }
             } else {
               console.warn('InPost namespace not found after loading JS');
             }
