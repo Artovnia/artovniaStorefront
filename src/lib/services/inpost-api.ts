@@ -9,8 +9,8 @@ const IS_NGROK = !!NGROK_URL;
 const GEOWIDGET_TOKEN = process.env.NEXT_PUBLIC_GEOWIDGET_TOKEN || "";
 
 // InPost Geowidget URLs - Production Environment
-const GEOWIDGET_CSS_URL = "https://easy-geowidget-sdk.easypack24.net/inpost-geowidget.css";
-const GEOWIDGET_JS_URL = "https://easy-geowidget-sdk.easypack24.net/inpost-geowidget.js";
+const GEOWIDGET_CSS_URL = "https://geowidget.inpost.pl/inpost-geowidget.css";
+const GEOWIDGET_JS_URL = "https://geowidget.inpost.pl/inpost-geowidget.js";
 
 export interface InpostParcelData {
   machineId: string;
@@ -207,7 +207,7 @@ export function cleanupGeowidget(): void {
 let searchTimeout: NodeJS.Timeout | null = null;
 
 // InPost API endpoints
-const INPOST_API_BASE_URL = "https://api-shipx-pl.easypack24.net/v1";
+const INPOST_API_BASE_URL = "https://api.inpost.pl/v2";
 
 export async function searchParcelMachines(query: string): Promise<InpostParcelData[]> {
   console.log(`Searching for parcel machines with query: ${query}`);
