@@ -352,9 +352,10 @@ export const InpostParcelSelector: React.FC<InpostParcelSelectorProps> = ({
                       <InpostGeowidget
                         token={tokenStatus.geowidgetToken}
                         language="pl"
-                        config="parcelcollect"
+                        config="parcelcollect,modern"
                         onpoint="onPointSelect"
-                        className="w-full h-full"
+                        className="w-full h-96"
+                        style={{ border: '1px solid #e2e8f0', borderRadius: '4px' }}
                       />
                     </div>
                   )}

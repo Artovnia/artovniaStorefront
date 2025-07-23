@@ -55,35 +55,66 @@ export function loadGeowidgetResources(): Promise<boolean> {
 
     const checkBothLoaded = () => {
       if (cssLoaded && jsLoaded && !resolved) {
-        resolved = true;
-        resourcesLoaded = true;
-        console.log('InPost Geowidget resources loaded successfully');
-        
-        // Set up global callback function for point selection
-        (window as any).onPointSelect = (point: any) => {
-          console.log('Global onPointSelect called:', point);
-          const callback = (window as any).__inpostPointCallback;
-          if (callback) {
-            handlePointData(point, callback);
+        // Add a small delay to ensure the custom element is properly registered
+        setTimeout(() => {
+          try {
+            // Check if the InPost namespace is available
+            if (typeof (window as any).InPost !== 'undefined') {
+              console.log('InPost namespace found, geowidget should be available');
+            } else {
+              console.warn('InPost namespace not found after loading JS');
+            }
+
+            // Check if custom element is registered
+            if (customElements.get('inpost-geowidget')) {
+              console.log('inpost-geowidget custom element is registered');
+            } else {
+              console.warn('inpost-geowidget custom element is not registered');
+            }
+
+            resolved = true;
+            resourcesLoaded = true;
+            console.log('InPost Geowidget resources loaded successfully');
+            
+            // Set up global callback function for point selection
+            (window as any).onPointSelect = (point: any) => {
+              console.log('Global onPointSelect called:', point);
+              const callback = (window as any).__inpostPointCallback;
+              if (callback) {
+                handlePointData(point, callback);
+              }
+            };
+            
+            resolve(true);
+          } catch (error) {
+            console.error('Error during InPost geowidget initialization:', error);
+            resolved = true;
+            resolve(false);
           }
-        };
-        
-        resolve(true);
+        }, 500); // Longer delay to ensure initialization
       }
     };
+
+    // Log token status
+    console.log('Geowidget token status:', {
+      available: GEOWIDGET_TOKEN.length > 0,
+      length: GEOWIDGET_TOKEN.length
+    });
 
     // Load CSS
     const cssLink = document.createElement('link');
     cssLink.rel = 'stylesheet';
     cssLink.href = GEOWIDGET_CSS_URL;
+    console.log('Loading CSS from:', GEOWIDGET_CSS_URL);
     cssLink.onload = () => {
+      console.log('InPost Geowidget CSS loaded successfully');
       cssLoaded = true;
       checkBothLoaded();
     };
-    cssLink.onerror = () => {
+    cssLink.onerror = (e) => {
+      console.error('Failed to load InPost Geowidget CSS:', e);
       if (!resolved) {
         resolved = true;
-        console.error('Failed to load InPost Geowidget CSS');
         resolve(false);
       }
     };
@@ -92,16 +123,17 @@ export function loadGeowidgetResources(): Promise<boolean> {
     // Load JS
     const script = document.createElement('script');
     script.src = GEOWIDGET_JS_URL;
+    console.log('Loading JS from:', GEOWIDGET_JS_URL);
     script.defer = true;
     script.onload = () => {
+      console.log('InPost Geowidget JS loaded successfully');
       jsLoaded = true;
-      // Add a small delay to ensure the custom element is registered
-      setTimeout(checkBothLoaded, 200);
+      checkBothLoaded();
     };
-    script.onerror = () => {
+    script.onerror = (e) => {
+      console.error('Failed to load InPost Geowidget JS:', e);
       if (!resolved) {
         resolved = true;
-        console.error('Failed to load InPost Geowidget JS');
         resolve(false);
       }
     };
