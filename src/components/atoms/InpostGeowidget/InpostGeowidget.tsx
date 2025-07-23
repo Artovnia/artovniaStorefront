@@ -26,19 +26,32 @@ export const InpostGeowidget: React.FC<InpostGeowidgetProps> = ({
     console.log('InpostGeowidget: Initializing with token length:', token?.length);
     
     // Set up the global point selection function as per documentation
+    // This function will be called by the InPost widget when user clicks "Wybierz"
     (window as any).afterPointSelected = (point: any) => {
-      console.log('afterPointSelected called with point:', point);
+      console.log('🎯 afterPointSelected called with point:', point);
       const callback = (window as any).__inpostPointCallback;
       if (callback && typeof callback === 'function') {
         try {
+          console.log('🎯 Calling __inpostPointCallback with processed point data');
           callback(point);
         } catch (err) {
-          console.error('Error in __inpostPointCallback:', err);
+          console.error('❌ Error in __inpostPointCallback:', err);
         }
+      } else {
+        console.warn('⚠️ No __inpostPointCallback found or not a function:', typeof callback);
       }
     };
     
-    console.log('InpostGeowidget: Global afterPointSelected function set up');
+    // Also set up alternative callback names in case the widget uses different naming
+    (window as any).onPointSelect = (window as any).afterPointSelected;
+    (window as any).handlePointSelection = (window as any).afterPointSelected;
+    
+    console.log('InpostGeowidget: Global point selection callbacks set up');
+    console.log('Available callbacks:', {
+      afterPointSelected: typeof (window as any).afterPointSelected,
+      onPointSelect: typeof (window as any).onPointSelect,
+      handlePointSelection: typeof (window as any).handlePointSelection
+    });
 
     // Store ref value in variable inside the effect
     const container = containerRef.current;
@@ -65,13 +78,44 @@ export const InpostGeowidget: React.FC<InpostGeowidgetProps> = ({
         geowidget.setAttribute('language', language || 'pl');
         geowidget.setAttribute('config', 'parcelcollect'); // Use simple config as per docs
         
-        // Use the global function name for point selection (basic integration)
-        // The widget will call window.afterPointSelected when a point is selected
-        // No need to set onpoint attribute - using global function approach
+        // Set the onpoint attribute to use event-based approach as well
+        geowidget.setAttribute('onpoint', 'onpointselect');
+        
+        console.log('InpostGeowidget: Element configured with attributes:', {
+          token: token ? `${token.substring(0, 10)}...` : 'missing',
+          language: language || 'pl',
+          config: 'parcelcollect',
+          onpoint: 'onpointselect'
+        });
 
         // Add error handling
         geowidget.addEventListener('error', (e) => {
           console.error('InpostGeowidget: Error in geowidget element:', e);
+        });
+
+        // Add event listener for point selection (alternative approach from docs)
+        document.addEventListener('onpointselect', (event: any) => {
+          console.log('🎯 onpointselect event fired:', event);
+          if (event.detail && event.detail.name) {
+            console.log('🎯 Point selected via event:', event.detail);
+            const callback = (window as any).__inpostPointCallback;
+            if (callback && typeof callback === 'function') {
+              try {
+                callback(event.detail);
+              } catch (err) {
+                console.error('❌ Error in event-based callback:', err);
+              }
+            }
+          }
+        });
+        
+        // Also listen for the geowidget init event to get API access
+        geowidget.addEventListener('inpost.geowidget.init', (event: any) => {
+          console.log('🎯 Geowidget initialized, API available:', event.detail);
+          if (event.detail && event.detail.api) {
+            // Store API reference for potential future use
+            (window as any).__inpostGeowidgetApi = event.detail.api;
+          }
         });
 
         // Clear container and append the element

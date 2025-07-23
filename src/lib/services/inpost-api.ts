@@ -88,14 +88,8 @@ export function loadGeowidgetResources(): Promise<boolean> {
             resourcesLoaded = true;
             console.log('InPost Geowidget resources loaded successfully');
             
-            // Set up global callback function for point selection
-            (window as any).onPointSelect = (point: any) => {
-              console.log('Global onPointSelect called:', point);
-              const callback = (window as any).__inpostPointCallback;
-              if (callback) {
-                handlePointData(point, callback);
-              }
-            };
+            // The afterPointSelected function is already set up above
+            // No need for additional callback setup here
             
             resolve(true);
           } catch (error) {
