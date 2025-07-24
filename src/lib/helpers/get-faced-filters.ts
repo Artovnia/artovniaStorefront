@@ -184,14 +184,14 @@ export const getFacedFilters = (filters: ReadonlyURLSearchParams): string => {
   // Add price filter if min or max price is set
   // Use only the numericAttributes that are definitely configured in Algolia
   if (minPrice || maxPrice) {
-    // Only use variants.price.amount which is definitely in the numericAttributesForFiltering array
-    // Avoid using numeric operators on attributes that might not be configured properly
+    // Use variants.prices.amount (plural) which matches the backend Algolia configuration
+    // This must match exactly what's configured in numericAttributesForFiltering
     if (minPrice && maxPrice) {
-      filterParts.push(`variants.price.amount:${minPrice} TO ${maxPrice}`)
+      filterParts.push(`variants.prices.amount:${minPrice} TO ${maxPrice}`)
     } else if (minPrice) {
-      filterParts.push(`variants.price.amount >= ${minPrice}`)
+      filterParts.push(`variants.prices.amount >= ${minPrice}`)
     } else if (maxPrice) {
-      filterParts.push(`variants.price.amount <= ${maxPrice}`)
+      filterParts.push(`variants.prices.amount <= ${maxPrice}`)
     }
   }
 

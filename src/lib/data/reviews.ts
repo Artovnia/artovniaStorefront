@@ -345,4 +345,54 @@ export const updateReview = async (review: { id: string, rating: number, custome
   }
 }
 
-export { getReviews, getProductReviews }
+/**
+ * Fetches reviews for a specific seller by handle
+ * 
+ * This function calls the seller reviews endpoint to get all reviews
+ * associated with a particular seller.
+ */
+const getSellerReviews = async (sellerHandle: string) => {
+  console.log(`🔎 Fetching reviews for seller: ${sellerHandle}`)
+  
+  try {
+    const headers = await getAuthHeaders()
+    
+    const commonHeaders: Record<string, string> = {
+      ...headers,
+      'Content-Type': 'application/json',
+      'x-publishable-api-key': `${process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || ''}`
+    }
+    
+    // Use the seller reviews endpoint
+    const response = await fetch(
+      `${process.env.MEDUSA_BACKEND_URL}/store/seller/${sellerHandle}/reviews?limit=100`,
+      {
+        method: 'GET',
+        headers: commonHeaders,
+        cache: 'no-store'
+      }
+    )
+    
+    if (response.ok) {
+      const data = await response.json()
+      console.log(`📊 Seller reviews response:`, data)
+      
+      if (data?.reviews && Array.isArray(data.reviews)) {
+        console.log(`✅ Found ${data.reviews.length} reviews for seller ${sellerHandle}`)
+        return { reviews: data.reviews, count: data.count || data.reviews.length }
+      }
+    } else {
+      console.log(`⚠️ Seller reviews endpoint failed: ${response.status}`)
+      const errorText = await response.text()
+      console.log(`Error details:`, errorText)
+    }
+    
+    return { reviews: [], count: 0 }
+    
+  } catch (error) {
+    console.error(`❌ Error fetching seller reviews:`, error)
+    return { reviews: [], count: 0 }
+  }
+}
+
+export { getReviews, getProductReviews, getSellerReviews }
