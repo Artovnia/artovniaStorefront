@@ -58,21 +58,17 @@ export const AlgoliaProductsListing = ({
   
   // Add category filter if specified
   if (category_id) {
-    // Medusa stores categories as an array of objects in Algolia
-    // We need to use string matching within the categories array
-    
-    // Method 1: Use Algolia's facet filters syntax
-    // This is the recommended approach for filtering array fields in Algolia
+    // For Algolia array filtering, use facetFilters which is the recommended approach
+    // Categories are stored as an array of objects with id and name fields
+    // Use facetFilters for array field filtering - this is the correct Algolia approach
     facetFiltersList.push([`categories.id:${category_id}`]);
     
-    // Method 2: Use direct attribute filters
-    // Adding this as a backup filtering method as well
-    filterParts.push(`categories.id:"${category_id}"`);
+    console.log(`[Algolia] Filtering by category_id: ${category_id}`);
     
     // Add collection filter if specified
     if (collection_id) {
       facetFiltersList.push([`collections.id:${collection_id}`]);
-      filterParts.push(`collections.id:"${collection_id}"`);
+      console.log(`[Algolia] Also filtering by collection_id: ${collection_id}`);
     }
   }
   
@@ -164,14 +160,16 @@ export const AlgoliaProductsListing = ({
     }
   }
   
-  // Add filters if any
+  // Add filters if any (for non-array fields)
   if (filters) {
     algoliaParams.filters = filters;
+    console.log(`[Algolia] Applied filters:`, filters);
   }
   
-  // Add facet filters if any
+  // Add facet filters if any (for array fields like categories)
   if (facetFiltersList.length > 0) {
     algoliaParams.facetFilters = facetFiltersList;
+    console.log(`[Algolia] Applied facetFilters:`, facetFiltersList);
   }
   
   // Use as configureProps

@@ -17,7 +17,7 @@ export const listCategories = async ({
       product_categories: HttpTypes.StoreProductCategory[]
     }>("/store/product-categories", {
       query: {
-        fields: "handle, name, rank",
+        fields: "handle, name, rank, *category_children",
         limit,
         ...query,
       },
@@ -29,8 +29,21 @@ export const listCategories = async ({
     headingCategories.includes(name.toLowerCase())
   )
 
+  // Get all child category IDs to filter them out from main categories
+  const allChildCategoryIds = new Set<string>()
+  categories.forEach(category => {
+    if (category.category_children && category.category_children.length > 0) {
+      category.category_children.forEach(child => {
+        allChildCategoryIds.add(child.id)
+      })
+    }
+  })
+
+  // Filter out categories that are children of other categories and not in headingCategories
   const childrenCategories = categories.filter(
-    ({ name }) => !headingCategories.includes(name.toLowerCase())
+    ({ name, id }) => 
+      !headingCategories.includes(name.toLowerCase()) && 
+      !allChildCategoryIds.has(id)
   )
 
   return {
