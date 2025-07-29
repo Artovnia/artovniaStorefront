@@ -49,14 +49,32 @@ export const OrderReturnRequests = ({
 
   return (
     <div>
-      {processedReturns.map((item) => (
-        <SingleOrderReturn
-          key={item.id}
-          item={item}
-          user={user}
-          defaultOpen={currentReturn === item.id}
-        />
-      ))}
+      {processedReturns.map((item, index) => {
+        console.log(`OrderReturnRequests: Passing item ${index + 1} to SingleOrderReturn:`, {
+          id: item.id,
+          status: item.status,
+          hasLineItems: !!item.line_items,
+          lineItemsCount: item.line_items?.length || 0,
+          lineItemsStructure: item.line_items || [],
+          hasOrder: !!item.order,
+          orderData: item.order ? {
+            id: item.order.id,
+            display_id: item.order.display_id,
+            hasItems: !!item.order.items,
+            itemsCount: item.order.items?.length || 0
+          } : null,
+          fullItemStructure: Object.keys(item || {})
+        });
+        
+        return (
+          <SingleOrderReturn
+            key={item.id}
+            item={item}
+            user={user}
+            defaultOpen={currentReturn === item.id}
+          />
+        );
+      })}
       <div className="mt-8 flex justify-center">
         <OrdersPagination pages={pages} />
       </div>

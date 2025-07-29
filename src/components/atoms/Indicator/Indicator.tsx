@@ -64,7 +64,7 @@ export function Indicator({
       <div
         className={cn(
           'h-full rounded-sm absolute transition-all duration-300',
-          variant === 'light' ? 'bg-tertiary' : 'bg-white'
+          variant === 'light' ? 'bg-tertiary' : 'bg-red-500'
         )}
         style={{
           width: wrapperWidth / maxStep,

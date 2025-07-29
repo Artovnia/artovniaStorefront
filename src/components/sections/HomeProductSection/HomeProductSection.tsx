@@ -3,7 +3,7 @@ import { Product } from "@/types/product"
 
 export const HomeProductSection = async ({
   heading,
-  locale = process.env.NEXT_PUBLIC_DEFAULT_REGION || "gb",
+  locale = process.env.NEXT_PUBLIC_DEFAULT_REGION || "pl",
   products = [],
   home = false,
 }: {

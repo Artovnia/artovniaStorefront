@@ -68,8 +68,19 @@ export const SingleOrderReturn = ({
   useEffect(() => {
     const fetchReasons = async () => {
       try {
+        console.log('SingleOrderReturn: Starting to fetch return reasons...');
         setReasonsLoading(true)
+        
         const reasons = await retrieveReturnReasons()
+        
+        console.log('SingleOrderReturn: Return reasons API response:', {
+          received: !!reasons,
+          isArray: Array.isArray(reasons),
+          count: reasons?.length || 0,
+          sample: reasons?.[0] || null,
+          allReasons: reasons
+        });
+        
         // Convert to our internal ReturnReason type
         const formattedReasons: ReturnReason[] = reasons.map((reason: any) => ({
           id: reason.id,
@@ -77,42 +88,77 @@ export const SingleOrderReturn = ({
           label: reason.label || formatReasonId(reason.id),
           description: reason.description
         }))
+        
+        console.log('SingleOrderReturn: Formatted return reasons:', {
+          count: formattedReasons.length,
+          reasons: formattedReasons
+        });
+        
         setReturnReasons(formattedReasons)
+        
+        console.log('SingleOrderReturn: Return reasons state updated successfully');
       } catch (error) {
-        // Error handling without console.log
+        console.error('SingleOrderReturn: Error fetching return reasons:', {
+          error,
+          message: error instanceof Error ? error.message : 'Unknown error'
+        });
       } finally {
         setReasonsLoading(false)
+        console.log('SingleOrderReturn: Return reasons loading finished');
       }
     }
     
     fetchReasons()
   }, [])
   
-  // Get a human-readable label for a reason ID
-  const getReasonLabel = (reasonId: string): string => {
-    if (!reasonId) return "Brak powodu zwrotu"
+  // Get a human-readable label for a reason ID from a line item
+  const getReasonLabel = (lineItem: any): string => {
+    const reasonId = lineItem?.reason_id;
     
-    // Simple exact match - this should work with the fixed API response
-    const matchingReason = returnReasons.find(reason => reason.id === reasonId)
+    if (process.env.NODE_ENV === 'development') {
+      console.log('Return reason debug:', {
+        lineItemId: lineItem?.id,
+        reasonId: reasonId,
+        reasonIdType: typeof reasonId,
+        hasReturnReasons: returnReasons && returnReasons.length > 0,
+        returnReasonsCount: returnReasons?.length || 0,
+        availableReasonIds: returnReasons?.map(r => r.id) || [],
+        availableReasonLabels: returnReasons?.map(r => ({ id: r.id, label: r.label })) || [],
+        isReasonIdNull: reasonId === null,
+        isReasonIdUndefined: reasonId === undefined,
+        isReasonIdEmpty: reasonId === ''
+      });
+    }
     
-    // Return the label if found
+    // Handle null, undefined, or empty reason_id (database issue)
+    if (!reasonId || reasonId === null || reasonId === undefined || reasonId === '') {
+      console.warn('Return reason_id is null/empty - this indicates a data creation issue:', {
+        lineItemId: lineItem?.id,
+        returnRequestId: item?.id,
+        orderId: item?.order?.id
+      });
+      return "Powód nie został określony"; // More specific message for null reason_id
+    }
+    
+    // Handle case when return reasons API failed to load
+    if (!returnReasons || returnReasons.length === 0) {
+      console.warn('Return reasons not loaded - API may have failed');
+      return "Powód zwrotu niedostępny"; // When return reasons API failed
+    }
+    
+    // Try to find matching reason
+    const matchingReason = returnReasons.find(reason => reason.id === reasonId);
     if (matchingReason) {
-      return matchingReason.label
+      return matchingReason.label;
     }
     
-    // If not found, try more permissive matching
-    const fuzzyMatchReason = returnReasons.find(reason => 
-      reason.value === reasonId || 
-      (reason.id && reasonId && reason.id.replace('rr_', '') === reasonId.replace('rr_', ''))
-    )
-    
-    if (fuzzyMatchReason) {
-      return fuzzyMatchReason.label
-    }
-    
-    // If still not found, format the ID into a readable label
-    return formatReasonId(reasonId)
-  }
+    // If reason_id exists but no matching reason found (orphaned reason_id)
+    console.warn('Reason ID exists but no matching reason found:', {
+      reasonId,
+      availableReasons: returnReasons.map(r => r.id)
+    });
+    return `Powód nieznany (ID: ${reasonId})`;
+  };
 
   const [isOpen, setIsOpen] = useState(defaultOpen)
   const [height, setHeight] = useState(0)
@@ -176,12 +222,7 @@ export const SingleOrderReturn = ({
   //   )
   // ) || []
 
-  // Debug: Log the data structure to see what we're working with
-  console.log('Return request item:', item)
-  console.log('Order items:', item.order?.items)
-  console.log('Filtered items:', filteredItems)
-  console.log('Line items:', item.line_items)
-  console.log('Return reasons:', returnReasons)
+
 
   const currency_code = item?.order?.currency_code || "usd"
 
@@ -213,16 +254,88 @@ export const SingleOrderReturn = ({
     }, 0) || 0;
   }
   
-  // 2. Get shipping cost - simplify to just use shipping_total from order
-  const shippingTotal = item?.order?.shipping_total
-  const shippingCost = typeof shippingTotal === 'number' ? shippingTotal : 0;
+  // 2. Calculate shipping cost - prioritize order.shipping_total if available
+  const orderTotal = item?.order?.total || 0;
+  const orderShippingTotal = item?.order?.shipping_total;
+  const itemsOnlyTotal = filteredItems.reduce((acc: number, orderItem: any) => {
+    const unitPrice = orderItem?.unit_price || 0;
+    const quantity = orderItem?.quantity || 1;
+    return acc + (unitPrice * quantity);
+  }, 0);
+  
+  let shippingCost = 0;
+  
+  // Priority 1: Use order.shipping_total if it exists and is a valid number
+  if (orderShippingTotal !== null && orderShippingTotal !== undefined && !isNaN(orderShippingTotal)) {
+    shippingCost = Number(orderShippingTotal);
+  }
+  // Priority 2: Calculate from order total vs items total difference
+  else if (orderTotal > itemsOnlyTotal) {
+    shippingCost = orderTotal - itemsOnlyTotal;
+  }
+  // Priority 3: If order total < items total, check if there are shipping methods
+  else if (orderTotal < itemsOnlyTotal) {
+    // Check if there are shipping methods that might indicate shipping cost
+    const hasShippingMethods = item?.order?.shipping_methods && item.order.shipping_methods.length > 0;
+    if (hasShippingMethods) {
+      // Try to get shipping cost from shipping methods
+      const shippingMethodsCost = item.order.shipping_methods.reduce((acc: number, method: any) => {
+        return acc + (Number(method?.amount) || 0);
+      }, 0);
+      if (shippingMethodsCost > 0) {
+        shippingCost = shippingMethodsCost;
+      }
+    }
+    // If no shipping methods or cost found, assume 0 (discounts applied)
+  }
+  
+  // Debug logging for shipping cost calculation
+  if (process.env.NODE_ENV === 'development') {
+    console.log('Shipping cost debug:', {
+      orderTotal: orderTotal,
+      itemsOnlyTotal: itemsOnlyTotal,
+      finalShippingCost: shippingCost,
+      hasDiscount: orderTotal < itemsOnlyTotal,
+      orderShippingTotal: orderShippingTotal,
+      orderShippingTotalType: typeof orderShippingTotal,
+      orderShippingTotalIsValid: orderShippingTotal !== null && orderShippingTotal !== undefined && !isNaN(orderShippingTotal),
+      orderShippingMethods: item?.order?.shipping_methods?.length || 0,
+      shippingMethodsData: item?.order?.shipping_methods?.map((method: any) => ({
+        id: method?.id,
+        amount: method?.amount,
+        name: method?.shipping_option?.name
+      })) || [],
+      calculationMethod: orderShippingTotal !== null && orderShippingTotal !== undefined && !isNaN(orderShippingTotal) 
+        ? 'order.shipping_total' 
+        : orderTotal > itemsOnlyTotal 
+        ? 'difference_calculation' 
+        : 'shipping_methods_or_zero',
+      orderData: {
+        id: item?.order?.id,
+        display_id: item?.order?.display_id,
+        hasShippingMethods: Array.isArray(item?.order?.shipping_methods) && item?.order?.shipping_methods.length > 0
+      }
+    });
+  }
 
   
-  // 3. Simple addition - make sure shipping cost is definitely included and values are valid numbers
+  // 3. Calculate final total - use itemsTotal (returned items) + shipping cost
   // Use Number() to force numeric values
   const subtotal = Number(itemsTotal) || 0;
   const shipping = Number(shippingCost) || 0;
   const total = subtotal + shipping;
+  
+  // Debug logging for total calculation
+  if (process.env.NODE_ENV === 'development') {
+    console.log('Total calculation debug:', {
+      itemsTotal: itemsTotal,
+      subtotal: subtotal,
+      shippingCost: shippingCost,
+      shipping: shipping,
+      finalTotal: total,
+      orderOriginalTotal: item?.order?.total
+    });
+  }
 
   // Map status to appropriate step in our 3-step progress bar
   let currentStep = 0 // Default to first step (pending)
@@ -312,10 +425,11 @@ export const SingleOrderReturn = ({
             <div className="flex flex-col gap-4 w-full">
               {filteredItems.map((orderItem: any) => {
                 // Find the corresponding line item with the return reason, with null checking
-                // TEMPORARY: Since line_items is empty, returnLineItem will be undefined
                 const returnLineItem = item?.line_items?.find(
                   (li: any) => li?.line_item_id === orderItem?.id
                 );
+                
+                // getReasonLabel function is now defined at component level
                 
                 return (
                 <div key={orderItem.id} className="flex items-center gap-2">
@@ -348,13 +462,25 @@ export const SingleOrderReturn = ({
                   <div className="flex justify-between w-1/2">
                     <p className="label-md !font-semibold text-primary">
                       <Badge className="bg-primary text-primary border rounded-sm">
-                        {returnLineItem && returnLineItem.reason_id ? (
-                          // Use our helper function to get the correct label
-                          getReasonLabel(returnLineItem.reason_id)
-                        ) : (
-                          // Default fallback for missing reason
-                          'Powód zwrotu niedostępny'
-                        )}
+                        {(() => {
+                          console.log('Badge rendering debug:', {
+                            hasReturnLineItem: !!returnLineItem,
+                            returnLineItem: returnLineItem,
+                            orderItemId: orderItem?.id,
+                            allLineItems: item?.line_items || [],
+                            lineItemsCount: item?.line_items?.length || 0
+                          });
+                          
+                          if (returnLineItem) {
+                            console.log('Calling getReasonLabel with:', returnLineItem);
+                            const result = getReasonLabel(returnLineItem);
+                            console.log('getReasonLabel returned:', result);
+                            return result;
+                          } else {
+                            console.log('No returnLineItem found, showing fallback');
+                            return 'Powód zwrotu niedostępny';
+                          }
+                        })()}
                       </Badge>
                     </p>
                     <p className="label-md !font-semibold text-primary">

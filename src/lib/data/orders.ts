@@ -23,6 +23,7 @@ export interface Order {
   payment_status?: string;
   fulfillment_status?: string;
   total?: number;
+  shipping_total?: number; // Add shipping_total field
   currency_code?: string;
   created_at?: string;
   updated_at?: string;
@@ -84,8 +85,8 @@ export const retrieveOrderSet = async (id: string): Promise<(OrderSet & { linked
       {
         method: "GET",
         query: {
-          // Make sure to include fulfillment fields explicitly
-          fields: "*items,+items.metadata,*items.variant,*items.product,*seller,*reviews,*order_set,*customer,*shipping_address,*shipping_methods,*fulfillments,*fulfillments.packed_at,*fulfillments.shipped_at,*fulfillments.delivered_at,*fulfillments.canceled_at"
+          // Make sure to include fulfillment and shipping fields explicitly
+          fields: "*items,+items.metadata,*items.variant,*items.product,*seller,*reviews,*order_set,*customer,*shipping_address,*shipping_methods,*fulfillments,*fulfillments.packed_at,*fulfillments.shipped_at,*fulfillments.delivered_at,*fulfillments.canceled_at,shipping_total,total"
         },
         headers,
         cache: "no-cache",
@@ -139,8 +140,8 @@ export const retrieveIndividualOrder = async (id: string): Promise<Order | null>
       {
         method: "GET",
         query: {
-          // Include fulfillment fields
-          fields: "*payment_collections.payments,*items,*items.metadata,*items.variant,*items.product,*seller,*order_set,*reviews,*fulfillments,*fulfillments.packed_at,*fulfillments.shipped_at,*fulfillments.delivered_at,*fulfillments.canceled_at"
+          // Include fulfillment and shipping fields
+          fields: "*items,+items.metadata,*items.variant,*items.product,*seller,*reviews,*fulfillments,*fulfillments.packed_at,*fulfillments.shipped_at,*fulfillments.delivered_at,*fulfillments.canceled_at,*shipping_methods,shipping_total,total"
         },
         headers,
         next,
@@ -173,6 +174,7 @@ export const retrieveIndividualOrder = async (id: string): Promise<Order | null>
       payment_status: order.payment_status,
       fulfillment_status: order.fulfillment_status,
       total: order.total,
+      shipping_total: (order as any).shipping_total, // Add shipping_total mapping
       currency_code: order.currency_code,
       created_at: order.created_at instanceof Date ? order.created_at.toISOString() : order.created_at,
       updated_at: order.updated_at instanceof Date ? order.updated_at.toISOString() : order.updated_at,
@@ -421,6 +423,7 @@ export const getReturns = async () => {
         order_return_requests: Array<any>
       }>(`/store/return-request`, {
         method: "GET",
+        // Remove all field queries - backend rejects any field specifications
         headers,
         cache: "no-store", // Ensure fresh data on each request
         credentials: "include", // Include cookies for authentication
@@ -443,7 +446,14 @@ export const getReturns = async () => {
             customer_id: sampleReturn.customer_id,
             order_id: sampleReturn.order_id,
             created_at: sampleReturn.created_at,
-            has_line_items: Array.isArray(sampleReturn.line_items) && sampleReturn.line_items.length > 0
+            has_line_items: Array.isArray(sampleReturn.line_items) && sampleReturn.line_items.length > 0,
+            line_items_count: sampleReturn.line_items?.length || 0,
+            line_items_sample: sampleReturn.line_items?.[0] ? {
+              line_item_id: sampleReturn.line_items[0].line_item_id,
+              reason_id: sampleReturn.line_items[0].reason_id,
+              quantity: sampleReturn.line_items[0].quantity
+            } : null,
+            order_shipping_total: sampleReturn.order?.shipping_total
           })
           return { order_return_requests: returnRequests }
         }
@@ -469,6 +479,7 @@ export const getReturns = async () => {
         returns: Array<any>
       }>(`/store/returns`, {
         method: "GET",
+        // Remove all field queries - backend rejects any field specifications
         headers,
         cache: "no-store",
         credentials: "include",
@@ -479,14 +490,66 @@ export const getReturns = async () => {
         const returns = Array.isArray(response.returns) ? response.returns : [];
         console.log(`Retrieved ${returns.length} returns from /store/returns`)
         
-        // Transform returns to match expected format if needed
-        const transformedReturns = returns.map(returnItem => ({
-          ...returnItem,
-          // Add any missing fields to match the expected format
-          id: returnItem.id || `temp_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
-          status: returnItem.status || 'pending',
-          // Ensure line_items is always an array
-          line_items: Array.isArray(returnItem.items) ? returnItem.items : []
+        // Transform returns and fetch complete order data for each
+        const transformedReturns = await Promise.all(returns.map(async (returnItem) => {
+          console.log('Transforming return item:', {
+            id: returnItem.id,
+            hasLineItems: !!returnItem.line_items,
+            lineItemsCount: returnItem.line_items?.length || 0,
+            lineItemsStructure: returnItem.line_items || [],
+            hasItems: !!returnItem.items,
+            itemsCount: returnItem.items?.length || 0,
+            hasOrder: !!returnItem.order,
+            orderData: returnItem.order ? {
+              id: returnItem.order.id,
+              display_id: returnItem.order.display_id,
+              total: returnItem.order.total,
+              shipping_total: returnItem.order.shipping_total,
+              hasShippingMethods: !!returnItem.order.shipping_methods,
+              shippingMethodsCount: returnItem.order.shipping_methods?.length || 0,
+              shippingMethodsData: returnItem.order.shipping_methods || [],
+              hasItems: !!returnItem.order.items,
+              itemsCount: returnItem.order.items?.length || 0,
+              allOrderKeys: Object.keys(returnItem.order || {})
+            } : null,
+            allReturnKeys: Object.keys(returnItem || {})
+          });
+          
+          // Fetch complete order data if we have an order_id
+          let completeOrderData = returnItem.order;
+          if (returnItem.order_id && (!returnItem.order?.shipping_total && !returnItem.order?.shipping_methods?.length)) {
+            console.log(`Fetching complete order data for order_id: ${returnItem.order_id}`);
+            try {
+              const fullOrder = await retrieveIndividualOrder(returnItem.order_id);
+              if (fullOrder) {
+                console.log('Complete order data fetched:', {
+                  id: fullOrder.id,
+                  shipping_total: fullOrder.shipping_total,
+                  shipping_methods_count: fullOrder.shipping_methods?.length || 0,
+                  shipping_methods: fullOrder.shipping_methods?.map((method: any) => ({
+                    id: method.id,
+                    amount: method.amount,
+                    name: method.shipping_option?.name
+                  })) || []
+                });
+                completeOrderData = fullOrder;
+              }
+            } catch (error) {
+              console.error(`Error fetching complete order data for ${returnItem.order_id}:`, error);
+              // Continue with existing order data
+            }
+          }
+          
+          return {
+            ...returnItem,
+            // Add any missing fields to match the expected format
+            id: returnItem.id || `temp_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
+            status: returnItem.status || 'pending',
+            // FIX: Use returnItem.line_items instead of returnItem.items
+            line_items: Array.isArray(returnItem.line_items) ? returnItem.line_items : [],
+            // Use complete order data with shipping information
+            order: completeOrderData
+          };
         }));
         
         return { order_return_requests: transformedReturns }
@@ -537,7 +600,10 @@ export const retrieveReturnReasons = async () => {
   try {
     const headers = await getAuthHeaders()
 
-    console.log('Fetching return reasons...')
+    console.log('Fetching return reasons with headers:', {
+      hasAuthToken: 'authorization' in headers,
+      hasPublishableKey: !!headers['x-publishable-api-key']
+    })
 
     // Use the proper endpoint for return reasons
     const response = await sdk.client.fetch<{
@@ -550,12 +616,19 @@ export const retrieveReturnReasons = async () => {
     }>(`/store/return-reasons`, {
       method: "GET",
       headers,
+      cache: "no-store", // Ensure fresh data
+      credentials: "include", // Include cookies for authentication
       next: { revalidate: 0 }, // Always fetch fresh data
     })
 
-    console.log(`Retrieved ${response.return_reasons?.length || 0} return reasons:`, response.return_reasons)
+    console.log('Return reasons API response:', {
+      hasResponse: !!response,
+      hasReturnReasons: !!response?.return_reasons,
+      count: response?.return_reasons?.length || 0,
+      sample: response?.return_reasons?.[0] || null
+    })
     
-    if (!response.return_reasons) {
+    if (!response || !response.return_reasons) {
       console.warn('No return reasons found in response')
       return []
     }
@@ -563,7 +636,11 @@ export const retrieveReturnReasons = async () => {
     // Return the complete array of return reasons with proper structure
     return response.return_reasons
   } catch (error) {
-    console.error("Error fetching return reasons:", error)
+    console.error("Error fetching return reasons:", {
+      error: error,
+      message: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined
+    })
     // Return an empty array instead of throwing to prevent UI breaks
     return []
   }

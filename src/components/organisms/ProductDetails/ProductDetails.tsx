@@ -8,15 +8,14 @@ import {
   ProductPageDetails,
 } from "@/components/cells"
 import { getProductMeasurements } from "@/lib/data/measurements"
-import { retrieveCustomer } from "@/lib/data/customer"
+import { retrieveCustomer, isAuthenticated } from "@/lib/data/customer"
 import { getUserWishlists } from "@/lib/data/wishlist"
+import { getProductReviews } from "@/lib/data/reviews"
 import { SellerProps } from "@/types/seller"
 import { Wishlist } from "@/types/wishlist"
 import { HttpTypes } from "@medusajs/types"
 import "@/types/medusa" // Import extended types
 import { ProductReviews } from "@/components/organisms/ProductReviews/ProductReviews"
-import { ServerProductReviews } from "../ProductReviews/ServerProductReviews"
-import { Suspense } from "react"
 import { ProductGPSR } from "@/components/molecules/ProductGPSR/ProductGPSR"
 import { ProductAdditionalAttributes } from "@/components/cells/ProductAdditionalAttributes/ProductAdditionalAttributes"
 import { VariantSelectionProvider } from "@/components/context/VariantSelectionContext"
@@ -32,16 +31,44 @@ export const ProductDetails = async ({
   }
   locale: string
 }) => {
-  const user = await retrieveCustomer()
+  // Fetch all data in parallel to prevent layout shifts
+  const [user, authenticated, reviewsData, measurements] = await Promise.allSettled([
+    retrieveCustomer(),
+    isAuthenticated(),
+    getProductReviews(product.id),
+    (async () => {
+      // Determine if we're viewing a specific variant
+      let selectedVariantId: string | undefined
+      if (Array.isArray(product.variants) && product.variants.length > 0 && product.variants[0]?.id) {
+        selectedVariantId = product.variants[0].id
+      }
+      
+      // Determine locale for measurements (default to 'en' if not supported)
+      const supportedLocales = ['en', 'pl']
+      const currentLocale = supportedLocales.includes(locale) ? locale : 'en'
+      
+      // Fetch physical measurements from the product and all variants (prioritizing selected variant)
+      return await getProductMeasurements(product.id, selectedVariantId, currentLocale)
+    })()
+  ])
+
+  // Extract results with fallbacks
+  const customer = user.status === 'fulfilled' ? user.value : null
+  const isUserAuthenticated = authenticated.status === 'fulfilled' ? authenticated.value : false
+  const reviews = reviewsData.status === 'fulfilled' ? reviewsData.value?.reviews || [] : []
+  const productMeasurements = measurements.status === 'fulfilled' ? measurements.value : null
 
   let wishlist: Wishlist[] = []
-  if (user) {
-    const response = await getUserWishlists()
-    wishlist = response.wishlists
+  if (customer) {
+    try {
+      const response = await getUserWishlists()
+      wishlist = response.wishlists
+    } catch (error) {
+      console.error('Error fetching wishlists:', error)
+    }
   }
   
-  // Determine if we're viewing a specific variant
-  // If there's a selected variant in the URL or first variant, use that
+  // Determine selected variant ID for measurements
   let selectedVariantId: string | undefined
   if (Array.isArray(product.variants) && product.variants.length > 0 && product.variants[0]?.id) {
     selectedVariantId = product.variants[0].id
@@ -51,9 +78,6 @@ export const ProductDetails = async ({
   const supportedLocales = ['en', 'pl']
   const currentLocale = supportedLocales.includes(locale) ? locale : 'en'
   
-  // Fetch physical measurements from the product and all variants (prioritizing selected variant)
-  const measurements = await getProductMeasurements(product.id, selectedVariantId, currentLocale)
-  
 
 
   return (
@@ -62,7 +86,7 @@ export const ProductDetails = async ({
         <ProductDetailsHeader
           product={product as any}
           locale={locale}
-          user={user}
+          user={customer}
           wishlist={wishlist}
         />
         <ProductAdditionalAttributes
@@ -72,7 +96,7 @@ export const ProductDetails = async ({
         <ProductDetailsMeasurements 
           productId={product.id}
           locale={currentLocale}
-          initialMeasurements={measurements}
+          initialMeasurements={productMeasurements || undefined}
           variants={product.variants?.map(v => ({
             id: v.id,
             title: v.title || undefined // Convert null to undefined
@@ -86,22 +110,12 @@ export const ProductDetails = async ({
         posted={product?.created_at || null}
       />
       <ProductDetailsSellerReviews seller={product.seller} />
-      <Suspense fallback={
-        <div className="w-full py-8">
-          <div className="border-t border-ui-border-base pt-8">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-2xl font-bold text-ui-fg-base">Recenzje produktu</h2>
-            </div>
-            <div className="w-full py-12">
-              <div className="flex justify-center">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-ui-border-interactive"></div>
-              </div>
-            </div>
-          </div>
-        </div>
-      }>
-        <ServerProductReviews productId={product.id} />
-      </Suspense>
+      <ProductReviews
+        productId={product.id}
+        isAuthenticated={isUserAuthenticated}
+        customer={customer}
+        prefetchedReviews={reviews}
+      />
     </div>
   )
 }

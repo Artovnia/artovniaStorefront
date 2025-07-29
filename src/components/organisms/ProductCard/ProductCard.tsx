@@ -28,10 +28,10 @@ export const ProductCard = ({
   return (
     <div
       className={clsx(
-        "relative group border rounded-sm flex flex-col justify-between p-1 ",
+        "relative group border rounded-sm flex flex-col justify-between p-1",
         {
           "w-[250px] lg:w-[370px]": sellerPage,
-          "w-full h-full": !sellerPage,
+          "w-[30rem] h-full max-h-[40rem]": !sellerPage, // Use full height/width but limit max height
         }
       )}
     >
@@ -63,7 +63,7 @@ export const ProductCard = ({
         </Link>
         <Link href={`/products/${product.handle}`}>
           <Button className="absolute rounded-sm bg-action text-action-on-primary h-auto lg:h-[48px] lg:group-hover:block hidden w-full uppercase bottom-1 z-10">
-            See More
+            Zobacz więcej
           </Button>
         </Link>
       </div>

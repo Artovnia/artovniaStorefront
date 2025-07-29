@@ -22,7 +22,7 @@ export const HomeProductsCarousel = async ({
       const result = await listProducts({
         countryCode: locale,
         queryParams: {
-          limit: home ? 8 : 12, // Optimized limits
+          limit: home ? 16 : 19, // Optimized limits
           order: "created_at",
         },
       });
@@ -44,7 +44,7 @@ export const HomeProductsCarousel = async ({
     
     // Optimize product card creation with better type safety
     const productCards = displayProducts
-      .slice(0, home ? 8 : 12) // Limit displayed products
+      .slice(0, home ? 16 : 19) // Limit displayed products
       .map(product => {
         if (!product?.id) return null;
         
@@ -74,7 +74,7 @@ export const HomeProductsCarousel = async ({
     }
     
     return (
-      <div className="flex justify-center w-full">
+      <div className="w-full max-w-full max-h-[40rem] ">
         <Carousel
           align="start"
           items={productCards}
