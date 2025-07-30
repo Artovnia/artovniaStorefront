@@ -11,7 +11,7 @@ export default function PayUReturnPage() {
   const params = useParams()
   const locale = params.locale as string || 'pl'
   const [isProcessing, setIsProcessing] = useState(true)
-  const [statusMessage, setStatusMessage] = useState('Proszę czekać, trwa finalizacja zamówienia...')
+  const [statusMessage, setStatusMessage] = useState('Przetwarzanie płatności...')
   const [error, setError] = useState<string | null>(null)
   
   useEffect(() => {
@@ -36,11 +36,9 @@ export default function PayUReturnPage() {
         }
 
         console.log('Attempting to complete cart:', storedCartId)
-        setStatusMessage('Pobieranie danych płatności...')
         console.log('Attempting to authorize payment:', paymentSessionId)
         
         // First, get the cart to find the payment collection
-        // Use a more comprehensive query to get cart data even if it's completed
         const cartResponse = await fetch(`${process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL}/store/carts/${storedCartId}?fields=*payment_collection,*payment_collection.payment_sessions,*items,*region,completed_at,status`, {
           headers: {
             'Content-Type': 'application/json',
@@ -64,7 +62,6 @@ export default function PayUReturnPage() {
             if (sessionResponse.ok) {
               const sessionData = await sessionResponse.json()
               console.log('Found payment session data:', sessionData)
-              // Continue with the session data we have
             }
           } catch (sessionError) {
             console.error('Failed to get payment session data:', sessionError)
@@ -93,6 +90,9 @@ export default function PayUReturnPage() {
         // Authorize the payment through the payment collection authorization endpoint
         try {
           // First, get the payment session directly to check its status and provider
+          let detectedPaymentMethod = 'BLIK' // Default fallback
+          let sessionData: any = null
+          
           try {
             const paymentSessionResponse = await fetch(`${process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL}/store/payment-sessions/${paymentSessionId}`, {
               method: 'GET',
@@ -103,17 +103,44 @@ export default function PayUReturnPage() {
             })
             
             if (paymentSessionResponse.ok) {
-              const sessionData = await paymentSessionResponse.json()
+              sessionData = await paymentSessionResponse.json()
               console.log('Payment session data:', sessionData)
+              
+              // Detect payment method from provider_id
+              const providerId = sessionData.payment_session?.provider_id || sessionData.provider_id
+              console.log('Detected provider ID:', providerId)
+              
+              // Map provider IDs to payment method names
+              switch (providerId) {
+                case 'payu-blik':
+                case 'pp_payu-blik':
+                  detectedPaymentMethod = 'BLIK'
+                  break
+                case 'payu-card':
+                case 'pp_payu-card':
+                  detectedPaymentMethod = 'CARD'
+                  break
+                case 'payu-transfer':
+                case 'pp_payu-transfer':
+                  detectedPaymentMethod = 'TRANSFER'
+                  break
+                case 'payu-googlepay':
+                case 'pp_payu-googlepay':
+                  detectedPaymentMethod = 'GOOGLEPAY'
+                  break
+                default:
+                  console.warn(`Unknown provider ID: ${providerId}, defaulting to BLIK`)
+                  detectedPaymentMethod = 'BLIK'
+              }
+              
+              console.log(`Detected payment method: ${detectedPaymentMethod} from provider: ${providerId}`)
             } else {
-              console.warn('Could not get payment session data, continuing with authorization')
+              console.warn('Could not get payment session data, using default BLIK method')
             }
           } catch (err) {
-            // Continue even if session fetch fails
-            console.warn('Error fetching payment session, continuing with authorization:', err)
+            console.warn('Error fetching payment session, using default BLIK method:', err)
           }
           
-          setStatusMessage('Autoryzacja płatności...')
           const authResponse = await fetch(`${process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL}/store/payment-collections/${paymentCollection.id}/authorize`, {
             method: 'POST',
             headers: {
@@ -122,24 +149,15 @@ export default function PayUReturnPage() {
             },
             body: JSON.stringify({
               session_id: paymentSessionId,
-              data: {
-                // Explicit flags to signal payment is complete
-                return_from_payu: true,
-                payment_status: "COMPLETED",
-                status: "COMPLETED",
+              context: {
                 cart_id: storedCartId,
-                payment_method: "CARD",
+                payment_method: detectedPaymentMethod,
                 payu_order_id: searchParams.get('orderId') || extOrderId || '',
                 ext_order_id: extOrderId || '',
+                return_from_payu: true,
                 force_status: 'authorized',
                 fully_authorized: true,
-                requires_more: false,
-                redirect_url: null,
-                redirectUrl: null,
-                redirectUri: null,
-                flow_state: "COMPLETED",
-                authorize_status: "success",
-                authorized_at: new Date().toISOString()
+                requires_more: false
               }
             })
           })
@@ -155,41 +173,37 @@ export default function PayUReturnPage() {
           console.warn('Error during authorization:', authError)
         }
         
-        // Add small delay to ensure authorization is processed
+        // Add delay to ensure authorization is processed
         await new Promise(resolve => setTimeout(resolve, 1000))
 
-        // Now try to complete the cart - use skipRedirectCheck=true to ensure we complete the order rather than redirecting
+        // Now try to complete the cart
         const { placeOrder } = await import('@/lib/data/cart')
         console.log('Attempting to place order with cart ID:', storedCartId)
         
-        // Add a longer delay to ensure authorization is fully processed on the backend
+        // Add longer delay to ensure authorization is fully processed
         await new Promise(resolve => setTimeout(resolve, 5000))
-        
-        // Skip direct cart update attempt - Medusa doesn't support 'context' field updates
-        // Instead, rely on properly authorized payment session to signal payment completion
-        
+
         setStatusMessage('Przygotowanie do finalizacji zamówienia...')
         console.log('Payment authorized, preparing for cart completion')
         
-        // Additional delay to ensure payment processing is complete on backend
+        // Additional delay to ensure payment processing is complete
         await new Promise(resolve => setTimeout(resolve, 2000))
         
         let lastError: Error | null = null
         let attempts = 0
-        const maxAttempts = 10
+        const maxAttempts = 4
 
         while (attempts < maxAttempts) {
           attempts++
-          setStatusMessage(`Finalizowanie zamówienia... (próba ${attempts}/${maxAttempts})`)
           console.log(`Attempt ${attempts} to place order with cart ID: ${storedCartId}`);
           
           try {
-            // Add a slightly increasing delay with each attempt
+            // Add increasing delay with each attempt
             if (attempts > 1) {
               await new Promise(resolve => setTimeout(resolve, 2000 * attempts));
             }
             
-            // For certain attempts, try to re-authorize the payment with more complete data
+            // Re-authorize payment on certain attempts
             if (attempts > 1 && attempts % 2 === 0) {
               try {
                 console.log('Re-authorizing payment on attempt', attempts)
@@ -202,7 +216,6 @@ export default function PayUReturnPage() {
                   body: JSON.stringify({
                     session_id: paymentSessionId,
                     data: {
-                      // Explicit flags to signal payment is complete
                       return_from_payu: true,
                       payment_status: "COMPLETED",
                       status: "COMPLETED",
@@ -298,27 +311,64 @@ export default function PayUReturnPage() {
 
   if (error) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-gray-50">
-        <div className="p-8 bg-white rounded-lg shadow-md text-center max-w-md">
-          <h1 className="text-2xl font-bold mb-4 text-red-600">Błąd płatności</h1>
-          <p className="mb-4">{error}</p>
-          <button 
-            onClick={() => router.push(`/${locale}/cart`)}
-            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
-          >
-            Powrót do koszyka
-          </button>
+      <div className="min-h-screen bg-stone-50 flex items-center justify-center p-4">
+        <div className="max-w-md w-full">
+          <div className="bg-white rounded-sm shadow-sm border border-stone-200 p-8 text-center">
+            {/* Error Icon */}
+            <div className="w-16 h-16 mx-auto mb-6 bg-red-50 rounded-full flex items-center justify-center">
+              <svg className="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </div>
+            
+            {/* Title */}
+            <h1 className="text-xl font-light text-stone-800 mb-4 tracking-wide">
+              Błąd płatności
+            </h1>
+            
+            {/* Error Message */}
+            <p className="text-stone-600 mb-8 leading-relaxed text-sm">
+              {error}
+            </p>
+            
+            {/* Action Button */}
+            <button 
+              onClick={() => router.push(`/${locale}/cart`)}
+              className="w-full bg-stone-800 text-white py-3 px-6 text-sm font-light tracking-wide hover:bg-stone-700 transition-colors duration-200 border-none rounded-none"
+            >
+              POWRÓT DO KOSZYKA
+            </button>
+          </div>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gray-50">
-      <div className="p-8 bg-white rounded-lg shadow-md text-center">
-        <h1 className="text-2xl font-bold mb-4">Przetwarzanie płatności</h1>
-        <p className="mb-4">{statusMessage}</p>
-        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600 mx-auto"></div>
+    <div className="min-h-screen bg-stone-50 flex items-center justify-center p-4">
+      <div className="max-w-md w-full">
+        <div className="bg-white rounded-sm shadow-sm border border-stone-200 p-8 text-center">
+          {/* Processing Animation */}
+          <div className="w-16 h-16 mx-auto mb-6 relative">
+            <div className="w-16 h-16 border-2 border-stone-200 rounded-full"></div>
+            <div className="w-16 h-16 border-2 border-stone-600 border-t-transparent rounded-full animate-spin absolute top-0 left-0"></div>
+          </div>
+          
+          {/* Title */}
+          <h1 className="text-xl font-light text-stone-800 mb-4 tracking-wide">
+            Przetwarzanie płatności
+          </h1>
+          
+          {/* Status Message */}
+          <p className="text-stone-600 mb-4 leading-relaxed text-sm">
+            {statusMessage}
+          </p>
+          
+          {/* Additional Info */}
+          <p className="text-xs text-stone-500 italic">
+            Prosimy o cierpliwość...
+          </p>
+        </div>
       </div>
     </div>
   )
