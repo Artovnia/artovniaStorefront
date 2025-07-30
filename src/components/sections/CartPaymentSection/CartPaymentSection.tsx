@@ -214,32 +214,11 @@ const CartPaymentSection = ({
         throw new Error('Proszę wybrać metodę płatności')
       }
       
-      // Check if payment session already exists before creating a new one
-      const existingSession = cart?.payment_collection?.payment_sessions?.find(
-        (session: any) => session.provider_id === selectedPaymentMethod && session.status === 'pending'
-      )
+      // **CRITICAL FIX: Do NOT create or initialize payment sessions in handleSubmit**
+      // Payment sessions should ONLY be created in setPaymentMethod when user selects a payment method
+      // This function should only handle navigation to the review step
       
-      if (!existingSession) {
-        // Only initialize if no existing session found
-        try {
-          console.log('Initializing payment session for cart:', cart.id)
-          await initiatePaymentSession(cart, { provider_id: selectedPaymentMethod })
-          console.log('Payment session initialized successfully')
-        } catch (initError) {
-          console.log('Payment session initialization error (may be normal if session exists):', initError)
-          // This error is expected if the session already exists, so we continue
-        }
-      }
-      
-      // Now select the payment session
-      try {
-        console.log('Selecting payment session for', selectedPaymentMethod)
-        await selectPaymentSession(cart.id, selectedPaymentMethod)
-        console.log('Payment session selected successfully')
-      } catch (error) {
-        console.error('Error selecting payment session:', error)
-        throw new Error(`Błąd podczas wybierania metody płatności: ${error instanceof Error ? error.message : String(error)}`)
-      }
+      console.log('Payment method already selected, proceeding to review step')
 
       // For Stripe, if we need to collect card details, don't proceed to review
       const shouldInputCard = isStripeFunc(selectedPaymentMethod) && !cardComplete
