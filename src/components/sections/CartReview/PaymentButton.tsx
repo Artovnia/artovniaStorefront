@@ -254,43 +254,39 @@ const PayUPaymentButton: React.FC<PayUPaymentButtonProps> = ({
       
       let currentSession = activeSession
 
-      // Only create a new session if we don't have one for this provider
-      if (!currentSession || currentSession.provider_id !== selectedProvider) {
-        console.log('Creating new payment session for provider:', selectedProvider)
+      // **CRITICAL FIX: Never create new sessions in PaymentButton - only use existing ones**
+      // Payment sessions should only be created in CartPaymentSection when user selects payment method
+      if (!currentSession) {
+        // Try to find any pending session for the selected provider
+        const allSessions = cart?.payment_collection?.payment_sessions || []
+        currentSession = allSessions.find(
+          (session: any) => session.provider_id === selectedProvider && session.status === 'pending'
+        )
         
-        const { initiatePaymentSession } = await import('@/lib/data/cart')
-        
-        await initiatePaymentSession(cart, {
-          provider_id: selectedProvider,
-          context: {
-            cart_id: cart.id,
-            ip_address: '127.0.0.1'
-          }
-        })
-
-        const { selectPaymentSession } = await import('@/lib/data/cart')
-        await selectPaymentSession(cart.id, selectedProvider)
-        
-        // Fetch updated cart to get the new session
-        const updatedCartResponse = await fetch(`${process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL}/store/carts/${cart.id}?fields=*payment_collection.payment_sessions`, {
-          headers: {
-            'Content-Type': 'application/json',
-            'x-publishable-api-key': process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || ''
-          }
-        })
-        
-        if (updatedCartResponse.ok) {
-          const updatedCartData = await updatedCartResponse.json()
-          currentSession = updatedCartData.cart?.payment_collection?.payment_sessions?.find(
-            (session: any) => session.provider_id === selectedProvider && session.status === 'pending'
-          )
+        if (!currentSession) {
+          throw new Error(`No payment session found for provider: ${selectedProvider}. Please go back and select a payment method.`)
         }
+        
+        console.log('Found existing payment session:', currentSession.id)
       } else {
-        console.log('Using existing payment session:', currentSession.id)
+        console.log('Using active payment session:', currentSession.id)
       }
 
-      if (!currentSession) {
-        throw new Error(`No payment session found for provider: ${selectedProvider}`)
+      // Ensure we have the correct session for the selected provider
+      if (currentSession.provider_id !== selectedProvider) {
+        console.warn(`Session provider mismatch: expected ${selectedProvider}, got ${currentSession.provider_id}`)
+        
+        // Try to find the correct session
+        const correctSession = cart?.payment_collection?.payment_sessions?.find(
+          (session: any) => session.provider_id === selectedProvider && session.status === 'pending'
+        )
+        
+        if (correctSession) {
+          currentSession = correctSession
+          console.log('Found correct payment session:', currentSession.id)
+        } else {
+          throw new Error(`No payment session found for selected provider: ${selectedProvider}. Please go back and select the payment method again.`)
+        }
       }
 
       // Check for redirect URL in the current session
