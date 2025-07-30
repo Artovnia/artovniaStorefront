@@ -80,41 +80,49 @@ const CartPaymentSection = ({
     try {
       console.log(`Setting payment method: ${method} for cart ${cart.id}`)
       
-      // First, try to initialize the payment session with enhanced context data
-      // This will create a payment collection if one doesn't exist
-      try {
-        console.log('Initializing payment session for cart:', cart.id)
-        // Enhanced payment session with detailed cart context
-        await initiatePaymentSession(cart, { 
-          provider_id: method,
-          // Context data will be stored in metadata by initiatePaymentSession function
-          context: {
-            cart_id: cart.id,
-            // Include any IP address if available from client
-            customer_ip: window.sessionStorage.getItem('client_ip') || undefined,
-            // Explicit flag to indicate this is coming from our enhanced storefront
-            enhanced_storefront: true,
-            // Include customer email for better tracking
-            customer_email: cart.email || ''
+      // Check if a payment session already exists for this provider
+      const existingSession = cart?.payment_collection?.payment_sessions?.find(
+        (session: any) => session.provider_id === method && session.status === 'pending'
+      )
+      
+      if (existingSession) {
+        console.log(`Payment session already exists for ${method}, reusing session:`, existingSession.id)
+      } else {
+        // Only create a new payment session if one doesn't exist
+        try {
+          console.log('Initializing payment session for cart:', cart.id)
+          // Enhanced payment session with detailed cart context
+          await initiatePaymentSession(cart, { 
+            provider_id: method,
+            // Context data will be stored in metadata by initiatePaymentSession function
+            context: {
+              cart_id: cart.id,
+              // Include any IP address if available from client
+              customer_ip: window.sessionStorage.getItem('client_ip') || undefined,
+              // Explicit flag to indicate this is coming from our enhanced storefront
+              enhanced_storefront: true,
+              // Include customer email for better tracking
+              customer_email: cart.email || ''
+            }
+          })
+          console.log('Payment session initialized successfully with enhanced context')
+        } catch (initError: any) {
+          console.log('Payment session initialization error (may be normal if session exists):', initError)
+          
+          // Check if the error is about a payment collection already existing
+          // or if it's about a payment session already existing - these are expected errors
+          const errorMsg = initError?.message || ''
+          const isExpectedError = 
+            errorMsg.includes('already has a payment collection') || 
+            errorMsg.includes('already exists') ||
+            errorMsg.includes('payment session')
+          
+          if (!isExpectedError) {
+            // If it's not an expected error, rethrow it
+            throw initError
           }
-        })
-        console.log('Payment session initialized successfully with enhanced context')
-      } catch (initError: any) {
-        console.log('Payment session initialization error (may be normal if session exists):', initError)
-        
-        // Check if the error is about a payment collection already existing
-        // or if it's about a payment session already existing - these are expected errors
-        const errorMsg = initError?.message || ''
-        const isExpectedError = 
-          errorMsg.includes('already has a payment collection') || 
-          errorMsg.includes('already exists') ||
-          errorMsg.includes('payment session')
-        
-        if (!isExpectedError) {
-          // If it's not an expected error, rethrow it
-          throw initError
+          // Otherwise, continue with selecting the payment session
         }
-        // Otherwise, continue with selecting the payment session
       }
       
       // Now select the payment session - this will also update cart metadata with payment_provider_id
@@ -206,15 +214,21 @@ const CartPaymentSection = ({
         throw new Error('Proszę wybrać metodę płatności')
       }
       
-      // First, try to initialize the payment session
-      // This will create a payment collection if one doesn't exist
-      try {
-        console.log('Initializing payment session for cart:', cart.id)
-        await initiatePaymentSession(cart, { provider_id: selectedPaymentMethod })
-        console.log('Payment session initialized successfully')
-      } catch (initError) {
-        console.log('Payment session initialization error (may be normal if session exists):', initError)
-        // This error is expected if the session already exists, so we continue
+      // Check if payment session already exists before creating a new one
+      const existingSession = cart?.payment_collection?.payment_sessions?.find(
+        (session: any) => session.provider_id === selectedPaymentMethod && session.status === 'pending'
+      )
+      
+      if (!existingSession) {
+        // Only initialize if no existing session found
+        try {
+          console.log('Initializing payment session for cart:', cart.id)
+          await initiatePaymentSession(cart, { provider_id: selectedPaymentMethod })
+          console.log('Payment session initialized successfully')
+        } catch (initError) {
+          console.log('Payment session initialization error (may be normal if session exists):', initError)
+          // This error is expected if the session already exists, so we continue
+        }
       }
       
       // Now select the payment session

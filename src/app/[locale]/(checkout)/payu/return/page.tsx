@@ -40,7 +40,8 @@ export default function PayUReturnPage() {
         console.log('Attempting to authorize payment:', paymentSessionId)
         
         // First, get the cart to find the payment collection
-        const cartResponse = await fetch(`${process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL}/store/carts/${storedCartId}?fields=*payment_collection,*payment_collection.payment_sessions`, {
+        // Use a more comprehensive query to get cart data even if it's completed
+        const cartResponse = await fetch(`${process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL}/store/carts/${storedCartId}?fields=*payment_collection,*payment_collection.payment_sessions,*items,*region,completed_at,status`, {
           headers: {
             'Content-Type': 'application/json',
             'x-publishable-api-key': process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || ''
@@ -48,10 +49,39 @@ export default function PayUReturnPage() {
         })
 
         if (!cartResponse.ok) {
+          // If cart is not found, try to get it from a different endpoint
+          console.warn(`Cart fetch failed with status ${cartResponse.status}, trying alternative approach`)
+          
+          // Try to get payment session directly to find associated cart
+          try {
+            const sessionResponse = await fetch(`${process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL}/store/payment-sessions/${paymentSessionId}`, {
+              headers: {
+                'Content-Type': 'application/json',
+                'x-publishable-api-key': process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || ''
+              }
+            })
+            
+            if (sessionResponse.ok) {
+              const sessionData = await sessionResponse.json()
+              console.log('Found payment session data:', sessionData)
+              // Continue with the session data we have
+            }
+          } catch (sessionError) {
+            console.error('Failed to get payment session data:', sessionError)
+          }
+          
           throw new Error('Failed to get cart data: ' + cartResponse.statusText)
         }
 
         const { cart } = await cartResponse.json()
+        
+        // Log cart status for debugging
+        console.log('Cart status check:', {
+          cartId: cart?.id,
+          completed_at: cart?.completed_at,
+          status: cart?.status,
+          hasPaymentCollection: !!cart?.payment_collection
+        })
         const paymentCollection = cart?.payment_collection
         
         if (!paymentCollection) {
