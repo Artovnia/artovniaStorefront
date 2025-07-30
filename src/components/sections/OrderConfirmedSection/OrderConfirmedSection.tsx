@@ -1,4 +1,5 @@
 // src/components/sections/OrderConfirmedSection/OrderConfirmedSection.tsx
+//after processing payment and order, order confirmation page
 import { Container, Heading, Text } from "@medusajs/ui"
 import React from "react"
 import SVGWrapper from "@/components/atoms/SVGWrapper/SVGWrapper"
@@ -12,8 +13,8 @@ interface OrderConfirmedSectionProps {
 // Translations with better fallbacks
 const translations = {
   pl: {
-    orderConfirmed: 'Zamówienie potwierdzone!',
-    orderSetConfirmed: 'Zamówienia potwierdzone!',
+    orderConfirmed: 'Zamówienie potwierdzone',
+    orderSetConfirmed: 'Zamówienia potwierdzone',
     orderSuccess: 'Twoje zamówienie zostało pomyślnie złożone.',
     orderSetSuccess: 'Twój zestaw zamówień został pomyślnie złożony.',
     orderNumber: 'Numer zamówienia',
@@ -24,15 +25,15 @@ const translations = {
     total: 'Suma',
     confirmationSent: 'Potwierdzenie zostało wysłane na',
     multiStoreNotice: 'To zamówienie zawiera produkty z różnych sklepów i może być wysłane osobno.',
-    thankYou: 'Dziękujemy za zakup!',
-    viewOrders: 'Zobacz zamówienia',
-    continueShopping: 'Kontynuuj zakupy',
+    thankYou: 'Dziękujemy za zakup',
+    viewOrders: 'ZOBACZ ZAMÓWIENIA',
+    continueShopping: 'KONTYNUUJ ZAKUPY',
     orderDetails: 'Szczegóły będą dostępne w Twoim koncie.',
     ordersInSet: 'zamówień w zestawie'
   },
   en: {
-    orderConfirmed: 'Order Confirmed!',
-    orderSetConfirmed: 'Orders Confirmed!',
+    orderConfirmed: 'Order Confirmed',
+    orderSetConfirmed: 'Orders Confirmed',
     orderSuccess: 'Your order has been placed successfully.',
     orderSetSuccess: 'Your order set has been placed successfully.',
     orderNumber: 'Order Number',
@@ -43,9 +44,9 @@ const translations = {
     total: 'Total',
     confirmationSent: 'Confirmation sent to',
     multiStoreNotice: 'This order contains products from different stores and may be shipped separately.',
-    thankYou: 'Thank you for your purchase!',
-    viewOrders: 'View Orders',
-    continueShopping: 'Continue Shopping',
+    thankYou: 'Thank you for your purchase',
+    viewOrders: 'VIEW ORDERS',
+    continueShopping: 'CONTINUE SHOPPING',
     orderDetails: 'Details will be available in your account.',
     ordersInSet: 'orders in set'
   }
@@ -81,89 +82,82 @@ export const OrderConfirmedSection = ({
   }
 
   return (
-    <div className="py-8">
-      <div className="content-container flex flex-col justify-center items-center gap-y-10 max-w-4xl h-full w-full mx-auto">
-        <div
-          className="flex flex-col gap-4 max-w-4xl h-full bg-white w-full py-10 px-6"
-          data-testid="order-complete-container"
-        >
-          {/* Success Header */}
-          <div className="text-center w-full mb-8">
-            <div className="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-6">
-              <SVGWrapper className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-              </SVGWrapper>
-            </div>
-            
-            <Heading level="h1" className="text-3xl font-bold text-green-600 mb-4">
-              {isOrderSet ? t.orderSetConfirmed : t.orderConfirmed}
-            </Heading>
-
-            <Text className="text-lg text-gray-600 mb-2">
-              {t.thankYou}
-            </Text>
-
-            <Text className="text-gray-600 mb-6">
-              {isOrderSet ? t.orderSetSuccess : t.orderSuccess}
-            </Text>
-            
-            {/* Email Confirmation */}
-            {orderEmail && (
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-                <Text className="text-blue-800">
-                  {t.confirmationSent}{" "}
-                  <span className="font-semibold">{orderEmail}</span>
-                </Text>
-              </div>
-            )}
+    <div className="min-h-screen bg-stone-50 flex items-center justify-center p-4">
+      <div className="max-w-2xl w-full">
+        <div className="bg-white rounded-sm shadow-sm border border-stone-200 p-8 text-center">
+          {/* Success Icon */}
+          <div className="w-16 h-16 mx-auto mb-6 bg-stone-100 rounded-full flex items-center justify-center">
+            <SVGWrapper className="w-8 h-8 text-stone-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M5 13l4 4L19 7" />
+            </SVGWrapper>
           </div>
+          
+          {/* Title */}
+          <h1 className="text-xl font-light text-stone-800 mb-4 tracking-wide">
+            {isOrderSet ? t.orderSetConfirmed : t.orderConfirmed}
+          </h1>
+
+          {/* Thank you message */}
+          <p className="text-stone-600 mb-8 leading-relaxed text-sm">
+            {t.thankYou}
+          </p>
+
+          {/* Email Confirmation */}
+          {orderEmail && (
+            <div className="bg-stone-50 border border-stone-200 rounded-sm p-4 mb-8">
+              <p className="text-stone-700 text-sm">
+                {t.confirmationSent}{" "}
+                <span className="font-medium">{orderEmail}</span>
+              </p>
+            </div>
+          )}
 
           {/* Order Summary */}
-          <div className="bg-gray-50 rounded-lg p-6 mb-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="bg-stone-50 rounded-sm border border-stone-200 p-6 mb-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="text-center">
-                <Text className="text-sm text-gray-500 uppercase mb-2">
+                <p className="text-xs text-stone-500 uppercase tracking-wide mb-2">
                   {isOrderSet ? t.orderNumbers : t.orderNumber}
-                </Text>
-                <Text className="font-bold text-lg">{displayId}</Text>
+                </p>
+                <p className="font-light text-lg text-stone-800">{displayId}</p>
               </div>
 
               <div className="text-center">
-                <Text className="text-sm text-gray-500 uppercase mb-2">
+                <p className="text-xs text-stone-500 uppercase tracking-wide mb-2">
                   {t.status}
-                </Text>
-                <span className="inline-block bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm font-medium">
+                </p>
+                <span className="inline-block bg-stone-200 text-stone-700 px-3 py-1 text-xs font-light tracking-wide uppercase">
                   {t.confirmed}
                 </span>
               </div>
 
               <div className="text-center">
-                <Text className="text-sm text-gray-500 uppercase mb-2">
+                <p className="text-xs text-stone-500 uppercase tracking-wide mb-2">
                   {t.date}
-                </Text>
-                <Text className="font-bold text-lg">
+                </p>
+                <p className="font-light text-lg text-stone-800">
                   {createdAt.toLocaleDateString(locale)}
-                </Text>
+                </p>
               </div>
 
               <div className="text-center">
-                <Text className="text-sm text-gray-500 uppercase mb-2">
+                <p className="text-xs text-stone-500 uppercase tracking-wide mb-2">
                   {t.total}
-                </Text>
-                <Text className="font-bold text-lg text-green-600">
+                </p>
+                <p className="font-light text-lg text-stone-800">
                   {formatCurrency(orderTotal, orderCurrency)}
-                </Text>
+                </p>
               </div>
             </div>
 
             {/* Order Set Additional Info */}
             {isOrderSet && ordersCount > 0 && (
-              <div className="mt-4 pt-4 border-t border-gray-200">
+              <div className="mt-6 pt-6 border-t border-stone-200">
                 <div className="text-center">
-                  <Text className="text-sm text-gray-600">
+                  <p className="text-sm text-stone-600">
                     {ordersCount} {t.ordersInSet}
                     {itemsCount > 0 && ` • ${itemsCount} produktów`}
-                  </Text>
+                  </p>
                 </div>
               </div>
             )}
@@ -171,46 +165,34 @@ export const OrderConfirmedSection = ({
 
           {/* Multi-store Notice */}
           {isOrderSet && (
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+            <div className="bg-stone-50 border border-stone-200 rounded-sm p-4 mb-8">
               <div className="flex items-start">
-                <SVGWrapper className="w-5 h-5 text-blue-500 mt-0.5 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                <SVGWrapper className="w-5 h-5 text-stone-500 mt-0.5 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </SVGWrapper>
-                <Text className="text-blue-800 text-sm">{t.multiStoreNotice}</Text>
+                <p className="text-stone-700 text-sm leading-relaxed">{t.multiStoreNotice}</p>
               </div>
-            </div>
-          )}
-
-          {/* Order Details - Show if available */}
-          {order && order.items && order.items.length > 0 && (
-            <div className="space-y-6">
-              {/* Uncomment when ready to show details
-              <OrderItems order={order} />
-              <OrderTotals totals={order} />
-              <OrderDetails order={order} />
-              <OrderShipping order={order} />
-              */}
             </div>
           )}
 
           {/* Fallback message if no detailed data */}
           {(!order?.items || order.items.length === 0) && (
-            <div className="text-center py-8 bg-gray-50 rounded-lg">
-              <Text className="text-gray-600">{t.orderDetails}</Text>
+            <div className="bg-stone-50 border border-stone-200 rounded-sm p-6 mb-8">
+              <p className="text-stone-600 text-sm">{t.orderDetails}</p>
             </div>
           )}
 
           {/* Action Buttons */}
-          <div className="flex flex-col sm:flex-row gap-4 justify-center mt-8">
+          <div className="space-y-4">
             <a
               href={`/${locale}/user/orders`}
-              className="inline-flex items-center justify-center px-6 py-3 border border-transparent rounded-md shadow-sm text-base font-medium text-white bg-blue-600 hover:bg-blue-700 transition-colors"
+              className="block w-full bg-stone-800 text-white py-3 px-6 text-sm font-light tracking-wide hover:bg-stone-700 transition-colors duration-200 border-none rounded-none"
             >
               {t.viewOrders}
             </a>
             <a
               href={`/${locale}`}
-              className="inline-flex items-center justify-center px-6 py-3 border border-gray-300 rounded-md shadow-sm text-base font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors"
+              className="block w-full bg-white border border-stone-300 text-stone-700 py-3 px-6 text-sm font-light tracking-wide hover:bg-stone-50 transition-colors duration-200 rounded-none"
             >
               {t.continueShopping}
             </a>
