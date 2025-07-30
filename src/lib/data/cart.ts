@@ -801,7 +801,7 @@ export async function placeOrder(cartId?: string, skipRedirectCheck: boolean = f
 
   // Force absolute URL to ensure correct backend targeting
   // This ensures we're not making relative requests that might resolve to the current page
-  const baseUrl = 'http://localhost:9000' // Hardcoded for reliability
+  const baseUrl = process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || 'http://localhost:9000'
   console.log(`[DEBUG] Using backend URL: ${baseUrl} (env var: ${process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || 'not set'})`)
 
   console.log(`[DEBUG] Placing order for cart ${id}`)

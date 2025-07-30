@@ -320,8 +320,55 @@ const PayUPaymentButton: React.FC<PayUPaymentButtonProps> = ({
         return
       }
 
-      // If no redirect URL found, try to place the order first
-      console.log('No redirect URL found, attempting to place order to generate one')
+      // CRITICAL FIX: Avoid calling placeOrder as it triggers validateCartPaymentsStep which creates duplicate sessions
+      // Instead, try to authorize the existing payment session to get redirect URL
+      console.log('No redirect URL found, attempting to authorize existing payment session')
+      
+      try {
+        // Try to authorize the payment session to get redirect URL without creating new sessions
+        const authResponse = await fetch(`${process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL}/store/payment-sessions/${currentSession.id}/authorize`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-publishable-api-key': process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || ''
+          },
+          body: JSON.stringify({
+            context: { cart_id: cart.id }
+          })
+        })
+        
+        if (authResponse.ok) {
+          const authResult = await authResponse.json()
+          console.log('Payment authorization result:', authResult)
+          
+          // Check for redirect URL in authorization result
+          const authRedirectUrl = 
+            authResult?.redirect_url || 
+            authResult?.redirectUrl || 
+            authResult?.data?.redirect_url || 
+            authResult?.data?.redirectUrl || 
+            authResult?.data?.redirectUri ||
+            authResult?.payu_data?.redirectUri ||
+            authResult?.next_action?.redirect_to_url?.url
+          
+          if (authRedirectUrl) {
+            console.log('Found redirect URL from payment authorization:', authRedirectUrl)
+            localStorage.setItem('payu_cart_id', cart.id)
+            setHasRedirected(true)
+            
+            setTimeout(() => {
+              window.location.href = authRedirectUrl
+            }, 100)
+            
+            return
+          }
+        }
+      } catch (authError) {
+        console.warn('Payment authorization failed, falling back to order placement:', authError)
+      }
+      
+      // Only as last resort, call placeOrder (this will create duplicate session but we have no choice)
+      console.log('Authorization failed, attempting to place order as last resort')
       
       const { placeOrder } = await import('@/lib/data/cart')
       const orderResult = await placeOrder(cart.id)
