@@ -11,10 +11,10 @@ const nextConfig: NextConfig = {
   
   experimental: {
     optimizeCss: true,
-    // Client-side optimizations
-    optimisticClientCache: true,
     // Enable modern bundling
     esmExternals: true,
+    // Disable optimistic client cache to prevent auth state issues
+    // optimisticClientCache: false, // Commented out - this was causing session issues
   },
   
   // Bundle analysis and optimization
@@ -26,23 +26,17 @@ const nextConfig: NextConfig = {
     'algoliasearch',
   ],
   
-  // Advanced webpack optimizations for performance
+  // Simplified webpack optimizations to prevent session/navigation issues
   webpack: (config, { dev, isServer }) => {
-    // Performance optimizations for both dev and prod
-    if (!isServer) {
-      // Reduce bundle size with better tree shaking
+    // Only apply minimal optimizations to prevent conflicts
+    if (!isServer && !dev) {
+      // Production client-side optimizations only
       config.optimization = {
         ...config.optimization,
-        // Note: usedExports conflicts with cacheUnaffected in Next.js 15
-        // Tree shaking is handled by Next.js internally
-        sideEffects: false,
-        
         splitChunks: {
           chunks: 'all',
-          minSize: 20000,
-          maxSize: dev ? 500000 : 200000, // Larger chunks in dev for faster builds
           cacheGroups: {
-            // Framework chunk (React, Next.js core)
+            // Keep framework separate
             framework: {
               test: /[\/]node_modules[\/](react|react-dom|scheduler|next)[\/]/,
               name: 'framework',
@@ -50,80 +44,25 @@ const nextConfig: NextConfig = {
               chunks: 'all',
               enforce: true,
             },
-            
-            // Medusa SDK - separate chunk for better caching
+            // Medusa SDK separate
             medusaSDK: {
               test: /[\/]node_modules[\/]@medusajs[\/]/,
               name: 'medusa-sdk',
               priority: 35,
               chunks: 'all',
-              maxSize: 150000,
             },
-            
-            // Search libraries
-            search: {
-              test: /[\/]node_modules[\/](algoliasearch|react-instantsearch)[\/]/,
-              name: 'search',
-              priority: 30,
-              chunks: 'all',
-              maxSize: 150000,
-            },
-            
-            // UI libraries
-            ui: {
-              test: /[\/]node_modules[\/](@headlessui|@medusajs\/ui|embla-carousel)[\/]/,
-              name: 'ui',
-              priority: 25,
-              chunks: 'all',
-              maxSize: 100000,
-            },
-            
-            // Utilities and smaller libraries
-            lib: {
-              test: /[\/]node_modules[\/](lodash|clsx|date-fns|uuid)[\/]/,
-              name: 'lib',
-              priority: 20,
-              chunks: 'all',
-              maxSize: 80000,
-            },
-            
-            // General vendor chunk for remaining libraries
+            // Default vendor chunk
             vendors: {
               test: /[\/]node_modules[\/]/,
               name: 'vendors',
               priority: 10,
               chunks: 'all',
-              maxSize: 120000,
               minChunks: 2,
-            },
-            
-            // Default chunk
-            default: {
-              minChunks: 2,
-              priority: -20,
-              reuseExistingChunk: true,
-              maxSize: 100000,
             },
           },
         },
       };
     }
-    
-    // Development optimizations
-    if (dev) {
-      // Faster builds in development
-      config.optimization.removeAvailableModules = false;
-      config.optimization.removeEmptyChunks = false;
-      config.optimization.splitChunks = {
-        ...config.optimization.splitChunks,
-        cacheGroups: {
-          default: false,
-          vendors: false,
-        },
-      };
-    }
-    
-    // Module resolution optimizations (removed lodash alias to prevent import conflicts)
     
     return config;
   },

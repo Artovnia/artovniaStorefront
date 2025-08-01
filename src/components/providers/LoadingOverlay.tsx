@@ -11,15 +11,15 @@ export function LoadingOverlay() {
   const { isLoading } = useLoading()
   const [showSpinner, setShowSpinner] = useState(false)
   
-  // Only show spinner if loading takes more than 200ms
-  // This prevents flashing for fast navigations
+  // Only show spinner if loading takes more than 50ms
+  // This provides faster feedback while preventing flashing
   useEffect(() => {
     let timeout: NodeJS.Timeout
     
     if (isLoading) {
       timeout = setTimeout(() => {
         setShowSpinner(true)
-      }, 200)
+      }, 50)
     } else {
       setShowSpinner(false)
     }

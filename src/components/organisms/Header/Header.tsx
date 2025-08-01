@@ -7,7 +7,7 @@ import {
   MobileNavbar,
   Navbar,
 } from "@/components/cells"
-import { Link } from "@/i18n/routing"
+import { SafeI18nLink as Link } from "@/components/atoms/SafeI18nLink"
 import { HeartIcon } from "@/icons"
 import { listCategories } from "@/lib/data/categories"
 import { PARENT_CATEGORIES } from "@/const"

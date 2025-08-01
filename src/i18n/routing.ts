@@ -3,7 +3,7 @@ import { createNavigation } from "next-intl/navigation"
 
 const region = process.env.NEXT_PUBLIC_DEFAULT_REGION || "pl"
 export const routing = defineRouting({
-  locales: [region, "gb"],
+  locales: [region, "pl"],
   defaultLocale: region,
   localeDetection: false,
   alternateLinks: false,

@@ -48,7 +48,6 @@ async function getProductWithMeasurements(productId: string) {
           }
         })
 
-        console.log(`✅ Fetched product measurements: ${productId}`);
         return response.product
       } catch (error) {
         console.error(`Error fetching product with measurements for product ${productId}:`, error)
@@ -89,7 +88,6 @@ function formatMeasurement(
 ): SingleProductMeasurement | null {
   // First ensure we have a valid number
   if (value === null || value === undefined) {
-    console.log(`Skipping null/undefined measurement for ${label}`)
     return null
   }
   
@@ -97,7 +95,6 @@ function formatMeasurement(
   const numValue = typeof value === 'string' ? parseFloat(value) : Number(value)
   
   if (isNaN(numValue)) {
-    console.log(`Skipping NaN measurement for ${label}:`, value)
     return null
   }
   
@@ -138,12 +135,10 @@ export const getProductMeasurements = async (
   // Check if we have cached measurements first
   const cached = measurementDeduplicator.getCached<SingleProductMeasurement[]>(cacheKey);
   if (cached) {
-    console.log(`💾 Using cached measurements for ${productId}`);
     measureRender();
     return cached;
   }
   
-  console.log(`🔍 Processing measurements for:`, { productId, selectedVariantId, locale });
   try {
     // Fetch the product with all measurement fields (uses deduplication)
     const product = await getProductWithMeasurements(productId)
@@ -154,22 +149,6 @@ export const getProductMeasurements = async (
       return emptyResult;
     }
     
-    console.log(`Product measurements data:`, {
-      productId,
-      selectedVariantId,
-      locale,
-      productDimensions: {
-        weight: product.weight,
-        length: product.length,
-        height: product.height,
-        width: product.width
-      },
-      variantsCount: product.variants?.length || 0
-    })
-    
-    // Store all measurements here
-    const measurements: SingleProductMeasurement[] = []
-    
     // Get the translated labels based on locale
     const labels = dimensionLabels[locale as keyof typeof dimensionLabels] || dimensionLabels.en
     
@@ -179,19 +158,6 @@ export const getProductMeasurements = async (
     
     // Get all dimension keys
     const dimensionKeys = [...physicalDimensions, ...specialDimensions]
-    
-    // First, add product-level measurements
-    dimensionKeys.forEach(key => {
-      // Safely access the property
-      const value = product ? (product as any)[key] : undefined
-      const label = labels[key as keyof typeof labels]
-      
-      const measurement = formatMeasurement(value, key, label, locale)
-      if (measurement) {
-        measurements.push(measurement)
-        console.log(`Added product measurement: ${label}=${value}`)
-      }
-    })
     
     // Create separate collections to track measurements by source
     const productLevelMeasurements: SingleProductMeasurement[] = [];
@@ -205,11 +171,8 @@ export const getProductMeasurements = async (
       const measurement = formatMeasurement(value, key, label, locale);
       if (measurement) {
         productLevelMeasurements.push(measurement);
-        console.log(`DEBUG MEASUREMENTS - Added product-level measurement: ${label}=${value}`);
       }
     });
-    
-    console.log(`DEBUG MEASUREMENTS - Product-level measurements:`, productLevelMeasurements);
     
     // 2. Then collect all variant-level measurements, organized by variant ID
     if (product.variants && product.variants.length > 0) {
@@ -227,25 +190,16 @@ export const getProductMeasurements = async (
             if (measurement) {
               measurement.variantId = variantId;
               variantMeasurementsMap[variantId].push(measurement);
-              console.log(`DEBUG MEASUREMENTS - Added variant measurement for ${variantId}: ${label}=${value}`);
             }
           }
         });
-        
-        console.log(`DEBUG MEASUREMENTS - Variant ${variantId} has ${variantMeasurementsMap[variantId].length} measurements`);
       });
     }
     
     // 3. If we have a selected variant, return its measurements + product fallbacks
     if (selectedVariantId) {
-      console.log(`DEBUG MEASUREMENTS - Processing selected variant: ${selectedVariantId}`);
-      
       // Get the measurements for the selected variant
       const selectedVariantMeasurements = variantMeasurementsMap[selectedVariantId] || [];
-      
-      if (selectedVariantMeasurements.length === 0) {
-        console.log(`DEBUG MEASUREMENTS - WARNING: No measurements found for selected variant ${selectedVariantId}`);
-      }
       
       // Find which product-level measurements we need to include as fallbacks
       // (only physical dimensions not already covered by the variant)
@@ -261,13 +215,6 @@ export const getProductMeasurements = async (
       // Combine variant measurements with product fallbacks
       const result = [...selectedVariantMeasurements, ...productFallbacks];
       
-      console.log(`📊 Final result for variant ${selectedVariantId}:`, {
-        variantMeasurements: selectedVariantMeasurements.length,
-        productFallbacks: productFallbacks.length,
-        totalMeasurements: result.length,
-        result: result.map(m => ({ label: m.label, variantId: m.variantId || 'product' }))
-      });
-      
       // Cache the result for future requests
       measurementDeduplicator.dedupe(
         cacheKey,
@@ -278,9 +225,6 @@ export const getProductMeasurements = async (
       measureRender();
       return result;
     }
-    
-    // If no variant is selected, return all product-level measurements
-    console.log(`📊 No variant selected, returning ${productLevelMeasurements.length} product-level measurements`);
     
     // Cache the result for future requests
     measurementDeduplicator.dedupe(

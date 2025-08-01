@@ -1,6 +1,6 @@
 import { Button } from "@/components/atoms"
 import { CartItems, CartSummary } from "@/components/organisms"
-import { Link } from "@/i18n/routing"
+import { Link } from "@/components/atoms"
 import { retrieveCart } from "@/lib/data/cart"
 import CartPromotionCode from "../CartReview/CartPromotionCode"
 
@@ -25,7 +25,7 @@ export const Cart = async () => {
             currency_code={cart?.currency_code || ""}
             tax={cart?.tax_total || 0}
           />
-          <Link href="/checkout?step=address">
+          <Link href="/checkout?step=address" prefetch={true}>
             <Button className="w-full py-3 flex justify-center items-center">
               Przejdź do realizacji
             </Button>

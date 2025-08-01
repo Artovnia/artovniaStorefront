@@ -19,6 +19,7 @@ import { TabsTrigger } from "./TabsTrigger/TabsTrigger"
 import { NavigationItem } from "./NavigationItem/NavigationItem"
 import { LogoutButton } from "./LogoutButton/LogoutButton"
 import { Loader } from "./Loader/Loader"
+import { SafeI18nLink } from "./SafeI18nLink"
 
 export {
   Button,
@@ -41,5 +42,6 @@ export {
   TabsTrigger,
   NavigationItem,
   LogoutButton,
-  Loader
+  Loader,
+  SafeI18nLink
 }

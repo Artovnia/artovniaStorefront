@@ -10,7 +10,7 @@ import { CheckCircleSolidWrapper, ChevronUpDownWrapper, LoaderWrapper } from "@/
 import { HttpTypes } from "@medusajs/types"
 import { clx, Heading, Text } from "@medusajs/ui"
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
-import { Fragment, useEffect, useState } from "react"
+import { Fragment, useEffect, useState, useCallback, useMemo } from "react"
 import { Button } from "@/components/atoms"
 import { Modal, SelectField } from "@/components/molecules"
 import { CartShippingMethodRow } from "./CartShippingMethodRow"
@@ -56,8 +56,12 @@ const CartShippingMethodsSection: React.FC<ShippingProps> = ({
   availableShippingMethods,
 }) => {
   const [isLoadingPrices, setIsLoadingPrices] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
   const [calculatedPricesMap, setCalculatedPricesMap] = useState<
     Record<string, number>
+  >({})
+  const [priceCalculationCache, setPriceCalculationCache] = useState<
+    Record<string, { price: number; timestamp: number }>
   >({})
   const [error, setError] = useState<string | null>(null)
   const [missingModal, setMissingModal] = useState(false)
@@ -81,7 +85,7 @@ const CartShippingMethodsSection: React.FC<ShippingProps> = ({
     // Only run this logic if we have cart items and shipping methods data
     if (cart.items && _shippingMethods) {
       const set = new Set<string>()
-      cart.items.forEach((item) => {
+      cart.items.forEach((item: any) => {
         if (item?.product?.seller?.id) {
           set.add(item.product.seller.id)
         }
@@ -130,6 +134,18 @@ const CartShippingMethodsSection: React.FC<ShippingProps> = ({
     const requestId = Date.now();
     const currentRequestId = requestId;
     
+    // Cache key for this calculation
+    const cacheKey = `${cart.id}-${calculatedMethods.map(m => m.id).sort().join('-')}`;
+    const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+    
+    // Check if we have cached results that are still valid
+    const cachedResult = priceCalculationCache[cacheKey];
+    if (cachedResult && (Date.now() - cachedResult.timestamp) < CACHE_DURATION) {
+      console.log('Using cached shipping prices');
+      setIsLoadingPrices(false);
+      return;
+    }
+    
     const promises = calculatedMethods.map((sm) => 
       calculatePriceForShippingOption(sm.id, cart.id)
     );
@@ -152,6 +168,15 @@ const CartShippingMethodsSection: React.FC<ShippingProps> = ({
       
       if (pricesChanged) {
         setCalculatedPricesMap(pricesMap);
+        
+        // Cache the results
+        setPriceCalculationCache(prev => ({
+          ...prev,
+          [cacheKey]: {
+            price: Object.values(pricesMap).reduce((sum, price) => sum + price, 0),
+            timestamp: Date.now()
+          }
+        }));
       }
       
       setIsLoadingPrices(false);
@@ -161,27 +186,64 @@ const CartShippingMethodsSection: React.FC<ShippingProps> = ({
     });
   }, [availableShippingMethods, _shippingMethods, cart.id, calculatedPricesMap, isLoadingPrices])
 
-  const handleSubmit = () => {
-    router.push(pathname + "?step=payment", { scroll: false })
-  }
-
-  const handleSetShippingMethod = async (id: string | null) => {
-    setIsLoadingPrices(true)
+  const handleSubmit = async () => {
+    setIsSubmitting(true)
     setError(null)
-
-    if (!id) {
-      setIsLoadingPrices(false)
-      return
+    
+    try {
+      // Add a small delay to show the loading state
+      await new Promise(resolve => setTimeout(resolve, 100))
+      router.replace(pathname + "?step=payment")
+    } catch (err) {
+      setError("Wystąpił błąd podczas przechodzenia do płatności")
+    } finally {
+      setIsSubmitting(false)
     }
-
-    await setShippingMethod({ cartId: cart.id, shippingMethodId: id }).catch(
-      (err) => {
-        setError(err.message)
-      }
-    )
-
-    setIsLoadingPrices(false)
   }
+
+  // Memoize shipping method handler to prevent unnecessary re-renders
+  const handleSetShippingMethod = useCallback(
+    async (shippingMethodId: string) => {
+      if (!cart?.id) {
+        console.error("No cart ID available")
+        return
+      }
+
+      setError(null)
+      setIsLoadingPrices(true)
+
+      try {
+        const response = await setShippingMethod({
+          cartId: cart.id,
+          shippingMethodId,
+        })
+
+        if (response) {
+          console.log("✅ Shipping method set successfully:", {
+            shippingMethodId,
+            cartId: cart.id,
+          })
+
+          // Force page refresh to update all components
+          router.refresh()
+        }
+      } catch (error: any) {
+        console.error("❌ Error setting shipping method:", error)
+        setError(error.message || "Failed to set shipping method")
+      } finally {
+        setIsLoadingPrices(false)
+      }
+    },
+    [cart.id, router]
+  )
+
+  // Handler for shipping method removal
+  const handleMethodRemoved = useCallback(async () => {
+    console.log("🔄 Shipping method removed, refreshing cart state...")
+    
+    // Force page refresh to ensure CartSummary shows shipping_total = 0
+    router.refresh()
+  }, [router])
 
   useEffect(() => {
     setError(null)
@@ -198,9 +260,10 @@ const CartShippingMethodsSection: React.FC<ShippingProps> = ({
     return acc
   }, {})
 
-  const handleEdit = () => {
+  // Memoize handleEdit to prevent unnecessary re-renders
+  const handleEdit = useCallback(() => {
     router.replace(pathname + "?step=delivery")
-  }
+  }, [router, pathname])
 
   const missingSellers = cart.items
     ?.filter((item) =>
@@ -267,7 +330,7 @@ const CartShippingMethodsSection: React.FC<ShippingProps> = ({
                         {groupedBySellerId[key][0].seller_name}
                       </Heading>
                       <Listbox
-                        value={cart.shipping_methods?.[0]?.id}
+                        value={cart.shipping_methods?.[0]?.shipping_option_id || ""}
                         onChange={(value) => {
                           handleSetShippingMethod(value)
                         }}
@@ -340,7 +403,7 @@ const CartShippingMethodsSection: React.FC<ShippingProps> = ({
                 })}
                 {cart && (cart.shipping_methods?.length ?? 0) > 0 && (
                   <div className="flex flex-col">
-                    {cart.shipping_methods?.map((method) => {
+                    {cart.shipping_methods?.map((method: any) => {
                       // Check if this is an InPost shipping method
                       const isInpostMethod = isInpostShippingOption(method);
                       
@@ -365,6 +428,7 @@ const CartShippingMethodsSection: React.FC<ShippingProps> = ({
                           <CartShippingMethodRow
                             method={method}
                             currency_code={cart.currency_code}
+                            onMethodRemoved={handleMethodRemoved}
                           />
                           
                           {/* Wrap with InPost component if it's an InPost shipping method */}
@@ -401,10 +465,10 @@ const CartShippingMethodsSection: React.FC<ShippingProps> = ({
             <Button
               onClick={handleSubmit}
               variant="tonal"
-              disabled={!cart.shipping_methods?.[0]}
-              loading={isLoadingPrices}
+              disabled={!cart.shipping_methods?.[0] || isSubmitting || isLoadingPrices}
+              loading={isSubmitting || isLoadingPrices}
             >
-              Kontynuuj do płatności
+              {isSubmitting ? "Przechodzenie..." : "Kontynuuj do płatności"}
             </Button>
           </div>
         </>
@@ -413,7 +477,7 @@ const CartShippingMethodsSection: React.FC<ShippingProps> = ({
           <div className="text-small-regular">
             {cart && (cart.shipping_methods?.length ?? 0) > 0 && (
               <div className="flex flex-col">
-                {cart.shipping_methods?.map((method) => (
+                {cart.shipping_methods?.map((method: any) => (
                   <div key={method.id} className="mb-4 border rounded-md p-4">
                     <Text className="txt-medium-plus text-ui-fg-base mb-1">
                       Metoda

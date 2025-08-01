@@ -1,33 +1,25 @@
 "use client"
 
-import NextLink from "next/link"
-import { ReactNode, useCallback } from "react"
-import { usePathname } from "next/navigation"
+import React, { useCallback } from 'react'
+import { Link as I18nLink, usePathname } from '@/i18n/routing'
+import { ComponentProps } from 'react'
 
-interface LinkProps extends Omit<React.AnchorHTMLAttributes<HTMLAnchorElement>, 'href'> {
-  href: string
-  children: ReactNode
-  className?: string
-  prefetch?: boolean
+interface SafeI18nLinkProps extends ComponentProps<typeof I18nLink> {
   force?: boolean // Allow navigation to same route if needed
 }
 
 /**
- * CRITICAL FIX: Enhanced Link component that prevents navigation freeze
+ * CRITICAL FIX: Safe wrapper for i18n Link component that prevents navigation freeze
  * Blocks navigation to the same route to prevent infinite loading states
  */
-export const Link = ({
+export const SafeI18nLink = ({
   href,
   children,
-  className,
-  prefetch = true,
   force = false,
   onClick,
   ...props
-}: LinkProps) => {
+}: SafeI18nLinkProps) => {
   const pathname = usePathname()
-  
-  
   
   const handleClick = useCallback((e: React.MouseEvent<HTMLAnchorElement>) => {
     // Simplified click handler - let LoadingProvider handle navigation logic
@@ -41,16 +33,14 @@ export const Link = ({
   
   
   return (
-    <NextLink 
-      href={href} 
-      className={className} 
-      prefetch={prefetch} 
+    <I18nLink 
+      href={href}
       onClick={handleClick}
       {...props}
     >
       {children}
-    </NextLink>
+    </I18nLink>
   )
 }
 
-export default Link
+export default SafeI18nLink

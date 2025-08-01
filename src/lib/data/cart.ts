@@ -72,7 +72,7 @@ export async function retrieveCart(cartId?: string) {
       
     // Check if cart is completed and handle accordingly using our extended type
     if (cart && cart.completed_at) {
-      console.log(`Cart ${cart.id} is already completed. Removing cart ID to allow new cart creation.`);
+    
       // Don't try to remove cart ID here, as it causes the cookie error
       // The header component should handle this in a server action
       return null; // Return null so a new cart can be created
@@ -80,7 +80,7 @@ export async function retrieveCart(cartId?: string) {
     
     // Also check other indicators of completion
     if (cart && (cart.status === "complete" || cart.completed === true || cart.payment_status === "captured")) {
-      console.log(`Cart ${cart.id} is completed (via status fields). Removing cart ID to allow new cart creation.`);
+      
       return null;
     }
     
@@ -97,6 +97,175 @@ export async function retrieveCart(cartId?: string) {
  */
 export async function getCart() {
   return retrieveCart()
+}
+
+/**
+ * Retrieves cart with fields optimized for the address section
+ * Only loads basic cart info, items, and region data
+ */
+export async function retrieveCartForAddress(cartId?: string) {
+  const id = cartId || (await getCartId())
+
+  if (!id) {
+    return null
+  }
+
+  const headers = {
+    ...(await getAuthHeaders())
+  }
+
+  try {
+    const fields = "*items,*region,*region.countries,*items.product,*items.variant,*items.variant.options,items.variant.options.option.title,*items.thumbnail,*items.metadata,+items.total,+items.unit_price,+items.original_total,*promotions,*shipping_methods,*items.product.seller,*payment_collection,*payment_collection.payment_sessions,email,*shipping_address,*billing_address,subtotal,total,tax_total,item_total,shipping_total,currency_code"
+    const result = await sdk.client
+      .fetch<{ cart: ExtendedStoreCart }>(`/store/carts/${id}`, {
+        method: "GET",
+        query: {
+          fields,
+        },
+        headers,
+        cache: "no-cache",
+      });
+      
+    const cart = result.cart;
+      
+    // Check if cart is completed
+    if (cart && (cart.completed_at || cart.status === "complete" || cart.completed === true)) {
+      return null;
+    }
+    
+    return cart as HttpTypes.StoreCart;
+  } catch (error) {
+    console.warn(`Could not retrieve cart for address ${id}:`, error);
+    return null;
+  }
+}
+
+/**
+ * Retrieves cart with fields optimized for the shipping section
+ * Loads items, shipping methods, and seller information
+ */
+export async function retrieveCartForShipping(cartId?: string) {
+  const id = cartId || (await getCartId())
+
+  if (!id) {
+    return null
+  }
+
+  const headers = {
+    ...(await getAuthHeaders())
+  }
+
+  try {
+    const fields = "*items,*region,*region.countries,*items.product,*items.variant,*items.variant.options,items.variant.options.option.title,*items.thumbnail,*items.metadata,+items.total,+items.unit_price,+items.original_total,*promotions,*shipping_methods,*items.product.seller,*payment_collection,*payment_collection.payment_sessions,*shipping_address,*billing_address,email,subtotal,total,tax_total,item_total,shipping_total,currency_code"
+    const result = await sdk.client
+      .fetch<{ cart: ExtendedStoreCart }>(`/store/carts/${id}`, {
+        method: "GET",
+        query: {
+          fields,
+        },
+        headers,
+        cache: "no-cache",
+      });
+      
+    const cart = result.cart;
+      
+    // Check if cart is completed
+    if (cart && (cart.completed_at || cart.status === "complete" || cart.completed === true)) {
+      return null;
+    }
+    
+    return cart as HttpTypes.StoreCart;
+  } catch (error) {
+    console.warn(`Could not retrieve cart for shipping ${id}:`, error);
+    return null;
+  }
+}
+
+/**
+ * Retrieves cart with fields optimized for the payment section
+ * Loads payment collection, payment sessions, and minimal item data
+ */
+export async function retrieveCartForPayment(cartId?: string) {
+  const id = cartId || (await getCartId())
+
+  if (!id) {
+    return null
+  }
+
+  const headers = {
+    ...(await getAuthHeaders())
+  }
+
+  try {
+    const fields = "*items,*region,*region.countries,*items.product,*items.variant,*items.variant.options,items.variant.options.option.title,*items.thumbnail,*items.metadata,+items.total,+items.unit_price,+items.original_total,*promotions,*shipping_methods,*items.product.seller,*payment_collection,*payment_collection.payment_sessions,*gift_cards,email,subtotal,total,tax_total,item_total,shipping_total,currency_code"
+    const result = await sdk.client
+      .fetch<{ cart: ExtendedStoreCart }>(`/store/carts/${id}`, {
+        method: "GET",
+        query: {
+          fields,
+        },
+        headers,
+        cache: "no-cache",
+      });
+      
+    const cart = result.cart;
+      
+    // Check if cart is completed
+    if (cart && (cart.completed_at || cart.status === "complete" || cart.completed === true)) {
+      return null;
+    }
+    
+    return cart as HttpTypes.StoreCart;
+  } catch (error) {
+    console.warn(`Could not retrieve cart for payment ${id}:`, error);
+    return null;
+  }
+}
+
+/**
+ * Retrieves cart with fields optimized for the review section
+ * Loads all necessary data for order review and completion
+ */
+export async function retrieveCartForReview(cartId?: string) {
+  const id = cartId || (await getCartId())
+
+  if (!id) {
+    return null
+  }
+
+  const headers = {
+    ...(await getAuthHeaders())
+  }
+
+  try {
+    const result = await sdk.client
+      .fetch<{ cart: ExtendedStoreCart }>(`/store/carts/${id}`, {
+        method: "GET",
+        query: {
+          fields:
+            "*items,*region,*region.countries,*items.product,*items.variant,*items.variant.options," +
+            "items.variant.options.option.title,*items.thumbnail,*items.metadata," +
+            "+items.total,+items.unit_price,+items.original_total,*promotions,*shipping_methods," +
+            "*items.product.seller,*payment_collection,*payment_collection.payment_sessions,*gift_cards," +
+            "*shipping_address,*billing_address,email,subtotal,total,tax_total,item_total,shipping_total,currency_code",
+        },
+        headers,
+        cache: "no-cache",
+      });
+      
+    const cart = result.cart;
+      
+    // Check if cart is completed
+    if (cart && (cart.completed_at || cart.status === "complete" || cart.completed === true)) {
+      console.log(`Cart ${cart.id} is completed. Removing cart ID.`);
+      return null;
+    }
+    
+    return cart as HttpTypes.StoreCart;
+  } catch (error) {
+    console.warn(`Could not retrieve cart for review ${id}:`, error);
+    return null;
+  }
 }
 
 export async function getOrSetCart(countryCode: string) {
@@ -292,9 +461,12 @@ export async function setShippingMethod({
       },
     }
   )
-    .then(async () => {
+    .then(async (response) => {
       const cartCacheTag = await getCacheTag("carts")
       revalidateTag(cartCacheTag)
+      
+      // Return the response data so callers can access the updated cart
+      return response
     })
     .catch(medusaError)
 }
@@ -350,8 +522,6 @@ export async function initiatePaymentSession(
     ...(await getAuthHeaders()),
     'x-publishable-api-key': await getPublishableApiKey()
   }
-
-  console.log(`[DEBUG] Initiating payment session for cart ${cart.id} with provider ${data.provider_id}`)
   
   try {
     const response = await sdk.store.payment.initiatePaymentSession(cart, {
@@ -363,10 +533,8 @@ export async function initiatePaymentSession(
     
     const cartCacheTag = await getCacheTag("carts")
     revalidateTag(cartCacheTag)
-    console.log(`[DEBUG] Payment session initiated successfully`)
     return response
   } catch (error) {
-    console.error(`[ERROR] Failed to initiate payment session:`, error)
     throw medusaError(error)
   }
 }
@@ -383,7 +551,6 @@ export async function selectPaymentSession(
   cartId: string,
   providerId: string
 ) {
-  console.log(`Selecting payment session for cart ${cartId}, provider ${providerId}`)
   
   const headers = {
     ...(await getAuthHeaders()),
@@ -432,7 +599,6 @@ export async function selectPaymentSession(
           }
         }
       );
-      console.log(`Updated cart metadata with payment_provider_id: ${providerId}`);
     } catch (metadataError) {
       console.error('Failed to update cart metadata, but payment session was selected:', metadataError);
       // Continue even if metadata update fails - this is just for redundancy
@@ -440,12 +606,10 @@ export async function selectPaymentSession(
     
     const cartCacheTag = await getCacheTag("carts");
     revalidateTag(cartCacheTag);
-    console.log(`Payment session selected successfully`);
     
     return response.cart;
     
   } catch (error) {
-    console.error(`Failed to select payment session:`, error);
     throw medusaError(error);
   }
 }
@@ -477,7 +641,6 @@ export async function applyPromotions(codes: string[]) {
  * @param sellerId - Optional seller ID if known in advance
  */
 export async function removeShippingMethod(shippingMethodId: string, sellerId?: string) {
-  console.log(`Removing shipping method: ${shippingMethodId}${sellerId ? `, seller: ${sellerId}` : ''}`)
   const cartId = await getCartId()
 
   if (!cartId) {
@@ -498,7 +661,6 @@ export async function removeShippingMethod(shippingMethodId: string, sellerId?: 
   // Only fetch cart data if we don't already have a seller ID
   if (!extractedSellerId) {
     try {
-      console.log('Fetching cart to get shipping method details...');
       const cartResponse = await fetch(
         `${process.env.MEDUSA_BACKEND_URL}/store/carts/${cartId}`,
         {
@@ -514,26 +676,16 @@ export async function removeShippingMethod(shippingMethodId: string, sellerId?: 
         
         if (method) {
           shippingMethodData = method;
-          console.log('Found shipping method in cart:', {
-            id: method.id,
-            name: method.name,
-            data: method.data,
-            shipping_option_id: method.shipping_option_id
-          });
           
           // Try to extract seller ID from method data
           if (method.data?.seller_id) {
             extractedSellerId = method.data.seller_id;
-            console.log(`Extracted seller ID from method data: ${extractedSellerId}`);
           } 
           // Fallback extraction methods if needed
           else if (method.data?.type === 'seller_specific' && method.data?.seller_specific_id) {
             extractedSellerId = method.data.seller_specific_id;
-            console.log(`Extracted seller ID from seller_specific_id: ${extractedSellerId}`);
           }
-        } else {
-          console.log(`Method ${shippingMethodId} not found in cart shipping methods`);
-        }
+        } 
       }
     } catch (cartError) {
       console.error('Error fetching cart for shipping method details:', cartError);
@@ -541,7 +693,7 @@ export async function removeShippingMethod(shippingMethodId: string, sellerId?: 
   }
 
   try {
-    console.log(`Sending DELETE request to ${process.env.MEDUSA_BACKEND_URL}/store/carts/${cartId}/shipping-methods`)
+    
     
     // Build request body with all available context
     const requestBody = { 
@@ -551,12 +703,10 @@ export async function removeShippingMethod(shippingMethodId: string, sellerId?: 
     
     // Include seller ID if we have it
     if (extractedSellerId) {
-      console.log(`Including seller_id ${extractedSellerId} in request`);
       // @ts-ignore - the API might use this for context
       requestBody.seller_id = extractedSellerId;
     }
     
-    console.log(`Request body: ${JSON.stringify(requestBody)}`);
     
     const response = await fetch(
       `${process.env.MEDUSA_BACKEND_URL}/store/carts/${cartId}/shipping-methods`,
@@ -568,7 +718,7 @@ export async function removeShippingMethod(shippingMethodId: string, sellerId?: 
       }
     )
     
-    console.log(`Response status: ${response.status}`);
+    
     
     if (!response.ok) {
       const errorData = await response.json();
@@ -580,21 +730,17 @@ export async function removeShippingMethod(shippingMethodId: string, sellerId?: 
     let responseData = null;
     try {
       responseData = await response.json();
-      console.log("Shipping method removal response data:", responseData);
     } catch (err) {
-      console.log("No JSON response from shipping method removal");
       // If no JSON response, it's likely just a 200 OK with no body
       // We can continue without error
     }
     
     // Revalidate cart data
     const cartCacheTag = await getCacheTag("carts");
-    console.log(`Revalidating cart cache tag: ${cartCacheTag}`);
     revalidateTag(cartCacheTag);
     
     // Also revalidate fulfillment data to refresh shipping options
     const fulfillmentTag = await getCacheTag("fulfillment");
-    console.log(`Revalidating fulfillment cache tag: ${fulfillmentTag}`);
     revalidateTag(fulfillmentTag);
     
     return {
@@ -802,14 +948,10 @@ export async function placeOrder(cartId?: string, skipRedirectCheck: boolean = f
   // Force absolute URL to ensure correct backend targeting
   // This ensures we're not making relative requests that might resolve to the current page
   const baseUrl = process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || 'http://localhost:9000'
-  console.log(`[DEBUG] Using backend URL: ${baseUrl} (env var: ${process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || 'not set'})`)
-
-  console.log(`[DEBUG] Placing order for cart ${id}`)
   
   try {
     // First, get the current cart to check payment session status
     const cartUrl = `${baseUrl}/store/carts/${id}?fields=*payment_collection.payment_sessions`
-    console.log(`[DEBUG] Cart fetch URL: ${cartUrl}`)
     const cartResponse = await fetch(cartUrl, {
       headers
     })
@@ -829,7 +971,6 @@ export async function placeOrder(cartId?: string, skipRedirectCheck: boolean = f
         const redirectUrl = sessionData.redirect_url || sessionData.redirectUrl || sessionData.redirectUri
         
         if (isPayUProvider && redirectUrl && session.status === 'pending') {
-          console.log(`[DEBUG] Found PayU redirect URL:`, redirectUrl)
           return {
             type: 'redirect',
             redirectUrl: redirectUrl,
@@ -837,16 +978,13 @@ export async function placeOrder(cartId?: string, skipRedirectCheck: boolean = f
           }
         }
       }
-    } else {
-      console.log(`[DEBUG] Skipping redirect check as requested, proceeding with cart completion`)
-    }
+    } 
     
-    // No redirect needed or skipRedirectCheck is true, proceed with cart completion
-    console.log(`[DEBUG] No redirect needed, completing cart`)
+    
 
     // Use the baseUrl defined at the top of the function
     const completionUrl = `${baseUrl}/store/carts/${id}/complete`
-    console.log(`[DEBUG] Cart completion URL: ${completionUrl}`)
+    
     
     // If skipRedirectCheck is true, we're coming back from a payment redirect
     // Add additional data to help the backend know payment is complete
@@ -877,7 +1015,6 @@ export async function placeOrder(cartId?: string, skipRedirectCheck: boolean = f
     }
     
     const result = await completionResponse.json()
-    console.log(`[DEBUG] Cart completion result:`, result)
     
     // Clear cart ID after successful completion
     if (result.type === 'order_set' || result.order_set || result.type === 'order' || result.order) {
@@ -946,7 +1083,6 @@ export async function capturePayment(paymentId: string) {
   const headers = await getPaymentHeaders();
   
   try {
-    console.log(`[DEBUG] Manually capturing payment: ${paymentId}`);
     
     const response = await fetch(`${process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL}/store/payu/capture`, {
       method: 'POST',
@@ -965,11 +1101,9 @@ export async function capturePayment(paymentId: string) {
     }
     
     const result = await response.json();
-    console.log(`[DEBUG] Payment captured successfully:`, result);
     
     return result;
   } catch (error: any) {
-    console.error(`[ERROR] Failed to capture payment:`, error);
     throw error;
   }
 }
@@ -989,10 +1123,8 @@ export async function placeOrderWithCapture(cartId?: string, skipRedirectCheck: 
       for (const session of paymentSessions) {
         if (session.provider_id?.includes('payu') && session.status === 'authorized') {
           try {
-            console.log(`[DEBUG] Attempting to capture authorized payment: ${session.id}`);
             await capturePayment(session.id);
           } catch (captureError) {
-            console.warn(`[WARN] Could not capture payment ${session.id}:`, captureError);
             // Don't fail the order placement
           }
         }

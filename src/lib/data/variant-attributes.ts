@@ -8,7 +8,6 @@ import { getAuthHeaders } from "./cookies"
  */
 export async function getVariantAttributes(productId: string, variantId: string) {
   try {
-    console.log(`Fetching attributes for variant ${variantId} of product ${productId}`)
     
     const headers = {
       ...(await getAuthHeaders()),
@@ -38,8 +37,7 @@ export async function getVariantAttributes(productId: string, variantId: string)
         }
       }
     )
-
-    console.log(`Retrieved ${response.attribute_values?.length || 0} attributes for variant ${variantId}`, response)
+    
     return response
   } catch (error) {
     console.error(`Failed to fetch variant attributes: ${error instanceof Error ? error.message : 'Unknown error'}`)

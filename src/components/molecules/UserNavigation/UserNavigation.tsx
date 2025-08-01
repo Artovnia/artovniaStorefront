@@ -46,7 +46,7 @@ const defaultNavigationItems = [
     href: "/user/reviews",
   },
   {
-    label: "Wishlist",
+    label: "Lista życzeń",
     href: "/user/wishlist",
   },
 ]
@@ -114,6 +114,7 @@ export const UserNavigation = () => {
           href={item.href}
           active={path === item.href}
           hasNotification={item.hasNotification}
+          prefetch={true}
         >
           {item.href === '/user/messages' && item.hasNotification ? (
             <span className="flex items-center gap-2">
@@ -129,6 +130,7 @@ export const UserNavigation = () => {
       <NavigationItem
         href={"/user/settings"}
         active={path === "/user/settings"}
+        prefetch={true}
       >
         Ustawienia
       </NavigationItem>

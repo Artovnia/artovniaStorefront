@@ -150,7 +150,7 @@ export default function PayUReturnPage() {
             },
             body: JSON.stringify({
               session_id: paymentSessionId,
-              context: {
+              data: {
                 cart_id: storedCartId,
                 payment_method: detectedPaymentMethod,
                 payu_order_id: searchParams.get('orderId') || extOrderId || '',

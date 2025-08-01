@@ -7,6 +7,19 @@ import { Text } from "@medusajs/ui"
 import InpostParcelInfo from "@/components/molecules/InpostParcelInfo/InpostParcelInfo"
 import { InpostParcelData } from "@/lib/services/inpost-api"
 
+// Helper function to calculate shipping total from shipping methods
+const calculateShippingTotal = (shippingMethods?: any[]): number => {
+  if (!shippingMethods || shippingMethods.length === 0) {
+    return 0
+  }
+  
+  return shippingMethods.reduce((total, method) => {
+    const amount = method?.amount || 0
+    
+    return total + amount
+  }, 0)
+}
+
 
 const Review = ({ cart }: { cart: any }) => {
   const paidByGiftcard =
@@ -19,17 +32,7 @@ const Review = ({ cart }: { cart: any }) => {
   const hasSelectedPaymentSession = !!cart.payment_collection?.payment_sessions?.some((s: any) => s.selected === true)
   const hasPaymentProvider = !!(cart.metadata?.payment_provider_id)
   
-  // Log payment-related information for debugging
-  console.log('Cart review payment info:', {
-    hasPaymentCollection,
-    hasPaymentSessions,
-    hasPaymentSession,
-    hasSelectedPaymentSession,
-    hasPaymentProvider,
-    paymentProviderId: cart.metadata?.payment_provider_id,
-    shippingAddress: !!cart.shipping_address,
-    shippingMethods: cart.shipping_methods?.length || 0
-  })
+  
 
   // Updated condition to check for payment information in multiple locations
   // Also check metadata for payment provider information
@@ -47,9 +50,11 @@ const Review = ({ cart }: { cart: any }) => {
         <CartItems cart={cart} />
       </div>
       <div className="w-full mb-6 border rounded-sm p-4">
+      
+        
         <CartSummary
           item_total={cart?.item_total || 0}
-          shipping_total={cart?.shipping_total || 0}
+          shipping_total={cart?.shipping_total || calculateShippingTotal(cart?.shipping_methods)}
           total={cart?.total || 0}
           currency_code={cart?.currency_code || ""}
           tax={cart?.tax_total || 0}
@@ -59,9 +64,18 @@ const Review = ({ cart }: { cart: any }) => {
         {cart.shipping_methods && cart.shipping_methods.length > 0 && (
           <div className="mt-4 pt-4 border-t">
             <Text className="txt-medium-plus text-ui-fg-base mb-2">Metody dostawy:</Text>
-            {cart.shipping_methods.map((method: any) => (
+            {cart.shipping_methods.map((method: any) => {
+              console.log('CartReview - Shipping method details:', {
+                id: method.id,
+                name: method.name,
+                amount: method.amount,
+                shipping_option_id: method.shipping_option_id,
+                data: method.data
+              })
+              return (
               <div key={method.id} className="mb-2">
                 <Text className="txt-small-plus text-ui-fg-base">{method.name}</Text>
+                <Text className="txt-small text-ui-fg-subtle">Amount: {method.amount || 'undefined'}</Text>
                 
                 {/* Display InPost parcel machine information if available */}
                 {method.data?.inpostParcelMachine && (
@@ -70,7 +84,8 @@ const Review = ({ cart }: { cart: any }) => {
                   />
                 )}
               </div>
-            ))}
+            )
+            })}
           </div>
         )}
       </div>

@@ -1,48 +1,15 @@
-"use client"
-
-import { usePathname, useSearchParams } from "next/navigation"
-import NProgress from "nprogress"
-import { useEffect } from "react"
-
-// Configure NProgress
-import "nprogress/nprogress.css"
-NProgress.configure({
-  minimum: 0.3,
-  easing: "ease",
-  speed: 500,
-  showSpinner: false,
-})
+// DEPRECATED: This component has been removed to fix performance issues.
+// NavigationProgress was causing conflicts with LoadingProvider.tsx due to:
+// 1. Duplicate NProgress configurations (speed: 500 vs 300)
+// 2. Race conditions between event listeners
+// 3. Redundant loading state management
+//
+// All navigation progress functionality is now handled by LoadingProvider.tsx
+// which provides better performance and eliminates conflicts.
+//
+// If you need to use navigation progress, import and use LoadingProvider instead.
 
 export function NavigationProgress() {
-  const pathname = usePathname()
-  const searchParams = useSearchParams()
-
-  useEffect(() => {
-    // When the route changes, complete any in-progress loading
-    NProgress.done()
-  }, [pathname, searchParams])
-
-  useEffect(() => {
-    const handleRouteChangeStart = () => {
-      NProgress.start()
-    }
-
-    const handleRouteChangeComplete = () => {
-      NProgress.done()
-    }
-
-    window.addEventListener("beforeunload", handleRouteChangeStart)
-    window.addEventListener("routeChangeStart", handleRouteChangeStart)
-    window.addEventListener("routeChangeComplete", handleRouteChangeComplete)
-    window.addEventListener("routeChangeError", handleRouteChangeComplete)
-
-    return () => {
-      window.removeEventListener("beforeunload", handleRouteChangeStart)
-      window.removeEventListener("routeChangeStart", handleRouteChangeStart)
-      window.removeEventListener("routeChangeComplete", handleRouteChangeComplete)
-      window.removeEventListener("routeChangeError", handleRouteChangeComplete)
-    }
-  }, [])
-
+  console.warn('NavigationProgress is deprecated. Use LoadingProvider instead.')
   return null
 }

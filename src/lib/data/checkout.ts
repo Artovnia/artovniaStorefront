@@ -10,12 +10,10 @@ export async function completeCheckout(sessionId: string) {
     //   throw new Error('Payment not completed')
     // }
     
-    console.log('Processing checkout completion for session:', sessionId)
     
     // Place the order
     
     const result = await placeOrder()
-    console.log('Order placement result:', result)
     
     return result
   } catch (error) {

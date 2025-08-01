@@ -58,9 +58,7 @@ const getReviews = async () => {
  * 1. Reviews properly linked through the product-review link table (accessible via /products/{id}/reviews)
  * 2. Reviews with reference="product" and reference_id=productId but not in the link table (via /reviews)
  */
-const getProductReviews = async (productId: string) => {
-  console.log(`🔎 Fetching reviews for product: ${productId}`)
-  
+const getProductReviews = async (productId: string) => {  
   try {
     const headers = await getAuthHeaders()
     
@@ -82,16 +80,13 @@ const getProductReviews = async (productId: string) => {
     
     if (response.ok) {
       const data = await response.json()
-      console.log(`📊 Product reviews response:`, data)
+     
       
       if (data?.reviews && Array.isArray(data.reviews)) {
-        console.log(`✅ Found ${data.reviews.length} reviews via product endpoint`)
         return { reviews: data.reviews }
       }
     } else {
-      console.log(`⚠️ Product reviews endpoint failed: ${response.status}`)
       const errorText = await response.text()
-      console.log(`Error details:`, errorText)
     }
     
     return { reviews: [] }
@@ -115,18 +110,14 @@ const getProductReviews = async (productId: string) => {
  * The customer_id is extracted from the JWT token in the authorization header
  */
 export const createReview = async (review: any) => {
-  console.log('📝 Creating review for product:', review.product_id)
-  
   try {
     // Validate required fields
     if (!review.product_id || !review.rating) {
-      console.error('❌ Required fields missing for review creation')
       throw new Error('Required fields missing: product_id or rating')
     }
     
     // Validate rating range
     if (review.rating < 1 || review.rating > 5) {
-      console.error('❌ Invalid rating value:', review.rating)
       throw new Error('Rating must be between 1 and 5')
     }
     
@@ -135,7 +126,6 @@ export const createReview = async (review: any) => {
     
     // Check if user is authenticated
     if (!Object.keys(headers).includes('authorization')) {
-      console.error('🔒 Authentication required for review submission')
       throw new Error('Authentication required')
     }
     
@@ -148,7 +138,7 @@ export const createReview = async (review: any) => {
       customer_note: review.customer_note || null
     }
     
-    console.log('📣 Submitting review to API:', JSON.stringify(reviewData, null, 2))
+    
     
     // Add publishable key to headers with correct header name
     const requestHeaders: Record<string, string> = {
@@ -168,17 +158,15 @@ export const createReview = async (review: any) => {
       }
     )
 
-    console.log(`📡 Review API response status: ${response.status}`)
+    
     
     if (!response.ok) {
       const errorText = await response.text()
-      console.error(`🔴 API Error: ${errorText}`)
       throw new Error(`Failed to create review: ${response.statusText} - ${errorText}`)
     }
 
     // Parse and return the result
     const result = await response.json()
-    console.log('✅ Review created successfully:', result)
     
     // Try to revalidate paths to clear cache
     try {
@@ -187,14 +175,12 @@ export const createReview = async (review: any) => {
         '/user/reviews/written',
         `/products/${review.product_id}`
       ]
-      console.log('🗑 Revalidating paths to clear cache:', paths.join(', '))
       await Promise.all(paths.map(path => {
         return fetch(`/api/revalidate?path=${encodeURIComponent(path)}`, {
           method: 'POST'
         }).catch(err => console.warn('Revalidation error:', err))
       }))
     } catch (revalidateError) {
-      console.warn('⚠️ Cache revalidation failed:', revalidateError)
       // Continue execution even if revalidation fails
     }
     
@@ -213,7 +199,6 @@ export const createReview = async (review: any) => {
  * Returns the review data if it exists, allowing for edit mode
  */
 export const checkUserReviewStatus = async (productId: string) => {
-  console.log(`🔍 Checking if user has already reviewed product: ${productId}`)
   
   try {
     // Get auth headers - if not authenticated, this will return empty headers
@@ -241,16 +226,13 @@ export const checkUserReviewStatus = async (productId: string) => {
     )
     
     if (!response.ok) {
-      console.warn(`⚠️ Review status check failed: ${response.status}`)
       return { exists: false, review: null }
     }
     
     const data = await response.json()
-    console.log(`✓ Review status check result:`, data)
     
     return data
   } catch (error) {
-    console.error(`❌ Error checking review status:`, error)
     return { exists: false, review: null }
   }
 }
@@ -266,7 +248,6 @@ export const checkUserReviewStatus = async (productId: string) => {
  * - customer_note (string): The updated review text
  */
 export const updateReview = async (review: { id: string, rating: number, customer_note?: string }) => {
-  console.log(`✏️ Updating review ${review.id}`)
   
   try {
     // Validate required fields
@@ -318,7 +299,6 @@ export const updateReview = async (review: { id: string, rating: number, custome
     
     // Parse and return the result
     const result = await response.json()
-    console.log('✅ Review updated successfully:', result)
     
     // Try to revalidate paths to clear cache
     try {
@@ -332,7 +312,6 @@ export const updateReview = async (review: { id: string, rating: number, custome
         }).catch(err => console.warn('Revalidation error:', err))
       }))
     } catch (revalidateError) {
-      console.warn('⚠️ Cache revalidation failed:', revalidateError)
     }
     
     return { success: true, review: result.review }
@@ -352,7 +331,6 @@ export const updateReview = async (review: { id: string, rating: number, custome
  * associated with a particular seller.
  */
 const getSellerReviews = async (sellerHandle: string) => {
-  console.log(`🔎 Fetching reviews for seller: ${sellerHandle}`)
   
   try {
     const headers = await getAuthHeaders()
@@ -375,14 +353,11 @@ const getSellerReviews = async (sellerHandle: string) => {
     
     if (response.ok) {
       const data = await response.json()
-      console.log(`📊 Seller reviews response:`, data)
       
       if (data?.reviews && Array.isArray(data.reviews)) {
-        console.log(`✅ Found ${data.reviews.length} reviews for seller ${sellerHandle}`)
         return { reviews: data.reviews, count: data.count || data.reviews.length }
       }
     } else {
-      console.log(`⚠️ Seller reviews endpoint failed: ${response.status}`)
       const errorText = await response.text()
       console.log(`Error details:`, errorText)
     }

@@ -21,7 +21,7 @@ export const UserDropdown = ({
       onMouseLeave={() => setOpen(false)}
       onFocus={() => setOpen(true)}
     >
-      <Link href="/user" className="relative">
+      <Link href="/user" className="relative" prefetch={true}>
         <ProfileIcon size={20} />
       </Link>
       <Dropdown show={open}>
@@ -32,19 +32,19 @@ export const UserDropdown = ({
                 Twoje konto
               </h3>
             </div>
-            <NavigationItem href="/user/orders">Zamówienia</NavigationItem>
-            <NavigationItem href="/user/addresses">Adresy</NavigationItem>
-            <NavigationItem href="/user/reviews">Opinie</NavigationItem>
-            <NavigationItem href="/user/wishlist">Lista życzeń</NavigationItem>
-            <NavigationItem href="/user/messages">Wiadomości</NavigationItem>
+            <NavigationItem href="/user/orders" prefetch={true}>Zamówienia</NavigationItem>
+            <NavigationItem href="/user/addresses" prefetch={true}>Adresy</NavigationItem>
+            <NavigationItem href="/user/reviews" prefetch={true}>Opinie</NavigationItem>
+            <NavigationItem href="/user/wishlist" prefetch={true}>Lista życzeń</NavigationItem>
+            <NavigationItem href="/user/messages" prefetch={true}>Wiadomości</NavigationItem>
             <Divider />
-            <NavigationItem href="/user/settings">Ustawienia</NavigationItem>
+            <NavigationItem href="/user/settings" prefetch={true}>Ustawienia</NavigationItem>
             <LogoutButton />
           </div>
         ) : (
           <div className="p-1">
-            <NavigationItem href="/user">Zaloguj się</NavigationItem>
-            <NavigationItem href="/user/register">Zarejestruj się</NavigationItem>
+            <NavigationItem href="/user" prefetch={true}>Zaloguj się</NavigationItem>
+            <NavigationItem href="/user/register" prefetch={true}>Zarejestruj się</NavigationItem>
           </div>
         )}
       </Dropdown>

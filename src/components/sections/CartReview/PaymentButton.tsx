@@ -250,285 +250,63 @@ const PayUPaymentButton: React.FC<PayUPaymentButtonProps> = ({
     setErrorMessage(null)
     
     try {
-      console.log('Processing payment with provider:', selectedProvider)
+      console.log('Starting PayU payment process for cart:', cart.id)
       
-      let currentSession = activeSession
-
-      // **CRITICAL FIX: Never create new sessions in PaymentButton - only use existing ones**
-      // Payment sessions should only be created in CartPaymentSection when user selects payment method
+      // Get the current PayU session
+      const currentSession = activeSession || cart?.payment_collection?.payment_sessions?.find(
+        (session: any) => isPayU(session.provider_id)
+      )
+      
       if (!currentSession) {
-        // Try to find any pending session for the selected provider
-        const allSessions = cart?.payment_collection?.payment_sessions || []
-        currentSession = allSessions.find(
-          (session: any) => session.provider_id === selectedProvider && session.status === 'pending'
-        )
-        
-        if (!currentSession) {
-          throw new Error(`No payment session found for provider: ${selectedProvider}. Please go back and select a payment method.`)
-        }
-        
-        console.log('Found existing payment session:', currentSession.id)
-      } else {
-        console.log('Using active payment session:', currentSession.id)
-      }
-
-      // Ensure we have the correct session for the selected provider
-      if (currentSession.provider_id !== selectedProvider) {
-        console.warn(`Session provider mismatch: expected ${selectedProvider}, got ${currentSession.provider_id}`)
-        
-        // Try to find the correct session
-        const correctSession = cart?.payment_collection?.payment_sessions?.find(
-          (session: any) => session.provider_id === selectedProvider && session.status === 'pending'
-        )
-        
-        if (correctSession) {
-          currentSession = correctSession
-          console.log('Found correct payment session:', currentSession.id)
-        } else {
-          throw new Error(`No payment session found for selected provider: ${selectedProvider}. Please go back and select the payment method again.`)
-        }
-      }
-
-      // Check for redirect URL in the current session
-      const sessionData = currentSession.data as any
-      const sessionAny = currentSession as any
-      
-      const redirectUrl = 
-        sessionData?.redirect_url || 
-        sessionData?.redirectUrl || 
-        sessionData?.redirectUri || 
-        sessionData?.redirect || 
-        sessionData?.url ||
-        sessionAny.redirect_url || 
-        sessionAny.redirectUrl ||
-        sessionAny.redirectUri ||
-        sessionAny.redirect ||
-        sessionData?.payu_data?.redirectUri ||
-        sessionAny.payu_data?.redirectUri ||
-        sessionData?.next_action?.redirect_to_url?.url ||
-        sessionAny.next_action?.redirect_to_url?.url;
-
-      if (redirectUrl) {
-        console.log('Found redirect URL in payment session, redirecting:', redirectUrl)
-        localStorage.setItem('payu_cart_id', cart.id)
-        setHasRedirected(true)
-        
-        setTimeout(() => {
-          window.location.href = redirectUrl
-        }, 100)
-        
-        return
-      }
-
-      // ENHANCED FIX: Comprehensive approach to prevent duplicate PayU sessions
-      console.log('No redirect URL found in session, attempting multiple strategies to avoid duplicate session creation')
-      
-      // Strategy 1: Try to refresh/re-initiate the existing session to get a fresh redirect URL
-      try {
-        console.log('Strategy 1: Attempting to refresh existing PayU session')
-        
-        const refreshResponse = await fetch(`${process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL}/store/payment-collections/${cart.payment_collection?.id}/payment-sessions`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'x-publishable-api-key': process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || ''
-          },
-          body: JSON.stringify({
-            provider_id: selectedProvider,
-            context: {
-              cart_id: cart.id,
-              refresh_existing: true,
-              session_id: currentSession.id
-            }
-          })
-        })
-        
-        if (refreshResponse.ok) {
-          const refreshResult = await refreshResponse.json()
-          console.log('Session refresh result:', refreshResult)
-          
-          // Look for redirect URL in the refreshed session
-          const refreshedSessions = refreshResult?.payment_collection?.payment_sessions || []
-          const refreshedSession = refreshedSessions.find((s: any) => s.provider_id === selectedProvider)
-          
-          if (refreshedSession?.data) {
-            const refreshRedirectUrl = 
-              refreshedSession.data.redirect_url || 
-              refreshedSession.data.redirectUrl || 
-              refreshedSession.data.redirectUri ||
-              refreshedSession.data.payu_data?.redirectUri
-              
-            if (refreshRedirectUrl) {
-              console.log('Strategy 1 SUCCESS: Found redirect URL from refreshed session:', refreshRedirectUrl)
-              localStorage.setItem('payu_cart_id', cart.id)
-              setHasRedirected(true)
-              
-              setTimeout(() => {
-                window.location.href = refreshRedirectUrl
-              }, 100)
-              
-              return
-            }
-          }
-        }
-        
-        console.log('Strategy 1 failed: Session refresh did not provide redirect URL')
-      } catch (refreshError) {
-        console.warn('Strategy 1 failed: Session refresh error:', refreshError)
+        throw new Error('Nie znaleziono sesji płatności PayU')
       }
       
-      // Strategy 2: Try to authorize the existing payment session
-      try {
-        console.log('Strategy 2: Attempting to authorize existing payment session')
+      console.log('Using PayU session:', currentSession.id)
+      
+      // Store cart ID for PayU return page
+      localStorage.setItem('payu_cart_id', cart.id)
+      
+      // Place the order - this will trigger the payment flow
+      const { placeOrder } = await import('@/lib/data/cart')
+      const orderResult = await placeOrder(cart.id)
+      console.log('Order placement result:', orderResult)
+      
+      // Check for redirect URL in the order result
+      if (orderResult && typeof orderResult === 'object') {
+        const orderRedirectUrl = 
+          orderResult.redirect_url || 
+          orderResult.redirectUrl || 
+          (orderResult.data && (orderResult.data.redirect_url || orderResult.data.redirectUrl || orderResult.data.redirectUri)) ||
+          (orderResult.payment_session && 
+            (orderResult.payment_session.data?.redirect_url || 
+            orderResult.payment_session.data?.redirectUrl || 
+            orderResult.payment_session.data?.redirectUri)) ||
+          (orderResult.data?.payu_data?.redirectUri) ||
+          (orderResult.next_action?.redirect_to_url?.url) ||
+          (orderResult.data?.next_action?.redirect_to_url?.url);
         
-        const authResponse = await fetch(`${process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL}/store/payment-sessions/${currentSession.id}/authorize`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'x-publishable-api-key': process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || ''
-          },
-          body: JSON.stringify({
-            context: { 
-              cart_id: cart.id,
-              prevent_duplicate_sessions: true,
-              existing_session_id: currentSession.id
-            }
-          })
-        })
-        
-        if (authResponse.ok) {
-          const authResult = await authResponse.json()
-          console.log('Strategy 2: Payment authorization result:', authResult)
+        if (orderRedirectUrl) {
+          console.log('Found redirect URL in order result:', orderRedirectUrl)
+          setHasRedirected(true)
           
-          // Check for redirect URL in authorization result
-          const authRedirectUrl = 
-            authResult?.redirect_url || 
-            authResult?.redirectUrl || 
-            authResult?.data?.redirect_url || 
-            authResult?.data?.redirectUrl || 
-            authResult?.data?.redirectUri ||
-            authResult?.payu_data?.redirectUri ||
-            authResult?.next_action?.redirect_to_url?.url
-            
-          if (authRedirectUrl) {
-            console.log('Strategy 2 SUCCESS: Found redirect URL from payment authorization:', authRedirectUrl)
-            localStorage.setItem('payu_cart_id', cart.id)
-            setHasRedirected(true)
-            
-            setTimeout(() => {
-              window.location.href = authRedirectUrl
-            }, 100)
-            
-            return
-          }
+          setTimeout(() => {
+            window.location.href = orderRedirectUrl
+          }, 100)
+          
+          return
         }
         
-        console.log('Strategy 2 failed: Authorization did not provide redirect URL')
-      } catch (authError) {
-        console.warn('Strategy 2 failed: Payment authorization error:', authError)
-      }
-      
-      // Strategy 3: Try to get redirect URL directly from PayU provider
-      try {
-        console.log('Strategy 3: Attempting direct PayU session initiation')
-        
-        const directResponse = await fetch(`${process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL}/store/payment-collections/${cart.payment_collection?.id}/payment-sessions/${currentSession.id}`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'x-publishable-api-key': process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || ''
-          },
-          body: JSON.stringify({
-            context: {
-              cart_id: cart.id,
-              force_redirect: true,
-              reuse_session: true
-            }
-          })
-        })
-        
-        if (directResponse.ok) {
-          const directResult = await directResponse.json()
-          console.log('Strategy 3: Direct PayU result:', directResult)
-          
-          const directRedirectUrl = 
-            directResult?.redirect_url || 
-            directResult?.redirectUrl || 
-            directResult?.data?.redirect_url || 
-            directResult?.data?.redirectUrl || 
-            directResult?.data?.redirectUri ||
-            directResult?.payment_session?.data?.redirect_url ||
-            directResult?.payment_session?.data?.redirectUrl ||
-            directResult?.payment_session?.data?.redirectUri
-          
-          if (directRedirectUrl) {
-            console.log('Strategy 3 SUCCESS: Found redirect URL from direct PayU call:', directRedirectUrl)
-            localStorage.setItem('payu_cart_id', cart.id)
-            setHasRedirected(true)
-            
-            setTimeout(() => {
-              window.location.href = directRedirectUrl
-            }, 100)
-            
-            return
-          }
+        // Check if order was completed successfully without redirect
+        const orderId = orderResult.id || (orderResult.order && orderResult.order.id)
+        if (orderId) {
+          console.log('Order completed successfully without redirect, going to confirmation:', orderId)
+          localStorage.setItem('payu_cart_id', '')
+          router.push(`/order/confirmed/${orderId}`)
+          return
         }
-        
-        console.log('Strategy 3 failed: Direct PayU call did not provide redirect URL')
-      } catch (directError) {
-        console.warn('Strategy 3 failed: Direct PayU call error:', directError)
       }
       
-      // LAST RESORT: Call placeOrder (this WILL create a duplicate session but may be unavoidable)
-      console.log('All strategies failed, falling back to placeOrder (WARNING: This will create a duplicate PayU session)')
-      console.warn('DUPLICATE SESSION WARNING: About to call placeOrder which will trigger Medusa\'s validateCartPaymentsStep and create a second PayU session')
-      
-      try {
-        const { placeOrder } = await import('@/lib/data/cart')
-        const orderResult = await placeOrder(cart.id)
-        console.log('Order placement result (with likely duplicate session):', orderResult)
-        
-        // Check for redirect URL in the order result
-        if (orderResult && typeof orderResult === 'object') {
-          const orderRedirectUrl = 
-            orderResult.redirect_url || 
-            orderResult.redirectUrl || 
-            (orderResult.data && (orderResult.data.redirect_url || orderResult.data.redirectUrl || orderResult.data.redirectUri)) ||
-            (orderResult.payment_session && 
-              (orderResult.payment_session.data?.redirect_url || 
-              orderResult.payment_session.data?.redirectUrl || 
-              orderResult.payment_session.data?.redirectUri)) ||
-            (orderResult.data?.payu_data?.redirectUri) ||
-            (orderResult.next_action?.redirect_to_url?.url) ||
-            (orderResult.data?.next_action?.redirect_to_url?.url);
-          
-          if (orderRedirectUrl) {
-            console.log('Found redirect URL in order result:', orderRedirectUrl)
-            localStorage.setItem('payu_cart_id', cart.id)
-            setHasRedirected(true)
-            
-            setTimeout(() => {
-              window.location.href = orderRedirectUrl
-            }, 100)
-            
-            return
-          }
-          
-          // Check if order was completed successfully without redirect
-          const orderId = orderResult.id || (orderResult.order && orderResult.order.id)
-          if (orderId) {
-            console.log('Order completed successfully without redirect, going to confirmation:', orderId)
-            localStorage.setItem('payu_cart_id', '')
-            router.push(`/order/confirmed/${orderId}`)
-            return
-          }
-        }
-        
-        throw new Error('Nie można dokonać płatności. Brak URL przekierowania lub identyfikatora zamówienia.')
-      } catch (placeOrderError) {
-        console.error('Final placeOrder attempt failed:', placeOrderError)
-        throw placeOrderError
-      }
+      throw new Error('Nie można dokonać płatności. Brak URL przekierowania lub identyfikatora zamówienia.')
       
     } catch (error: any) {
       console.error('Payment error:', error)

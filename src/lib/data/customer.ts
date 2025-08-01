@@ -14,6 +14,7 @@ import {
   removeCartId,
   setAuthToken,
 } from "./cookies"
+import { unifiedLogout, unifiedLogin, setAuthToken as unifiedSetAuthToken } from "../auth/unified-auth"
 
 export const retrieveCustomer =
   async (): Promise<HttpTypes.StoreCustomer | null> => {
@@ -84,7 +85,7 @@ export async function signup(formData: FormData) {
       password: password,
     })
 
-    await setAuthToken(token as string)
+    await unifiedSetAuthToken(token as string)
 
     const headers = {
       ...(await getAuthHeaders()),
@@ -101,7 +102,7 @@ export async function signup(formData: FormData) {
       password,
     })
 
-    await setAuthToken(loginToken as string)
+    await unifiedSetAuthToken(loginToken as string)
 
     const customerCacheTag = await getCacheTag("customers")
     revalidateTag(customerCacheTag)
@@ -122,7 +123,7 @@ export async function login(formData: FormData) {
     await sdk.auth
       .login("customer", "emailpass", { email, password })
       .then(async (token) => {
-        await setAuthToken(token as string)
+        await unifiedSetAuthToken(token as string)
         const customerCacheTag = await getCacheTag("customers")
         revalidateTag(customerCacheTag)
       })
@@ -137,18 +138,249 @@ export async function login(formData: FormData) {
   }
 }
 
-export async function signout() {
-  await sdk.auth.logout()
+export async function loginWithGoogle() {
+  try {
+    const result = await sdk.auth.login("customer", "google", {})
+    
+    // Check if result contains a location property (redirect to Google OAuth)
+    if (result && typeof result === 'object' && 'location' in result) {
+      // Return the location for client-side redirect
+      return { location: result.location as string }
+    }
+    
+    // If result is a token, the customer was previously authenticated
+    if (result && typeof result === 'string') {
+      await unifiedSetAuthToken(result)
+      const customerCacheTag = await getCacheTag("customers")
+      revalidateTag(customerCacheTag)
+      await transferCart()
+      return { success: true }
+    }
+    
+    return { error: "Authentication failed" }
+  } catch (error: any) {
+    return { error: error.message || "Google login failed" }
+  }
+}
 
+export async function registerWithGoogle() {
+  try {
+    // For registration, we want to ensure a fresh OAuth flow
+    // First clear any existing auth state
+    try {
+      await sdk.auth.logout()
+    } catch {
+      // Ignore logout errors - user might not be logged in
+    }
+    
+    const result = await sdk.auth.login("customer", "google", {})
+    
+    // Check if result contains a location property (redirect to Google OAuth)
+    if (result && typeof result === 'object' && 'location' in result) {
+      let location = result.location as string
+      
+      // Force account selection by adding prompt=select_account to the Google OAuth URL
+      if (location.includes('accounts.google.com')) {
+        const url = new URL(location)
+        url.searchParams.set('prompt', 'select_account')
+        location = url.toString()
+      }
+      
+      return { location }
+    }
+    
+    // If result is a token, the customer was previously authenticated
+    if (result && typeof result === 'string') {
+      await unifiedSetAuthToken(result)
+      const customerCacheTag = await getCacheTag("customers")
+      revalidateTag(customerCacheTag)
+      await transferCart()
+      return { success: true }
+    }
+    
+    return { error: "Authentication failed" }
+  } catch (error: any) {
+    return { error: error.message || "Google registration failed" }
+  }
+}
+
+export async function handleGoogleCallback(code: string, state?: string) {
+  try {
+    // Step 1: Call Medusa's OAuth callback endpoint
+    const token = await sdk.auth.callback("customer", "google", {
+      code,
+      state: state || undefined,
+    })
+  
+    if (!token || typeof token !== 'string') {
+      throw new Error("Invalid token received from authentication")
+    }
+    
+    // Step 2: Decode and inspect the token to check if customer exists
+    let shouldCreateCustomer = false
+    let decodedPayload: any = null
+    
+    try {
+      const tokenParts = token.split('.')
+      
+      // Decode JWT to check for actor_id
+      if (tokenParts.length === 3) {
+        try {
+          decodedPayload = JSON.parse(atob(tokenParts[1]))
+          shouldCreateCustomer = !decodedPayload.actor_id || decodedPayload.actor_id === ""
+        } catch (jwtError) {
+          shouldCreateCustomer = true // Default to creating customer if we can't decode
+        }
+      }
+    } catch (tokenInspectError) {
+      shouldCreateCustomer = true // Default to creating customer if we can't inspect
+    }
+    
+    // Step 3: Set the initial token
+    await unifiedSetAuthToken(token)
+    
+    // Step 4: Create customer if needed (following Medusa's documented flow)
+    if (shouldCreateCustomer) {
+      // Get auth headers for customer creation
+      const authHeaders = await getAuthHeaders()
+      
+      try {
+        // SECURE BACKEND APPROACH: Use our custom backend endpoint to get real Google email
+        let customerEmail = null // Will only proceed if we get real email
+        let customerName = ''
+        let firstName = ''
+        let lastName = ''
+        
+        // Use our custom backend endpoint to securely access provider identity
+        if (decodedPayload?.auth_identity_id) {
+          try {
+            const providerResponse = await fetch(`${process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL}/store/oauth/provider-identity/${decodedPayload.auth_identity_id}`, {
+              method: 'GET',
+              headers: {
+                'Content-Type': 'application/json',
+                ...authHeaders
+              }
+            })
+            
+            if (providerResponse.ok) {
+              const providerData = await providerResponse.json()
+              
+              if (providerData?.success && providerData?.data) {
+                const userData = providerData.data
+                
+                // Extract real Google email
+                if (userData.email) {
+                  customerEmail = userData.email
+                }
+                
+                // Extract name information
+                if (userData.name) {
+                  customerName = userData.name
+                  
+                  // Split name into first and last name
+                  const nameParts = customerName.trim().split(' ')
+                  firstName = nameParts[0] || ''
+                  lastName = nameParts.slice(1).join(' ') || ''
+                }
+                
+                // Use given_name and family_name if available (more accurate)
+                if (userData.given_name) {
+                  firstName = userData.given_name
+                }
+                if (userData.family_name) {
+                  lastName = userData.family_name
+                }
+              }
+            }
+          } catch (error) {
+            // Silent fail for backend endpoint errors
+          }
+        }
+        
+        // Only proceed with customer creation if we have a real email
+        if (!customerEmail) {
+          throw new Error("Failed to obtain real Google email for customer creation")
+        }
+        
+        // Create customer with the real email and name data
+        const customerData = {
+          email: customerEmail,
+          ...(firstName && { first_name: firstName }),
+          ...(lastName && { last_name: lastName })
+        }
+        
+        const customerResult = await sdk.store.customer.create(customerData, {}, authHeaders)
+      } catch (createError: any) {
+        // Re-throw the error to stop the OAuth flow
+        throw new Error(`Customer creation failed: ${createError.message}. Real Google email is required.`)
+      }
+      
+      // Step 5: Refresh token after customer creation (CRITICAL STEP)
+      try {
+        const refreshedToken = await sdk.auth.refresh()
+        if (refreshedToken && typeof refreshedToken === 'string') {
+          await unifiedSetAuthToken(refreshedToken)
+        }
+      } catch (refreshError: any) {
+        // Silent fail for token refresh errors
+      }
+    } else {
+      // Still try to refresh token to ensure it's up to date
+      try {
+        const refreshedToken = await sdk.auth.refresh()
+        if (refreshedToken && typeof refreshedToken === 'string') {
+          await unifiedSetAuthToken(refreshedToken)
+        }
+      } catch (refreshError: any) {
+        // Silent fail for token refresh errors
+      }
+    }
+    
+    // Step 6: Verify customer retrieval with the final token
+    const authHeaders = await getAuthHeaders()
+    
+    try {
+      const customer = await retrieveCustomer()
+    } catch (customerError: any) {
+      // Silent fail for customer retrieval errors
+    }
+    
+    // Step 7: Revalidate customer cache and transfer cart
+    const customerCacheTag = await getCacheTag("customers")
+    revalidateTag(customerCacheTag)
+    await transferCart()
+    
+    return { success: true, token }
+  } catch (error: any) {
+    return { error: error.message || "Google authentication failed" }
+  }
+}
+
+export async function signout() {
+  try {
+    // Step 1: Logout from Medusa backend
+    await sdk.auth.logout()
+  } catch (error) {
+    console.warn('Backend logout failed:', error)
+    // Continue with client-side cleanup even if backend logout fails
+  }
+
+  // Step 2: Use unified auth system to clear ALL auth state and caches
+  await unifiedLogout()
+
+  // Step 3: Clear legacy auth tokens (for backward compatibility)
   await removeAuthToken()
 
+  // Step 4: Clear customer cache
   const customerCacheTag = await getCacheTag("customers")
   revalidateTag(customerCacheTag)
 
+  // Step 5: Clear cart data
   await removeCartId()
-
   const cartCacheTag = await getCacheTag("carts")
   revalidateTag(cartCacheTag)
+
+  // Step 6: Force page refresh to update all components
   redirect(`/`)
 }
 

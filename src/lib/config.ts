@@ -21,43 +21,18 @@ export const sdk = new Medusa({
   publishableKey: process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY,
 })
 
-// Enhanced debugging for both development and production
+// Optimized debugging - reduced logging for better performance
 if (typeof window !== 'undefined') {
-  // Log the environment variables and final baseUrl
-  console.log('🔌 SDK Configuration:', {
-    baseUrl: getBaseUrl(),
-    environment: process.env.NODE_ENV,
-    NEXT_PUBLIC_MEDUSA_BACKEND_URL: process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL,
-    hasPublishableKey: !!process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY,
-    runtime: 'browser'
-  })
+  // Only log in development to reduce production overhead
+  if (process.env.NODE_ENV === 'development') {
   
-  // Log all API requests in production to debug CORS issues
-  if (process.env.NODE_ENV === 'production') {
-    const originalFetch = window.fetch;
-    window.fetch = function(input: RequestInfo | URL, init?: RequestInit) {
-      // Get URL string regardless of input type
-      const urlString = typeof input === 'string' ? input : 
-                      input instanceof URL ? input.toString() : 
-                      input instanceof Request ? input.url : '';
-      
-      if (urlString.includes('/store/product-colors') || urlString.includes('/store/attributes')) {
-        console.log('🌐 Fetch API call:', {
-          url: urlString,
-          headers: init?.headers,
-          method: init?.method
-        });
-      }
-      return originalFetch(input, init);
-    };
   }
+  
+  // Remove fetch logging in production to improve performance
+  // Fetch logging can be re-enabled for debugging if needed
 } else {
-  // Server-side logging
-  console.log('🔌 Server SDK Configuration:', {
-    baseUrl: getBaseUrl(),
-    environment: process.env.NODE_ENV,
-    hasMedusaBackendUrl: !!process.env.MEDUSA_BACKEND_URL,
-    hasPublishableKey: !!process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY,
-    runtime: 'server'
-  })
+  // Server-side logging only in development
+  if (process.env.NODE_ENV === 'development') {
+  
+  }
 }

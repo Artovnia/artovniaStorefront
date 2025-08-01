@@ -1,13 +1,15 @@
 "use client"
 
-import dynamic from "next/dynamic"
-
-// Dynamically import the NavigationProgress component
-const NavigationProgress = dynamic(
-  () => import("./NavigationProgress").then(mod => mod.NavigationProgress),
-  { ssr: false }
-)
+// DEPRECATED: This component has been removed to fix performance issues.
+// ClientNavigationProgress was dynamically importing the deprecated NavigationProgress
+// which was causing the red loading bar to still appear.
+//
+// All navigation progress functionality is now handled by LoadingProvider.tsx
+// which provides better performance and eliminates conflicts.
+//
+// If you need navigation progress, use LoadingProvider instead.
 
 export function ClientNavigationProgress() {
-  return <NavigationProgress />
+  // Return null to prevent the red loading bar from appearing
+  return null
 }

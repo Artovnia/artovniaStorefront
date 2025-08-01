@@ -1,7 +1,7 @@
 "use client"
 
 import ErrorMessage from "@/components/molecules/ErrorMessage/ErrorMessage"
-import { initiatePaymentSession, selectPaymentSession } from "@/lib/data/cart"
+import { initiatePaymentSession, selectPaymentSession, retrieveCartForPayment } from "@/lib/data/cart"
 import { RadioGroup } from "@headlessui/react"
 import {
   isStripe as isStripeFunc,
@@ -16,7 +16,7 @@ import PaymentContainer, {
   PayUCardContainer,
 } from "../../organisms/PaymentContainer/PaymentContainer"
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
-import { useCallback, useEffect, useState } from "react"
+import { useCallback, useEffect, useState, useMemo } from "react"
 import { Button } from "@/components/atoms"
 import PaymentProcessor from "../PaymentProcessors/PaymentProcessor"
 
@@ -44,6 +44,7 @@ const CartPaymentSection = ({
   const [error, setError] = useState<string | null>(null)
   const [cardBrand, setCardBrand] = useState<string | null>(null)
   const [cardComplete, setCardComplete] = useState(false)
+  const [pendingRequests, setPendingRequests] = useState<Set<string>>(new Set())
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState(
     activeSession?.provider_id ?? ""
   )
@@ -73,6 +74,14 @@ const CartPaymentSection = ({
   const isPayU = isPayUFunc(selectedPaymentMethod)
 
   const setPaymentMethod = async (method: string) => {
+    // Request deduplication: prevent concurrent calls for the same method
+    const requestKey = `payment-${method}-${cart.id}`
+    if (pendingRequests.has(requestKey)) {
+      console.log(`Payment method selection already in progress for ${method}`)
+      return
+    }
+    
+    setPendingRequests(prev => new Set(prev).add(requestKey))
     setError(null)
     setSelectedPaymentMethod(method)
     setIsLoading(true)
@@ -87,6 +96,9 @@ const CartPaymentSection = ({
       
       if (existingSession) {
         console.log(`Payment session already exists for ${method}, reusing session:`, existingSession.id)
+        // Quick optimization: Set loading to false faster for existing sessions
+        setIsLoading(false)
+        return
       } else {
         // Only create a new payment session if one doesn't exist
         try {
@@ -180,14 +192,16 @@ const CartPaymentSection = ({
       setError(errorMessage)
     } finally {
       setIsLoading(false)
+      // Clean up request tracking
+      setPendingRequests(prev => {
+        const newSet = new Set(prev)
+        newSet.delete(requestKey)
+        return newSet
+      })
     }
   }
 
-  const paidByGiftcard =
-    cart?.gift_cards && cart?.gift_cards?.length > 0 && cart?.total === 0
-
-  const paymentReady =
-    (activeSession && cart?.shipping_methods.length !== 0) || paidByGiftcard
+  // These are now memoized above to prevent unnecessary recalculations
 
   const createQueryString = useCallback(
     (name: string, value: string) => {
@@ -197,6 +211,17 @@ const CartPaymentSection = ({
       return params.toString()
     },
     [searchParams]
+  )
+
+  // Memoize payment method validation to prevent unnecessary recalculations
+  const paidByGiftcard = useMemo(() => 
+    cart?.gift_cards && cart?.gift_cards?.length > 0 && cart?.total === 0,
+    [cart?.gift_cards, cart?.total]
+  )
+
+  const paymentReady = useMemo(() => 
+    (activeSession && (cart?.shipping_methods?.length || 0) !== 0) || paidByGiftcard,
+    [activeSession, cart?.shipping_methods?.length, paidByGiftcard]
   )
 
   const handleEdit = () => {
@@ -354,7 +379,9 @@ const CartPaymentSection = ({
                 (!selectedPaymentMethod && !paidByGiftcard)
               }
             >
-              {isStripe && !cardComplete
+              {isLoading
+                ? "Przetwarzanie..."
+                : isStripe && !cardComplete
                 ? "Wprowadź dane karty"
                 : "Przejdź do podsumowania"}
             </Button>

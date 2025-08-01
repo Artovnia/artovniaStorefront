@@ -4,6 +4,7 @@ import { Link } from "../Link"
 interface NavigationItemProps extends React.ComponentPropsWithoutRef<"a"> {
   active?: boolean
   hasNotification?: boolean
+  prefetch?: boolean
 }
 
 export const NavigationItem: React.FC<NavigationItemProps> = ({

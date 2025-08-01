@@ -88,12 +88,10 @@ export async function getVendorAvailability(vendorId: string): Promise<VendorAva
     
     // Get the response data
     const data = await response.json()
-    console.log('DEBUG - Vendor availability raw response:', data)
     
     // Ensure onHoliday is properly set based on status
     if (data.status === 'holiday') {
       data.onHoliday = true
-      console.log('DEBUG - Setting onHoliday to true based on status field')
     }
     
     // Parse date if it exists
@@ -101,7 +99,6 @@ export async function getVendorAvailability(vendorId: string): Promise<VendorAva
       data.suspension_expires_at = new Date(data.suspension_expires_at)
     }
     
-    console.log('DEBUG - Final vendor availability data:', data)
     return data
     
   } catch (error) {
@@ -141,7 +138,7 @@ export async function getVendorHolidayMode(vendorId: string): Promise<VendorHoli
       // 404 is expected for vendors without records - no need to log
       // 500 might happen during initial setup - handle gracefully
       if (response.status !== 404) {
-        console.log(`Vendor holiday mode API returned status: ${response.status} for vendorId: ${vendorId} - using default values`)
+        
       }
       // Return a default object for inactive holiday mode
       return {
@@ -169,29 +166,22 @@ export async function getVendorHolidayMode(vendorId: string): Promise<VendorHoli
       }
     }
     
-    console.log('DEBUG - Holiday mode raw response:', data)
   
   const now = new Date()
-  console.log('DEBUG - Current date for comparison:', now)
   
   // Parse dates if they exist
   if (data.holiday_start_date) {
     data.holiday_start_date = new Date(data.holiday_start_date)
-    console.log('DEBUG - Parsed holiday_start_date:', data.holiday_start_date)
   }
   
   if (data.holiday_end_date) {
     data.holiday_end_date = new Date(data.holiday_end_date)
-    console.log('DEBUG - Parsed holiday_end_date:', data.holiday_end_date)
   }
   
-  // Log holiday status and comparison with current date
   if (data.is_holiday_mode) {
     if (data.holiday_start_date && data.holiday_end_date) {
       const isCurrentlyOnHoliday = now >= data.holiday_start_date && now <= data.holiday_end_date
-      console.log('DEBUG - Is currently between holiday dates?', isCurrentlyOnHoliday)
     } else {
-      console.log('DEBUG - Holiday mode is enabled but dates are missing')
     }
   }
   
@@ -217,8 +207,6 @@ export async function getVendorHolidayMode(vendorId: string): Promise<VendorHoli
  */
 export async function getVendorSuspension(vendorId: string): Promise<VendorSuspension> {
   try {
-    console.log(`DEBUG - Getting vendor suspension for vendor ID: ${vendorId}`)
-    // Validate vendorId - return safe fallback if not valid
     if (!vendorId || vendorId === 'undefined') {
       console.warn(`Invalid vendorId in getVendorSuspension: ${vendorId}`)
       return {
@@ -270,8 +258,6 @@ export async function getVendorSuspension(vendorId: string): Promise<VendorSuspe
         has_expired: false
       }
     }
-    
-    console.log('DEBUG - Suspension data:', data)
     
     // Parse dates if they exist
     if (data.suspended_at) {

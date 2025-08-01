@@ -72,14 +72,10 @@ export interface Order {
  * Retrieve order set data from the backend
  */
 export const retrieveOrderSet = async (id: string): Promise<(OrderSet & { linked_order_ids?: string[] }) | null> => {
-  console.log(`Attempting to fetch order set: ${id}`)
   
   try {
     const headers = await getAuthHeaders()
     
-    console.log('Performing request to:')
-    console.log(` URL: ${process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL}/store/order-set/${id}`)
-
     const response = await sdk.client.fetch<OrderSetResponse>(
       `/store/order-set/${id}`,
       {
@@ -93,32 +89,11 @@ export const retrieveOrderSet = async (id: string): Promise<(OrderSet & { linked
       }
     )
     
-    console.log(`Received response with status ${response ? 'success' : 'failed'}`)
-    
     if (!response || !response.order_set) {
-      console.log('Order set response is empty or invalid')
       return null
     }
     
     const orderSet = response.order_set
-    
-    // Log fulfillment data for debugging
-    console.log('OrderSet fulfillment data:', {
-      id: orderSet.id,
-      orders: orderSet.orders?.map((order: any) => ({
-        id: order.id,
-        status: order.status,
-        fulfillment_status: order.fulfillment_status,
-        fulfillments_count: order.fulfillments?.length || 0,
-        fulfillments: order.fulfillments?.map((f: any) => ({
-          id: f.id,
-          packed_at: f.packed_at,
-          shipped_at: f.shipped_at,
-          delivered_at: f.delivered_at,
-          canceled_at: f.canceled_at
-        }))
-      }))
-    })
     
     return orderSet
   } catch (error) {
@@ -130,8 +105,6 @@ export const retrieveOrderSet = async (id: string): Promise<(OrderSet & { linked
 // Also update retrieveIndividualOrder to include fulfillment fields
 export const retrieveIndividualOrder = async (id: string): Promise<Order | null> => {
   try {
-    console.log(`Fetching individual order: ${id}`)
-    
     const headers = await getAuthHeaders()
     const next = await getCacheOptions("orders")
     
@@ -150,21 +123,6 @@ export const retrieveIndividualOrder = async (id: string): Promise<Order | null>
     )
     
     const { order } = response
-    
-    // Log fulfillment data for debugging
-    console.log('Individual order fulfillment data:', {
-      id: order.id,
-      status: order.status,
-      fulfillment_status: order.fulfillment_status,
-      fulfillments_count: (order as any).fulfillments?.length || 0,
-      fulfillments: (order as any).fulfillments?.map((f: any) => ({
-        id: f.id,
-        packed_at: f.packed_at,
-        shipped_at: f.shipped_at,
-        delivered_at: f.delivered_at,
-        canceled_at: f.canceled_at
-      }))
-    })
     
     // Convert HttpTypes.StoreOrder to our Order interface
     return {
@@ -204,38 +162,24 @@ export const retrieveIndividualOrder = async (id: string): Promise<Order | null>
  * Main function to retrieve either an order or order set by ID
  */
 export const retrieveOrder = async (id: string): Promise<Order | null> => {
-  console.log(`Attempting to retrieve order or order set with ID: ${id}`)
   
   try {
     // Check if this is an order set ID
     if (id.startsWith('ordset_')) {
-      console.log(`ID ${id} detected as an order set`)
       
       // Retrieve order set data
       const orderSet = await retrieveOrderSet(id)
       
       if (!orderSet) {
-        console.log(`Order set not found for ID: ${id}`)
         return null
       }
       
       // Transform the order set regardless of whether it has orders
       const transformedOrder = transformOrderSetToOrder(orderSet)
       
-      console.log(`Transformed order set to order:`, {
-        id: transformedOrder.id,
-        display_id: transformedOrder.display_id,
-        has_orders: transformedOrder.orders && transformedOrder.orders.length > 0,
-        orders_count: transformedOrder.orders?.length || 0,
-        has_items: transformedOrder.items && transformedOrder.items.length > 0,
-        items_count: transformedOrder.items?.length || 0
-      })
-      
       return transformedOrder
-      
     } else {
       // Regular order retrieval
-      console.log(`ID ${id} detected as a regular order`)
       return await retrieveIndividualOrder(id)
     }
     
@@ -257,8 +201,6 @@ export const listOrders = async (
     const headers = await getAuthHeaders()
     const next = await getCacheOptions("orders")
 
-    console.log('Listing orders with params:', { limit, offset, filters })
-
     try {
       const response = await sdk.client.fetch<{
         orders: Array<HttpTypes.StoreOrder & { 
@@ -279,7 +221,7 @@ export const listOrders = async (
         next,
         cache: "no-cache",
       })
-      console.log(`Retrieved ${response.orders?.length || 0} orders`)
+     
       return response.orders || []
     } catch (apiError) {
       console.error("API Error listing orders:", apiError)
@@ -375,8 +317,6 @@ export const createReturnRequest = async (data: any) => {
       "x-publishable-api-key": process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY as string,
     }
 
-    console.log('Creating return request with data:', data)
-
     const response = await fetch(
       `${process.env.MEDUSA_BACKEND_URL}/store/return-request`,
       {
@@ -391,7 +331,6 @@ export const createReturnRequest = async (data: any) => {
     }
 
     const result = await response.json()
-    console.log('Return request created successfully:', result)
     return result
   } catch (error) {
     console.error("Error creating return request:", error)
@@ -408,16 +347,8 @@ export const getReturns = async () => {
   try {
     const headers = await getAuthHeaders()
     
-    // Log authentication status for debugging
-    console.log('Fetching returns with auth headers:', {
-      hasAuthToken: 'authorization' in headers,
-      hasPublishableKey: !!headers['x-publishable-api-key']
-    })
-    
     // First try the /store/return-request endpoint
     try {
-      console.log('Attempting to fetch from /store/return-request first')
-      
       // For Next.js 15 and Vercel compatibility
       const response = await sdk.client.fetch<{
         order_return_requests: Array<any>
@@ -434,47 +365,20 @@ export const getReturns = async () => {
         // Always return an array even if backend returns null
         const returnRequests = Array.isArray(response.order_return_requests) ? 
           response.order_return_requests : [];
-          
-        console.log(`Retrieved ${returnRequests.length} return requests from /store/return-request`)
-        
-        // Show details of first return for debugging
-        if (returnRequests.length > 0) {
-          const sampleReturn = returnRequests[0];
-          console.log('Sample return data:', {
-            id: sampleReturn.id,
-            status: sampleReturn.status,
-            customer_id: sampleReturn.customer_id,
-            order_id: sampleReturn.order_id,
-            created_at: sampleReturn.created_at,
-            has_line_items: Array.isArray(sampleReturn.line_items) && sampleReturn.line_items.length > 0,
-            line_items_count: sampleReturn.line_items?.length || 0,
-            line_items_sample: sampleReturn.line_items?.[0] ? {
-              line_item_id: sampleReturn.line_items[0].line_item_id,
-              reason_id: sampleReturn.line_items[0].reason_id,
-              quantity: sampleReturn.line_items[0].quantity
-            } : null,
-            order_shipping_total: sampleReturn.order?.shipping_total
-          })
-          return { order_return_requests: returnRequests }
-        }
         
         // If we got an empty array, continue to try the other endpoint
         if (returnRequests.length === 0) {
-          console.log('Got empty array from /store/return-request, trying /store/returns next')
+          // Continue to try alternate endpoint
         } else {
           return { order_return_requests: returnRequests }
         }
       }
     } catch (firstError) {
       console.error("Error fetching from /store/return-request:", firstError)
-      console.log('Trying fallback to /store/returns endpoint')
-      // Continue to the next endpoint
     }
     
     // Try the alternate /store/returns endpoint if first one failed or returned empty
     try {
-      console.log('Attempting to fetch from /store/returns')
-      
       const response = await sdk.client.fetch<{
         returns: Array<any>
       }>(`/store/returns`, {
@@ -488,50 +392,15 @@ export const getReturns = async () => {
       
       if (response && response.returns) {
         const returns = Array.isArray(response.returns) ? response.returns : [];
-        console.log(`Retrieved ${returns.length} returns from /store/returns`)
         
         // Transform returns and fetch complete order data for each
         const transformedReturns = await Promise.all(returns.map(async (returnItem) => {
-          console.log('Transforming return item:', {
-            id: returnItem.id,
-            hasLineItems: !!returnItem.line_items,
-            lineItemsCount: returnItem.line_items?.length || 0,
-            lineItemsStructure: returnItem.line_items || [],
-            hasItems: !!returnItem.items,
-            itemsCount: returnItem.items?.length || 0,
-            hasOrder: !!returnItem.order,
-            orderData: returnItem.order ? {
-              id: returnItem.order.id,
-              display_id: returnItem.order.display_id,
-              total: returnItem.order.total,
-              shipping_total: returnItem.order.shipping_total,
-              hasShippingMethods: !!returnItem.order.shipping_methods,
-              shippingMethodsCount: returnItem.order.shipping_methods?.length || 0,
-              shippingMethodsData: returnItem.order.shipping_methods || [],
-              hasItems: !!returnItem.order.items,
-              itemsCount: returnItem.order.items?.length || 0,
-              allOrderKeys: Object.keys(returnItem.order || {})
-            } : null,
-            allReturnKeys: Object.keys(returnItem || {})
-          });
-          
           // Fetch complete order data if we have an order_id
           let completeOrderData = returnItem.order;
           if (returnItem.order_id && (!returnItem.order?.shipping_total && !returnItem.order?.shipping_methods?.length)) {
-            console.log(`Fetching complete order data for order_id: ${returnItem.order_id}`);
             try {
               const fullOrder = await retrieveIndividualOrder(returnItem.order_id);
               if (fullOrder) {
-                console.log('Complete order data fetched:', {
-                  id: fullOrder.id,
-                  shipping_total: fullOrder.shipping_total,
-                  shipping_methods_count: fullOrder.shipping_methods?.length || 0,
-                  shipping_methods: fullOrder.shipping_methods?.map((method: any) => ({
-                    id: method.id,
-                    amount: method.amount,
-                    name: method.shipping_option?.name
-                  })) || []
-                });
                 completeOrderData = fullOrder;
               }
             } catch (error) {
@@ -559,7 +428,6 @@ export const getReturns = async () => {
     }
     
     // If both endpoints failed, return empty array
-    console.log('Both API endpoints failed or returned empty, using empty array fallback')
     return { order_return_requests: [] }
     
   } catch (error: any) {
@@ -575,8 +443,6 @@ export const retrieveReturnMethods = async (order_id: string) => {
   try {
     const headers = await getAuthHeaders()
 
-    console.log(`Fetching return methods for order: ${order_id}`)
-
     const response = await sdk.client.fetch<{
       shipping_options: Array<any>
     }>(`/store/shipping-options/return?order_id=${order_id}`, {
@@ -585,7 +451,6 @@ export const retrieveReturnMethods = async (order_id: string) => {
       cache: "force-cache",
     })
 
-    console.log(`Retrieved ${response.shipping_options?.length || 0} return methods`)
     return response.shipping_options
   } catch (error) {
     console.error(`Error fetching return methods for order ${order_id}:`, error)
@@ -599,11 +464,6 @@ export const retrieveReturnMethods = async (order_id: string) => {
 export const retrieveReturnReasons = async () => {
   try {
     const headers = await getAuthHeaders()
-
-    console.log('Fetching return reasons with headers:', {
-      hasAuthToken: 'authorization' in headers,
-      hasPublishableKey: !!headers['x-publishable-api-key']
-    })
 
     // Use the proper endpoint for return reasons
     const response = await sdk.client.fetch<{
@@ -621,13 +481,6 @@ export const retrieveReturnReasons = async () => {
       next: { revalidate: 0 }, // Always fetch fresh data
     })
 
-    console.log('Return reasons API response:', {
-      hasResponse: !!response,
-      hasReturnReasons: !!response?.return_reasons,
-      count: response?.return_reasons?.length || 0,
-      sample: response?.return_reasons?.[0] || null
-    })
-    
     if (!response || !response.return_reasons) {
       console.warn('No return reasons found in response')
       return []

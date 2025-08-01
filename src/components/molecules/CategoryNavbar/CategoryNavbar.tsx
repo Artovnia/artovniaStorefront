@@ -41,7 +41,7 @@ export const CategoryNavbar = ({
         href="/categories"
         onClick={() => (onClose ? onClose(false) : null)}
         className={cn(
-          "uppercase px-4 my-3 md:my-0 flex items-center justify-between text-xl"
+          "uppercase px-4 my-3 md:my-0 flex items-center justify-between text-lg"
         )}
       >
         Wszystkie produkty
@@ -61,7 +61,7 @@ export const CategoryNavbar = ({
               href={`/categories/${handle}`}
               onClick={() => handleCategoryClick(hasChildren)}
               className={cn(
-                "uppercase px-4 my-3 md:my-0 flex items-center justify-between text-xl",
+                "uppercase px-4 my-3 md:my-0 flex items-center justify-between text-lg",
                 handle === category && "md:border-b md:border-primary",
                 hasChildren && "md:hover:bg-gray-50 transition-colors"
               )}

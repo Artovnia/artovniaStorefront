@@ -1,11 +1,11 @@
 "use client"
 
 import { Heading, Text, useToggleState } from "@medusajs/ui"
-import { setAddresses } from "@/lib/data/cart"
+import { setAddresses, retrieveCartForAddress } from "@/lib/data/cart"
 import compareAddresses from "@/lib/helpers/compare-addresses"
 import { HttpTypes } from "@medusajs/types"
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
-import { useActionState, useEffect } from "react"
+import { useActionState, useEffect, useCallback, useMemo, useState } from "react"
 import { Button } from "@/components/atoms"
 import ErrorMessage from "@/components/molecules/ErrorMessage/ErrorMessage"
 import Spinner from "@/icons/spinner"
@@ -25,7 +25,8 @@ export const CartAddressSection = ({
   const router = useRouter()
   const pathname = usePathname()
 
-  const isAddress = Boolean(
+  // Memoize address validation to prevent unnecessary recalculations
+  const isAddress = useMemo(() => Boolean(
     cart?.shipping_address &&
       cart?.shipping_address.first_name &&
       cart?.shipping_address.last_name &&
@@ -33,7 +34,7 @@ export const CartAddressSection = ({
       cart?.shipping_address.city &&
       cart?.shipping_address.postal_code &&
       cart?.shipping_address.country_code
-  )
+  ), [cart?.shipping_address])
   const isOpen = searchParams.get("step") === "address" || !isAddress
 
   const { state: sameAsBilling, toggle: toggleSameAsBilling } = useToggleState(
@@ -42,7 +43,7 @@ export const CartAddressSection = ({
       : true
   )
 
-  const [message, formAction] = useActionState(setAddresses, sameAsBilling)
+  const [message, formAction, isPending] = useActionState(setAddresses, sameAsBilling)
 
   useEffect(() => {
     if (!isAddress) {
@@ -50,9 +51,10 @@ export const CartAddressSection = ({
     }
   }, [isAddress, router, pathname])
 
-  const handleEdit = () => {
+  // Memoize handleEdit to prevent unnecessary re-renders
+  const handleEdit = useCallback(() => {
     router.replace(pathname + "?step=address")
-  }
+  }, [router, pathname])
 
   return (
     <div className="border p-4 rounded-sm bg-ui-bg-interactive">
@@ -89,8 +91,10 @@ export const CartAddressSection = ({
               className="mt-6"
               data-testid="submit-address-button"
               variant="tonal"
+              loading={isPending}
+              disabled={isPending}
             >
-              Zapisz
+              {isPending ? "Zapisywanie..." : "Zapisz"}
             </Button>
             <ErrorMessage
               error={message !== "success" && message}

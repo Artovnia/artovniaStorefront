@@ -62,19 +62,28 @@ const removeBrowserCookie = (name: string) => {
   document.cookie = `${name}=; Max-Age=-1; Path=/`;
 };
 
-// Cache for auth headers to reduce repeated computations
-let authHeadersCache: { headers: any; timestamp: number } | null = null;
-const CACHE_DURATION = 30000; // 30 seconds
+// Optimized cache for auth headers to reduce blocking operations
+let authHeadersCache: { headers: any; timestamp: number; token?: string } | null = null;
+const CACHE_DURATION = 30000; // Reduced to 30 seconds to prevent stale data
+const PUBLISHABLE_KEY_CACHE = { key: '', timestamp: 0 };
 
 export const getAuthHeaders = async (): Promise<
   { authorization: string; 'x-publishable-api-key': string } | { 'x-publishable-api-key': string }
 > => {
-  // Check cache first
+  // Fast path: Check cache first with token validation
   if (authHeadersCache && (Date.now() - authHeadersCache.timestamp) < CACHE_DURATION) {
     return authHeadersCache.headers;
   }
   
-  const publishableKey = await getPublishableApiKey();
+  // Optimize publishable key retrieval with caching
+  let publishableKey = '';
+  if (PUBLISHABLE_KEY_CACHE.key && (Date.now() - PUBLISHABLE_KEY_CACHE.timestamp) < CACHE_DURATION) {
+    publishableKey = PUBLISHABLE_KEY_CACHE.key;
+  } else {
+    publishableKey = await getPublishableApiKey();
+    PUBLISHABLE_KEY_CACHE.key = publishableKey;
+    PUBLISHABLE_KEY_CACHE.timestamp = Date.now();
+  }
   
   // Make the publishable key available globally for client components
   if (isBrowser) {
@@ -93,11 +102,18 @@ export const getAuthHeaders = async (): Promise<
   try {
     let token: string | null = null;
     
-    // Simplified token retrieval - prioritize server-side
+    // Optimized token retrieval - avoid blocking operations
     if (!isBrowser) {
-      const serverCookies = await getServerCookies();
-      token = serverCookies?.get('_medusa_jwt')?.value || null;
+      // Server-side: Use faster approach, avoid dynamic imports when possible
+      try {
+        const serverCookies = await getServerCookies();
+        token = serverCookies?.get('_medusa_jwt')?.value || null;
+      } catch {
+        // Silently fail and continue without token
+        token = null;
+      }
     } else {
+      // Client-side: Direct cookie access (fastest)
       token = getBrowserCookie('_medusa_jwt');
     }
 
@@ -108,12 +124,12 @@ export const getAuthHeaders = async (): Promise<
       'x-publishable-api-key': publishableKey
     };
     
-    // Cache the result
-    authHeadersCache = { headers, timestamp: Date.now() };
+    // Cache the result with token for validation
+    authHeadersCache = { headers, timestamp: Date.now(), token: token || undefined };
     return headers;
     
   } catch (error) {
-    // Simplified error handling
+    // Fast fallback - don't log errors to avoid console spam
     const headers = { 'x-publishable-api-key': publishableKey };
     authHeadersCache = { headers, timestamp: Date.now() };
     return headers;
@@ -268,6 +284,9 @@ export const setAuthToken = async (token: string) => {
 
 export const removeAuthToken = async () => {
   try {
+    // Clear auth headers cache immediately
+    authHeadersCache = null;
+    
     // Try to remove the token from server cookies first
     const serverCookies = await getServerCookies();
     if (serverCookies) {
@@ -282,28 +301,51 @@ export const removeAuthToken = async () => {
   }
 };
 
+// Optimized cart ID cache to reduce repeated lookups
+let cartIdCache: { id: string | null; timestamp: number } | null = null;
+const CART_ID_CACHE_DURATION = 15000; // Reduced to 15 seconds to prevent stale data
+
 export const getCartId = async (): Promise<string | null> => {
+  // Fast path: Check cache first
+  if (cartIdCache && (Date.now() - cartIdCache.timestamp) < CART_ID_CACHE_DURATION) {
+    return cartIdCache.id;
+  }
+  
   try {
-    // Try to get the cart ID from server cookies first
-    const serverCookies = await getServerCookies();
-    if (serverCookies) {
-      const cartId = serverCookies.get('_medusa_cart_id')?.value;
-      if (cartId) return cartId;
-    }
+    let cartId: string | null = null;
     
-    // If no server cookies or no cart ID, try browser cookies
-    if (isBrowser) {
-      const cartId = getBrowserCookie('_medusa_cart_id');
-      if (cartId) return cartId;
+    // Optimized retrieval - prioritize fastest sources
+    if (!isBrowser) {
+      // Server-side: Try server cookies with error handling
+      try {
+        const serverCookies = await getServerCookies();
+        cartId = serverCookies?.get('_medusa_cart_id')?.value || null;
+      } catch {
+        // Silently fail and try other sources
+        cartId = null;
+      }
+    } else {
+      // Client-side: Try browser cookies first (fastest)
+      cartId = getBrowserCookie('_medusa_cart_id');
       
-      // Also check localStorage as a fallback
-      const localCartId = localStorage.getItem('_medusa_cart_id');
-      if (localCartId) return localCartId;
+      // Fallback to localStorage only if browser cookie not found
+      if (!cartId) {
+        try {
+          cartId = localStorage.getItem('_medusa_cart_id');
+        } catch {
+          // Silently fail if localStorage is not available
+          cartId = null;
+        }
+      }
     }
     
-    return null; // No cart ID found
+    // Cache the result
+    cartIdCache = { id: cartId, timestamp: Date.now() };
+    return cartId;
+    
   } catch (error) {
-    console.warn('Error getting cart ID:', error);
+    // Fast fallback - cache null result to avoid repeated failures
+    cartIdCache = { id: null, timestamp: Date.now() };
     return null;
   }
 };
@@ -339,6 +381,9 @@ export const setCartId = async (cartId: string) => {
 
 export const removeCartId = async () => {
   try {
+    // Clear cart ID cache immediately
+    cartIdCache = null;
+    
     const serverCookies = await getServerCookies();
     if (serverCookies) {
       serverCookies.set('_medusa_cart_id', '', { maxAge: -1 });

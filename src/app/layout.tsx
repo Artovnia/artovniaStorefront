@@ -4,7 +4,7 @@ import "./globals.css"
 import { NextIntlClientProvider } from "next-intl"
 import { getMessages } from "next-intl/server"
 import { ToastProvider } from "@/components/providers/ToastProvider"
-import { ClientNavigationProgress } from "@/components/providers/ClientNavigationProgress"
+
 
 
 const funnelDisplay = Funnel_Display({
@@ -48,7 +48,7 @@ export default async function RootLayout({
           className={`${funnelDisplay.className} antialiased bg-primary text-secondary`}
         >
         
-          <ClientNavigationProgress />
+
           <ToastProvider />
           {children}
         </body>

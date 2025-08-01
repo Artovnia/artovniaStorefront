@@ -6,13 +6,13 @@ import { InpostParcelData } from "../services/inpost-api"
 /**
  * Identifies if a shipping option is an InPost parcel locker option
  * @param shippingOption The shipping option to check
- * @returns true if the shipping option is for InPost
+ * @returns true if the shipping option is for InPost paczkomat specifically
  */
 export function isInpostShippingOption(shippingOption: HttpTypes.StoreCartShippingMethod | undefined): boolean {
   if (!shippingOption) return false
   
-  // Check for InPost in the name (case insensitive)
-  const nameCheck = shippingOption.name?.toLowerCase().includes('inpost') || 
+  // Check for specific "Inpost paczkomat" combination (case insensitive)
+  const nameCheck = shippingOption.name?.toLowerCase().includes('inpost') && 
                    shippingOption.name?.toLowerCase().includes('paczkomat')
   
   // Check for InPost in the data type
