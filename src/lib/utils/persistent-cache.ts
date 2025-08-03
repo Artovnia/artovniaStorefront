@@ -101,22 +101,36 @@ export const getCachedProduct = cache(async (
   
   // Check persistent cache first
   const cached = persistentCache.get(cacheKey)
-  if (cached) {
+  if (cached && isValidProductData(cached)) {
     if (process.env.NODE_ENV === 'development') {
       console.log(`📦 Using cached product data for: ${handle}`)
     }
     return cached
   }
 
-  // Fetch and cache
+  // Fetch and cache with error handling
   if (process.env.NODE_ENV === 'development') {
     console.log(`🔄 Fetching fresh product data for: ${handle}`)
   }
   
-  const result = await fetchFn()
-  persistentCache.set(cacheKey, result, PRODUCT_CACHE_DURATION)
-  
-  return result
+  try {
+    const result = await fetchFn()
+    
+    // Only cache valid product data
+    if (isValidProductData(result)) {
+      persistentCache.set(cacheKey, result, PRODUCT_CACHE_DURATION)
+      return result
+    } else {
+      // Don't cache invalid data, but also don't throw error
+      console.warn(`⚠️ Invalid product data for ${handle}, not caching`)
+      return result
+    }
+  } catch (error) {
+    // Clear any existing bad cache on error
+    persistentCache.delete(cacheKey)
+    console.error(`❌ Error fetching product ${handle}:`, error)
+    throw error
+  }
 })
 
 /**
@@ -182,6 +196,32 @@ export const invalidateCheckoutCache = (cartId?: string) => {
   
   if (process.env.NODE_ENV === 'development') {
     console.log(`🗑️ Invalidated checkout cache${cartId ? ` for cart: ${cartId}` : ''}`)
+  }
+}
+
+/**
+ * Validate product data to prevent caching corrupted/incomplete data
+ */
+function isValidProductData(data: any): boolean {
+  if (!data || typeof data !== 'object') return false
+  
+  // Basic product validation
+  return (
+    data.id && 
+    data.handle && 
+    data.title &&
+    Array.isArray(data.variants) &&
+    data.variants.length > 0
+  )
+}
+
+/**
+ * Force clear all caches (for debugging/emergency use)
+ */
+export const clearAllCaches = () => {
+  persistentCache.clear()
+  if (process.env.NODE_ENV === 'development') {
+    console.log('🗑️ All caches cleared')
   }
 }
 
