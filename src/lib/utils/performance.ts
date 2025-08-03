@@ -1,10 +1,15 @@
-// Advanced performance monitoring utilities for Medusa storefront
+// Optimized performance monitoring utilities for Medusa storefront
 export const performanceMonitor = {
-  // Track API call performance with detailed metrics
+  // Lightweight API call tracking with minimal overhead
   trackApiCall: async <T>(
     operation: string,
     apiCall: () => Promise<T>
   ): Promise<T> => {
+    // Skip performance tracking in production to reduce overhead
+    if (process.env.NODE_ENV === 'production') {
+      return apiCall();
+    }
+    
     const startTime = performance.now();
     
     try {
@@ -12,22 +17,16 @@ export const performanceMonitor = {
       const endTime = performance.now();
       const duration = endTime - startTime;
       
-      // Log slow operations (> 500ms for better threshold)
-      if (duration > 500) {
-        console.warn(`⚠️ Slow API call: ${operation} took ${duration.toFixed(2)}ms`);
-      }
-      
-      // In development, log all API calls with performance data
-      if (process.env.NODE_ENV === 'development') {
-        const emoji = duration > 1000 ? '🐌' : duration > 500 ? '⚠️' : '✅';
-        console.log(`${emoji} API: ${operation} - ${duration.toFixed(2)}ms`);
+      // Only log slow operations (> 1000ms) to reduce console noise
+      if (duration > 1000) {
+        console.warn(`⚠️ Slow API call: ${operation} took ${duration.toFixed(0)}ms`);
       }
       
       return result;
     } catch (error) {
       const endTime = performance.now();
       const duration = endTime - startTime;
-      console.error(`❌ API call failed: ${operation} after ${duration.toFixed(2)}ms`, error);
+      console.error(`❌ API call failed: ${operation} after ${duration.toFixed(0)}ms`);
       throw error;
     }
   },
@@ -189,62 +188,51 @@ export const performanceMonitor = {
   }
 };
 
-// Advanced request deduplication utility with caching
+// Lightweight request deduplication utility
 export class RequestDeduplicator {
   private pendingRequests = new Map<string, Promise<any>>();
-  private cache = performanceMonitor.createCache<any>(300000, 200); // 5 min TTL, 200 items max
-  private stats = {
-    hits: 0,
-    misses: 0,
-    deduped: 0,
-    errors: 0
-  };
+  private cache = new Map<string, { data: any; timestamp: number }>();
+  private readonly cacheTTL = 300000; // 5 minutes
+  private readonly maxCacheSize = 50; // Reduced from 200
 
   async dedupe<T>(
     key: string, 
     requestFn: () => Promise<T>,
     options: {
       useCache?: boolean;
-      cacheTTL?: number;
-      priority?: 'high' | 'normal' | 'low';
     } = {}
   ): Promise<T> {
-    const { useCache = true, priority = 'normal' } = options;
+    const { useCache = true } = options;
     
     // Check cache first if enabled
     if (useCache) {
       const cached = this.cache.get(key);
+      if (cached && (Date.now() - cached.timestamp) < this.cacheTTL) {
+        return cached.data as T;
+      }
+      // Remove expired cache entry
       if (cached) {
-        this.stats.hits++;
-        console.log(`💾 Cache hit: ${key}`);
-        return cached as T;
+        this.cache.delete(key);
       }
     }
     
     // If request is already pending, return the existing promise
     if (this.pendingRequests.has(key)) {
-      this.stats.deduped++;
-      console.log(`🔄 Request deduped: ${key}`);
       return this.pendingRequests.get(key) as Promise<T>;
     }
-
-    this.stats.misses++;
     
-    // Create new request with performance tracking
-    const request = performanceMonitor.trackApiCall(
-      `Deduped-${key}`,
-      requestFn
-    ).then((result) => {
+    // Create new request without performance tracking to reduce overhead
+    const request = requestFn().then((result) => {
       // Cache the result if enabled
       if (useCache) {
-        this.cache.set(key, result);
-        console.log(`💾 Cached result: ${key}`);
+        // Simple LRU eviction
+        if (this.cache.size >= this.maxCacheSize) {
+          const firstKey = this.cache.keys().next().value;
+          if (firstKey) this.cache.delete(firstKey);
+        }
+        this.cache.set(key, { data: result, timestamp: Date.now() });
       }
       return result;
-    }).catch((error) => {
-      this.stats.errors++;
-      console.error(`❌ Deduped request failed: ${key}`, error);
-      throw error;
     }).finally(() => {
       // Clean up after request completes
       this.pendingRequests.delete(key);
@@ -256,43 +244,41 @@ export class RequestDeduplicator {
 
   // Get cached value without making request
   getCached<T>(key: string): T | null {
-    return this.cache.get(key) as T | null;
+    const cached = this.cache.get(key);
+    if (cached && (Date.now() - cached.timestamp) < this.cacheTTL) {
+      return cached.data as T;
+    }
+    return null;
   }
   
   // Invalidate cache entry
   invalidate(key: string): void {
-    this.cache.clear();
+    this.cache.delete(key);
     this.pendingRequests.delete(key);
-    console.log(`🗑️ Invalidated: ${key}`);
   }
   
   // Invalidate by pattern
   invalidatePattern(pattern: string): void {
     const regex = new RegExp(pattern);
-    const stats = this.cache.stats();
     
-    stats.keys.forEach(key => {
+    for (const key of this.cache.keys()) {
       if (regex.test(key)) {
         this.invalidate(key);
       }
-    });
+    }
   }
 
   clear(): void {
     this.pendingRequests.clear();
     this.cache.clear();
-    this.stats = { hits: 0, misses: 0, deduped: 0, errors: 0 };
-    console.log(`🧹 RequestDeduplicator cleared`);
   }
   
-  // Get performance statistics
+  // Get basic statistics
   getStats() {
-    const cacheStats = this.cache.stats();
     return {
-      ...this.stats,
-      cache: cacheStats,
+      cacheSize: this.cache.size,
       pendingRequests: this.pendingRequests.size,
-      hitRate: this.stats.hits / (this.stats.hits + this.stats.misses) || 0
+      maxCacheSize: this.maxCacheSize
     };
   }
 }

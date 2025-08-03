@@ -57,7 +57,6 @@ function getDefaultAvailability(): VendorAvailability {
  * Fetches the general availability status of a vendor
  */
 export async function getVendorAvailability(vendorId: string): Promise<VendorAvailability> {
-  console.log(`DEBUG - Getting vendor availability for vendor ID: ${vendorId}`)
   
   try {
     // First try to check if the vendor exists
@@ -81,7 +80,6 @@ export async function getVendorAvailability(vendorId: string): Promise<VendorAva
       // 404 is expected for vendors without records - no need to log
       // 500 might happen during initial setup - handle gracefully
       if (response.status !== 404) {
-        console.log(`Vendor availability API returned status: ${response.status} - using default values`)
       }
       return getDefaultAvailability()
     }
@@ -232,7 +230,6 @@ export async function getVendorSuspension(vendorId: string): Promise<VendorSuspe
       // 404 is expected for vendors without records - no need to log
       // 500 might happen during initial setup - handle gracefully
       if (response.status !== 404) {
-        console.log(`Vendor suspension API returned status: ${response.status} for vendorId: ${vendorId} - using default values`)
       }
       return {
         is_suspended: false,

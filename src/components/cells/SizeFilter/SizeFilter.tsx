@@ -147,23 +147,9 @@ export const SizeFilter = () => {
       
       if (bestPath && bestPath !== activePath) {
         setActivePath(bestPath)
-        console.log(`🔍 [SizeFilter] Using size attribute path: ${bestPath}`)
       }
     }
     
-    // Log debug information
-    console.log(`🔍 [SizeFilter] Debug info:`, {
-      availableFacets: Array.from(availableFacets),
-      foundPaths,
-      bestPath,
-      activePath,
-      sampleProductStructure: results.hits?.[0] ? {
-        hasVariantAttrs: !!results.hits[0].variant_attribute_values,
-        hasProductAttrs: !!results.hits[0].attribute_values,
-        variantAttrKeys: results.hits[0].variant_attribute_values ? Object.keys(results.hits[0].variant_attribute_values) : [],
-        productAttrKeys: results.hits[0].attribute_values ? Object.keys(results.hits[0].attribute_values) : []
-      } : null
-    })
   }, [results, attributePaths, activePath, primarySizeAttribute])
 
   // Apply URL-based refinements to Algolia when URL params change
@@ -187,9 +173,9 @@ export const SizeFilter = () => {
       currentSizeFilters.forEach((size: string) => {
         try {
           helper.addFacetRefinement(activePath, size)
-          console.log(`🔍 [SizeFilter] Applied size filter ${size} to path ${activePath}`)
+      
         } catch (error) {
-          console.error(`🔍 [SizeFilter] Failed to apply size filter ${size} to path ${activePath}:`, error)
+       
         }
       })
     }
@@ -252,7 +238,6 @@ export const SizeFilter = () => {
     }
     
     const allSizes = Array.from(sizeSet).sort()
-    console.log(`🔍 [SizeFilter] Found ${allSizes.length} unique sizes:`, allSizes)
     return allSizes
   }, [sizeItems, primarySizeAttribute, results])
   
@@ -300,14 +285,7 @@ export const SizeFilter = () => {
   
   // Debug logging
   useEffect(() => {
-    console.log('🔍 [SizeFilter] State:', {
-      attributePaths,
-      activePath,
-      primarySizeAttribute: primarySizeAttribute?.handle,
-      currentSizeFilters,
-      allSizesCount: allSizes.length,
-      sizeItemsCount: sizeItems.length
-    })
+
   }, [attributePaths, activePath, primarySizeAttribute, currentSizeFilters, allSizes.length, sizeItems.length])
 
   if (loading) {

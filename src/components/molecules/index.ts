@@ -38,6 +38,7 @@ import LocalizedClientLink from "./LocalizedLink/LocalizedLink"
 import { ProductGPSR } from "./ProductGPSR/ProductGPSR"
 import { InpostParcelSelector } from "./InpostParcelSelector/InpostParcelSelector"
 import { InpostParcelInfo } from "./InpostParcelInfo/InpostParcelInfo"
+import { ImageZoomModal } from "./ImageZoomModal/ImageZoomModal"
 
 export {
   PrimeCategoryNavbar,
@@ -79,6 +80,7 @@ export {
   ProductGPSR,
   InpostParcelSelector,
   InpostParcelInfo,
+  ImageZoomModal,
 }
 
 // Re-export LocalizedLink as a named export

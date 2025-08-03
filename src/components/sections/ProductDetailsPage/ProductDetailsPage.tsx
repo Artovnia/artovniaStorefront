@@ -3,6 +3,7 @@ import { VendorAvailabilityProvider } from "../../../components/organisms/Vendor
 import { listProducts } from "../../../lib/data/products"
 import { getVendorAvailability, getVendorHolidayMode, getVendorSuspension } from "../../../lib/data/vendor-availability"
 import { HomeProductSection } from "../HomeProductSection/HomeProductSection"
+import { getCachedProduct } from "../../../lib/utils/persistent-cache"
 
 export const ProductDetailsPage = async ({
   handle,
@@ -11,10 +12,19 @@ export const ProductDetailsPage = async ({
   handle: string
   locale: string
 }) => {
-  const prod = await listProducts({
-    countryCode: locale,
-    queryParams: { handle },
-  }).then(({ response }) => response.products[0])
+  // Use persistent cache that survives server requests for variant selection
+  // This prevents repeated API calls when switching variants
+  const prod = await getCachedProduct(
+    handle,
+    locale,
+    async () => {
+      const { response } = await listProducts({
+        countryCode: locale,
+        queryParams: { handle },
+      })
+      return response.products[0]
+    }
+  )
 
   if (!prod) return null
   
@@ -51,10 +61,30 @@ export const ProductDetailsPage = async ({
       suspension={suspension}
       showModalOnLoad={!!availability?.onHoliday}
     >
-      <div className="flex flex-col md:flex-row lg:gap-12">
-        <div className="md:w-1/2 md:px-2">
+      {/* Mobile Layout: Stacked vertically */}
+      <div className="flex flex-col md:hidden">
+        <div className="w-full">
           <ProductGallery images={prod?.images || []} />
         </div>
+        <div className="w-full mt-4">
+          {prod.seller ? (
+            <ProductDetails product={{...prod, seller: prod.seller}} locale={locale} />
+          ) : (
+            <div className="p-4 bg-red-50 text-red-800 rounded">
+              Seller information is missing for this product.
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Desktop Layout: Sticky gallery on left, scrollable details on right */}
+      <div className="hidden md:flex md:flex-row lg:gap-12">
+        {/* Left: Sticky Product Gallery */}
+        <div className="md:w-1/2 md:px-2 md:sticky md:top-20 md:self-start">
+          <ProductGallery images={prod?.images || []} />
+        </div>
+        
+        {/* Right: Scrollable Product Details */}
         <div className="md:w-1/2 md:px-2">
           {prod.seller ? (
             <ProductDetails product={{...prod, seller: prod.seller}} locale={locale} />

@@ -46,9 +46,7 @@ export const ProductDetailsMeasurements = ({
     
     setIsLoading(true);
     try {
-      console.log(`API: Fetching measurements for variant: ${variantId}`);
       const data = await getProductMeasurements(productId, variantId, locale);
-      console.log(`API: Received ${data.length} measurements for variant ${variantId}`);
       setMeasurements(data);
       return true;
     } catch (error) {
@@ -63,12 +61,9 @@ export const ProductDetailsMeasurements = ({
   useEffect(() => {
     if (!productId || !selectedVariantId) return;
     
-    console.log(`MEASUREMENTS: Processing variant change to ${selectedVariantId}`);
-    
     // IMMEDIATE: First try to use local data for instant feedback
     const localMeasurements = findVariantMeasurements(selectedVariantId);
     if (localMeasurements.length > 0) {
-      console.log(`IMMEDIATE: Using ${localMeasurements.length} local measurements for variant ${selectedVariantId}`);
       setMeasurements(localMeasurements);
     }
     
@@ -79,18 +74,7 @@ export const ProductDetailsMeasurements = ({
     
   }, [productId, selectedVariantId, locale, findVariantMeasurements, fetchMeasurementsFromAPI]);
   
-  console.log('ProductDetailsMeasurements rendering with:', {
-    measurementsCount: measurements.length,
-    locale,
-    variantsCount: variants.length,
-    selectedVariantId,
-    measurementsWithVariantId: measurements.filter(m => m.variantId === selectedVariantId).length,
-    measurementsWithoutVariantId: measurements.filter(m => !m.variantId).length,
-    allMeasurements: measurements.map(m => ({
-      label: m.label,
-      variantId: m.variantId || 'product'
-    }))
-  });
+ 
   
   // Get title for the accordion based on locale
   const accordionTitle = locale === 'pl' ? 'Wymiary' : 'Dimensions';
@@ -111,7 +95,6 @@ export const ProductDetailsMeasurements = ({
         </div>
       );
     }
-    console.log('No measurements to display');
     return null;
   }
 
@@ -128,14 +111,6 @@ export const ProductDetailsMeasurements = ({
             measurement={measurement}
           />
         ))}
-        
-        {/* Show a subtle loading indicator when refreshing measurements */}
-        {(isLoading || isPending) && (
-          <div className="flex justify-end items-center py-2 px-4 text-xs text-gray-500">
-            <div className="animate-spin h-3 w-3 mr-2 border-b-1 border-gray-400 rounded-full"></div>
-            Aktualizowanie...
-          </div>
-        )}
       </ProductPageAccordion>
     </div>
   );

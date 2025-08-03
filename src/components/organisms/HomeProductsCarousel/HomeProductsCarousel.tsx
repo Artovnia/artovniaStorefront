@@ -74,7 +74,7 @@ export const HomeProductsCarousel = async ({
     }
     
     return (
-      <div className="w-full max-w-full max-h-[40rem] ">
+      <div className="w-full max-w-full">
         <Carousel
           align="start"
           items={productCards}

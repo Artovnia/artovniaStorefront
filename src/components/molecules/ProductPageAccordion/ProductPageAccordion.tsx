@@ -1,5 +1,4 @@
 'use client';
-import { Card } from '@/components/atoms';
 import { MinusThinIcon } from '@/icons';
 import { cn } from '@/lib/utils';
 import { useEffect, useRef, useState } from 'react';
@@ -31,31 +30,31 @@ export const ProductPageAccordion = ({
     setOpen(!open);
   };
   return (
-    <Card>
+    <div className='border-t border-gray-200'>
       <div
         onClick={openHandler}
-        className='flex justify-between items-center cursor-pointer px-2 py-4'
+        className='flex justify-between items-center cursor-pointer px-4 py-8 hover:bg-gray-50 transition-colors duration-200'       
       >
-        <h4 className='label-lg uppercase'>{heading}</h4>
+        <h4 className='label-lg uppercase text-gray-900'>{heading}</h4>
         <div className='relative'>
           <MinusThinIcon
             className={cn(
-              'absolute top-0 left-0 transition-all duration-300',
+              'absolute top-0 left-0 transition-all duration-300 text-gray-600',
               !open && 'rotate-90'
             )}
           />
-          <MinusThinIcon />
+          <MinusThinIcon className='text-gray-600' />
         </div>
       </div>
       <div
         ref={accordionRef}
         className={cn(
-          'transition-all duration-300 h-full overflow-hidden px-2'
+          'transition-all duration-300 h-full overflow-hidden px-4'
         )}
         style={{ maxHeight: open ? contentHeight : 0 }}
       >
-        <div className='py-2'>{children}</div>
+        <div className='pb-4'>{children}</div>
       </div>
-    </Card>
+    </div>
   );
 };

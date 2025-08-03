@@ -36,7 +36,6 @@ export const ProductAdditionalAttributes = ({
           }
         }))
         
-        console.log('Fetched variant attributes from API:', formattedAttributes)
         setAttributes(formattedAttributes)
         return true
       }
@@ -50,12 +49,6 @@ export const ProductAdditionalAttributes = ({
   }
 
   useEffect(() => {
-    console.log('ProductAdditionalAttributes effect running with:', { 
-      selectedVariantId, 
-      productId: product.id,
-      productHasAttrs: !!product.attribute_values?.length,
-      variantsCount: product.variants?.length || 0
-    })
 
     // If we have a selected variant, check local data immediately first
     if (selectedVariantId && product.id) {
@@ -63,10 +56,10 @@ export const ProductAdditionalAttributes = ({
       const selectedVariant = product.variants?.find((v) => v.id === selectedVariantId)
       
       if (selectedVariant?.attribute_values?.length) {
-        console.log('IMMEDIATE: Using variant attributes from local data:', selectedVariant.attribute_values)
+    
         setAttributes(selectedVariant.attribute_values)
       } else {
-        console.log('IMMEDIATE: No local variant attributes, using product attributes for now')
+      
         setAttributes(product.attribute_values || [])
       }
       
@@ -80,7 +73,6 @@ export const ProductAdditionalAttributes = ({
       }
     } else {
       // Otherwise fall back to product attributes
-      console.log('Using product attributes:', product.attribute_values)
       setAttributes(product.attribute_values || [])
     }
   }, [product, selectedVariantId])

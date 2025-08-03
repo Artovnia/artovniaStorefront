@@ -5,59 +5,45 @@ const nextConfig: NextConfig = {
   trailingSlash: false,
   reactStrictMode: true,
   
-  // Performance optimizations
+  // Essential performance optimizations only
   poweredByHeader: false,
   compress: true,
   
   experimental: {
+    // Minimal experimental features to reduce complexity
     optimizeCss: true,
-    // Enable modern bundling
-    esmExternals: true,
-    // Disable optimistic client cache to prevent auth state issues
-    // optimisticClientCache: false, // Commented out - this was causing session issues
   },
   
   // Bundle analysis and optimization
   productionBrowserSourceMaps: false,
   
-  // Server external packages (moved from experimental)
+  // Server external packages
   serverExternalPackages: [
     '@medusajs/js-sdk',
     'algoliasearch',
   ],
   
-  // Simplified webpack optimizations to prevent session/navigation issues
+  // Simplified webpack config to prevent navigation issues
   webpack: (config, { dev, isServer }) => {
-    // Only apply minimal optimizations to prevent conflicts
-    if (!isServer && !dev) {
-      // Production client-side optimizations only
+    // Minimal webpack optimizations to prevent conflicts
+    if (!dev && !isServer) {
+      // Only essential optimizations for production client builds
       config.optimization = {
         ...config.optimization,
         splitChunks: {
           chunks: 'all',
+          maxSize: 244000, // Smaller chunks for better loading
           cacheGroups: {
-            // Keep framework separate
-            framework: {
-              test: /[\/]node_modules[\/](react|react-dom|scheduler|next)[\/]/,
-              name: 'framework',
-              priority: 40,
-              chunks: 'all',
-              enforce: true,
+            default: {
+              minChunks: 2,
+              priority: -20,
+              reuseExistingChunk: true,
             },
-            // Medusa SDK separate
-            medusaSDK: {
-              test: /[\/]node_modules[\/]@medusajs[\/]/,
-              name: 'medusa-sdk',
-              priority: 35,
-              chunks: 'all',
-            },
-            // Default vendor chunk
-            vendors: {
+            vendor: {
               test: /[\/]node_modules[\/]/,
               name: 'vendors',
-              priority: 10,
+              priority: -10,
               chunks: 'all',
-              minChunks: 2,
             },
           },
         },

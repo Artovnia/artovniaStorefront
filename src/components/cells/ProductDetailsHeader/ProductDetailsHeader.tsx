@@ -131,18 +131,8 @@ export const ProductDetailsHeader = ({
 
   // Debug variant and stock information
   const selectedVariantObject = product.variants?.find(({ id }) => id === selectedVariantId);
-  console.log('DEBUG - Selected Variant:', {
-    variantId: selectedVariantId,
-    selectedVariant: selectedVariantObject,
-    allVariants: product.variants?.map(v => ({
-      id: v.id,
-      title: v.title,
-      inventory_quantity: v.inventory_quantity,
-    })),
-  });
-
+  
   const variantStock = selectedVariantObject?.inventory_quantity || 0
-  console.log('DEBUG - Variant Stock:', variantStock);
 
   const variantHasPrice = selectedVariantObject?.calculated_price ? true : false
   
@@ -150,7 +140,7 @@ export const ProductDetailsHeader = ({
   const canAddToCart = variantStock > 0 && variantHasPrice && isAvailable
 
   return (
-    <div className="border rounded-sm p-5">
+    <div className=" p-5">
       <div className="flex justify-between">
         <div>
           <h2 className="label-md text-secondary">

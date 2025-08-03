@@ -64,29 +64,35 @@ const removeBrowserCookie = (name: string) => {
 
 // Optimized cache for auth headers to reduce blocking operations
 let authHeadersCache: { headers: any; timestamp: number; token?: string } | null = null;
-const CACHE_DURATION = 30000; // Reduced to 30 seconds to prevent stale data
+const CACHE_DURATION = 10000; // Reduced to 10 seconds for faster updates
 const PUBLISHABLE_KEY_CACHE = { key: '', timestamp: 0 };
+const PUBLISHABLE_KEY_CACHE_DURATION = 60000; // 1 minute for publishable key
 
 export const getAuthHeaders = async (): Promise<
   { authorization: string; 'x-publishable-api-key': string } | { 'x-publishable-api-key': string }
 > => {
-  // Fast path: Check cache first with token validation
+  // Fast path: Check cache first to avoid blocking operations
   if (authHeadersCache && (Date.now() - authHeadersCache.timestamp) < CACHE_DURATION) {
     return authHeadersCache.headers;
   }
   
-  // Optimize publishable key retrieval with caching
+  // Get publishable key with minimal overhead
   let publishableKey = '';
-  if (PUBLISHABLE_KEY_CACHE.key && (Date.now() - PUBLISHABLE_KEY_CACHE.timestamp) < CACHE_DURATION) {
+  if (PUBLISHABLE_KEY_CACHE.key && (Date.now() - PUBLISHABLE_KEY_CACHE.timestamp) < PUBLISHABLE_KEY_CACHE_DURATION) {
     publishableKey = PUBLISHABLE_KEY_CACHE.key;
   } else {
-    publishableKey = await getPublishableApiKey();
-    PUBLISHABLE_KEY_CACHE.key = publishableKey;
-    PUBLISHABLE_KEY_CACHE.timestamp = Date.now();
+    try {
+      publishableKey = await getPublishableApiKey();
+      PUBLISHABLE_KEY_CACHE.key = publishableKey;
+      PUBLISHABLE_KEY_CACHE.timestamp = Date.now();
+    } catch {
+      // Fallback to environment variable to prevent blocking
+      publishableKey = process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || '';
+    }
   }
   
   // Make the publishable key available globally for client components
-  if (isBrowser) {
+  if (isBrowser && publishableKey) {
     // @ts-ignore - Add to window object
     window.__MEDUSA_PUBLISHABLE_KEY__ = publishableKey;
   }
@@ -99,41 +105,41 @@ export const getAuthHeaders = async (): Promise<
     return headers;
   }
   
-  try {
-    let token: string | null = null;
-    
-    // Optimized token retrieval - avoid blocking operations
-    if (!isBrowser) {
-      // Server-side: Use faster approach, avoid dynamic imports when possible
-      try {
-        const serverCookies = await getServerCookies();
-        token = serverCookies?.get('_medusa_jwt')?.value || null;
-      } catch {
-        // Silently fail and continue without token
-        token = null;
-      }
-    } else {
-      // Client-side: Direct cookie access (fastest)
-      token = getBrowserCookie('_medusa_jwt');
+  // Optimized non-blocking token retrieval
+  let token: string | null = null;
+  
+  if (isBrowser) {
+    // Client-side: Direct cookie access (fastest, non-blocking)
+    token = getBrowserCookie('_medusa_jwt');
+  } else {
+    // Server-side: Use shorter timeout to prevent blocking navigation
+    try {
+      const timeoutPromise = new Promise<null>((_, reject) => 
+        setTimeout(() => reject(new Error('Timeout')), 50) // Reduced from 100ms to 50ms
+      );
+      
+      const cookiePromise = getServerCookies().then(cookies => {
+        if (!cookies) return null;
+        return cookies.get('_medusa_jwt')?.value || null;
+      });
+      
+      token = await Promise.race([cookiePromise, timeoutPromise]);
+    } catch {
+      // Fast timeout or error - continue without token to prevent blocking
+      token = null;
     }
-
-    const headers = token ? {
-      authorization: `Bearer ${token}`,
-      'x-publishable-api-key': publishableKey
-    } : {
-      'x-publishable-api-key': publishableKey
-    };
-    
-    // Cache the result with token for validation
-    authHeadersCache = { headers, timestamp: Date.now(), token: token || undefined };
-    return headers;
-    
-  } catch (error) {
-    // Fast fallback - don't log errors to avoid console spam
-    const headers = { 'x-publishable-api-key': publishableKey };
-    authHeadersCache = { headers, timestamp: Date.now() };
-    return headers;
   }
+
+  const headers = token ? {
+    authorization: `Bearer ${token}`,
+    'x-publishable-api-key': publishableKey
+  } : {
+    'x-publishable-api-key': publishableKey
+  };
+  
+  // Cache the result
+  authHeadersCache = { headers, timestamp: Date.now(), token: token || undefined };
+  return headers;
 };
 
 // Add the missing retrieveCustomer function with proper typing
@@ -303,7 +309,7 @@ export const removeAuthToken = async () => {
 
 // Optimized cart ID cache to reduce repeated lookups
 let cartIdCache: { id: string | null; timestamp: number } | null = null;
-const CART_ID_CACHE_DURATION = 15000; // Reduced to 15 seconds to prevent stale data
+const CART_ID_CACHE_DURATION = 10000; // Reduced to 10 seconds for faster updates
 
 export const getCartId = async (): Promise<string | null> => {
   // Fast path: Check cache first
@@ -314,14 +320,21 @@ export const getCartId = async (): Promise<string | null> => {
   try {
     let cartId: string | null = null;
     
-    // Optimized retrieval - prioritize fastest sources
+    // Optimized retrieval with timeout protection
     if (!isBrowser) {
-      // Server-side: Try server cookies with error handling
+      // Server-side: Try server cookies with short timeout
       try {
-        const serverCookies = await getServerCookies();
-        cartId = serverCookies?.get('_medusa_cart_id')?.value || null;
+        const timeoutPromise = new Promise<null>((_, reject) => 
+          setTimeout(() => reject(new Error('Timeout')), 30) // Very short timeout for cart ID
+        );
+        
+        const cookiePromise = getServerCookies().then(cookies => 
+          cookies?.get('_medusa_cart_id')?.value || null
+        );
+        
+        cartId = await Promise.race([cookiePromise, timeoutPromise]);
       } catch {
-        // Silently fail and try other sources
+        // Fast timeout - continue without cart ID to prevent blocking
         cartId = null;
       }
     } else {

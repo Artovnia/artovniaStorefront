@@ -362,6 +362,10 @@ export async function addToCart({
       .then(async () => {
         const cartCacheTag = await getCacheTag("carts")
         revalidateTag(cartCacheTag)
+        
+        // Invalidate persistent cache to ensure fresh data
+        const { invalidateCheckoutCache } = await import('../utils/persistent-cache')
+        invalidateCheckoutCache(cart.id)
       })
       .catch(medusaError)
   } else {
@@ -378,6 +382,10 @@ export async function addToCart({
       .then(async () => {
         const cartCacheTag = await getCacheTag("carts")
         revalidateTag(cartCacheTag)
+        
+        // Invalidate persistent cache to ensure fresh data
+        const { invalidateCheckoutCache } = await import('../utils/persistent-cache')
+        invalidateCheckoutCache(cart.id)
       })
       .catch(medusaError)
   }
@@ -464,6 +472,10 @@ export async function setShippingMethod({
     .then(async (response) => {
       const cartCacheTag = await getCacheTag("carts")
       revalidateTag(cartCacheTag)
+      
+      // Invalidate persistent cache to ensure fresh data on next request
+      const { invalidateCheckoutCache } = await import('../utils/persistent-cache')
+      invalidateCheckoutCache(cartId)
       
       // Return the response data so callers can access the updated cart
       return response
@@ -742,6 +754,10 @@ export async function removeShippingMethod(shippingMethodId: string, sellerId?: 
     // Also revalidate fulfillment data to refresh shipping options
     const fulfillmentTag = await getCacheTag("fulfillment");
     revalidateTag(fulfillmentTag);
+    
+    // Invalidate persistent cache to ensure fresh data on next request
+    const { invalidateCheckoutCache } = await import('../utils/persistent-cache')
+    invalidateCheckoutCache(cartId)
     
     return {
       success: true,

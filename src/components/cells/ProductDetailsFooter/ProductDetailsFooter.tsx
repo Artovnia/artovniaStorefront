@@ -2,6 +2,7 @@ import {
   ProductPostedDate,
   ProductReportButton,
   ProductTags,
+  ProductPageAccordion,
 } from '@/components/molecules';
 
 // Define the product tag type that matches what the component expects
@@ -20,14 +21,12 @@ export const ProductDetailsFooter = ({
   posted: string | null;
 }) => {
   return (
-    <>
-      <div className='p-4 border rounded-sm'>
-        <ProductTags tags={tags} />
-        <div className='flex justify-between items-center mt-4'>
-          <ProductPostedDate posted={posted} />
-          <ProductReportButton />
-        </div>
+    <ProductPageAccordion heading="Szczegóły przedmiotu" defaultOpen={false}>
+      <ProductTags tags={tags} />
+      <div className='flex justify-between items-center mt-4'>
+        <ProductPostedDate posted={posted} />
+        <ProductReportButton />
       </div>
-    </>
+    </ProductPageAccordion>
   );
 };

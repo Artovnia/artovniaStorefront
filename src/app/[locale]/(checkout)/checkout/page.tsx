@@ -7,6 +7,7 @@ import { retrieveCart, retrieveCartForAddress, retrieveCartForShipping, retrieve
 import { retrieveCustomer } from "@/lib/data/customer"
 import { listCartShippingMethods } from "@/lib/data/fulfillment"
 import { listCartPaymentMethods } from "@/lib/data/payment"
+import { getCachedCheckoutData } from "@/lib/utils/persistent-cache"
 import { Metadata } from "next"
 import Link from "next/link"
 import { notFound } from "next/navigation"
@@ -34,25 +35,40 @@ export default async function CheckoutPage() {
 
 async function CheckoutPageContent() {
   try {
-    // Load comprehensive cart data once at the page level
-    // This prevents multiple API calls from individual components
-    const cart = await retrieveCart()
+    // Load comprehensive cart data with persistent caching
+    const cart = await getCachedCheckoutData(
+      'cart',
+      () => retrieveCart()
+    )
 
     if (!cart) {
       return notFound()
     }
     
-    // Load all required data in parallel for better performance
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`🛒 Loading checkout data for cart: ${cart.id}`);
+    }
+    
+    // Load all required data in parallel with persistent caching for better performance
     const [shippingMethods, paymentMethods, customer] = await Promise.all([
-      listCartShippingMethods(cart.id).catch(error => {
+      getCachedCheckoutData(
+        `shipping-methods-${cart.id}`,
+        () => listCartShippingMethods(cart.id)
+      ).catch(error => {
         console.warn('Failed to load shipping methods:', error)
         return []
       }),
-      listCartPaymentMethods(cart.region?.id ?? "").catch(error => {
+      getCachedCheckoutData(
+        `payment-methods-${cart.region?.id ?? 'no-region'}`,
+        () => listCartPaymentMethods(cart.region?.id ?? "")
+      ).catch(error => {
         console.warn('Failed to load payment methods:', error)
         return []
       }),
-      retrieveCustomer().catch(error => {
+      getCachedCheckoutData(
+        'customer',
+        () => retrieveCustomer()
+      ).catch(error => {
         console.warn('Failed to load customer:', error)
         return null
       })

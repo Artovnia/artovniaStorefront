@@ -18,7 +18,6 @@ const getCategoriesWithProducts = async (): Promise<Set<string>> => {
     const ALGOLIA_INDEX_NAME = process.env.NEXT_PUBLIC_ALGOLIA_PRODUCTS_INDEX || "products"
 
     if (!ALGOLIA_ID || !ALGOLIA_SEARCH_KEY) {
-      console.warn('[Categories] Algolia credentials missing, showing all categories')
       return new Set<string>()
     }
 
@@ -44,7 +43,6 @@ const getCategoriesWithProducts = async (): Promise<Set<string>> => {
       })
     }
 
-    console.log(`[Categories] Found ${categoriesWithProducts.size} categories with products in Algolia`)
     return categoriesWithProducts
   } catch (error) {
     console.error('[Categories] Error fetching categories from Algolia:', error)
@@ -115,8 +113,6 @@ export const listCategories = async ({
       !headingCategories.includes(name.toLowerCase()) && 
       !allChildCategoryIds.has(id)
   )
-
-  console.log(`[Categories] Returning ${childrenCategories.length} main categories and ${parentCategories.length} parent categories with products`)
 
   return {
     categories: childrenCategories,

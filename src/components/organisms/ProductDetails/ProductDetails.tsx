@@ -11,6 +11,7 @@ import { getProductMeasurements } from "@/lib/data/measurements"
 import { retrieveCustomer, isAuthenticated } from "@/lib/data/customer"
 import { getUserWishlists } from "@/lib/data/wishlist"
 import { getProductReviews } from "@/lib/data/reviews"
+import { globalDeduplicator, measurementDeduplicator } from "@/lib/utils/performance"
 import { SellerProps } from "@/types/seller"
 import { Wishlist } from "@/types/wishlist"
 import { HttpTypes } from "@medusajs/types"
@@ -31,11 +32,11 @@ export const ProductDetails = async ({
   }
   locale: string
 }) => {
-  // Fetch all data in parallel to prevent layout shifts
+  // Fetch data in parallel with request deduplication to prevent layout shifts and duplicate API calls
   const [user, authenticated, reviewsData, measurements] = await Promise.allSettled([
-    retrieveCustomer(),
-    isAuthenticated(),
-    getProductReviews(product.id),
+    globalDeduplicator.dedupe(`customer-${product.id}`, () => retrieveCustomer()),
+    globalDeduplicator.dedupe(`auth-${product.id}`, () => isAuthenticated()),
+    globalDeduplicator.dedupe(`reviews-${product.id}`, () => getProductReviews(product.id)),
     (async () => {
       // Determine if we're viewing a specific variant
       let selectedVariantId: string | undefined
@@ -47,8 +48,11 @@ export const ProductDetails = async ({
       const supportedLocales = ['en', 'pl']
       const currentLocale = supportedLocales.includes(locale) ? locale : 'en'
       
-      // Fetch physical measurements from the product and all variants (prioritizing selected variant)
-      return await getProductMeasurements(product.id, selectedVariantId, currentLocale)
+      // Fetch physical measurements with deduplication
+      return await measurementDeduplicator.dedupe(
+        `measurements-${product.id}-${selectedVariantId}-${currentLocale}`,
+        () => getProductMeasurements(product.id, selectedVariantId, currentLocale)
+      )
     })()
   ])
 
@@ -61,7 +65,11 @@ export const ProductDetails = async ({
   let wishlist: Wishlist[] = []
   if (customer) {
     try {
-      const response = await getUserWishlists()
+      // Use deduplication for wishlist fetching
+      const response = await globalDeduplicator.dedupe(
+        `wishlists-${customer.id}`,
+        () => getUserWishlists()
+      )
       wishlist = response.wishlists
     } catch (error) {
       console.error('Error fetching wishlists:', error)

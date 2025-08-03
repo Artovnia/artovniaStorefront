@@ -19,8 +19,8 @@ export const CustomCarousel = ({
   const [scrollPosition, setScrollPosition] = useState(0);
   const [maxScroll, setMaxScroll] = useState(1); // Initialize to non-zero to enable right arrow
   
-  // Scroll amount for each button click (in pixels)
-  const scrollAmount = 620; // Approximately two product cards
+  // Responsive scroll amount for each button click (in pixels)
+  const scrollAmount = 350; // Approximately one product card width
   
   // Initialize scroll state on component mount
   useEffect(() => {
@@ -74,7 +74,7 @@ export const CustomCarousel = ({
   };
 
   return (
-    <div className='relative w-full max-w-full h-[50rem]'>
+    <div className='relative w-full max-w-full'>
       {/* Desktop Navigation Arrows */}
       <div className='hidden md:block'>
         <button
@@ -91,9 +91,9 @@ export const CustomCarousel = ({
         </button>
       </div>
 
-      {/* Simple scrollable container */}
+      {/* Responsive scrollable container */}
       <div 
-        className='w-full h-full overflow-x-auto scrollbar-hide'
+        className='w-full overflow-x-auto scrollbar-hide'
         ref={scrollContainerRef}
         onScroll={handleScroll}
         style={{
@@ -101,11 +101,11 @@ export const CustomCarousel = ({
           msOverflowStyle: 'none', /* IE/Edge */
         }}
       >
-        <div className='flex h-full'>
+        <div className='flex gap-3 pb-4'>
           {items.map((slide, index) => (
             <div 
               key={index} 
-              className='flex-none w-[30rem] mr-2 last:mr-0'
+              className='flex-none w-[280px] sm:w-[300px] md:w-[320px] lg:w-[350px]'
             >
               {slide}
             </div>

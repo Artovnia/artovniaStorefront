@@ -28,26 +28,26 @@ export const ProductCard = ({
   return (
     <div
       className={clsx(
-        "relative group border rounded-sm flex flex-col justify-between p-1",
+        "relative group border rounded-sm flex flex-col h-full",
         {
-          "w-[250px] lg:w-[370px]": sellerPage,
-          "w-[30rem] h-full max-h-[40rem]": !sellerPage, // Use full height/width but limit max height
+          "w-[250px] lg:w-[370px] p-2": sellerPage,
+          "w-full p-1": !sellerPage, // Use full width of container, let carousel control sizing
         }
       )}
     >
-      <div className="relative w-full h-full bg-primary aspect-square">
+      <div className="relative w-full bg-primary aspect-square flex-shrink-0">
         {/* <div className="absolute right-3 top-3 z-10 cursor-pointer">
           <WishlistButton productId={product.id} />
         </div> */}
         <Link href={`/products/${product.handle}`}>
-          <div className="overflow-hidden rounded-sm w-full h-full flex justify-center align-center ">
+          <div className="overflow-hidden rounded-sm w-full h-full flex justify-center items-center">
             {product.thumbnail ? (
               <Image
                 src={decodeURIComponent(product.thumbnail)}
                 alt={product.title}
-                width={360}
-                height={360}
-                className="object-cover aspect-square w-full object-center h-full lg:group-hover:-mt-14 transition-all duration-300 rounded-xs"
+                width={320}
+                height={320}
+                className="object-cover aspect-square w-full object-center h-full lg:group-hover:scale-105 transition-all duration-300 rounded-xs"
                 priority
               />
             ) : (
@@ -68,24 +68,24 @@ export const ProductCard = ({
         </Link>
       </div>
       <Link href={`/products/${product.handle}`}>
-        <div className="flex justify-between p-4">
+        <div className="flex justify-between p-3 flex-grow">
           <div className="w-full">
-            <h3 className="heading-sm truncate">{product.title}</h3>
-            <div className="flex items-center gap-2 mt-2">
-              <p className="font-medium">
+            <h3 className="text-sm font-medium truncate mb-2 leading-tight">{product.title}</h3>
+            <div className="flex items-center gap-2">
+              <p className="font-semibold text-sm">
                 {sellerCheapestPrice?.calculated_price ||
                   cheapestPrice?.calculated_price}
               </p>
               {sellerCheapestPrice?.calculated_price
                 ? sellerCheapestPrice?.calculated_price !==
                     sellerCheapestPrice?.original_price && (
-                    <p className="text-sm text-gray-500 line-through">
+                    <p className="text-xs text-gray-500 line-through">
                       {sellerCheapestPrice?.original_price}
                     </p>
                   )
                 : cheapestPrice?.calculated_price !==
                     cheapestPrice?.original_price && (
-                    <p className="text-sm text-gray-500 line-through">
+                    <p className="text-xs text-gray-500 line-through">
                       {cheapestPrice?.original_price}
                     </p>
                   )}

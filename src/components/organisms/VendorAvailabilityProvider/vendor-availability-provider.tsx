@@ -58,55 +58,20 @@ export function VendorAvailabilityProvider({
     availability.available && !availability.suspended && !availability.onHoliday : 
     true
     
-  // Log availability state for debugging
+  // Simplified useEffect to prevent infinite re-renders
   useEffect(() => {
+    // Only run once when component mounts or when vendorId changes
     if (availability) {
-      console.log('DEBUG - VendorAvailabilityProvider received availability:', {
-        vendorId,
-        available: availability.available,
-        suspended: availability.suspended,
-        onHoliday: availability.onHoliday,
-        status: availability.status,
-        isAvailable
-      })
+      setIsLoading(false)
     }
     
-    if (holidayMode) {
-      console.log('DEBUG - VendorAvailabilityProvider received holidayMode:', {
-        is_holiday_mode: holidayMode.is_holiday_mode,
-        start: holidayMode.holiday_start_date,
-        end: holidayMode.holiday_end_date,
-        status: holidayMode.status
-      })
-    }
-  }, [availability, holidayMode, vendorId, isAvailable])
-  
-  // Show holiday modal on initial load if requested and vendor is on holiday
-  useEffect(() => {
-    console.log('DEBUG - Checking showModalOnLoad conditions:', {
-      showModalOnLoad,
-      'availability?.onHoliday': availability?.onHoliday,
-      'holidayMode?.is_holiday_mode': holidayMode?.is_holiday_mode
-    })
-    
+    // Show holiday modal if conditions are met (only on mount/vendorId change)
     if (showModalOnLoad && availability?.onHoliday && holidayMode?.is_holiday_mode) {
-      console.log('DEBUG - Setting showHolidayModal to true (initial load)')
+      setShowHolidayModal(true)
+    } else if (availability?.onHoliday && holidayMode?.is_holiday_mode) {
       setShowHolidayModal(true)
     }
-  }, [showModalOnLoad, availability, holidayMode])
-  
-  // Auto-show holiday modal when availability changes and vendor is on holiday
-  useEffect(() => {
-    console.log('DEBUG - Checking auto-show conditions:', {
-      'availability?.onHoliday': availability?.onHoliday,
-      'holidayMode?.is_holiday_mode': holidayMode?.is_holiday_mode
-    })
-    
-    if (availability?.onHoliday && holidayMode?.is_holiday_mode) {
-      console.log('DEBUG - Auto-showing holiday modal')
-      setShowHolidayModal(true)
-    }
-  }, [availability?.onHoliday, holidayMode?.is_holiday_mode])
+  }, [vendorId]) // Only depend on vendorId to prevent infinite loops
   
   const openHolidayModal = () => {
     if (availability?.onHoliday && holidayMode) {

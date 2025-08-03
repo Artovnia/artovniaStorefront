@@ -1,5 +1,5 @@
 import { Button } from '@/components/atoms';
-import { SellerReview } from '@/components/molecules';
+import { SellerReview, ProductPageAccordion } from '@/components/molecules';
 import { SingleProductReview } from '@/types/product';
 import { SellerProps } from "@/types/seller"
 import { StarRating } from "@/components/atoms"
@@ -24,10 +24,10 @@ export const ProductDetailsSellerReviews = async ({ seller }: { seller: SellerPr
         filteredReviews.length
       : 0
 
-  console.log(`🔍 [ProductDetailsSellerReviews] Seller: ${handle}, Reviews: ${reviewCount}, Rating: ${rating}`)
+ 
 
   return (
-    <div className='p-4 border rounded-sm'>
+    <ProductPageAccordion heading="Sprzedawca" defaultOpen={false}>
       <div className='flex justify-between items-center mb-5'>
         <Link href={`/sellers/${handle}`} className="flex gap-4">
           <div className="relative h-12 w-12 overflow-hidden rounded-sm">
@@ -61,6 +61,6 @@ export const ProductDetailsSellerReviews = async ({ seller }: { seller: SellerPr
           })[0]} 
         />
       )}
-    </div>
+    </ProductPageAccordion>
   );
 };

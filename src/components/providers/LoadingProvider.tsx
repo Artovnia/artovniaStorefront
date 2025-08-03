@@ -1,7 +1,7 @@
 "use client"
 
-import { usePathname, useRouter, useSearchParams } from "next/navigation"
-import { createContext, useContext, useEffect, useState } from "react"
+import { usePathname, useSearchParams } from "next/navigation"
+import { createContext, useContext, useEffect, useState, useRef } from "react"
 
 interface LoadingContextType {
   isLoading: boolean
@@ -21,82 +21,104 @@ export function LoadingProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(false)
   const pathname = usePathname()
   const searchParams = useSearchParams()
-  const [isNavigating, setIsNavigating] = useState(false)
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const isInitialMount = useRef(true)
+  const lastUrl = useRef<string>('')
 
-  // Start loading indicator
+  // Optimized start/stop functions with immediate feedback
   const startLoading = () => {
-    setIsLoading(true)
-  }
-
-  // Stop loading indicator
-  const stopLoading = () => {
-    setIsLoading(false)
-    setIsNavigating(false)
-  }
-
-  // Handle navigation state changes
-  useEffect(() => {
-    if (isNavigating) {
-      // If we were navigating, stop loading when route changes
-      stopLoading()
+    // Clear any existing timeout
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current)
     }
-  }, [pathname, searchParams, isNavigating])
+    
+    setIsLoading(true)
+    
+    // Safety timeout - always stop loading after 8 seconds
+    timeoutRef.current = setTimeout(() => {
+      setIsLoading(false)
+    }, 8000)
+  }
 
-  // Simple click detection without interference
+  const stopLoading = () => {
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current)
+      timeoutRef.current = null
+    }
+    setIsLoading(false)
+  }
+
+  // Handle route changes - stop loading when navigation completes
   useEffect(() => {
-    const handleLinkClick = (e: MouseEvent) => {
+    const currentUrl = `${pathname}${searchParams.toString() ? `?${searchParams.toString()}` : ''}`
+    
+    // Skip initial mount
+    if (isInitialMount.current) {
+      isInitialMount.current = false
+      lastUrl.current = currentUrl
+      return
+    }
+    
+    // Only stop loading if URL actually changed
+    if (lastUrl.current !== currentUrl) {
+      stopLoading()
+      lastUrl.current = currentUrl
+    }
+  }, [pathname, searchParams])
+
+  // Single, optimized navigation handler
+  useEffect(() => {
+    const handleNavigation = (e: MouseEvent) => {
       const target = e.target as HTMLElement
-      const link = target.closest("a")
+      const link = target.closest('a')
       
-      // Only detect internal navigation links
-      if (link && 
-          link.href && 
-          link.href.startsWith(window.location.origin) && 
-          !link.hasAttribute("download") && 
-          !link.target &&
-          !e.defaultPrevented) {
+      // Skip if not a valid internal link
+      if (!link?.href || 
+          !link.href.startsWith(window.location.origin) || 
+          link.hasAttribute('download') || 
+          link.target || 
+          e.defaultPrevented) {
+        return
+      }
+      
+      try {
+        const currentUrl = window.location.pathname + window.location.search
+        const targetUrl = new URL(link.href)
+        const targetPath = targetUrl.pathname + targetUrl.search
         
-        try {
-          const currentPath = window.location.pathname + window.location.search
-          const targetUrl = new URL(link.href)
-          const targetPath = targetUrl.pathname + targetUrl.search
-          
-          // Only start loading for different routes
-          if (currentPath !== targetPath) {
-            setIsNavigating(true)
-            startLoading()
-            
-            // Safety timeout
-            setTimeout(() => {
-              stopLoading()
-            }, 10000)
-          }
-        } catch (error) {
-          // Ignore URL parsing errors
+        // Only start loading for different routes
+        if (currentUrl !== targetPath) {
+          startLoading()
         }
+      } catch (error) {
+        // Ignore URL parsing errors
       }
     }
 
-    // Listen for browser back/forward
+    // Handle browser navigation
     const handlePopState = () => {
-      setIsNavigating(true)
       startLoading()
-      // Let the pathname/searchParams useEffect handle stopping
     }
 
-    // Listen for page unload
+    // Handle page unload
     const handleBeforeUnload = () => {
       startLoading()
     }
 
-    document.addEventListener("click", handleLinkClick, { passive: true })
-    window.addEventListener("popstate", handlePopState)
-    window.addEventListener("beforeunload", handleBeforeUnload)
+    // Add event listeners with optimized options
+    document.addEventListener('click', handleNavigation, { passive: true, capture: false })
+    window.addEventListener('popstate', handlePopState, { passive: true })
+    window.addEventListener('beforeunload', handleBeforeUnload, { passive: true })
 
     return () => {
-      document.removeEventListener("click", handleLinkClick)
-      window.removeEventListener("popstate", handlePopState)
-      window.removeEventListener("beforeunload", handleBeforeUnload)
+      document.removeEventListener('click', handleNavigation)
+      window.removeEventListener('popstate', handlePopState)
+      window.removeEventListener('beforeunload', handleBeforeUnload)
+      
+      // Cleanup timeout on unmount
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current)
+      }
     }
   }, [])
 

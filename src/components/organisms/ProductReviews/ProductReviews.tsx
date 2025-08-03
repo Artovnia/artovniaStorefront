@@ -1,12 +1,12 @@
 // src/components/organisms/ProductReviews/ProductReviews.tsx
 "use client"
 
-import { useCallback, useEffect, useState } from "react"
+import { useState } from "react"
 import Link from "next/link"
 import { Button } from "@/components/atoms"
 import { StarRating } from "@/components/atoms/StarRating/StarRating"
 import { StarIcon } from '@/icons'
-import { getProductReviews, createReview, checkUserReviewStatus, updateReview } from "@/lib/data/reviews"
+import { createReview, updateReview } from "@/lib/data/reviews"
 import { HttpTypes } from "@medusajs/types"
 import { useForm } from "react-hook-form"
 import toast from "react-hot-toast"
@@ -32,7 +32,7 @@ type ProductReviewsProps = {
   productId: string
   isAuthenticated: boolean
   customer: HttpTypes.StoreCustomer | null
-  prefetchedReviews?: ReviewData[]
+  prefetchedReviews: ReviewData[] // Make this required, no default
 }
 
 type FormValues = {
@@ -46,6 +46,16 @@ const calculateAverageRating = (reviews: ReviewData[]): number => {
   
   const sum = reviews.reduce((acc, review) => acc + review.rating, 0)
   return Math.round((sum / reviews.length) * 10) / 10
+}
+
+// Helper function to find user's existing review
+const findUserReview = (reviews: ReviewData[], customer: HttpTypes.StoreCustomer | null): ReviewData | null => {
+  if (!customer || !reviews || reviews.length === 0) return null
+  
+  return reviews.find(review => 
+    review.customer?.id === customer.id || 
+    review.customer?.email === customer.email
+  ) || null
 }
 
 // Interactive Star Rating Component for Form
@@ -128,43 +138,43 @@ const ReviewCard = ({ review }: { review: ReviewData }): JSX.Element => {
   )
 }
 
-// Review Form Component
-const ReviewForm = ({ productId, customer, existingReview, onSuccess }: {
+// Review Form Component - Simplified
+const ReviewForm = ({ 
+  productId, 
+  customer, 
+  existingReview, 
+  onSuccess,
+  isSubmitting,
+  setIsSubmitting
+}: {
   productId: string
   customer: HttpTypes.StoreCustomer
   existingReview: ReviewData | null
-  onSuccess: () => void
+  onSuccess: (review: ReviewData) => void
+  isSubmitting: boolean
+  setIsSubmitting: (submitting: boolean) => void
 }): JSX.Element => {
   const isEditMode = !!existingReview
   const [rating, setRating] = useState(existingReview ? existingReview.rating : 0)
-  const [submitting, setSubmitting] = useState(false)
   
   const {
     register,
     handleSubmit,
     formState: { errors },
-    reset,
-    setValue
+    reset
   } = useForm<FormValues>({
     defaultValues: {
       customer_note: existingReview?.customer_note || ''
     }
   })
-  
-  useEffect(() => {
-    if (existingReview) {
-      setRating(existingReview.rating)
-      setValue('customer_note', existingReview.customer_note || '')
-    }
-  }, [existingReview, setValue])
-  
+
   const onSubmit = async (data: FormValues): Promise<void> => {
     if (rating === 0) {
       toast.error("Prosimy wybrać ocenę w gwiazdkach")
       return
     }
     
-    setSubmitting(true)
+    setIsSubmitting(true)
     
     try {
       let response
@@ -177,9 +187,9 @@ const ReviewForm = ({ productId, customer, existingReview, onSuccess }: {
           customer_note: data.customer_note
         })
         
-        if (response.success) {
+        if (response.success && response.review) {
           toast.success("Recenzja została zaktualizowana!")
-          onSuccess()
+          onSuccess(response.review)
         } else {
           toast.error(`Błąd: ${response.error || 'Nie udało się zaktualizować recenzji'}`)
         }
@@ -193,11 +203,11 @@ const ReviewForm = ({ productId, customer, existingReview, onSuccess }: {
         
         response = await createReview(reviewData)
         
-        if (response.success) {
+        if (response.success && response.review) {
           toast.success("Dziękujemy za dodanie recenzji!")
           reset()
           setRating(0)
-          onSuccess()
+          onSuccess(response.review)
         } else {
           toast.error(`Błąd: ${response.error || 'Nie udało się dodać recenzji'}`)
         }
@@ -206,7 +216,7 @@ const ReviewForm = ({ productId, customer, existingReview, onSuccess }: {
       console.error("Error submitting review:", error)
       toast.error("Wystąpił błąd podczas zapisywania recenzji.")
     } finally {
-      setSubmitting(false)
+      setIsSubmitting(false)
     }
   }
   
@@ -243,9 +253,9 @@ const ReviewForm = ({ productId, customer, existingReview, onSuccess }: {
         <Button 
           variant="filled" 
           type="submit"
-          disabled={submitting}
+          disabled={isSubmitting}
         >
-          {submitting ? "Zapisywanie..." : isEditMode ? "Zaktualizuj recenzję" : "Dodaj recenzję"}
+          {isSubmitting ? "Zapisywanie..." : isEditMode ? "Zaktualizuj recenzję" : "Dodaj recenzję"}
         </Button>
       </div>
     </form>
@@ -270,145 +280,99 @@ const LoginPrompt = (): JSX.Element => (
   </div>
 )
 
-// Main ProductReviews Component
+// Main ProductReviews Component - Rebuilt for simplicity and reliability
 export const ProductReviews = ({ 
   productId, 
   isAuthenticated, 
   customer, 
-  prefetchedReviews = [] 
+  prefetchedReviews 
 }: ProductReviewsProps): JSX.Element => {
+  // Simple state management - no complex loading states
   const [reviews, setReviews] = useState<ReviewData[]>(prefetchedReviews)
-  const [loading, setLoading] = useState<boolean>(prefetchedReviews.length === 0)
-  const [userReview, setUserReview] = useState<ReviewData | null>(null)
-  const [checkingUserReview, setCheckingUserReview] = useState<boolean>(false)
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false)
   
+  // Calculate data directly from current state
   const averageRating = calculateAverageRating(reviews)
+  const userReview = findUserReview(reviews, customer)
   
-  console.log('🗂 Client ProductReviews component initialized for product:', productId)
-  
-  // Function to check if the user has already reviewed this product - wrapped in useCallback
-  const checkUserHasReviewed = useCallback(async (): Promise<void> => {
-    console.log('🔍 Checking if user has already reviewed this product:', productId)
-    
-    setCheckingUserReview(true)
-    try {
-      const result = await checkUserReviewStatus(productId)
-      if (result.exists && result.review) {
-        console.log('👤 User has already reviewed this product:', result.review)
-        setUserReview(result.review)
-      } else {
-        console.log('👤 User has not reviewed this product yet')
-        setUserReview(null)
-      }
-    } catch (error) {
-      console.error('❌ Error checking user review status:', error)
-    } finally {
-      setCheckingUserReview(false)
-    }
-  }, [productId, setCheckingUserReview, setUserReview])
-  
-  const fetchReviews = useCallback(async (): Promise<void> => {
-    console.log('🔄 Fetching reviews for product:', productId)
-    setLoading(true)
-    
-    try {
-      const { reviews: fetchedReviews = [] } = await getProductReviews(productId)
-      
-      console.log(`✅ Fetched ${fetchedReviews.length} reviews for product ${productId}`)
-      setReviews(fetchedReviews)
-      
-      // Check if user has already reviewed this product
-      if (isAuthenticated && customer) {
-        await checkUserHasReviewed()
-      }
-    } catch (error) {
-      console.error('❌ Error fetching reviews:', error)
-      toast.error("Błąd podczas pobierania recenzji")
-    } finally {
-      setLoading(false)
-    }
-  }, [productId, setLoading, setReviews, isAuthenticated, customer, checkUserHasReviewed])
-  
-  const onReviewAdded = (): void => {
-    console.log('✨ Review added, refreshing reviews list')
-    fetchReviews()
-  }
-  
-  useEffect(() => {
-    if (productId && !prefetchedReviews.length) {
-      fetchReviews()
+  // Simple success handler that adds new review to current list
+  const handleReviewSuccess = (newReview: ReviewData) => {
+    // Add new review to the list or update existing one
+    const existingIndex = reviews.findIndex(r => r.customer?.id === customer?.id)
+    if (existingIndex >= 0) {
+      // Update existing review
+      const updatedReviews = [...reviews]
+      updatedReviews[existingIndex] = newReview
+      setReviews(updatedReviews)
     } else {
-      setLoading(false)
-      
-      // Still check if the user has already reviewed this product
-      if (isAuthenticated && customer) {
-        checkUserHasReviewed().catch((err: Error) => {
-          console.error('Error checking user review:', err)
-        })
-      }
+      // Add new review
+      setReviews([newReview, ...reviews])
     }
-  }, [productId, prefetchedReviews.length, isAuthenticated, customer, fetchReviews, checkUserHasReviewed])
-  
-  if (loading) {
-    return (
-      <div className="w-full py-16">
-        <div className="flex justify-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-ui-border-interactive"></div>
-        </div>
-      </div>
-    )
   }
-  
+
   return (
     <div className="w-full py-8">
       <div className="border-t border-ui-border-base pt-8">
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-2xl font-bold text-ui-fg-base">Recenzje produktu</h2>
-          {reviews.length > 0 && (
-            <div className="flex items-center gap-2">
-              <StarRating rate={Math.round(averageRating)} starSize={16} />
-              <span className="text-sm text-ui-fg-subtle">
-                {averageRating}/5 ({reviews.length} {reviews.length === 1 ? 'recenzja' : 'recenzji'})
-              </span>
-            </div>
-          )}
+          <h3 className="text-xl font-semibold text-ui-fg-base">
+            Recenzje produktu ({reviews.length})
+          </h3>
+          <div className="flex items-center gap-2">
+            <StarRating rate={averageRating} starSize={16} />
+            <span className="text-sm text-ui-fg-subtle">
+              {averageRating > 0 ? `${averageRating}/5` : 'Brak ocen'}
+            </span>
+          </div>
         </div>
-        
-        {/* Review Form or Login Prompt */}
+
+        {/* Review Form Section */}
         {isAuthenticated && customer ? (
-          checkingUserReview ? (
-            <div className="bg-ui-bg-subtle p-6 rounded-lg mb-8 text-center">
-              <div className="flex justify-center">
-                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-ui-border-interactive"></div>
+          <div className="mb-8">
+            {userReview ? (
+              <div className="bg-ui-bg-subtle border border-ui-border-base rounded-lg p-6">
+                <h4 className="font-semibold mb-4 text-ui-fg-base">Twoja recenzja</h4>
+                <ReviewForm 
+                  productId={productId} 
+                  customer={customer} 
+                  existingReview={userReview} 
+                  onSuccess={handleReviewSuccess}
+                  isSubmitting={isSubmitting}
+                  setIsSubmitting={setIsSubmitting}
+                />
               </div>
-              <p className="mt-2 text-ui-fg-subtle">Sprawdzanie statusu recenzji...</p>
-            </div>
-          ) : (
-            <ReviewForm 
-              productId={productId} 
-              customer={customer}
-              existingReview={userReview} 
-              onSuccess={onReviewAdded} 
-            />
-          )
+            ) : (
+              <div className="bg-ui-bg-subtle border border-ui-border-base rounded-lg p-6">
+                <h4 className="font-semibold mb-4 text-ui-fg-base">Dodaj recenzję</h4>
+                <ReviewForm 
+                  productId={productId} 
+                  customer={customer} 
+                  existingReview={null} 
+                  onSuccess={handleReviewSuccess}
+                  isSubmitting={isSubmitting}
+                  setIsSubmitting={setIsSubmitting}
+                />
+              </div>
+            )}
+          </div>
         ) : (
           <LoginPrompt />
         )}
-        
+
         {/* Reviews List */}
-        {reviews.length > 0 ? (
-          <div className="space-y-4">
-            {reviews.map((review) => (
+        <div className="space-y-6">
+          {reviews.length > 0 ? (
+            reviews.map((review) => (
               <ReviewCard key={review.id} review={review} />
-            ))}
-          </div>
-        ) : (
-          <div className="text-center py-12 bg-ui-bg-subtle rounded-lg">
-            <p className="text-ui-fg-subtle">
-              Ten produkt nie ma jeszcze żadnych recenzji. Bądź pierwszy!
-            </p>
-          </div>
-        )}
+            ))
+          ) : (
+            <div className="text-center py-8 text-ui-fg-subtle">
+              <p>Brak recenzji dla tego produktu.</p>
+              {!isAuthenticated && (
+                <p className="mt-2">Zaloguj się, aby dodać pierwszą recenzję!</p>
+              )}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   )

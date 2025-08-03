@@ -9,9 +9,14 @@ import { cn } from '@/lib/utils';
 const reasonOptions = [
   { label: '', value: '', hidden: true },
   {
-    label: 'Trademark, Copyright or DMCA Violation',
+    label: 'Naruszenie prawa autorskiego',
     value: 'Trademark, Copyright or DMCA Violation',
   },
+  {
+    label: 'Przedmiot nie stosowny',
+    value: 'Inappropriate Item',
+  },
+ 
 ];
 
 const formSchema = z.object({
@@ -55,7 +60,7 @@ export const ReportListingForm = ({
                   errors?.reason && 'text-negative'
                 )}
               >
-                Reason
+                Powód
               </p>
               <SelectField
                 options={reasonOptions}
@@ -82,7 +87,7 @@ export const ReportListingForm = ({
                   errors?.comment && 'text-negative'
                 )}
               >
-                Comment
+                Opis
               </p>
               <Textarea
                 rows={5}
@@ -104,7 +109,7 @@ export const ReportListingForm = ({
               type='submit'
               className='w-full py-3 uppercase'
             >
-              Report Listing
+              Zgłoś
             </Button>
           </div>
         </form>
@@ -112,14 +117,13 @@ export const ReportListingForm = ({
         <div className='text-center'>
           <div className='px-4 pb-5'>
             <h4 className='heading-lg uppercase'>
-              Thank you!
+              Dziękujemy!
             </h4>
             <p className='max-w-[466px] mx-auto mt-4 text-lg text-secondary'>
-              We&apos;ll check the listing to see if it
-              violates our guidelines and take the necessary
-              action to ensure a safe shopping experience
-              for everyone. Thank you for helping us
-              maintain a trusted community.
+              Sprawdzimy przedmiot, aby zobaczyć, czy
+              narusza nasze zasady i podjęte są
+              niezbędne działania, aby zapewnić bezpieczne
+              doświadczenie zakupów.
             </p>
           </div>
 
@@ -128,7 +132,7 @@ export const ReportListingForm = ({
               className='w-full py-3 uppercase'
               onClick={onClose}
             >
-              Got it
+              Rozumiem
             </Button>
           </div>
         </div>

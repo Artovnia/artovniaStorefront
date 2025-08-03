@@ -25,15 +25,19 @@ export const VariantSelectionProvider = ({
   const searchParams = useSearchParams()
   const isInitializedRef = useRef(false)
   const lastVariantIdRef = useRef<string>('')
+  const updateTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   
-  // Performance tracking
-  const measureRender = performanceMonitor.measureRender('VariantSelectionProvider')
-  
-  // Debounced URL update to prevent excessive navigation calls
-  const debouncedUpdateUrl = useMemo(() => 
-    performanceMonitor.debounce((id: string) => {
-      if (!id || id === lastVariantIdRef.current) return
-      
+  // Simplified URL update without complex debouncing
+  const updateUrlWithVariant = useCallback((id: string) => {
+    if (!id || id === lastVariantIdRef.current) return
+    
+    // Clear any pending updates
+    if (updateTimeoutRef.current) {
+      clearTimeout(updateTimeoutRef.current)
+    }
+    
+    // Simple timeout to batch URL updates
+    updateTimeoutRef.current = setTimeout(() => {
       const params = new URLSearchParams(searchParams.toString())
       params.set('variant', id)
       
@@ -41,18 +45,13 @@ export const VariantSelectionProvider = ({
       router.replace(`${pathname}?${params.toString()}`, { scroll: false })
       lastVariantIdRef.current = id
       
-      console.log(`🔄 URL updated with variant: ${id}`);
-    }, 300), // 300ms debounce
-    [searchParams, router, pathname]
-  )
+      if (process.env.NODE_ENV === 'development') {
+        console.log(`🔄 URL updated with variant: ${id}`);
+      }
+    }, 150) // Reduced from 300ms to 150ms
+  }, [pathname, router, searchParams]) // Simplified dependencies
   
-  // Memoized update function to prevent unnecessary re-renders
-  const updateUrlWithVariant = useCallback((id: string) => {
-    if (!id || id === lastVariantIdRef.current) return
-    debouncedUpdateUrl(id)
-  }, [debouncedUpdateUrl])
-  
-  // Optimized initialization - only run once
+  // Simplified initialization - only run once
   useEffect(() => {
     if (isInitializedRef.current) return
     
@@ -61,33 +60,43 @@ export const VariantSelectionProvider = ({
     if (variantParam && variantParam !== selectedVariantId) {
       setSelectedVariantId(variantParam)
       lastVariantIdRef.current = variantParam
-      console.log(`🎯 Initialized from URL param: ${variantParam}`);
+      if (process.env.NODE_ENV === 'development') {
+        console.log(`🎯 Initialized from URL param: ${variantParam}`);
+      }
     } else if (initialVariantId && !variantParam) {
       // If no variant in URL but we have an initial ID, update URL
       updateUrlWithVariant(initialVariantId)
-      console.log(`🎯 Initialized with initial variant: ${initialVariantId}`);
+      if (process.env.NODE_ENV === 'development') {
+        console.log(`🎯 Initialized with initial variant: ${initialVariantId}`);
+      }
     }
     
     isInitializedRef.current = true
-  }, [initialVariantId, searchParams, updateUrlWithVariant, selectedVariantId])
+  }, []) // Empty dependency array - only run once
 
-  // Memoized context value to prevent unnecessary re-renders
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (updateTimeoutRef.current) {
+        clearTimeout(updateTimeoutRef.current)
+      }
+    }
+  }, [])
+
+  // Simplified context value with stable references
   const contextValue = useMemo(() => ({
     selectedVariantId,
     setSelectedVariantId: (id: string) => {
       if (id === selectedVariantId) return // Prevent unnecessary updates
       
-      console.log(`🔄 Variant selection changed: ${selectedVariantId} → ${id}`);
+      if (process.env.NODE_ENV === 'development') {
+        console.log(`🔄 Variant selection changed: ${selectedVariantId} → ${id}`);
+      }
       setSelectedVariantId(id)
       updateUrlWithVariant(id)
     },
     updateUrlWithVariant
   }), [selectedVariantId, updateUrlWithVariant])
-  
-  // Track render performance
-  useEffect(() => {
-    measureRender()
-  })
 
   return (
     <VariantSelectionContext.Provider value={contextValue}>
