@@ -19,7 +19,7 @@ const useUpdateSearchParams = () => {
       updatedSearchParams.set(field, value);
     }
 
-    router.push(`${pathname}?${updatedSearchParams}`, {
+    router.replace(`${pathname}?${updatedSearchParams}`, {
       scroll: false,
     });
   };

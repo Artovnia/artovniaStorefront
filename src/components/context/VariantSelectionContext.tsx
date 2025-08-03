@@ -84,20 +84,23 @@ export const VariantSelectionProvider = ({
     }
   }, [])
 
-  // Simplified context value with stable references
+  // Optimized setSelectedVariantId with useCallback for stable reference
+  const setSelectedVariantIdOptimized = useCallback((id: string) => {
+    if (id === selectedVariantId) return // Prevent unnecessary updates
+    
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`🔄 Variant selection changed: ${selectedVariantId} → ${id}`);
+    }
+    setSelectedVariantId(id)
+    updateUrlWithVariant(id)
+  }, [selectedVariantId, updateUrlWithVariant])
+
+  // Optimized context value with stable references
   const contextValue = useMemo(() => ({
     selectedVariantId,
-    setSelectedVariantId: (id: string) => {
-      if (id === selectedVariantId) return // Prevent unnecessary updates
-      
-      if (process.env.NODE_ENV === 'development') {
-        console.log(`🔄 Variant selection changed: ${selectedVariantId} → ${id}`);
-      }
-      setSelectedVariantId(id)
-      updateUrlWithVariant(id)
-    },
+    setSelectedVariantId: setSelectedVariantIdOptimized,
     updateUrlWithVariant
-  }), [selectedVariantId, updateUrlWithVariant])
+  }), [selectedVariantId, setSelectedVariantIdOptimized, updateUrlWithVariant])
 
   return (
     <VariantSelectionContext.Provider value={contextValue}>

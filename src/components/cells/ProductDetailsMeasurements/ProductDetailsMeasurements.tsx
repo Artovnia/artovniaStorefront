@@ -5,7 +5,7 @@ import {
   ProdutMeasurementRow,
 } from '@/components/molecules';
 import { SingleProductMeasurement } from '@/types/product';
-import { useCallback, useEffect, useMemo, useState, useTransition } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from 'react';
 import { useVariantSelection } from '@/components/context/VariantSelectionContext';
 import { getProductMeasurements } from '@/lib/data/measurements';
 
@@ -57,9 +57,17 @@ export const ProductDetailsMeasurements = ({
     }
   }, [locale, setIsLoading, setMeasurements]);
   
-  // Update measurements when variant changes
+  // Debounced variant change handler to prevent excessive API calls
+  const debouncedVariantChangeRef = useRef<NodeJS.Timeout | null>(null);
+  
+  // Update measurements when variant changes with debouncing
   useEffect(() => {
     if (!productId || !selectedVariantId) return;
+    
+    // Clear any pending debounced calls
+    if (debouncedVariantChangeRef.current) {
+      clearTimeout(debouncedVariantChangeRef.current);
+    }
     
     // IMMEDIATE: First try to use local data for instant feedback
     const localMeasurements = findVariantMeasurements(selectedVariantId);
@@ -67,10 +75,19 @@ export const ProductDetailsMeasurements = ({
       setMeasurements(localMeasurements);
     }
     
-    // BACKGROUND: Then fetch fresh data from API
-    startTransition(() => {
-      fetchMeasurementsFromAPI(productId, selectedVariantId);
-    });
+    // DEBOUNCED: Fetch fresh data from API only after user stops changing variants
+    debouncedVariantChangeRef.current = setTimeout(() => {
+      startTransition(() => {
+        fetchMeasurementsFromAPI(productId, selectedVariantId);
+      });
+    }, 300); // 300ms debounce
+    
+    // Cleanup timeout on unmount or dependency change
+    return () => {
+      if (debouncedVariantChangeRef.current) {
+        clearTimeout(debouncedVariantChangeRef.current);
+      }
+    };
     
   }, [productId, selectedVariantId, locale, findVariantMeasurements, fetchMeasurementsFromAPI]);
   

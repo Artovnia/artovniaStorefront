@@ -32,28 +32,23 @@ export const ProductDetails = async ({
   }
   locale: string
 }) => {
-  // Fetch data in parallel with request deduplication to prevent layout shifts and duplicate API calls
+  // Pre-calculate variant and locale data to avoid duplication
+  const selectedVariantId = Array.isArray(product.variants) && product.variants.length > 0 && product.variants[0]?.id 
+    ? product.variants[0].id 
+    : undefined
+  
+  const supportedLocales = ['en', 'pl']
+  const currentLocale = supportedLocales.includes(locale) ? locale : 'en'
+  
+  // Optimized parallel data fetching with better cache keys
   const [user, authenticated, reviewsData, measurements] = await Promise.allSettled([
-    globalDeduplicator.dedupe(`customer-${product.id}`, () => retrieveCustomer()),
-    globalDeduplicator.dedupe(`auth-${product.id}`, () => isAuthenticated()),
+    globalDeduplicator.dedupe(`customer-${product.id}`, retrieveCustomer),
+    globalDeduplicator.dedupe(`auth-${product.id}`, isAuthenticated),
     globalDeduplicator.dedupe(`reviews-${product.id}`, () => getProductReviews(product.id)),
-    (async () => {
-      // Determine if we're viewing a specific variant
-      let selectedVariantId: string | undefined
-      if (Array.isArray(product.variants) && product.variants.length > 0 && product.variants[0]?.id) {
-        selectedVariantId = product.variants[0].id
-      }
-      
-      // Determine locale for measurements (default to 'en' if not supported)
-      const supportedLocales = ['en', 'pl']
-      const currentLocale = supportedLocales.includes(locale) ? locale : 'en'
-      
-      // Fetch physical measurements with deduplication
-      return await measurementDeduplicator.dedupe(
-        `measurements-${product.id}-${selectedVariantId}-${currentLocale}`,
-        () => getProductMeasurements(product.id, selectedVariantId, currentLocale)
-      )
-    })()
+    measurementDeduplicator.dedupe(
+      `measurements-${product.id}-${selectedVariantId || 'default'}-${currentLocale}`,
+      () => getProductMeasurements(product.id, selectedVariantId, currentLocale)
+    )
   ])
 
   // Extract results with fallbacks
@@ -76,15 +71,7 @@ export const ProductDetails = async ({
     }
   }
   
-  // Determine selected variant ID for measurements
-  let selectedVariantId: string | undefined
-  if (Array.isArray(product.variants) && product.variants.length > 0 && product.variants[0]?.id) {
-    selectedVariantId = product.variants[0].id
-  }
-  
-  // Determine locale for measurements (default to 'en' if not supported)
-  const supportedLocales = ['en', 'pl']
-  const currentLocale = supportedLocales.includes(locale) ? locale : 'en'
+  // Variables already calculated above - no need to redeclare
   
 
 

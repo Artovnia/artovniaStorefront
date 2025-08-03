@@ -28,27 +28,39 @@ export const ProductDetailsPage = async ({
 
   if (!prod) return null
   
-  // Get vendor availability status if seller exists
+  // Optimized vendor data fetching with better error handling
   const vendorId = prod.seller?.id
   
-  // Fetch vendor availability data in parallel if seller exists
-  let availability = undefined
-  let holidayMode = undefined
-  let suspension = undefined
+  // Initialize vendor data with proper types
+  let availability: any = undefined
+  let holidayMode: any = undefined
+  let suspension: any = undefined
   
   if (vendorId) {
     try {
-      const [availabilityData, holidayModeData, suspensionData] = await Promise.all([
+      // Use Promise.allSettled for better error handling and partial success
+      const [availabilityResult, holidayModeResult, suspensionResult] = await Promise.allSettled([
         getVendorAvailability(vendorId),
-        getVendorHolidayMode(vendorId).catch(() => undefined),
-        getVendorSuspension(vendorId).catch(() => undefined)
+        getVendorHolidayMode(vendorId),
+        getVendorSuspension(vendorId)
       ])
       
-      availability = availabilityData
-      holidayMode = holidayModeData
-      suspension = suspensionData
+      // Extract successful results, ignore failures
+      availability = availabilityResult.status === 'fulfilled' ? availabilityResult.value : undefined
+      holidayMode = holidayModeResult.status === 'fulfilled' ? holidayModeResult.value : undefined
+      suspension = suspensionResult.status === 'fulfilled' ? suspensionResult.value : undefined
+      
+      // Only log errors in development
+      if (process.env.NODE_ENV === 'development') {
+        if (availabilityResult.status === 'rejected') console.warn('Vendor availability fetch failed:', availabilityResult.reason)
+        if (holidayModeResult.status === 'rejected') console.warn('Holiday mode fetch failed:', holidayModeResult.reason)
+        if (suspensionResult.status === 'rejected') console.warn('Suspension fetch failed:', suspensionResult.reason)
+      }
     } catch (error) {
-      console.error(`Failed to fetch vendor availability: ${error instanceof Error ? error.message : 'Unknown error'}`)
+      // Fallback error handling - should not reach here with Promise.allSettled
+      if (process.env.NODE_ENV === 'development') {
+        console.error(`Unexpected error in vendor data fetching: ${error instanceof Error ? error.message : 'Unknown error'}`)
+      }
     }
   }
 

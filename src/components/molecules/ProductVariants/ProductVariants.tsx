@@ -1,6 +1,7 @@
 "use client"
 
 import { HttpTypes } from "@medusajs/types"
+import { useCallback, useMemo } from "react"
 
 import { Chip } from "@/components/atoms"
 import useUpdateSearchParams from "@/hooks/useUpdateSearchParams"
@@ -30,14 +31,17 @@ export const ProductVariants = ({
 }) => {
   const updateSearchParams = useUpdateSearchParams()
 
-  // update the options when a variant is selected
-  const setOptionValue = (optionId: string, value: string) => {
+  // Optimized option value setter with useCallback to prevent unnecessary re-renders
+  const setOptionValue = useCallback((optionId: string, value: string) => {
     if (value) updateSearchParams(optionId, value)
-  }
+  }, [updateSearchParams])
+  
+  // Memoize product options to prevent unnecessary re-processing
+  const productOptions = useMemo(() => product.options || [], [product.options])
 
   return (
     <div className="my-4 space-y-2">
-      {(product.options || []).map(
+      {productOptions.map(
         ({ id, title, values }: ProductOption) => (
           <div key={id}>
             <span className="label-md text-secondary">{title}: </span>
