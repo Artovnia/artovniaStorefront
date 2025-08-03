@@ -4,7 +4,7 @@ import { useState } from "react"
 import { Button, Input, Textarea } from "@/components/atoms"
 import { MessageThreadTypeEnum } from "@/lib/data/messages"
 import { createMessageThread } from "@/lib/actions/message-actions"
-import { useRouter } from "next/navigation"
+import { useRouter } from "@/i18n/routing"
 
 export const SellersMessageTab = ({
   seller_id,

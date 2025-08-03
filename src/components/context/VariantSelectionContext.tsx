@@ -4,6 +4,7 @@ import React, { createContext, useContext, useState, useEffect, useCallback, use
 import { usePathname, useRouter } from '@/i18n/routing'
 import { useSearchParams } from 'next/navigation'
 import { performanceMonitor } from "@/lib/utils/performance"
+import { hydrationLogger } from "@/lib/utils/hydration-logger"
 
 type VariantSelectionContextType = {
   selectedVariantId: string
@@ -22,6 +23,18 @@ export const VariantSelectionProvider = ({
 }) => {
   const [selectedVariantId, setSelectedVariantId] = useState<string>(initialVariantId)
   const router = useRouter()
+  
+  // Log component mount for hydration debugging
+  useEffect(() => {
+    hydrationLogger.logComponentMount('VariantSelectionProvider', {
+      initialVariantId: selectedVariantId
+    })
+    
+    return () => {
+      hydrationLogger.logComponentUnmount('VariantSelectionProvider')
+    }
+  }, [])
+  
   const pathname = usePathname()
   const searchParams = useSearchParams()
   const isInitializedRef = useRef(false)
@@ -87,6 +100,13 @@ export const VariantSelectionProvider = ({
   // Optimized setSelectedVariantId with useCallback for stable reference
   const setSelectedVariantIdOptimized = useCallback((id: string) => {
     if (id === selectedVariantId) return // Prevent unnecessary updates
+    
+    // Log variant selection for debugging
+    hydrationLogger.logEvent('variant_selection_change', 'VariantSelectionProvider', {
+      from: selectedVariantId,
+      to: id,
+      timestamp: performance.now()
+    })
     
     if (process.env.NODE_ENV === 'development') {
       console.log(`🔄 Variant selection changed: ${selectedVariantId} → ${id}`);

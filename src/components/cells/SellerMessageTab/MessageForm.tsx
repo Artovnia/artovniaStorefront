@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { Button, Input, Textarea } from "@/components/atoms"
 import { createDirectMessage } from "@/lib/data/actions/direct-message-fixed"
-import { useRouter } from "next/navigation"
+import { useRouter } from "@/i18n/routing"
 import toast from "react-hot-toast"
 import { AuthCheck } from "./AuthCheck"
 import { getCompatAuthHeaders } from "@/lib/data/cookie-utils"

@@ -1,9 +1,12 @@
-import { ProductDetails, ProductGallery } from "../../../components/organisms"
+import { ProductGallery } from "../../../components/organisms"
+import { ProductDetails } from "../../../components/organisms"
 import { VendorAvailabilityProvider } from "../../../components/organisms/VendorAvailabilityProvider/vendor-availability-provider"
 import { listProducts } from "../../../lib/data/products"
 import { getVendorAvailability, getVendorHolidayMode, getVendorSuspension } from "../../../lib/data/vendor-availability"
 import { HomeProductSection } from "../HomeProductSection/HomeProductSection"
 import { getCachedProduct } from "../../../lib/utils/persistent-cache"
+import ProductErrorBoundary from "@/components/molecules/ProductErrorBoundary/ProductErrorBoundary"
+import { hydrationLogger } from "@/lib/utils/hydration-logger"
 
 export const ProductDetailsPage = async ({
   handle,
@@ -12,6 +15,16 @@ export const ProductDetailsPage = async ({
   handle: string
   locale: string
 }) => {
+  // Log product page server-side rendering start
+  if (process.env.NODE_ENV === 'development' || process.env.VERCEL === '1') {
+    console.log('🏗️ ProductDetailsPage SSR start:', {
+      handle,
+      timestamp: new Date().toISOString(),
+      isProduction: process.env.NODE_ENV === 'production',
+      isVercel: process.env.VERCEL === '1'
+    })
+  }
+
   // Use persistent cache that survives server requests for variant selection
   // This prevents repeated API calls when switching variants
   const prod = await getCachedProduct(
@@ -64,55 +77,67 @@ export const ProductDetailsPage = async ({
     }
   }
 
-  return (
-    <VendorAvailabilityProvider
-      vendorId={vendorId}
-      vendorName={prod.seller?.name}
-      availability={availability}
-      holidayMode={holidayMode}
-      suspension={suspension}
-      showModalOnLoad={!!availability?.onHoliday}
-    >
-      {/* Mobile Layout: Stacked vertically */}
-      <div className="flex flex-col md:hidden">
-        <div className="w-full">
-          <ProductGallery images={prod?.images || []} />
-        </div>
-        <div className="w-full mt-4">
-          {prod.seller ? (
-            <ProductDetails product={{...prod, seller: prod.seller}} locale={locale} />
-          ) : (
-            <div className="p-4 bg-red-50 text-red-800 rounded">
-              Seller information is missing for this product.
-            </div>
-          )}
-        </div>
-      </div>
+  // Log successful server-side data fetching
+  if (process.env.NODE_ENV === 'development' || process.env.VERCEL === '1') {
+    console.log('✅ ProductDetailsPage SSR complete:', {
+      handle,
+      productId: prod?.id,
+      timestamp: new Date().toISOString()
+    })
+  }
 
-      {/* Desktop Layout: Sticky gallery on left, scrollable details on right */}
-      <div className="hidden md:flex md:flex-row lg:gap-12">
-        {/* Left: Sticky Product Gallery */}
-        <div className="md:w-1/2 md:px-2 md:sticky md:top-20 md:self-start">
-          <ProductGallery images={prod?.images || []} />
+  return (
+    <ProductErrorBoundary>
+      <VendorAvailabilityProvider
+        vendorId={vendorId}
+        vendorName={prod.seller?.name}
+        availability={availability}
+        holidayMode={holidayMode}
+        suspension={suspension}
+        showModalOnLoad={!!availability?.onHoliday}
+      >
+        {/* Mobile Layout: Stacked vertically */}
+        <div className="flex flex-col md:hidden">
+          <div className="w-full">
+            <ProductGallery images={prod?.images || []} />
+          </div>
+          <div className="w-full mt-4">
+            {prod.seller ? (
+              <ProductDetails product={{...prod, seller: prod.seller}} locale={locale} />
+            ) : (
+              <div className="p-4 bg-red-50 text-red-800 rounded">
+                Seller information is missing for this product.
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Desktop Layout: Sticky gallery on left, scrollable details on right */}
+        <div className="hidden md:flex md:flex-row lg:gap-12">
+          {/* Left: Sticky Product Gallery */}
+          <div className="md:w-1/2 md:px-2 md:sticky md:top-20 md:self-start">
+            <ProductGallery images={prod?.images || []} />
+          </div>
+          
+          {/* Right: Scrollable Product Details */}
+          <div className="md:w-1/2 md:px-2">
+            {prod.seller ? (
+              <ProductDetails product={{...prod, seller: prod.seller}} locale={locale} />
+            ) : (
+              <div className="p-4 bg-red-50 text-red-800 rounded">
+                Seller information is missing for this product.
+              </div>
+            )}
+          </div>
         </div>
         
-        {/* Right: Scrollable Product Details */}
-        <div className="md:w-1/2 md:px-2">
-          {prod.seller ? (
-            <ProductDetails product={{...prod, seller: prod.seller}} locale={locale} />
-          ) : (
-            <div className="p-4 bg-red-50 text-red-800 rounded">
-              Seller information is missing for this product.
-            </div>
-          )}
+        <div className="my-8">
+          <HomeProductSection
+            heading="Więcej od tego sprzedawcy"
+            products={prod.seller?.products}
+          />
         </div>
-      </div>
-      <div className="my-8">
-        <HomeProductSection
-          heading="Więcej od tego sprzedawcy"
-          products={prod.seller?.products}
-        />
-      </div>
-    </VendorAvailabilityProvider>
+      </VendorAvailabilityProvider>
+    </ProductErrorBoundary>
   )
 }

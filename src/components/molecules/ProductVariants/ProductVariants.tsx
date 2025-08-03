@@ -1,10 +1,11 @@
 "use client"
 
 import { HttpTypes } from "@medusajs/types"
-import { useCallback, useMemo } from "react"
+import { useCallback, useMemo, useEffect } from "react"
 
 import { Chip } from "@/components/atoms"
 import useUpdateSearchParams from "@/hooks/useUpdateSearchParams"
+import { hydrationLogger } from "@/lib/utils/hydration-logger"
 
 // Define proper types for product options and values
 type ProductOption = {
@@ -31,10 +32,32 @@ export const ProductVariants = ({
 }) => {
   const updateSearchParams = useUpdateSearchParams()
 
+  // Log component mount for hydration debugging
+  useEffect(() => {
+    hydrationLogger.logComponentMount('ProductVariants', {
+      productId: product.id,
+      optionsCount: product.options?.length || 0,
+      selectedVariant: Object.keys(selectedVariant).length
+    })
+    
+    return () => {
+      hydrationLogger.logComponentUnmount('ProductVariants')
+    }
+  }, [])
+
   // Optimized option value setter with useCallback to prevent unnecessary re-renders
   const setOptionValue = useCallback((optionId: string, value: string) => {
-    if (value) updateSearchParams(optionId, value)
-  }, [updateSearchParams])
+    if (value) {
+      // Log variant option selection for debugging
+      hydrationLogger.logEvent('variant_option_change', 'ProductVariants', {
+        optionId,
+        value,
+        productId: product.id,
+        timestamp: performance.now()
+      })
+      updateSearchParams(optionId, value)
+    }
+  }, [updateSearchParams, product.id])
   
   // Memoize product options to prevent unnecessary re-processing
   const productOptions = useMemo(() => product.options || [], [product.options])
