@@ -1,6 +1,7 @@
 "use client"
 
-import { usePathname, useSearchParams } from "next/navigation"
+import { usePathname } from '@/i18n/routing'
+import { useSearchParams } from 'next/navigation'
 import { createContext, useContext, useEffect, useState, useRef } from "react"
 
 interface LoadingContextType {

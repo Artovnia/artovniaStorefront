@@ -1,5 +1,5 @@
 // Navigation fixes for Next.js 15 stalling issues
-import { useRouter } from 'next/navigation';
+import { useRouter } from '@/i18n/routing';
 import { useCallback, useRef, useEffect } from 'react';
 
 // Navigation timeout handler to prevent infinite stalls

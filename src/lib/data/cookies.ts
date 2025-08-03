@@ -325,7 +325,7 @@ export const getCartId = async (): Promise<string | null> => {
       // Server-side: Try server cookies with short timeout
       try {
         const timeoutPromise = new Promise<null>((_, reject) => 
-          setTimeout(() => reject(new Error('Timeout')), 30) // Very short timeout for cart ID
+          setTimeout(() => reject(new Error('Timeout')), 500) // Reasonable timeout for cart ID
         );
         
         const cookiePromise = getServerCookies().then(cookies => 
