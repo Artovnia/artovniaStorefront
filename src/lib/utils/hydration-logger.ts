@@ -221,16 +221,16 @@ export const hydrationLogger = new HydrationLogger()
 
 // Helper hook for React components
 export function useHydrationLogger(componentName: string, props?: any) {
-  if (typeof window !== 'undefined') {
-    // Log mount
-    React.useEffect(() => {
+  // Always call hooks in the same order - move condition inside useEffect
+  React.useEffect(() => {
+    if (typeof window !== 'undefined') {
       hydrationLogger.logComponentMount(componentName, props)
       
       return () => {
         hydrationLogger.logComponentUnmount(componentName)
       }
-    }, [componentName])
-  }
+    }
+  }, [componentName, props]) // Include props in dependency array
 }
 
 // Helper for debugging in browser console
