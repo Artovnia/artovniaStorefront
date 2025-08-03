@@ -97,15 +97,9 @@ export const getCachedProduct = cache(async (
   locale: string, 
   fetchFn: () => Promise<any>
 ): Promise<any> => {
-  // EMERGENCY FIX: Disable persistent cache in production due to Vercel serverless issues
-  if (process.env.NODE_ENV === 'production') {
-    // In production, just use React's cache() without persistent storage
-    return await fetchFn()
-  }
-  
   const cacheKey = `product-${handle}-${locale}`
   
-  // Check persistent cache first (development only)
+  // Check persistent cache first
   const cached = persistentCache.get(cacheKey)
   if (cached && isValidProductData(cached)) {
     if (process.env.NODE_ENV === 'development') {
@@ -122,19 +116,18 @@ export const getCachedProduct = cache(async (
   try {
     const result = await fetchFn()
     
-    // Only cache valid product data (development only)
-    if (process.env.NODE_ENV === 'development' && isValidProductData(result)) {
+    // Only cache valid product data
+    if (isValidProductData(result)) {
       persistentCache.set(cacheKey, result, PRODUCT_CACHE_DURATION)
-    } else if (!isValidProductData(result)) {
+      return result
+    } else {
+      // Don't cache invalid data, but also don't throw error
       console.warn(`⚠️ Invalid product data for ${handle}, not caching`)
+      return result
     }
-    
-    return result
   } catch (error) {
-    // Clear any existing bad cache on error (development only)
-    if (process.env.NODE_ENV === 'development') {
-      persistentCache.delete(cacheKey)
-    }
+    // Clear any existing bad cache on error
+    persistentCache.delete(cacheKey)
     console.error(`❌ Error fetching product ${handle}:`, error)
     throw error
   }
@@ -148,13 +141,7 @@ export const getCachedCheckoutData = cache(async <T>(
   fetchFn: () => Promise<T>,
   duration: number = CHECKOUT_CACHE_DURATION
 ): Promise<T> => {
-  // EMERGENCY FIX: Disable persistent cache in production due to Vercel serverless issues
-  if (process.env.NODE_ENV === 'production') {
-    // In production, just use React's cache() without persistent storage
-    return await fetchFn()
-  }
-  
-  // Check persistent cache first (development only)
+  // Check persistent cache first
   const cached = persistentCache.get<T>(key)
   if (cached) {
     if (process.env.NODE_ENV === 'development') {
@@ -163,16 +150,13 @@ export const getCachedCheckoutData = cache(async <T>(
     return cached
   }
 
-  // Fetch and cache (development only)
+  // Fetch and cache
   if (process.env.NODE_ENV === 'development') {
     console.log(`🔄 Fetching fresh checkout data for: ${key}`)
   }
   
   const result = await fetchFn()
-  
-  if (process.env.NODE_ENV === 'development') {
-    persistentCache.set(key, result, duration)
-  }
+  persistentCache.set(key, result, duration)
   
   return result
 })

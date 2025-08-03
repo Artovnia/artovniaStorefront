@@ -4,7 +4,8 @@ import { Heading, Text, useToggleState } from "@medusajs/ui"
 import { setAddresses, retrieveCartForAddress } from "@/lib/data/cart"
 import compareAddresses from "@/lib/helpers/compare-addresses"
 import { HttpTypes } from "@medusajs/types"
-import { usePathname, useRouter, useSearchParams } from "next/navigation"
+import { usePathname, useRouter } from '@/i18n/routing'
+import { useSearchParams } from 'next/navigation'
 import { useActionState, useEffect, useCallback, useMemo, useState } from "react"
 import { Button } from "@/components/atoms"
 import ErrorMessage from "@/components/molecules/ErrorMessage/ErrorMessage"

@@ -15,7 +15,8 @@ import PaymentContainer, {
   StripeCardContainer,
   PayUCardContainer,
 } from "../../organisms/PaymentContainer/PaymentContainer"
-import { usePathname, useRouter, useSearchParams } from "next/navigation"
+import { usePathname, useRouter } from '@/i18n/routing'
+import { useSearchParams } from 'next/navigation'
 import { useCallback, useEffect, useState, useMemo } from "react"
 import { Button } from "@/components/atoms"
 import PaymentProcessor from "../PaymentProcessors/PaymentProcessor"

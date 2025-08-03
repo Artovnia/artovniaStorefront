@@ -13,7 +13,7 @@ import { LabeledInput } from "@/components/cells"
 import { loginFormSchema, LoginFormData } from "./schema"
 import { useState } from "react"
 import { login, loginWithGoogle } from "@/lib/data/customer"
-import { useRouter } from "next/navigation"
+import { useRouter } from '@/i18n/routing'
 
 export const LoginForm = () => {
   const methods = useForm<LoginFormData>({

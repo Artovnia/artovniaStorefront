@@ -1,7 +1,7 @@
 'use client'
 
 import { Button } from "@/components/atoms"
-import { useRouter } from "next/navigation"
+import { useRouter } from '@/i18n/routing'
 import { useState } from "react"
 
 interface CartClientProps {

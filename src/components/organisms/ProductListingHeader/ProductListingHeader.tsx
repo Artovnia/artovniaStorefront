@@ -1,7 +1,7 @@
 "use client"
 import { SelectField } from "@/components/molecules"
 import { usePathname } from "next/navigation"
-import { useRouter } from "next/navigation"
+import { useRouter } from '@/i18n/routing'
 
 const selectOptions = [
   { label: "Newest", value: "created_at" },

@@ -1,7 +1,8 @@
 "use client"
 
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo, useRef } from "react"
-import { usePathname, useRouter, useSearchParams } from "next/navigation"
+import { usePathname, useRouter } from '@/i18n/routing'
+import { useSearchParams } from 'next/navigation'
 import { performanceMonitor } from "@/lib/utils/performance"
 
 type VariantSelectionContextType = {

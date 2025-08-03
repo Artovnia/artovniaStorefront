@@ -9,7 +9,8 @@ import { isInpostShippingOption } from "@/lib/helpers/inpost-helpers"
 import { CheckCircleSolidWrapper, ChevronUpDownWrapper, LoaderWrapper } from "@/components/atoms/icons/IconWrappers"
 import { HttpTypes } from "@medusajs/types"
 import { clx, Heading, Text } from "@medusajs/ui"
-import { usePathname, useRouter, useSearchParams } from "next/navigation"
+import { usePathname, useRouter } from '@/i18n/routing'
+import { useSearchParams } from 'next/navigation'
 import { Fragment, useEffect, useState, useCallback, useMemo } from "react"
 import { Button } from "@/components/atoms"
 import { Modal, SelectField } from "@/components/molecules"

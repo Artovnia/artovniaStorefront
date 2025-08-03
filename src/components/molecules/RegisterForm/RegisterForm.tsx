@@ -14,7 +14,7 @@ import { registerFormSchema, RegisterFormData } from "./schema"
 import { signup, registerWithGoogle } from "@/lib/data/customer"
 import { useState } from "react"
 import { cn } from "@/lib/utils"
-import { useRouter } from "next/navigation"
+import { useRouter } from '@/i18n/routing'
 
 export const RegisterForm = () => {
   const methods = useForm<RegisterFormData>({

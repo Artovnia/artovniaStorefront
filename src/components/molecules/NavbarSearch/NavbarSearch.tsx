@@ -2,7 +2,8 @@
 
 import { Input } from "@/components/atoms"
 import { SearchIcon } from "@/icons"
-import { useSearchParams, useRouter } from "next/navigation"
+import { useRouter } from '@/i18n/routing'
+import { useSearchParams } from 'next/navigation'
 import { useState } from "react"
 
 export const NavbarSearch = () => {
