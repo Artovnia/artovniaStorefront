@@ -55,8 +55,7 @@ async function getProductWithMeasurements(productId: string) {
       }
     },
     {
-      useCache: true,
-      priority: 'high' // Measurements are critical for product display
+      useCache: true
     }
   );
 }
