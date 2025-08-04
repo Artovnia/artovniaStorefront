@@ -185,7 +185,7 @@ const CartShippingMethodsSection: React.FC<ShippingProps> = ({
       // Always turn off loading on error
       setIsLoadingPrices(false);
     });
-  }, [availableShippingMethods, _shippingMethods, cart.id, calculatedPricesMap, isLoadingPrices])
+  }, [availableShippingMethods, _shippingMethods, cart.id, calculatedPricesMap, isLoadingPrices, priceCalculationCache])
 
   const handleSubmit = async () => {
     setIsSubmitting(true)

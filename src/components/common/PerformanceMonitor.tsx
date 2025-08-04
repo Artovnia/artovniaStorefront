@@ -19,7 +19,7 @@ export const PerformanceMonitor = () => {
 
   useEffect(() => {
     setRenderCount(prev => prev + 1)
-  })
+  }, []) // Empty dependency array to run only once
 
   useEffect(() => {
     // Track page load time

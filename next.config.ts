@@ -10,9 +10,35 @@ const nextConfig: NextConfig = {
   compress: true,
   
   experimental: {
-    // Minimal experimental features to reduce complexity
+    // Enhanced performance optimizations
     optimizeCss: true,
+    optimizePackageImports: ['lucide-react', '@heroicons/react', 'react-icons'],
+    turbo: {
+      rules: {
+        '*.svg': {
+          loaders: ['@svgr/webpack'],
+          as: '*.js',
+        },
+      },
+    },
   },
+  
+  // Bundle analysis
+  env: {
+    ANALYZE: process.env.ANALYZE,
+  },
+  
+  // Enable bundle analyzer when ANALYZE=true
+  ...(process.env.ANALYZE === 'true' && {
+    webpack: (config, { isServer }) => {
+      if (!isServer) {
+        config.plugins.push(
+          new (require('@next/bundle-analyzer'))({ enabled: true })
+        );
+      }
+      return config;
+    },
+  }),
   
   // Bundle analysis and optimization
   productionBrowserSourceMaps: false,
@@ -23,27 +49,55 @@ const nextConfig: NextConfig = {
     'algoliasearch',
   ],
   
-  // Simplified webpack config to prevent navigation issues
+  // CRITICAL: Enhanced webpack config for bundle optimization
   webpack: (config, { dev, isServer }) => {
-    // Minimal webpack optimizations to prevent conflicts
     if (!dev && !isServer) {
-      // Only essential optimizations for production client builds
+      // Aggressive bundle splitting to reduce 4.2 MB bundles
       config.optimization = {
         ...config.optimization,
         splitChunks: {
           chunks: 'all',
-          maxSize: 244000, // Smaller chunks for better loading
+          minSize: 20000,
+          maxSize: 200000, // Smaller chunks for faster loading
           cacheGroups: {
-            default: {
-              minChunks: 2,
-              priority: -20,
-              reuseExistingChunk: true,
+            // Split React and Next.js core
+            framework: {
+              test: /[\/]node_modules[\/](react|react-dom|next)[\/]/,
+              name: 'framework',
+              priority: 40,
+              chunks: 'all',
+              enforce: true,
             },
+            // Split Algolia (heavy library)
+            algolia: {
+              test: /[\/]node_modules[\/](algoliasearch|react-instantsearch)[\/]/,
+              name: 'algolia',
+              priority: 30,
+              chunks: 'all',
+              enforce: true,
+            },
+            // Split MedusaJS
+            medusa: {
+              test: /[\/]node_modules[\/]@medusajs[\/]/,
+              name: 'medusa',
+              priority: 25,
+              chunks: 'all',
+            },
+            // Split other vendor libraries
             vendor: {
               test: /[\/]node_modules[\/]/,
               name: 'vendors',
-              priority: -10,
+              priority: 20,
               chunks: 'all',
+              maxSize: 150000,
+            },
+            // Common code
+            common: {
+              name: 'common',
+              minChunks: 2,
+              priority: 10,
+              chunks: 'all',
+              enforce: true,
             },
           },
         },
@@ -53,6 +107,13 @@ const nextConfig: NextConfig = {
     return config;
   },
   images: {
+    // CRITICAL: Enhanced image optimization for faster loading
+    formats: ['image/avif', 'image/webp'],
+    minimumCacheTTL: 31536000, // 1 year cache
+    dangerouslyAllowSVG: true,
+    contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
+    deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048, 3840],
+    imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
     remotePatterns: [
       {
         protocol: "https",

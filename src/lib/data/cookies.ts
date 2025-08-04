@@ -62,11 +62,11 @@ const removeBrowserCookie = (name: string) => {
   document.cookie = `${name}=; Max-Age=-1; Path=/`;
 };
 
-// Optimized cache for auth headers to reduce blocking operations
+// Ultra-fast cache for auth headers to prevent navigation blocking
 let authHeadersCache: { headers: any; timestamp: number; token?: string } | null = null;
-const CACHE_DURATION = 10000; // Reduced to 10 seconds for faster updates
+const CACHE_DURATION = 5000; // Reduced to 5 seconds for production stability
 const PUBLISHABLE_KEY_CACHE = { key: '', timestamp: 0 };
-const PUBLISHABLE_KEY_CACHE_DURATION = 60000; // 1 minute for publishable key
+const PUBLISHABLE_KEY_CACHE_DURATION = 30000; // Reduced to 30 seconds
 
 export const getAuthHeaders = async (): Promise<
   { authorization: string; 'x-publishable-api-key': string } | { 'x-publishable-api-key': string }
@@ -112,20 +112,19 @@ export const getAuthHeaders = async (): Promise<
     // Client-side: Direct cookie access (fastest, non-blocking)
     token = getBrowserCookie('_medusa_jwt');
   } else {
-    // Server-side: Use shorter timeout to prevent blocking navigation
+    // Server-side: Ultra-fast timeout to prevent navigation blocking
     try {
       const timeoutPromise = new Promise<null>((_, reject) => 
-        setTimeout(() => reject(new Error('Timeout')), 50) // Reduced from 100ms to 50ms
+        setTimeout(() => reject(new Error('Timeout')), 25) // Ultra-short timeout for production
       );
       
-      const cookiePromise = getServerCookies().then(cookies => {
-        if (!cookies) return null;
-        return cookies.get('_medusa_jwt')?.value || null;
-      });
+      const cookiePromise = getServerCookies().then(cookies => 
+        cookies?.get('_medusa_jwt')?.value || null
+      );
       
       token = await Promise.race([cookiePromise, timeoutPromise]);
     } catch {
-      // Fast timeout or error - continue without token to prevent blocking
+      // Immediate fallback - never block navigation
       token = null;
     }
   }
@@ -307,9 +306,9 @@ export const removeAuthToken = async () => {
   }
 };
 
-// Optimized cart ID cache to reduce repeated lookups
+// Ultra-fast cart ID cache to prevent navigation blocking
 let cartIdCache: { id: string | null; timestamp: number } | null = null;
-const CART_ID_CACHE_DURATION = 10000; // Reduced to 10 seconds for faster updates
+const CART_ID_CACHE_DURATION = 5000; // Reduced to 5 seconds for production stability
 
 export const getCartId = async (): Promise<string | null> => {
   // Fast path: Check cache first
@@ -322,10 +321,10 @@ export const getCartId = async (): Promise<string | null> => {
     
     // Optimized retrieval with timeout protection
     if (!isBrowser) {
-      // Server-side: Try server cookies with short timeout
+      // Server-side: Ultra-fast timeout to prevent navigation blocking
       try {
         const timeoutPromise = new Promise<null>((_, reject) => 
-          setTimeout(() => reject(new Error('Timeout')), 500) // Reasonable timeout for cart ID
+          setTimeout(() => reject(new Error('Timeout')), 25) // Ultra-short timeout for production
         );
         
         const cookiePromise = getServerCookies().then(cookies => 
@@ -334,7 +333,7 @@ export const getCartId = async (): Promise<string | null> => {
         
         cartId = await Promise.race([cookiePromise, timeoutPromise]);
       } catch {
-        // Fast timeout - continue without cart ID to prevent blocking
+        // Immediate fallback - never block navigation
         cartId = null;
       }
     } else {

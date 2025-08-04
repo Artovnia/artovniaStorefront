@@ -87,7 +87,12 @@ export const ProductCarousel = ({
                     alt="Product image"
                     width={700}
                     height={700}
-                    quality={100}
+                    quality={85} // Reduced from 100 for faster loading
+                    priority={slides.indexOf(slide) === 0} // Only first image gets priority
+                    loading={slides.indexOf(slide) === 0 ? "eager" : "lazy"} // Lazy load non-priority images
+                    placeholder="blur"
+                    blurDataURL="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFQEBAQAAAAAAAAAAAAAAAAAAAAX/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oADAMBAAIRAxEAPwCdABmX/9k="
+                    sizes="(max-width: 768px) 100vw, 700px"
                     className="max-h-[700px] w-full h-auto aspect-square object-cover object-center hover:scale-105 transition-transform duration-300"
                   />
                 </div>
@@ -120,6 +125,7 @@ export const ProductCarousel = ({
                     src={decodeURIComponent(slide.url)}
                     alt={`Product thumbnail ${index + 1}`}
                     fill
+                    quality={60} // Lower quality for thumbnails
                     className="object-cover transition-transform duration-300 hover:scale-105"
                     sizes="80px"
                   />
@@ -161,14 +167,17 @@ export const ProductCarousel = ({
                     src={decodeURIComponent(slides[selectedImageIndex].url)}
                     alt="Product image"
                     fill
-                    quality={100}
+                    quality={90} // Optimized quality for main image
+                    priority={selectedImageIndex === 0} // Only prioritize if it's the first image
+                    loading={selectedImageIndex === 0 ? "eager" : "lazy"} // Lazy load non-first images
+                    placeholder="blur"
+                    blurDataURL="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFQEBAQAAAAAAAAAAAAAAAAAAAAX/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oADAMBAAIRAxEAPwCdABmX/9k="
                     className={`object-cover transition-all duration-500 ease-out hover:scale-105 ${
                       isTransitioning 
                         ? "opacity-0 scale-105 blur-sm" 
                         : "opacity-100 scale-100 blur-0"
                     }`}
-                    sizes="(max-width: 1024px) 100vw, 50vw"
-                    priority={selectedImageIndex === 0}
+                    sizes="(max-width: 1024px) 100vw, (max-width: 1200px) 50vw, 600px"
                   />
                 )}
                 

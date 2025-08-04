@@ -19,12 +19,13 @@ const LoadingContext = createContext<LoadingContextType>({
 export const useLoading = () => useContext(LoadingContext)
 
 export function LoadingProvider({ children }: { children: React.ReactNode }) {
-  const [isLoading, setIsLoading] = useState(false)
+  const [isLoading, setIsLoading] = useState(true) // Start with loading true for initial load
   const pathname = usePathname()
   const searchParams = useSearchParams()
   const timeoutRef = useRef<NodeJS.Timeout | null>(null)
   const isInitialMount = useRef(true)
   const lastUrl = useRef<string>('')
+  const initialLoadComplete = useRef(false)
 
   // Optimized start/stop functions with immediate feedback
   const startLoading = () => {
@@ -49,18 +50,27 @@ export function LoadingProvider({ children }: { children: React.ReactNode }) {
     setIsLoading(false)
   }
 
-  // Handle route changes - stop loading when navigation completes
+  // Handle route changes and initial load completion
   useEffect(() => {
     const currentUrl = `${pathname}${searchParams.toString() ? `?${searchParams.toString()}` : ''}`
     
-    // Skip initial mount
+    // Handle initial mount - show loading for initial page load
     if (isInitialMount.current) {
       isInitialMount.current = false
       lastUrl.current = currentUrl
-      return
+      
+      // Stop initial loading after a short delay to allow page to render
+      const initialTimeout = setTimeout(() => {
+        if (!initialLoadComplete.current) {
+          initialLoadComplete.current = true
+          stopLoading()
+        }
+      }, 1500) // Give 1.5s for initial load
+      
+      return () => clearTimeout(initialTimeout)
     }
     
-    // Only stop loading if URL actually changed
+    // Only stop loading if URL actually changed (navigation)
     if (lastUrl.current !== currentUrl) {
       stopLoading()
       lastUrl.current = currentUrl

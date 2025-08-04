@@ -73,9 +73,10 @@ export const ProductDetailsMeasurements = ({
     const localMeasurements = findVariantMeasurements(selectedVariantId);
     if (localMeasurements.length > 0) {
       setMeasurements(localMeasurements);
+      return; // Don't make API call if we have local data
     }
     
-    // DEBOUNCED: Fetch fresh data from API only after user stops changing variants
+    // DEBOUNCED: Only fetch from API if we don't have local data
     debouncedVariantChangeRef.current = setTimeout(() => {
       startTransition(() => {
         fetchMeasurementsFromAPI(productId, selectedVariantId);

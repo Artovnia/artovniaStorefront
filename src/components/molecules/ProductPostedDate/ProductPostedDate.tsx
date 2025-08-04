@@ -5,14 +5,32 @@ export const ProductPostedDate = async ({
 }: {
   posted: string | null;
 }) => {
-  const postedDate = formatDistanceToNow(
-    new Date(posted || ''),
-    { addSuffix: true }
-  );
+  // Handle null/undefined dates to prevent "Invalid time value" error
+  if (!posted) {
+    return (
+      <p className='label-md text-secondary'>
+        Posted: Unknown
+      </p>
+    );
+  }
 
-  return (
-    <p className='label-md text-secondary'>
-      Posted: {postedDate}
-    </p>
-  );
+  try {
+    const postedDate = formatDistanceToNow(
+      new Date(posted),
+      { addSuffix: true }
+    );
+
+    return (
+      <p className='label-md text-secondary'>
+        Posted: {postedDate}
+      </p>
+    );
+  } catch (error) {
+    // Fallback if date parsing fails
+    return (
+      <p className='label-md text-secondary'>
+        Posted: Unknown
+      </p>
+    );
+  }
 };

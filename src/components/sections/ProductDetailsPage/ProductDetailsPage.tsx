@@ -7,6 +7,8 @@ import { HomeProductSection } from "../HomeProductSection/HomeProductSection"
 import { getCachedProduct } from "../../../lib/utils/persistent-cache"
 import ProductErrorBoundary from "@/components/molecules/ProductErrorBoundary/ProductErrorBoundary"
 import { hydrationLogger } from "@/lib/utils/hydration-logger"
+import { preloadProductImages } from "@/lib/utils/preload-resources"
+import Head from "next/head"
 
 export const ProductDetailsPage = async ({
   handle,
@@ -40,6 +42,19 @@ export const ProductDetailsPage = async ({
   )
 
   if (!prod) return null
+
+  // Debug: Log product images to verify they're being fetched correctly
+  if (process.env.NODE_ENV === 'development') {
+    console.log('🖼️ Product images debug:', {
+      productId: prod.id,
+      imagesCount: prod.images?.length || 0,
+      images: prod.images,
+      firstImageUrl: prod.images?.[0]?.url
+    })
+  }
+
+  // Note: Image preloading is now handled by ProductCarousel and Head preload below
+  // Removed duplicate preloadProductImages call to prevent multiple image fetches
   
   // Optimized vendor data fetching with better error handling
   const vendorId = prod.seller?.id
@@ -51,23 +66,40 @@ export const ProductDetailsPage = async ({
   
   if (vendorId) {
     try {
-      // Use Promise.allSettled for better error handling and partial success
-      const [availabilityResult, holidayModeResult, suspensionResult] = await Promise.allSettled([
-        getVendorAvailability(vendorId),
-        getVendorHolidayMode(vendorId),
-        getVendorSuspension(vendorId)
-      ])
+      // Use Promise.allSettled with timeout to prevent blocking SSR
+      const vendorDataPromises = [
+        Promise.race([
+          getVendorAvailability(vendorId),
+          new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 500))
+        ]),
+        Promise.race([
+          getVendorHolidayMode(vendorId),
+          new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 500))
+        ]),
+        Promise.race([
+          getVendorSuspension(vendorId),
+          new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 500))
+        ])
+      ]
       
-      // Extract successful results, ignore failures
+      const [availabilityResult, holidayModeResult, suspensionResult] = await Promise.allSettled(vendorDataPromises)
+      
+      // Extract successful results, ignore failures and timeouts
       availability = availabilityResult.status === 'fulfilled' ? availabilityResult.value : undefined
       holidayMode = holidayModeResult.status === 'fulfilled' ? holidayModeResult.value : undefined
       suspension = suspensionResult.status === 'fulfilled' ? suspensionResult.value : undefined
       
-      // Only log errors in development
+      // Only log errors in development (ignore timeouts)
       if (process.env.NODE_ENV === 'development') {
-        if (availabilityResult.status === 'rejected') console.warn('Vendor availability fetch failed:', availabilityResult.reason)
-        if (holidayModeResult.status === 'rejected') console.warn('Holiday mode fetch failed:', holidayModeResult.reason)
-        if (suspensionResult.status === 'rejected') console.warn('Suspension fetch failed:', suspensionResult.reason)
+        if (availabilityResult.status === 'rejected' && !availabilityResult.reason?.message?.includes('Timeout')) {
+          console.warn('Vendor availability fetch failed:', availabilityResult.reason)
+        }
+        if (holidayModeResult.status === 'rejected' && !holidayModeResult.reason?.message?.includes('Timeout')) {
+          console.warn('Holiday mode fetch failed:', holidayModeResult.reason)
+        }
+        if (suspensionResult.status === 'rejected' && !suspensionResult.reason?.message?.includes('Timeout')) {
+          console.warn('Suspension fetch failed:', suspensionResult.reason)
+        }
       }
     } catch (error) {
       // Fallback error handling - should not reach here with Promise.allSettled
@@ -87,7 +119,21 @@ export const ProductDetailsPage = async ({
   }
 
   return (
-    <ProductErrorBoundary>
+    <>
+      {/* CRITICAL: Preload main product image */}
+      <Head>
+        {prod.images?.[0] && (
+          <link
+            rel="preload"
+            as="image"
+            href={decodeURIComponent(prod.images[0].url)}
+            type="image/webp"
+            fetchPriority="high"
+          />
+        )}
+      </Head>
+      
+      <ProductErrorBoundary>
       <VendorAvailabilityProvider
         vendorId={vendorId}
         vendorName={prod.seller?.name}
@@ -138,6 +184,7 @@ export const ProductDetailsPage = async ({
           />
         </div>
       </VendorAvailabilityProvider>
-    </ProductErrorBoundary>
+      </ProductErrorBoundary>
+    </>
   )
 }

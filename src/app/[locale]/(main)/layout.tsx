@@ -1,5 +1,5 @@
 import { Footer, Header } from '@/components/organisms';
-import { LoadingProvider, LoadingOverlay } from '@/components/providers';
+import { PageLoadingProvider, PageLoadingOverlay } from '@/components/providers/PageLoadingProvider';
 
 export default async function RootLayout({
   children,
@@ -7,11 +7,11 @@ export default async function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <LoadingProvider>
-      <LoadingOverlay />
+    <PageLoadingProvider>
+      <PageLoadingOverlay />
       <Header />
       {children}
       <Footer />
-    </LoadingProvider>
+    </PageLoadingProvider>
   );
 }

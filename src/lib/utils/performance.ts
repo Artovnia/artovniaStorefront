@@ -1,32 +1,21 @@
-// Optimized performance monitoring utilities for Medusa storefront
+// Ultra-lightweight performance monitoring for Medusa storefront
+// Completely disabled in production to prevent navigation blocking
 export const performanceMonitor = {
-  // Lightweight API call tracking with minimal overhead
+  // Minimal API call tracking - production disabled
   trackApiCall: async <T>(
     operation: string,
     apiCall: () => Promise<T>
   ): Promise<T> => {
-    // Skip performance tracking in production to reduce overhead
-    if (process.env.NODE_ENV === 'production') {
+    // CRITICAL: Completely skip all tracking in production
+    if (process.env.NODE_ENV === 'production' || process.env.VERCEL === '1') {
       return apiCall();
     }
     
-    const startTime = performance.now();
-    
+    // Development only - minimal tracking
     try {
-      const result = await apiCall();
-      const endTime = performance.now();
-      const duration = endTime - startTime;
-      
-      // Only log slow operations (> 1000ms) to reduce console noise
-      if (duration > 1000) {
-        console.warn(`⚠️ Slow API call: ${operation} took ${duration.toFixed(0)}ms`);
-      }
-      
-      return result;
+      return await apiCall();
     } catch (error) {
-      const endTime = performance.now();
-      const duration = endTime - startTime;
-      console.error(`❌ API call failed: ${operation} after ${duration.toFixed(0)}ms`);
+      console.error(`❌ API call failed: ${operation}`);
       throw error;
     }
   },
@@ -124,17 +113,22 @@ export const performanceMonitor = {
     };
   },
 
-  // Enhanced render measurement with component tree tracking
-  measureRender: (componentName: string, threshold: number = 50) => {
+  // Minimal render measurement - production disabled
+  measureRender: (componentName: string, threshold: number = 100) => {
+    // CRITICAL: No-op in production to prevent overhead
+    if (process.env.NODE_ENV === 'production' || process.env.VERCEL === '1') {
+      return () => 0;
+    }
+    
+    // Development only - basic measurement
     const startTime = performance.now();
     
     return () => {
-      const endTime = performance.now();
-      const duration = endTime - startTime;
+      const duration = performance.now() - startTime;
       
+      // Only log very slow renders to reduce noise
       if (duration > threshold) {
-        const emoji = duration > 200 ? '🐌' : duration > 100 ? '⚠️' : '📊';
-        console.warn(`${emoji} Render: ${componentName} took ${duration.toFixed(2)}ms`);
+        console.warn(`⚠️ Slow render: ${componentName} took ${duration.toFixed(0)}ms`);
       }
       
       return duration;
@@ -188,12 +182,12 @@ export const performanceMonitor = {
   }
 };
 
-// Lightweight request deduplication utility
+// Ultra-lightweight request deduplication utility
 export class RequestDeduplicator {
   private pendingRequests = new Map<string, Promise<any>>();
   private cache = new Map<string, { data: any; timestamp: number }>();
-  private readonly cacheTTL = 300000; // 5 minutes
-  private readonly maxCacheSize = 50; // Reduced from 200
+  private readonly cacheTTL = 180000; // Reduced to 3 minutes
+  private readonly maxCacheSize = 25; // Further reduced for memory efficiency
 
   async dedupe<T>(
     key: string, 

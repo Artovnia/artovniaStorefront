@@ -53,7 +53,7 @@ export const HomeProductsCarousel = async ({
           id: String(product.id),
           handle: product.handle || String(product.id),
           title: product.title || "Untitled Product",
-          thumbnail: product.thumbnail || "/placeholder-product.jpg"
+          thumbnail: product.images?.[0]?.url || product.thumbnail || "/images/product/placeholder.jpg"
         };
         
         return (
