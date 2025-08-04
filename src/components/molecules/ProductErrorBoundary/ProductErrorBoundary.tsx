@@ -91,15 +91,15 @@ export class ProductErrorBoundary extends Component<Props, State> {
       causes.push('Router/navigation conflict')
     }
     
-    if (errorInfo.componentStack.includes('ProductVariants')) {
+    if (errorInfo.componentStack?.includes('ProductVariants')) {
       causes.push('Product variant selection issue')
     }
     
-    if (errorInfo.componentStack.includes('ProductReview')) {
+    if (errorInfo.componentStack?.includes('ProductReview')) {
       causes.push('Product review rendering issue')
     }
     
-    if (errorInfo.componentStack.includes('VariantSelectionContext')) {
+    if (errorInfo.componentStack?.includes('VariantSelectionContext')) {
       causes.push('Variant context state issue')
     }
     
