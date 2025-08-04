@@ -60,7 +60,7 @@ export const CartDropdown = ({
       </Link>
       <Dropdown show={open}>
         <div className="lg:w-[460px] shadow-lg">
-          <h3 className="uppercase heading-md border-b p-4">Shopping cart</h3>
+          <h3 className="uppercase heading-md border-b p-4">Koszyk</h3>
           <div className="p-4">
             {Boolean(cartItemsCount) ? (
               <div>
@@ -75,23 +75,23 @@ export const CartDropdown = ({
                 </div>
                 <div className="pt-4">
                   <div className="text-secondary flex justify-between items-center">
-                    Total <p className="label-xl text-primary">{total}</p>
+                    Suma <p className="label-xl text-primary">{total}</p>
                   </div>
                   <Link href="/cart">
-                    <Button className="w-full mt-4 py-3">Go to cart</Button>
+                    <Button className="w-full mt-4 py-3">Przejdź do koszyka</Button>
                   </Link>
                 </div>
               </div>
             ) : (
               <div className="px-8">
                 <h4 className="heading-md uppercase text-center">
-                  Your shopping cart is empty
+                  Twój koszyk jest pusty
                 </h4>
                 <p className="text-lg text-center py-4">
-                  Are you looging for inspiration?
+                 Szukasz inspiracji?
                 </p>
                 <Link href="/categories">
-                  <Button className="w-full py-3">Explore Home Page</Button>
+                  <Button className="w-full py-3">Przejdź do strony głównej</Button>
                 </Link>
               </div>
             )}

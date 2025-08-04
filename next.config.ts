@@ -106,6 +106,30 @@ const nextConfig: NextConfig = {
     
     return config;
   },
+  // Simple cache headers for better prefetching
+  async headers() {
+    return [
+      {
+        source: '/products/:path*',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, s-maxage=300, stale-while-revalidate=86400', // 5min cache, 1day stale
+          },
+        ],
+      },
+      {
+        source: '/_next/static/:path*',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=31536000, immutable', // 1 year cache for static assets
+          },
+        ],
+      },
+    ]
+  },
+
   images: {
     // CRITICAL: Enhanced image optimization for faster loading
     formats: ['image/avif', 'image/webp'],
@@ -143,6 +167,10 @@ const nextConfig: NextConfig = {
       {
         protocol: "https",
         hostname: "artovnia-medusa.s3.eu-north-1.amazonaws.com",
+      },
+      {
+        protocol: "https",
+        hostname: "cdn.brandfetch.io",
       },
     ],
   },

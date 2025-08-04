@@ -34,6 +34,7 @@ import { OrderCancel } from "./OrderCancel/OrderCancel"
 import { OrderReturn } from "./OrderReturn/OrderReturn"
 import { ProductAdditionalAttributes } from "./ProductAdditionalAttributes/ProductAdditionalAttributes"
 import { StepProgressBar } from "./StepProgressBar/StepProgressBar"
+import { QuantityChanger } from "./QuantityChanger/QuantityChanger"
 // ProductGPSRDetails has been moved to molecules/ProductGPSR
 
 export {
@@ -73,4 +74,5 @@ export {
   OrderReturn,
   ProductAdditionalAttributes,
   StepProgressBar,
+  QuantityChanger,
 }

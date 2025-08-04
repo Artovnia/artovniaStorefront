@@ -48,7 +48,7 @@ type ShippingProps = {
   }
   availableShippingMethods:
     | (HttpTypes.StoreCartShippingMethod &
-        { rules: any; seller_id: string; price_type: string; id: string }[])
+        { rules: any; seller_id: string; price_type: string; id: string; name: string; seller_name?: string })[]
     | null
 }
 
@@ -69,6 +69,12 @@ const CartShippingMethodsSection: React.FC<ShippingProps> = ({
   const [missingShippingSellers, setMissingShippingSellers] = useState<
     string[]
   >([])
+  // Local state to track selected shipping methods for immediate UI feedback
+  const [selectedShippingMethods, setSelectedShippingMethods] = useState<
+    Record<string, string>
+  >({})
+  // State to track which shipping method is currently being set
+  const [settingShippingMethod, setSettingShippingMethod] = useState<string | null>(null)
 
   const searchParams = useSearchParams()
   const router = useRouter()
@@ -204,51 +210,158 @@ const CartShippingMethodsSection: React.FC<ShippingProps> = ({
 
   // Memoize shipping method handler to prevent unnecessary re-renders
   const handleSetShippingMethod = useCallback(
-    async (shippingMethodId: string) => {
+    async (shippingOptionId: string) => {
       if (!cart?.id) {
         console.error("No cart ID available")
         return
       }
 
+      // Find the shipping method details from available methods
+      const selectedMethod = _shippingMethods?.find(method => method.id === shippingOptionId)
+      if (!selectedMethod) {
+        console.error("Selected shipping method not found:", shippingOptionId)
+        return
+      }
+
       setError(null)
-      setIsLoadingPrices(true)
+      setSettingShippingMethod(shippingOptionId)
+      
+      // Update local state immediately for UI feedback
+      const sellerId = selectedMethod.seller_id || 'default'
+      setSelectedShippingMethods(prev => ({
+        ...prev,
+        [sellerId]: shippingOptionId
+      }))
 
       try {
         const response = await setShippingMethod({
           cartId: cart.id,
-          shippingMethodId,
+          shippingMethodId: shippingOptionId,
         })
 
         if (response) {
           console.log("✅ Shipping method set successfully:", {
-            shippingMethodId,
+            shippingOptionId,
             cartId: cart.id,
+            methodName: selectedMethod.name
           })
 
-          // Force page refresh to update all components
-          router.refresh()
+          // Aggressive cache invalidation to force fresh data
+          try {
+            const { invalidateCheckoutCache } = await import('../../../lib/utils/persistent-cache')
+            invalidateCheckoutCache(cart.id)
+            console.log("🗑️ Invalidated checkout cache for cart:", cart.id)
+          } catch (cacheError) {
+            console.warn("Cache invalidation failed:", cacheError)
+          }
+
+          // Force parent component refresh with a small delay to ensure cache is cleared
+          setTimeout(() => {
+            console.log("🔄 Forcing router refresh after cache invalidation...")
+            router.refresh()
+            
+            // Additional fallback: trigger window event to force parent refresh
+            window.dispatchEvent(new CustomEvent('cart-updated', { 
+              detail: { cartId: cart.id, action: 'shipping-method-set' } 
+            }))
+          }, 100)
         }
       } catch (error: any) {
         console.error("❌ Error setting shipping method:", error)
         setError(error.message || "Failed to set shipping method")
+        
+        // Revert local state on error
+        const sellerId = selectedMethod.seller_id || 'default'
+        setSelectedShippingMethods(prev => {
+          const updated = { ...prev }
+          delete updated[sellerId]
+          return updated
+        })
       } finally {
-        setIsLoadingPrices(false)
+        setSettingShippingMethod(null)
       }
     },
-    [cart.id, router]
+    [cart.id, router, _shippingMethods]
   )
 
   // Handler for shipping method removal
-  const handleMethodRemoved = useCallback(async () => {
-    console.log("🔄 Shipping method removed, refreshing cart state...")
+  const handleMethodRemoved = useCallback(async (methodId: string, sellerId?: string) => {
+    console.log("🔄 Shipping method removed:", { methodId, sellerId })
     
-    // Force page refresh to ensure CartSummary shows shipping_total = 0
+    // Immediately update local state to hide the deleted method
+    if (sellerId) {
+      setSelectedShippingMethods(prev => {
+        const updated = { ...prev }
+        delete updated[sellerId]
+        return updated
+      })
+    }
+    
+    // Clear any errors
+    setError(null)
+    
+    // Force router refresh to get updated cart data from server
+    // This ensures the cart prop is refreshed with the latest data
     router.refresh()
-  }, [router])
+    
+    // Additional fallback: if router.refresh() doesn't work due to caching issues,
+    // force a hard reload after a short delay
+    setTimeout(() => {
+      console.log("🔄 Checking if cart state updated after deletion...")
+      
+      // Check if the deleted method is still in the cart
+      const stillExists = cart.shipping_methods?.some(method => method.id === methodId)
+      if (stillExists) {
+        console.warn("⚠️ Cart state not updated, forcing hard refresh...")
+        window.location.reload()
+      } else {
+        console.log("✅ Cart state successfully updated")
+      }
+    }, 500)
+  }, [router, cart.shipping_methods])
 
   useEffect(() => {
     setError(null)
   }, [isOpen])
+
+  // Sync local state with cart prop changes
+  useEffect(() => {
+    console.log("🔄 Cart prop changed, syncing local state:", {
+      cartShippingMethods: cart.shipping_methods?.length || 0,
+      localSelectedMethods: Object.keys(selectedShippingMethods).length
+    })
+    
+    // If cart has no shipping methods, clear local selected methods
+    if (!cart.shipping_methods || cart.shipping_methods.length === 0) {
+      if (Object.keys(selectedShippingMethods).length > 0) {
+        console.log("🧹 Clearing local selected methods - cart has no shipping methods")
+        setSelectedShippingMethods({})
+      }
+    } else {
+      // Sync cart shipping methods to local state for proper visual selection
+      const newSelectedMethods: Record<string, string> = {}
+      cart.shipping_methods.forEach((method: any) => {
+        const sellerId = (method as any).seller_id || 
+          (method as any).data?.seller_id || 
+          'default'
+        if (method.shipping_option_id) {
+          newSelectedMethods[sellerId] = method.shipping_option_id
+        }
+      })
+      
+      // Only update if there are actual changes to prevent infinite loops
+      const currentKeys = Object.keys(selectedShippingMethods).sort()
+      const newKeys = Object.keys(newSelectedMethods).sort()
+      const hasChanges = currentKeys.length !== newKeys.length || 
+        currentKeys.some((key, index) => key !== newKeys[index]) ||
+        Object.keys(newSelectedMethods).some(key => selectedShippingMethods[key] !== newSelectedMethods[key])
+      
+      if (hasChanges) {
+        console.log("🔄 Syncing cart shipping methods to local state:", newSelectedMethods)
+        setSelectedShippingMethods(newSelectedMethods)
+      }
+    }
+  }, [cart.shipping_methods])
 
   const groupedBySellerId = _shippingMethods?.reduce((acc: any, method) => {
     const sellerId = method.seller_id!
@@ -331,10 +444,12 @@ const CartShippingMethodsSection: React.FC<ShippingProps> = ({
                         {groupedBySellerId[key][0].seller_name}
                       </Heading>
                       <Listbox
-                        value={cart.shipping_methods?.[0]?.shipping_option_id || ""}
+                        value={selectedShippingMethods[key] || ""}
                         onChange={(value) => {
+                          console.log("📝 Listbox onChange triggered:", { sellerId: key, value })
                           handleSetShippingMethod(value)
                         }}
+                        disabled={settingShippingMethod !== null}
                       >
                         <div className="relative">
                           <Listbox.Button
@@ -345,8 +460,25 @@ const CartShippingMethodsSection: React.FC<ShippingProps> = ({
                             {({ open }) => (
                               <>
                                 <span className="block truncate">
-                                  Wybierz opcję dostawy
-                                </span>
+                                  {(() => {
+                                    const selectedMethodId = selectedShippingMethods[key]
+                                    
+                                    if (selectedMethodId) {
+                                      const selectedMethod = groupedBySellerId[key].find((method: any) => method.id === selectedMethodId)
+                                      if (selectedMethod) {
+                                        const price = selectedMethod.price_type === "flat" 
+                                          ? selectedMethod.amount 
+                                          : calculatedPricesMap[selectedMethod.id]
+                                        return `${selectedMethod.name} - ${price ? convertToLocale({
+                                          amount: price,
+                                          currency_code: cart?.currency_code,
+                                        }) : '-'}`
+                                      }
+                                    }
+                                    
+                                    return settingShippingMethod ? "Ustawianie..." : "Wybierz opcję dostawy"
+                                  })()
+                                }</span>
                                 <ChevronUpDownWrapper
                                   className={clx(
                                     "transition-rotate duration-200",
@@ -371,9 +503,16 @@ const CartShippingMethodsSection: React.FC<ShippingProps> = ({
                               {groupedBySellerId[key].map((option: any) => {
                                 return (
                                   <Listbox.Option
-                                    className="cursor-pointer select-none relative pl-6 pr-10 hover:bg-gray-50 py-4 border-b"
+                                    className={clsx(
+                                      "cursor-pointer select-none relative pl-6 pr-10 hover:bg-gray-50 py-4 border-b",
+                                      {
+                                        "bg-blue-50 border-blue-200": selectedShippingMethods[key] === option.id,
+                                        "opacity-50 cursor-not-allowed": settingShippingMethod !== null && settingShippingMethod !== option.id
+                                      }
+                                    )}
                                     value={option.id}
                                     key={option.id}
+                                    disabled={settingShippingMethod !== null && settingShippingMethod !== option.id}
                                   >
                                     {option.name}
                                     {" - "}
@@ -391,6 +530,14 @@ const CartShippingMethodsSection: React.FC<ShippingProps> = ({
                                       <LoaderWrapper />
                                     ) : (
                                       "-"
+                                    )}
+                                    {settingShippingMethod === option.id && (
+                                      <span className="ml-2 text-blue-600">
+                                        <LoaderWrapper className="w-4 h-4" />
+                                      </span>
+                                    )}
+                                    {selectedShippingMethods[key] === option.id && settingShippingMethod !== option.id && (
+                                      <span className="ml-2 text-green-600">✓</span>
                                     )}
                                   </Listbox.Option>
                                 )

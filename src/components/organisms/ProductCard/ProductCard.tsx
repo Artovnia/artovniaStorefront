@@ -9,6 +9,8 @@ import { getProductPrice } from "@/lib/helpers/get-product-price"
 import { BaseHit, Hit } from "instantsearch.js"
 import clsx from "clsx"
 import { WishlistButton } from "@/components/cells/WishlistButton/WishlistButton"
+import { useHoverPrefetch } from "@/hooks/useHoverPrefetch"
+import { useRouter } from "next/navigation"
 
 export const ProductCard = ({
   product,
@@ -17,6 +19,30 @@ export const ProductCard = ({
   product: Hit<HttpTypes.StoreProduct> | Partial<Hit<BaseHit>>
   sellerPage?: boolean
 }) => {
+  const { prefetchOnHover } = useHoverPrefetch()
+  const router = useRouter()
+  const productUrl = `/products/${product.handle}`
+  
+  // Fallback prefetch method that works even if hook fails
+  const handleMouseEnter = () => {
+    try {
+      console.log('🚀 Fallback prefetch on hover:', productUrl)
+      router.prefetch(productUrl)
+      console.log('✅ Fallback prefetch initiated for:', productUrl)
+    } catch (error) {
+      console.error('❌ Fallback prefetch failed for:', productUrl, error)
+    }
+  }
+  
+  // Debug: Log ProductCard render and hover setup
+  if (process.env.NODE_ENV === 'development') {
+    console.log('🔧 ProductCard rendered:', {
+      productId: product.id,
+      productHandle: product.handle,
+      productUrl,
+      hasHoverHandler: !!prefetchOnHover
+    })
+  }
   const { cheapestPrice } = getProductPrice({
     product,
   })
@@ -34,12 +60,14 @@ export const ProductCard = ({
           "w-full p-1": !sellerPage, // Use full width of container, let carousel control sizing
         }
       )}
+      {...prefetchOnHover(productUrl)}
+      onMouseEnter={handleMouseEnter}
     >
       <div className="relative w-full bg-primary aspect-square flex-shrink-0">
         {/* <div className="absolute right-3 top-3 z-10 cursor-pointer">
           <WishlistButton productId={product.id} />
         </div> */}
-        <Link href={`/products/${product.handle}`}>
+        <Link href={productUrl} prefetch={true}>
           <div className="overflow-hidden rounded-sm w-full h-full flex justify-center items-center">
             {product.thumbnail ? (
               <Image
@@ -61,7 +89,7 @@ export const ProductCard = ({
             )}
           </div>
         </Link>
-        <Link href={`/products/${product.handle}`}>
+        <Link href={productUrl} prefetch={true}>
           <Button className="absolute rounded-sm bg-action text-action-on-primary h-auto lg:h-[48px] lg:group-hover:block hidden w-full uppercase bottom-1 z-10">
             Zobacz więcej
           </Button>

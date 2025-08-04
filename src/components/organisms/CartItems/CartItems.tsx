@@ -5,7 +5,13 @@ import {
 } from "@/components/cells"
 import { HttpTypes } from "@medusajs/types"
 
-export const CartItems = ({ cart }: { cart: HttpTypes.StoreCart | null }) => {
+export const CartItems = ({ 
+  cart, 
+  onCartUpdate 
+}: { 
+  cart: HttpTypes.StoreCart | null
+  onCartUpdate?: (updatedCart: HttpTypes.StoreCart) => void
+}) => {
   if (!cart) return null
 
   const groupedItems: any = groupItemsBySeller(cart)
@@ -16,6 +22,8 @@ export const CartItems = ({ cart }: { cart: HttpTypes.StoreCart | null }) => {
       <CartItemsProducts
         products={groupedItems[key].items || []}
         currency_code={cart.currency_code}
+        cartId={cart.id}
+        onCartUpdate={onCartUpdate}
       />
       <CartItemsFooter
         currency_code={cart.currency_code}

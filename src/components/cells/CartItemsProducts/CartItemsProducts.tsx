@@ -1,3 +1,5 @@
+"use client"
+
 import Image from "next/image"
 import { Button } from "@/components/atoms"
 import { HeartIcon } from "@/icons"
@@ -5,17 +7,48 @@ import { HttpTypes } from "@medusajs/types"
 import { convertToLocale } from "@/lib/helpers/money"
 import { DeleteCartItemButton } from "@/components/molecules"
 import { Link } from "@/i18n/routing"
+import { QuantityChanger } from "@/components/cells"
+import { globalDeduplicator } from "@/lib/utils/performance"
+import { retrieveCart } from "@/lib/data/cart"
 
 
 export const CartItemsProducts = ({
   products,
   currency_code,
   delete_item = true,
+  cartId,
+  onCartUpdate,
 }: {
   products: HttpTypes.StoreCartLineItem[]
   currency_code: string
   delete_item?: boolean
+  cartId?: string
+  onCartUpdate?: (updatedCart: HttpTypes.StoreCart) => void
 }) => {
+
+  const handleQuantityChange = (itemId: string, newQuantity: number, newTotal: number) => {
+    console.log('🔄 Quantity updated via QuantityChanger:', { itemId, newQuantity, newTotal })
+    
+    // Don't do additional API calls here - QuantityChanger already handles server sync
+    // Just update the local UI state optimistically
+    
+    // Optional: If we need to propagate state changes, do it non-blocking
+    if (onCartUpdate && cartId) {
+      // Use setTimeout to make this non-blocking
+      setTimeout(async () => {
+        try {
+          console.log('🔄 Non-blocking cart state refresh...')
+          const updatedCart = await retrieveCart(cartId)
+          if (updatedCart) {
+            console.log('📊 Propagating cart update to parent (non-blocking):', updatedCart)
+            onCartUpdate(updatedCart)
+          }
+        } catch (error) {
+          console.warn('⚠️ Non-blocking cart refresh failed:', error)
+        }
+      }, 1000) // Delay to avoid blocking UI
+    }
+  }
   return (
     <div>
       {products.map((product) => {
@@ -73,7 +106,15 @@ export const CartItemsProducts = ({
                 </Link>
                 {delete_item && (
                   <div className="lg:flex">
-                    <DeleteCartItemButton id={product.id} />
+                    <DeleteCartItemButton 
+                      id={product.id} 
+                      onDeleted={() => {
+                        console.log('🗑️ Item deleted, triggering cart refresh...')
+                        if (onCartUpdate) {
+                          onCartUpdate() // Trigger cart refresh without passing cart data
+                        }
+                      }}
+                    />
                   </div>
                 )}
               </div>
@@ -86,10 +127,17 @@ export const CartItemsProducts = ({
                         <span className="text-primary">{value || '-'}</span>
                       </p>
                     ))}
-                    <p>
-                      Ilość:{" "}
-                      <span className="text-primary">{product.quantity}</span>
-                    </p>
+                    <div className="flex items-center gap-2">
+                      <span className="text-secondary">Ilość:</span>
+                      <QuantityChanger
+                        itemId={product.id}
+                        cartId={cartId || product.cart_id || ''}
+                        initialQuantity={product.quantity}
+                        maxQuantity={product.variant?.inventory_quantity || 999}
+                        unitPrice={product.unit_price}
+                        onQuantityChange={(newQuantity, newTotal) => handleQuantityChange(product.id, newQuantity, newTotal)}
+                      />
+                    </div>
                   </div>
                   <div className="lg:text-right flex lg:block items-center gap-2 mt-4 lg:mt-0">
                     {total !== original_total && (

@@ -43,13 +43,40 @@ export const ProductDetailsPage = async ({
 
   if (!prod) return null
 
-  // Debug: Log product images to verify they're being fetched correctly
+  // Debug: Log complete product data to identify missing seller/stock data
   if (process.env.NODE_ENV === 'development') {
-    console.log('🖼️ Product images debug:', {
+    console.log('🔍 COMPLETE Product data debug:', {
       productId: prod.id,
+      productHandle: prod.handle,
+      productTitle: prod.title,
+      
+      // SELLER DATA
+      hasSeller: !!prod.seller,
+      seller: prod.seller,
+      sellerId: prod.seller?.id,
+      sellerName: prod.seller?.name,
+      sellerHandle: prod.seller?.handle,
+      
+      // VARIANTS DATA
+      hasVariants: !!prod.variants,
+      variantsCount: prod.variants?.length || 0,
+      variants: prod.variants?.map((v: any) => ({
+        id: v.id,
+        title: v.title,
+        inventory_quantity: v.inventory_quantity,
+        calculated_price: v.calculated_price,
+        hasInventoryQuantity: v.inventory_quantity !== undefined
+      })),
+      
+      // IMAGES DATA
       imagesCount: prod.images?.length || 0,
-      images: prod.images,
-      firstImageUrl: prod.images?.[0]?.url
+      firstImageUrl: prod.images?.[0]?.url,
+      
+      // RAW PRODUCT OBJECT KEYS
+      productKeys: Object.keys(prod || {}),
+      
+      // COMPLETE PRODUCT OBJECT (be careful - might be large)
+      // fullProduct: prod
     })
   }
 

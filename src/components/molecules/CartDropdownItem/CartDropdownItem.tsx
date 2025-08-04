@@ -1,6 +1,7 @@
 import { convertToLocale } from "@/lib/helpers/money"
 import { HttpTypes } from "@medusajs/types"
 import Image from "next/image"
+import { DeleteCartItemButton } from "@/components/molecules"
 
 export const CartDropdownItem = ({
   item,
@@ -42,8 +43,11 @@ export const CartDropdownItem = ({
         )}
       </div>
 
-      <div className="py-2">
-        <h4 className="heading-xs">{item.product_title}</h4>
+      <div className="py-2 flex-1">
+        <div className="flex justify-between items-start">
+          <h4 className="heading-xs pr-2">{item.product_title}</h4>
+          <DeleteCartItemButton id={item.id} />
+        </div>
         <div className="label-md text-secondary">
           {item.variant?.options?.map(({ option, id, value }) => (
             <p key={id}>
@@ -51,7 +55,7 @@ export const CartDropdownItem = ({
             </p>
           ))}
           <p>
-            Quantity: <span className="text-primary">{item.quantity}</span>
+            Ilość: <span className="text-primary">{item.quantity}</span>
           </p>
         </div>
         <div className="pt-2 flex lg:block items-center gap-2 mt-4 lg:mt-0">
