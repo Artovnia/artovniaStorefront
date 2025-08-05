@@ -140,7 +140,7 @@ export const ProductDetailsPage = async ({
         </div>
 
         {/* Desktop Layout: Sticky gallery on left, scrollable details on right */}
-        <div className="hidden md:flex md:flex-row lg:gap-12">
+        <div className="hidden md:flex md:flex-row lg:gap-12 max-w-[1920px] mx-auto">
           {/* Left: Sticky Product Gallery */}
           <div className="md:w-1/2 md:px-2 md:sticky md:top-20 md:self-start">
             <ProductGallery images={prod?.images || []} />
