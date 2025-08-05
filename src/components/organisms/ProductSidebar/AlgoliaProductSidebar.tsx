@@ -100,7 +100,7 @@ function PriceFilter() {
   }
   return (
     <Accordion heading="Cena">
-      <div className="flex gap-2 mb-4">
+      <div className="flex gap-2 mb-6 ">
         <form method="POST" onSubmit={updateMinPriceHandler}>
           <Input
             placeholder="Min"

@@ -963,7 +963,7 @@ export function HeartIcon({
 }
 
 export function HeartFilledIcon({
-  color = '#090909',
+  color = '#B7B7AD',
   size = 24,
   className = '',
 }: IconProps) {

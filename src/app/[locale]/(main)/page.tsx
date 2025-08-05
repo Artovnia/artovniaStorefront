@@ -1,12 +1,12 @@
 import {
-  AlgoliaTrendingListings,
   BannerSection,
   BlogSection,
   Hero,
-  HomeCategories,
   HomePopularBrandsSection,
   HomeProductSection,
   ShopByStyleSection,
+  HomeNewestProductsSection,
+  SmartBestProductsSection,
 } from "@/components/sections"
 
 import type { Metadata } from "next"
@@ -41,32 +41,45 @@ export default async function Home({
   const { locale } = await params
 
   return (
-    <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start text-primary">
-      <Hero
-        image="/images/hero/Image.jpg"
-        heading="Witaj w Artovni"
-        paragraph="W naszym sklepie znajdziesz najlepsze produkty z ręczniaków, sztuk i rękodzieł."
-        buttons={[
-          { label: "Zobacz produkty", path: "/categories" },
-          {
-            label: "Sprzedaj produkty",
-            path:
-              process.env.NEXT_PUBLIC_ALGOLIA_ID === "UO3C5Y8NHX"
-                ? "https://vendor-sandbox.vercel.app/"
-                : "https://vendor.mercurjs.com",
-          },
-        ]}
-      />
-      <div className="px-4 lg:px-8 w-full">
-        <HomeProductSection heading="Najlepsze produkty" locale={locale} home />
+    <main className="flex flex-col text-primary">
+      {/* Content with max-width container */}
+      <div className="mx-auto max-w-[1920px] w-full">
+        <Hero
+          image="/images/hero/Image.jpg"
+          heading="Witaj w Artovni"
+          paragraph="W naszym sklepie znajdziesz najlepsze produkty z ręczniaków, sztuk i rękodzieł."
+          buttons={[
+            { label: "Zobacz produkty", path: "/categories" },
+            {
+              label: "Sprzedaj produkty",
+              path:
+                process.env.NEXT_PUBLIC_ALGOLIA_ID
+                  ? "https://artovniapanel.netlify.app/login"
+                  : "https://artovniapanel.netlify.app/login",
+            },
+          ]}
+        />
       </div>
-      {/* <HomePopularBrandsSection />*/}
-      <div className="px-4 lg:px-8 w-full">
-        <HomeCategories heading="KUPUJ WEDŁUG KATEGORII" />
+      
+      {/* Smart Best Products Section */}
+      <div className="mx-auto max-w-[1920px] w-full px-4 lg:px-8 mb-8">
+        <SmartBestProductsSection />
       </div>
-      <BannerSection />
-      <ShopByStyleSection />
-      <BlogSection />
+     
+      {/* Full width dark section */}
+      <div className="w-full bg-[#3B3634]">
+        {/* Content container inside full-width section */}
+        <div className="mx-auto max-w-[1920px] w-full px-4 lg:px-8">
+          <HomeProductSection heading="Nowości" theme="light" />
+        </div>
+      </div>
+      
+      {/* Content with max-width container */}
+      <div className="mx-auto max-w-[1920px] w-full px-4 lg:px-8 mt-8">
+        <BannerSection />
+        <ShopByStyleSection />
+        <BlogSection />
+      </div>
     </main>
   )
 }

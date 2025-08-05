@@ -44,7 +44,7 @@ export const ProductSidebar = () => {
           </div>
         )}
 
-        <div className="px-2 md:px-0 overflow-y-scroll md:overflow-y-auto h-[calc(100vh-200px)] md:h-full no-scrollbar">
+        <div className="px-2 mb-2 md:px-0 overflow-y-scroll md:overflow-y-auto h-[calc(100vh-200px)] md:h-full no-scrollbar">
           <PriceFilter />
           <SizeFilter />
           <ColorFilter />

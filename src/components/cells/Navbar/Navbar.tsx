@@ -7,7 +7,7 @@ export const Navbar = ({
   categories: HttpTypes.StoreProductCategory[]
 }) => {
   return (
-    <div className="flex border py-4 justify-between px-6">
+    <div className="flex border py-4 justify-between px-6 max-w-[1920px] mx-auto">
       <div className="hidden md:flex items-center">
         <CategoryNavbar categories={categories} />
       </div>

@@ -146,7 +146,7 @@ export const ProductDetailsHeader = ({
           <h2 className="label-md text-secondary">
             {/* {product?.brand || "No brand"} */}
           </h2>
-          <h1 className="heading-lg text-primary">{product.title}</h1>
+          <h1 className="heading-lg text-primary font-instrument-serif">{product.title}</h1>
           <div className="mt-2 flex gap-2 items-center">
             <span className="heading-md text-primary">
               {variantPrice?.calculated_price}

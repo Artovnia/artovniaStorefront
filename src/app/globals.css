@@ -100,6 +100,10 @@ button:disabled svg path {
     @apply fill-white; /* White icons for text-filled buttons */
 }
 
+.font-instrument-serif {
+  font-family: var(--font-instrument-serif);
+}
+
 .checkbox-wrapper {
     @apply rounded-xs bg-component-secondary w-[20px] h-[20px] border border-secondary bg-component-secondary cursor-pointer;
 }

@@ -9,10 +9,12 @@ export const HomeProductsCarousel = async ({
   locale,
   sellerProducts,
   home,
+  theme = 'default',
 }: {
   locale: string
   sellerProducts: Product[]
   home: boolean
+  theme?: 'default' | 'light' | 'dark'
 }) => {
   try {
     // Prioritize provided products to avoid unnecessary API calls
@@ -37,7 +39,7 @@ export const HomeProductsCarousel = async ({
     if (!displayProducts.length) {
       return (
         <div className="flex justify-center w-full py-8">
-          <p className="text-gray-500">No products available</p>
+          <p className={theme === 'light' ? 'text-gray-300' : 'text-gray-500'}>No products available</p>
         </div>
       );
     }
@@ -60,6 +62,7 @@ export const HomeProductsCarousel = async ({
           <ProductCard
             key={typedProduct.id}
             product={typedProduct as unknown as Hit<HttpTypes.StoreProduct>}
+            themeMode={theme === 'light' ? 'light' : 'default'}
           />
         );
       })
@@ -68,7 +71,7 @@ export const HomeProductsCarousel = async ({
     if (!productCards.length) {
       return (
         <div className="flex justify-center w-full py-8">
-          <p className="text-gray-500">No valid products to display</p>
+          <p className={theme === 'light' ? 'text-gray-300' : 'text-gray-500'}>No valid products to display</p>
         </div>
       );
     }

@@ -35,7 +35,7 @@ export function BlogSection() {
   return (
     <section className='bg-tertiary container'>
       <div className='flex items-center justify-between mb-12'>
-        <h2 className='heading-lg text-tertiary'>
+        <h2 className='heading-lg text-tertiary font-instrument-serif'>
           STAY UP TO DATE
         </h2>
       </div>

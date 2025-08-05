@@ -1,5 +1,6 @@
 import { Hero } from "./Hero/Hero"
 import { HomeProductSection } from "./HomeProductSection/HomeProductSection"
+import { HomeNewestProductsSection } from "./HomeNewestProductsSection/HomeNewestProductsSection"
 import { HomePopularBrandsSection } from "./HomePopularBrandsSection/HomePopularBrandsSection"
 import { HomeCategories } from "./HomeCategories/HomeCategories"
 import { BannerSection } from "./BannerSection/BannerSection"
@@ -16,10 +17,12 @@ import { OrdersPagination } from "../organisms/OrdersPagination/OrdersPagination
 import { OrderReturnRequests } from "./OrderReturnRequests/OrderReturnRequests"
 import { OrderReturnSection } from "./OrderReturnSection/OrderReturnSection"
 import { OrderDetailsSection } from "./OrderDetailsSection/OrderDetailsSection"
+import { SmartBestProductsSection } from "./HomeProductSection/SmartBestProductsSection"
 
 export {
   Hero,
   HomeProductSection,
+  HomeNewestProductsSection,
   HomePopularBrandsSection,
   HomeCategories,
   BannerSection,
@@ -36,4 +39,5 @@ export {
   OrderReturnRequests,
   OrderReturnSection,
   OrderDetailsSection,
+  SmartBestProductsSection
 }

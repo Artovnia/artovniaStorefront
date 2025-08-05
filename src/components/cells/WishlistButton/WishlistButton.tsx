@@ -38,6 +38,8 @@ export const WishlistButton = ({
         reference_id: productId,
         reference: "product",
       })
+      // Update local state immediately after successful add
+      setIsWishlisted(true)
     } catch (error) {
       console.error(error)
     } finally {
@@ -53,6 +55,8 @@ export const WishlistButton = ({
         wishlist_id: wishlist?.[0].id!,
         product_id: productId,
       })
+      // Update local state immediately after successful removal
+      setIsWishlisted(false)
     } catch (error) {
       console.error(error)
     } finally {
@@ -67,7 +71,7 @@ export const WishlistButton = ({
           : () => handleAddToWishlist()
       }
       variant="tonal"
-      className="w-10 h-10 p-0 flex items-center justify-center"
+      className="w-10 h-10 p-0 flex items-center ring-1 ring-[#B7B7AD] justify-center rounded-full bg-[#F4F0EB] bg-opacity-80 hover:bg-[#B7B7AD] hover:fill-[#B7B7AD]"
       loading={isWishlistAdding}
       disabled={isWishlistAdding}
     >

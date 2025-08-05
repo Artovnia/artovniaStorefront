@@ -11,7 +11,7 @@ export const BannerSection = () => {
             <span className="text-sm inline-block px-4 py-1 border border-secondary rounded-sm">
               #COLLECTION
             </span>
-            <h1 className="display-sm">
+            <h1 className="display-sm font-instrument-serif">
               BOHO VIBES: WHERE COMFORT MEETS CREATIVITY
             </h1>
             <p className="text-lg text-tertiary max-w-lg">

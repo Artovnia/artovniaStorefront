@@ -11,17 +11,50 @@ import clsx from "clsx"
 import { WishlistButton } from "@/components/cells/WishlistButton/WishlistButton"
 import { useHoverPrefetch } from "@/hooks/useHoverPrefetch"
 import { useRouter } from "next/navigation"
+import { useEffect, useState } from "react"
+import { retrieveCustomer } from "@/lib/data/customer"
+import { getUserWishlists } from "@/lib/data/wishlist"
+import { Wishlist } from "@/types/wishlist"
 
 export const ProductCard = ({
   product,
   sellerPage = false,
+  themeMode = 'default',
 }: {
   product: Hit<HttpTypes.StoreProduct> | Partial<Hit<BaseHit>>
   sellerPage?: boolean
+  themeMode?: 'default' | 'light' | 'dark'
 }) => {
   const { prefetchOnHover } = useHoverPrefetch()
   const router = useRouter()
   const productUrl = `/products/${product.handle}`
+  
+  // State for user and wishlist data
+  const [user, setUser] = useState<HttpTypes.StoreCustomer | null>(null)
+  const [wishlist, setWishlist] = useState<Wishlist[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  
+  // Fetch user and wishlist data on component mount
+  useEffect(() => {
+    async function fetchUserData() {
+      try {
+        setIsLoading(true)
+        const customer = await retrieveCustomer()
+        setUser(customer)
+        
+        if (customer) {
+          const wishlistData = await getUserWishlists()
+          setWishlist(wishlistData.wishlists || [])
+        }
+      } catch (error) {
+        console.error('Error fetching user data:', error)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+    
+    fetchUserData()
+  }, [])
   
   // Fallback prefetch method that works even if hook fails
   const handleMouseEnter = () => {
@@ -47,7 +80,7 @@ export const ProductCard = ({
   return (
     <div
       className={clsx(
-        "relative group border rounded-sm flex flex-col h-full",
+        "relative group flex flex-col h-full",
         {
           "w-[250px] lg:w-[370px] p-2": sellerPage,
           "w-full p-1": !sellerPage, // Use full width of container, let carousel control sizing
@@ -57,18 +90,18 @@ export const ProductCard = ({
       onMouseEnter={handleMouseEnter}
     >
       <div className="relative w-full bg-primary aspect-square flex-shrink-0">
-        {/* <div className="absolute right-3 top-3 z-10 cursor-pointer">
-          <WishlistButton productId={product.id} />
-        </div> */}
+        <div className="absolute right-3 top-3 z-10 cursor-pointer">
+          <WishlistButton productId={product.id} user={user} wishlist={wishlist} />
+        </div>
         <Link href={productUrl} prefetch={true}>
-          <div className="overflow-hidden rounded-sm w-full h-full flex justify-center items-center">
+          <div className="overflow-hidden w-full h-full flex justify-center items-center">
             {product.thumbnail ? (
               <Image
                 src={decodeURIComponent(product.thumbnail)}
                 alt={product.title}
                 width={320}
                 height={320}
-                className="object-cover aspect-square w-full object-center h-full lg:group-hover:scale-105 transition-all duration-300 rounded-xs"
+                className="object-cover aspect-square w-full object-center h-full lg:group-hover:scale-105 transition-all duration-300 "
                 priority
               />
             ) : (
@@ -91,9 +124,11 @@ export const ProductCard = ({
       <Link href={`/products/${product.handle}`}>
         <div className="flex justify-between p-3 flex-grow">
           <div className="w-full">
-            <h3 className="text-sm font-medium truncate mb-2 leading-tight">{product.title}</h3>
+            <h3 className={`text-md font-bold truncate mb-2 leading-tight ${themeMode === 'light' ? 'text-white' : ''}`}>
+              {product.title}
+            </h3>
             <div className="flex items-center gap-2">
-              <p className="font-semibold text-sm">
+              <p className={`font-semibold text-md ${themeMode === 'light' ? 'text-white' : ''}`}>
                 {sellerCheapestPrice?.calculated_price ||
                   cheapestPrice?.calculated_price}
               </p>

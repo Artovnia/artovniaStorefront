@@ -33,7 +33,7 @@ export const Accordion = ({
     <Card>
       <div
         onClick={openHandler}
-        className="flex justify-between items-center cursor-pointer px-2"
+        className="flex justify-between items-center cursor-pointer px-2 py-2"
       >
         <h4 className="label-lg uppercase">{heading}</h4>
         <CollapseIcon

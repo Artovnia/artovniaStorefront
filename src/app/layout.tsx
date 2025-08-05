@@ -1,5 +1,5 @@
 import type { Metadata } from "next"
-import { Instrument_Sans } from "next/font/google"
+import { Instrument_Sans, Instrument_Serif } from "next/font/google"
 import "./globals.css"
 import { NextIntlClientProvider } from "next-intl"
 import { getMessages } from "next-intl/server"
@@ -9,6 +9,12 @@ import { ToastProvider } from "@/components/providers/ToastProvider"
 
 const instrumentSans = Instrument_Sans({
   variable: "--font-instrument-sans",
+  subsets: ["latin"],
+  weight: ["400"],
+})
+
+const instrumentSerif = Instrument_Serif({
+  variable: "--font-instrument-serif",
   subsets: ["latin"],
   weight: ["400"],
 })
@@ -42,14 +48,13 @@ export default async function RootLayout({
 
   const { locale } = await params
   return (
-    <html lang={locale} className="">
+    <html lang={locale} className={`${instrumentSans.variable} ${instrumentSerif.variable}`}>
       <NextIntlClientProvider messages={messages}>
         <body
           className={`${instrumentSans.className} antialiased bg-primary text-primary`}
         >
-        
-
           <ToastProvider />
+          {/* Remove the max-width container here to allow full-width sections */}
           {children}
         </body>
       </NextIntlClientProvider>
