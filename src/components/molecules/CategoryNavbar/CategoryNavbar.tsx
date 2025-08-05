@@ -63,7 +63,7 @@ export const CategoryNavbar = ({
               className={cn(
                 "uppercase px-4 my-3 md:my-0 flex items-center justify-between text-lg",
                 handle === category && "md:border-b md:border-primary",
-                hasChildren && "md:hover:bg-gray-50 transition-colors"
+                hasChildren && "md:hover:bg-primary transition-colors"
               )}
             >
               {name}
@@ -72,7 +72,7 @@ export const CategoryNavbar = ({
             {/* Subcategories Dropdown */}
             {hasChildren && isHovered && (
               <div className={cn(
-                "md:absolute md:top-full md:left-0 md:bg-white md:border md:border-gray-200 md:rounded-sm md:shadow-lg md:min-w-[15rem] md:z-10",
+                "md:absolute md:top-full md:left-0 md:bg-primary md:border md:border-primary md:rounded-sm md:shadow-lg md:min-w-[15rem] md:z-10",
                 "flex flex-col pl-4 md:pl-0"
               )}>
                 {category_children.map((child) => (
@@ -81,8 +81,8 @@ export const CategoryNavbar = ({
                     href={`/categories/${child.handle}`}
                     onClick={handleSubcategoryClick}
                     className={cn(
-                      "uppercase px-4 py-2 hover:bg-gray-50 transition-colors text-lg",
-                      child.handle === category && "bg-gray-100 md:bg-primary/10"
+                      "uppercase px-4 py-2 hover:bg-primary transition-colors text-lg",
+                      child.handle === category && "bg-primary md:bg-primary/10"
                     )}
                   >
                     {child.name}

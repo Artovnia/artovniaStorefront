@@ -14,18 +14,27 @@
     --neutral-900: 22, 22, 22;
     --neutral-1000: 9, 9, 9;
 
+    /* Custom Theme Colors - Main: #F4F0EB, Buttons/Marked: #3B3634 */
+    --theme-main: 244, 240, 235; /* #F4F0EB - Main website color */
+    --theme-main-light: 249, 246, 242; /* Lighter shade of main color */
+    --theme-main-dark: 230, 225, 220; /* Darker shade of main color */
+    --theme-accent: 59, 54, 52; /* #3B3634 - Buttons and marked items */
+    --theme-accent-light: 89, 84, 82; /* Lighter shade of accent */
+    --theme-accent-dark: 42, 37, 35; /* Darker shade of accent */
+    --theme-accent-darker: 31, 27, 25; /* Even darker for pressed states */
+    
     /* Brand colors are used across all interactive elements such as buttons, links, inputs, etc. This color can define the overall feel and can elicit emotion. */
-    --brand-25: 247, 247, 247;
-    --brand-50: 238, 238, 238;
-    --brand-100: 226, 226, 226;
-    --brand-200: 198, 198, 198;
-    --brand-300: 163, 163, 163;
-    --brand-400: 115, 115, 115;
-    --brand-500: 82, 82, 82;
-    --brand-600: 64, 64, 64;
-    --brand-700: 27, 27, 27;
-    --brand-800: 22, 22, 22;
-    --brand-900: 9, 9, 9;
+    --brand-25: 249, 239, 245; /* Light theme main */
+    --brand-50: 244, 224, 235; /* Theme main color */
+    --brand-100: 230, 200, 220; /* Dark theme main */
+    --brand-200: 200, 180, 195; /* Muted theme main */
+    --brand-300: 150, 130, 145; /* Mid tone */
+    --brand-400: 100, 90, 95; /* Neutral mid */
+    --brand-500: 89, 84, 82; /* Light accent */
+    --brand-600: 59, 54, 52; /* Theme accent color */
+    --brand-700: 42, 37, 35; /* Dark accent */
+    --brand-800: 31, 27, 25; /* Darker accent */
+    --brand-900: 20, 17, 15; /* Darkest accent */
     
     /* Red colors are used across error states and in "destructive" actions. */
     --red-25: 254, 243, 242;
@@ -81,20 +90,23 @@
 }
 
 :root {
-    --bg-primary: var(--neutral-0);
-    --bg-secondary: var(--neutral-25);
-    --bg-tertiary: var(--neutral-1000);
+    /* MAIN COLORS - Change these to adjust the overall theme */
+    --bg-primary: var(--theme-main); /* Main background color #F4E0EB */
+    --bg-secondary: var(--theme-main-light); /* Secondary background */
+    --bg-tertiary: var(--theme-accent); /* Dark background #3B3634 */
 
-    --bg-component-primary: var(--neutral-0);
-    --bg-component-primary-hover: var(--neutral-25);
-    --bg-component-primary-pressed: var(--neutral-50);
-    --bg-component-secondary: var(--neutral-25);
-    --bg-component-secondary-hover: var(--neutral-50);
-    --bg-component-secondary-pressed: var(--neutral-100);
+    /* COMPONENT COLORS - Change these to adjust overlay/dropdown backgrounds */
+    --bg-component-primary: var(--neutral-0); /* White for cards/modals */
+    --bg-component-primary-hover: var(--theme-main-light); /* Light theme color on hover */
+    --bg-component-primary-pressed: var(--theme-main); /* Theme color when pressed */
+    --bg-component-secondary: var(--theme-main-light); /* Light theme for dropdowns */
+    --bg-component-secondary-hover: var(--theme-main); /* Theme color on hover */
+    --bg-component-secondary-pressed: var(--theme-main-dark); /* Darker theme when pressed */
 
-    --bg-action-primary: var(--brand-900);
-    --bg-action-primary-hover: var(--brand-800);
-    --bg-action-primary-pressed: var(--brand-700);
+    /* BUTTON COLORS - Change these to adjust button appearance */
+    --bg-action-primary: var(--theme-accent); /* Button background #3B3634 */
+    --bg-action-primary-hover: var(--theme-accent-dark); /* Button hover */
+    --bg-action-primary-pressed: var(--theme-accent-darker); /* Button pressed */
     --bg-action-secondary: rgba(var(--neutral-1000), 0.05);
     --bg-action-secondary-hover: rgba(var(--neutral-1000), 0.1);
     --bg-action-secondary-pressed: rgba(var(--neutral-1000), 0.2);

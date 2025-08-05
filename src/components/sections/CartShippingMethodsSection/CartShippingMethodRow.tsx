@@ -8,17 +8,20 @@ import { HttpTypes } from "@medusajs/types"
 import { Text } from "@medusajs/ui"
 import { InpostParcelInfo } from "@/components/molecules"
 import { InpostParcelData } from "@/lib/services/inpost-api"
+import { invalidateCheckoutCache } from "@/lib/utils/persistent-cache"
 import { useState } from "react"
 
 export const CartShippingMethodRow = ({
   method,
   currency_code,
   parcelData,
+  cartId,
   onMethodRemoved,
 }: {
   method: HttpTypes.StoreCartShippingMethod
   currency_code: string
   parcelData?: InpostParcelData
+  cartId: string
   onMethodRemoved?: (methodId: string, sellerId?: string) => void
 }) => {
   const [isDeleting, setIsDeleting] = useState(false)
@@ -41,17 +44,15 @@ export const CartShippingMethodRow = ({
         sellerId = method.data.seller_specific_id as string;
       }
       
-      console.log('Deleting shipping method:', {
-        id: method.id,
-        shipping_option_id: method.shipping_option_id,
-        seller_id: sellerId || 'unknown',
-        name: method.name,
-        amount: method.amount
-      });
+     
       
       // Attempt to delete the shipping method
       const response = await removeShippingMethod(method.id);
       console.log('Shipping method deletion response:', response);
+      
+      // After successful removal, invalidate the cache
+      invalidateCheckoutCache(cartId);
+    
       
       // Call the callback if provided to update parent state immediately
       // This is critical for ensuring the UI updates correctly
@@ -71,7 +72,6 @@ export const CartShippingMethodRow = ({
 
   const isInpostPaczkomat = method.name?.toLowerCase().includes('paczkomat')
   
-  console.log('Rendering shipping method row for:', method.id, 'name:', method.name)
 
   return (
     <div className="mb-4 border rounded-md p-4">

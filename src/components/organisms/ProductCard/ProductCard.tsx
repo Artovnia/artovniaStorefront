@@ -26,9 +26,7 @@ export const ProductCard = ({
   // Fallback prefetch method that works even if hook fails
   const handleMouseEnter = () => {
     try {
-      console.log('🚀 Fallback prefetch on hover:', productUrl)
       router.prefetch(productUrl)
-      console.log('✅ Fallback prefetch initiated for:', productUrl)
     } catch (error) {
       console.error('❌ Fallback prefetch failed for:', productUrl, error)
     }
@@ -36,12 +34,7 @@ export const ProductCard = ({
   
   // Debug: Log ProductCard render and hover setup
   if (process.env.NODE_ENV === 'development') {
-    console.log('🔧 ProductCard rendered:', {
-      productId: product.id,
-      productHandle: product.handle,
-      productUrl,
-      hasHoverHandler: !!prefetchOnHover
-    })
+    
   }
   const { cheapestPrice } = getProductPrice({
     product,
@@ -90,7 +83,7 @@ export const ProductCard = ({
           </div>
         </Link>
         <Link href={productUrl} prefetch={true}>
-          <Button className="absolute rounded-sm bg-action text-action-on-primary h-auto lg:h-[48px] lg:group-hover:block hidden w-full uppercase bottom-1 z-10">
+          <Button className="absolute bg-[#3B3634] opacity-90  ring ring-[#3B3634]   text-white h-auto lg:h-[48px] lg:group-hover:block hidden w-full uppercase bottom-1 z-10">
             Zobacz więcej
           </Button>
         </Link>

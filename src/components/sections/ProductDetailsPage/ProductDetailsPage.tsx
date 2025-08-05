@@ -19,12 +19,7 @@ export const ProductDetailsPage = async ({
 }) => {
   // Log product page server-side rendering start
   if (process.env.NODE_ENV === 'development' || process.env.VERCEL === '1') {
-    console.log('🏗️ ProductDetailsPage SSR start:', {
-      handle,
-      timestamp: new Date().toISOString(),
-      isProduction: process.env.NODE_ENV === 'production',
-      isVercel: process.env.VERCEL === '1'
-    })
+   
   }
 
   // Use persistent cache that survives server requests for variant selection
@@ -43,42 +38,8 @@ export const ProductDetailsPage = async ({
 
   if (!prod) return null
 
-  // Debug: Log complete product data to identify missing seller/stock data
-  if (process.env.NODE_ENV === 'development') {
-    console.log('🔍 COMPLETE Product data debug:', {
-      productId: prod.id,
-      productHandle: prod.handle,
-      productTitle: prod.title,
-      
-      // SELLER DATA
-      hasSeller: !!prod.seller,
-      seller: prod.seller,
-      sellerId: prod.seller?.id,
-      sellerName: prod.seller?.name,
-      sellerHandle: prod.seller?.handle,
-      
-      // VARIANTS DATA
-      hasVariants: !!prod.variants,
-      variantsCount: prod.variants?.length || 0,
-      variants: prod.variants?.map((v: any) => ({
-        id: v.id,
-        title: v.title,
-        inventory_quantity: v.inventory_quantity,
-        calculated_price: v.calculated_price,
-        hasInventoryQuantity: v.inventory_quantity !== undefined
-      })),
-      
-      // IMAGES DATA
-      imagesCount: prod.images?.length || 0,
-      firstImageUrl: prod.images?.[0]?.url,
-      
-      // RAW PRODUCT OBJECT KEYS
-      productKeys: Object.keys(prod || {}),
-      
-      // COMPLETE PRODUCT OBJECT (be careful - might be large)
-      // fullProduct: prod
-    })
-  }
+  
+  
 
   // Note: Image preloading is now handled by ProductCarousel and Head preload below
   // Removed duplicate preloadProductImages call to prevent multiple image fetches
@@ -136,14 +97,7 @@ export const ProductDetailsPage = async ({
     }
   }
 
-  // Log successful server-side data fetching
-  if (process.env.NODE_ENV === 'development' || process.env.VERCEL === '1') {
-    console.log('✅ ProductDetailsPage SSR complete:', {
-      handle,
-      productId: prod?.id,
-      timestamp: new Date().toISOString()
-    })
-  }
+ 
 
   return (
     <>

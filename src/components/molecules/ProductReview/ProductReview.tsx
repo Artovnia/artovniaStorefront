@@ -67,7 +67,7 @@ export const ProductReview = ({ review }: { review: ProductReviewData }) => {
       <div className="mb-4 border-b pb-4">
         <div className="flex justify-between">
           <div className="flex items-center gap-3">
-            <div className="h-8 w-8 rounded-full bg-ui-button-neutral flex items-center justify-center text-white">
+            <div className="h-8 w-8 rounded-full bg-primary flex items-center justify-center text-white">
               {customerInitials || "UK"}
             </div>
             <span className="label-semibold">{customerName}</span>

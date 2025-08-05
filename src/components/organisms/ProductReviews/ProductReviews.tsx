@@ -117,10 +117,10 @@ const ReviewCard = ({ review }: { review: ReviewData }): JSX.Element => {
   }
   
   return (
-    <div className="bg-white border border-ui-border-base rounded-lg p-6 shadow-sm">
+    <div className="bg-primary border border-ui-border-base rounded-lg p-6 shadow-sm">
       <div className="flex items-start justify-between mb-4">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-ui-button-neutral rounded-full flex items-center justify-center text-white font-medium">
+          <div className="w-10 h-10 bg-ui-button-neutral rounded-full flex items-center justify-center text-black  font-medium">
             {initials}
           </div>
           <div>

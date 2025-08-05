@@ -64,7 +64,6 @@ export const CustomCarousel = ({
       const { scrollLeft, scrollWidth, clientWidth } = scrollContainerRef.current;
       setScrollPosition(scrollLeft);
       setMaxScroll(Math.max(0, scrollWidth - clientWidth));
-      console.log(`scrollLeft: ${scrollLeft}, maxScroll: ${scrollWidth - clientWidth}`);
     }
   };
   

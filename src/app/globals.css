@@ -5,6 +5,12 @@
 @tailwind components;
 @tailwind utilities;
 
+/* 
+FONT CONFIGURATION NOTE:
+Font is now configured in layout.tsx using Next.js font optimization.
+To change the font, modify the import in src/app/layout.tsx
+*/
+
 /* Typography */
 .text-xl {
     @apply font-light tracking-normal;
@@ -60,33 +66,38 @@
 
 /* Atoms components */
 
+/* BUTTON STYLES - Modify these classes to change button appearance throughout the app */
+
 .button-icon {
-    @apply bg-primary hover:bg-action-secondary-hover active:bg-action-secondary-pressed disabled:bg-primary;
+    /* Icon buttons - transparent background with theme accent color */
+    @apply bg-transparent hover:bg-[#3B3634]/10 active:bg-[#3B3634]/20 disabled:opacity-50;
 }
 .button-icon svg path{
-    @apply fill-secondary;
+    @apply fill-[#3B3634]; /* Theme accent color for icons */
 }
 
 .button-filled {
-    @apply bg-action hover:bg-action-hover active:bg-action-pressed disabled:bg-disabled;
+    /* Primary buttons - theme accent background with white text */
+    @apply bg-[#3B3634] hover:bg-[#2A2522] active:bg-[#1F1B19] disabled:opacity-50;
 }
 .button-filled svg path{
-    @apply fill-primary;
+    @apply fill-white; /* White icons on filled buttons */
 }
 
 .button-tonal {
-    @apply bg-action-secondary hover:bg-action-secondary-hover active:bg-action-secondary-pressed disabled:bg-disabled;
+    /* Secondary buttons - subtle theme accent background */
+    @apply bg-[#3B3634]/10 hover:bg-[#3B3634]/20 active:bg-[#3B3634]/30 disabled:opacity-50;
 }
 .button-tonal svg path{
-    @apply fill-secondary;
+    @apply fill-[#3B3634]; /* Theme accent color for tonal button icons */
 }
 
 button:disabled svg path {
-    @apply fill-disabled
+    @apply opacity-50; /* Disabled button icons */
 }
 
 .button-text-filled svg path{
-    @apply fill-tertiary;
+    @apply fill-white; /* White icons for text-filled buttons */
 }
 
 .checkbox-wrapper {

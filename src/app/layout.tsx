@@ -1,5 +1,5 @@
 import type { Metadata } from "next"
-import { Funnel_Display } from "next/font/google"
+import { Instrument_Sans } from "next/font/google"
 import "./globals.css"
 import { NextIntlClientProvider } from "next-intl"
 import { getMessages } from "next-intl/server"
@@ -7,10 +7,10 @@ import { ToastProvider } from "@/components/providers/ToastProvider"
 
 
 
-const funnelDisplay = Funnel_Display({
-  variable: "--font-funnel-sans",
+const instrumentSans = Instrument_Sans({
+  variable: "--font-instrument-sans",
   subsets: ["latin"],
-  weight: ["300", "400", "500", "600"],
+  weight: ["400"],
 })
 
 export const metadata: Metadata = {
@@ -45,7 +45,7 @@ export default async function RootLayout({
     <html lang={locale} className="">
       <NextIntlClientProvider messages={messages}>
         <body
-          className={`${funnelDisplay.className} antialiased bg-primary text-secondary`}
+          className={`${instrumentSans.className} antialiased bg-primary text-primary`}
         >
         
 

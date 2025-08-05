@@ -18,17 +18,17 @@ export function Button({
   ...props
 }: ButtonProps) {
   const baseClasses =
-    "text-md button-text rounded-sm disabled:bg-disabled disabled:text-disabled dark:bg-action-tertiary dark:hover:bg-action-tertiary-hover dark:active:bg-action-tertiary-pressed dark:disabled:bg-disabled"
+    "text-md button-text disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
 
   const variantClasses = {
-    filled: `bg-action text-action-on-primary hover:bg-action-hover active:bg-action-pressed ${
-      loading && "button-text-filled"
+    filled: `bg-[#3B3634] text-white hover:bg-[#2A2522] active:bg-[#1F1B19] ${
+      loading && "text-white"
     }`,
     tonal:
-      "bg-action-secondary hover:bg-action-secondary-hover active:bg-action-secondary-pressed text-action-on-secondary",
-    text: "bg-primary dark:bg-primary hover:bg-action-secondary-hover active:bg-action-secondary-pressed text-primary",
-    destructive: `text-negative-on-primary bg-negative hover:bg-negative-hover active:bg-negative-pressed ${
-      loading && "button-text-filled"
+      "bg-[#3B3634]/10 hover:bg-[#3B3634]/20 active:bg-[#3B3634]/30 text-[#3B3634]",
+    text: "bg-transparent hover:bg-[#3B3634]/10 active:bg-[#3B3634]/20 text-[#3B3634]",
+    destructive: `text-white bg-red-600 hover:bg-red-700 active:bg-red-800 ${
+      loading && "text-white"
     }`,
   }
 

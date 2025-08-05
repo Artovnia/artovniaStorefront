@@ -103,14 +103,13 @@ export const getCachedProduct = cache(async (
   const cached = persistentCache.get(cacheKey)
   if (cached && isValidProductData(cached)) {
     if (process.env.NODE_ENV === 'development') {
-      console.log(`📦 Using cached product data for: ${handle}`)
     }
     return cached
   }
 
   // Fetch and cache with error handling
   if (process.env.NODE_ENV === 'development') {
-    console.log(`🔄 Fetching fresh product data for: ${handle}`)
+   
   }
   
   try {
@@ -145,14 +144,12 @@ export const getCachedCheckoutData = cache(async <T>(
   const cached = persistentCache.get<T>(key)
   if (cached) {
     if (process.env.NODE_ENV === 'development') {
-      console.log(`📦 Using cached checkout data for: ${key}`)
     }
     return cached
   }
 
   // Fetch and cache
   if (process.env.NODE_ENV === 'development') {
-    console.log(`🔄 Fetching fresh checkout data for: ${key}`)
   }
   
   const result = await fetchFn()
@@ -169,7 +166,6 @@ export const invalidateProductCache = (handle: string, locale: string) => {
   persistentCache.delete(cacheKey)
   
   if (process.env.NODE_ENV === 'development') {
-    console.log(`🗑️ Invalidated cache for: ${handle}`)
   }
 }
 
@@ -177,25 +173,24 @@ export const invalidateProductCache = (handle: string, locale: string) => {
  * Invalidate checkout cache when cart data changes
  */
 export const invalidateCheckoutCache = (cartId?: string) => {
-  // Invalidate all checkout-related cache entries
-  persistentCache.delete('checkout-cart')
-  persistentCache.delete('checkout-customer')
+  // Invalidate all checkout-related cache entries using the actual key patterns
+  persistentCache.delete('cart')
+  persistentCache.delete('customer')
   
   if (cartId) {
-    persistentCache.delete(`checkout-shipping-methods-${cartId}`)
+    // Use the correct key pattern that matches how data is actually cached
+    persistentCache.delete(`shipping-methods-${cartId}`)
+    
     // Also invalidate any region-specific payment methods
     // We'll clear all payment method caches since we don't know the region ID
     const stats = persistentCache.getStats()
     stats.entries.forEach(key => {
-      if (key.startsWith('checkout-payment-methods-')) {
+      if (key.startsWith('payment-methods-')) {
         persistentCache.delete(key)
       }
     })
   }
   
-  if (process.env.NODE_ENV === 'development') {
-    console.log(`🗑️ Invalidated checkout cache${cartId ? ` for cart: ${cartId}` : ''}`)
-  }
 }
 
 /**
@@ -219,9 +214,6 @@ function isValidProductData(data: any): boolean {
  */
 export const clearAllCaches = () => {
   persistentCache.clear()
-  if (process.env.NODE_ENV === 'development') {
-    console.log('🗑️ All caches cleared')
-  }
 }
 
 /**
