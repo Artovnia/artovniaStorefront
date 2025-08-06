@@ -17,15 +17,15 @@ const TermsOfUseContent = () => {
       {/* Header Section */}
       <header className="mb-10">
         <h1 className="font-instrument-serif text-3xl md:text-4xl mb-4 font-medium">
-          {t("header.title")}
+          Regulamin
         </h1>
         <div className="text-sm text-gray-500 mb-6">
           <p>
-            {t("header.effectiveDate")}{" "}
+            Data wejścia w życie:{" "}
             {format(effectiveDate, "d MMMM yyyy", { locale: pl })}
           </p>
           <p>
-            {t("header.lastUpdated")}{" "}
+            Ostatnia aktualizacja:{" "}
             {format(lastUpdated, "d MMMM yyyy", { locale: pl })}
           </p>
         </div>
@@ -33,13 +33,13 @@ const TermsOfUseContent = () => {
 
       {/* Quick Info Box */}
       <div className="bg-gray-50 border border-gray-200 rounded-md p-5 mb-10">
-        <h2 className="font-medium text-lg mb-2">{t("quickInfo.title")}:</h2>
+        <h2 className="font-medium text-lg mb-2">Na skróty:</h2>
         <ul className="list-disc ml-5 space-y-1 text-sm text-gray-600">
-          <li>{t("quickInfo.storeInfo")}</li>
-          <li>{t("quickInfo.orderInfo")}</li>
-          <li>{t("quickInfo.deliveryInfo")}</li>
-          <li>{t("quickInfo.paymentInfo")}</li>
-          <li>{t("quickInfo.returnInfo")}</li>
+          <li>Artovnia sp. z o.o. prowadzi sklep internetowy pod adresem artovnia.com</li>
+          <li>Zamówienia można składać 24 godziny na dobę przez cały rok</li>
+          <li>Do złożenia zamówienia konieczne jest posiadanie aktywnego adresu e-mail</li>
+          <li>Wszystkie ceny podane na stronie są cenami brutto (zawierają podatek VAT)</li>
+          <li>Formy płatności określone są w trakcie procesu składania zamówienia</li>
         </ul>
       </div>
 
@@ -51,7 +51,7 @@ const TermsOfUseContent = () => {
             <>
               <Disclosure.Button className="flex w-full justify-between items-center text-left">
                 <h2 className="text-xl font-medium font-instrument-sans">
-                  § 1. {t("section.generalProvisions")}
+                  § 1. Postanowienia ogólne
                 </h2>
                 <CollapseIcon
                   size={18}
@@ -86,7 +86,7 @@ const TermsOfUseContent = () => {
             <>
               <Disclosure.Button className="flex w-full justify-between items-center text-left">
                 <h2 className="text-xl font-medium font-instrument-sans">
-                  § 2. {t("section.definitions")}
+                  § 2. Definicje
                 </h2>
                 <CollapseIcon
                   size={18}
@@ -134,7 +134,7 @@ const TermsOfUseContent = () => {
             <>
               <Disclosure.Button className="flex w-full justify-between items-center text-left">
                 <h2 className="text-xl font-medium font-instrument-sans">
-                  § 3. {t("section.termsOfUse")}
+                  § 3. Zasady korzystania ze Sklepu Internetowego
                 </h2>
                 <CollapseIcon
                   size={18}
@@ -168,7 +168,7 @@ const TermsOfUseContent = () => {
             <>
               <Disclosure.Button className="flex w-full justify-between items-center text-left">
                 <h2 className="text-xl font-medium font-instrument-sans">
-                  § 4. {t("section.registration")}
+                  § 4. Rejestracja i Konto Klienta
                 </h2>
                 <CollapseIcon
                   size={18}
@@ -198,7 +198,7 @@ const TermsOfUseContent = () => {
             <>
               <Disclosure.Button className="flex w-full justify-between items-center text-left">
                 <h2 className="text-xl font-medium font-instrument-sans">
-                  § 5. {t("section.orders")}
+                  § 5. Zamówienia
                 </h2>
                 <CollapseIcon
                   size={18}
@@ -239,7 +239,7 @@ const TermsOfUseContent = () => {
             <>
               <Disclosure.Button className="flex w-full justify-between items-center text-left">
                 <h2 className="text-xl font-medium font-instrument-sans">
-                  § 6. {t("section.pricesAndPayment")}
+                  § 6. Ceny i metody płatności
                 </h2>
                 <CollapseIcon
                   size={18}
@@ -273,7 +273,7 @@ const TermsOfUseContent = () => {
             <>
               <Disclosure.Button className="flex w-full justify-between items-center text-left">
                 <h2 className="text-xl font-medium font-instrument-sans">
-                  § 7. {t("section.delivery")}
+                  § 7. Dostawa
                 </h2>
                 <CollapseIcon
                   size={18}
@@ -309,7 +309,7 @@ const TermsOfUseContent = () => {
             <>
               <Disclosure.Button className="flex w-full justify-between items-center text-left">
                 <h2 className="text-xl font-medium font-instrument-sans">
-                  § 8. {t("section.complaintsAndReturns")}
+                  § 8. Reklamacje i zwroty
                 </h2>
                 <CollapseIcon
                   size={18}
@@ -359,7 +359,7 @@ const TermsOfUseContent = () => {
             <>
               <Disclosure.Button className="flex w-full justify-between items-center text-left">
                 <h2 className="text-xl font-medium font-instrument-sans">
-                  § 9. {t("section.dataProtection")}
+                  § 9. Ochrona danych osobowych
                 </h2>
                 <CollapseIcon
                   size={18}
@@ -395,7 +395,7 @@ const TermsOfUseContent = () => {
             <>
               <Disclosure.Button className="flex w-full justify-between items-center text-left">
                 <h2 className="text-xl font-medium font-instrument-sans">
-                  § 10. {t("section.finalProvisions")}
+                  § 10. Postanowienia końcowe
                 </h2>
                 <CollapseIcon
                   size={18}
@@ -429,12 +429,12 @@ const TermsOfUseContent = () => {
       {/* Footer with Contact Info */}
       <div className="mt-12 pt-8 border-t border-gray-200">
         <div className="text-sm text-gray-600">
-          <p className="font-medium mb-2">{t("contact.companyName")}</p>
-          <p>{t("contact.address")}, {t("contact.postalCode")} {t("contact.city")}</p>
-          <p>{t("contact.email")}</p>
-          <p>{t("contact.phone")}</p>
-          <p>{t("contact.nip")}</p>
-          <p>{t("contact.regon")}</p>
+          <p className="font-medium mb-2">Artovnia sp. z o.o.</p>
+          <p>ul. Przykładowa 1, 00-123 Warszawa</p>
+          <p>kontakt@artovnia.com</p>
+          <p>+48 000 000 000</p>
+          <p>NIP: 0000000000</p>
+          <p>REGON: 000000000</p>
         </div>
       </div>
     </div>
