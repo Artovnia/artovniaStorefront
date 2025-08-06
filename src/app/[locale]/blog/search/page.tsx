@@ -14,8 +14,8 @@ export async function generateMetadata({ searchParams }: SearchPageProps): Promi
   const query = searchParams.q || ''
   
   return {
-    title: query ? `Search results for "${query}" - Artovnia Blog` : 'Search - Artovnia Blog',
-    description: query ? `Search results for "${query}"` : 'Search blog posts',
+    title: query ? `Search results for &quot;${query}&quot; - Artovnia Blog` : 'Search - Artovnia Blog',
+    description: query ? `Search results for &quot;${query}&quot;` : 'Search blog posts',
     robots: 'noindex', // Don't index search pages
   }
 }
@@ -55,7 +55,7 @@ async function SearchResults({ query }: { query: string }) {
       <div className="text-center py-12">
         <h3 className="text-xl font-medium text-gray-900 mb-2">No results found</h3>
         <p className="text-gray-600">
-          No blog posts found for "{query}". Try different keywords or browse our categories.
+          No blog posts found for &quot;{query}&quot;. Try different keywords or browse our categories.
         </p>
       </div>
     )
@@ -65,7 +65,7 @@ async function SearchResults({ query }: { query: string }) {
     <>
       <div className="mb-6">
         <p className="text-gray-600">
-          Found {posts.length} result{posts.length === 1 ? '' : 's'} for "{query}"
+          Found {posts.length} result{posts.length === 1 ? '' : 's'} for &quot;{query}&quot;
         </p>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -83,7 +83,7 @@ export default function SearchPage({ searchParams }: SearchPageProps) {
   return (
     <BlogLayout
       title="Search Results"
-      description={query ? `Search results for "${query}"` : 'Search blog posts'}
+      description={query ? `Search results for &quot;${query}&quot;` : 'Search blog posts'}
     >
       <Suspense fallback={<SearchSkeleton />}>
         <SearchResults query={query} />
