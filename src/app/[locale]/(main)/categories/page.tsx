@@ -32,12 +32,12 @@ async function AllCategories({
   ]
 
   return (
-    <main className="container">
+    <main className="mx-auto max-w-[1920px] pt-24 pb-24">
       <div className="hidden md:block mb-2">
         <Breadcrumbs items={breadcrumbsItems} />
       </div>
 
-      <h1 className="heading-xl uppercase">Wszystkie produkty</h1>
+      <h1 className="heading-xl uppercase font-instrument-serif">Wszystkie produkty</h1>
 
 
       

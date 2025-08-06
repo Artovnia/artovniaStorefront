@@ -34,9 +34,7 @@ export const ViewBasedBestProductsSection = ({
         const mostViewed = getMostViewed(limit * 2) // Get more to account for missing products
         const analytics = getAnalytics()
 
-        console.log('📊 View Analytics:', analytics)
-        console.log('👁️ Most Viewed Products:', mostViewed)
-
+    
         if (mostViewed.length === 0) {
           // Fallback: show newest products if no view data yet
           const result = await listProducts({

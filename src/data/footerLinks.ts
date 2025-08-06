@@ -7,15 +7,15 @@ const links = {
     { label: 'Payment', path: '#' },
   ],
   about: [
-    { label: 'About us', path: '#' },
+    { label: 'O nas', path: '#' },
     { label: 'Blog', path: '#' },
-    { label: 'Privacy Policy', path: '#' },
-    { label: 'Terms & Conditions', path: '#' },
+    { label: 'Polityka prywatności', path: '#' },
+    { label: 'Regulamin', path: '/terms' },
   ],
   connect: [
     { label: 'Facebook', path: 'https://facebook.com' },
     { label: 'Instagram', path: 'https://instagram.com' },
-    { label: 'LinekdIn', path: 'https://linkedin.com' },
+    { label: 'LinkedIn', path: 'https://linkedin.com' },
   ],
 };
 

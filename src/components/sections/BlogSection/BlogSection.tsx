@@ -33,10 +33,10 @@ export const blogPosts: BlogPost[] = [
 
 export function BlogSection() {
   return (
-    <section className='bg-tertiary container'>
+    <section className='bg-primary container'>
       <div className='flex items-center justify-between mb-12'>
-        <h2 className='heading-lg text-tertiary font-instrument-serif'>
-          STAY UP TO DATE
+        <h2 className='heading-lg text-black   font-instrument-serif italic'>
+          Bądź na czasie
         </h2>
       </div>
       <div className='grid grid-cols-1 lg:grid-cols-3'>

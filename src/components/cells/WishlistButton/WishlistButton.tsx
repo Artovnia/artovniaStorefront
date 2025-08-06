@@ -3,7 +3,7 @@
 import { Button } from "@/components/atoms"
 import { HeartFilledIcon, HeartIcon } from "@/icons"
 import { addWishlistItem, removeWishlistItem } from "@/lib/data/wishlist"
-import { Wishlist } from "@/types/wishlist"
+import { SerializableWishlist } from "@/types/wishlist"
 import { useEffect, useState } from "react"
 import { HttpTypes } from "@medusajs/types"
 
@@ -13,19 +13,20 @@ export const WishlistButton = ({
   user,
 }: {
   productId: string
-  wishlist?: Wishlist[]
+  wishlist?: SerializableWishlist[]
   user?: HttpTypes.StoreCustomer | null
 }) => {
+  
+  
   const [isWishlistAdding, setIsWishlistAdding] = useState(false)
-  const [isWishlisted, setIsWishlisted] = useState(
-    wishlist?.[0]?.products?.some((item) => item.id === productId)
-  )
+  const initialWishlisted = wishlist?.[0]?.products?.some((item) => item.id === productId)
+  const [isWishlisted, setIsWishlisted] = useState(initialWishlisted)
 
   useEffect(() => {
-    setIsWishlisted(
-      wishlist?.[0]?.products?.some((item) => item.id === productId)
-    )
-  }, [wishlist, productId])
+    const newIsWishlisted = wishlist?.[0]?.products?.some((item) => item.id === productId)
+  
+    setIsWishlisted(newIsWishlisted)
+  }, [wishlist, productId, isWishlisted])
 
   if (!user) {
     return null
@@ -34,14 +35,20 @@ export const WishlistButton = ({
   const handleAddToWishlist = async () => {
     try {
       setIsWishlistAdding(true)
-      await addWishlistItem({
+      const result = await addWishlistItem({
         reference_id: productId,
         reference: "product",
       })
-      // Update local state immediately after successful add
+      
+      // Update local state for both success and "already exists" cases
       setIsWishlisted(true)
+      
+      if (result && typeof result === 'object' && 'alreadyExists' in result && result.alreadyExists) {
+      } else {
+      }
     } catch (error) {
-      console.error(error)
+      console.error('❌ Error adding to wishlist:', error)
+      // For genuine errors, don't update the state
     } finally {
       setIsWishlistAdding(false)
     }
@@ -58,7 +65,13 @@ export const WishlistButton = ({
       // Update local state immediately after successful removal
       setIsWishlisted(false)
     } catch (error) {
-      console.error(error)
+      console.error('Error removing from wishlist:', error)
+      
+      // Check if the error is because item is not in wishlist
+      if (error instanceof Error && (error.message.includes('not found') || error.message.includes('404'))) {
+        setIsWishlisted(false)
+      } else {
+      }
     } finally {
       setIsWishlistAdding(false)
     }

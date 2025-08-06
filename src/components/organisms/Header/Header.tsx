@@ -15,7 +15,7 @@ import { retrieveCart } from "@/lib/data/cart"
 import { UserDropdown } from "@/components/cells/UserDropdown/UserDropdown"
 import { retrieveCustomer } from "@/lib/data/customer"
 import { getUserWishlists } from "@/lib/data/wishlist"
-import { Wishlist } from "@/types/wishlist"
+import { SerializableWishlist } from "@/types/wishlist"
 import { Badge } from "@/components/atoms"
 
 export const Header = async () => {
@@ -31,14 +31,17 @@ export const Header = async () => {
   }
   
   // Fetch wishlist with error handling
-  let wishlist: Wishlist[] = []
+  let wishlist: SerializableWishlist[] = []
+  
+  
   if (user) {
     try {
       const response = await getUserWishlists()
       wishlist = response?.wishlists || []
     } catch (error) {
-      console.error("Error retrieving wishlists:", error)
+      console.error("🏠 Header: Error retrieving wishlists:", error)
     }
+  } else {
   }
 
   const wishlistCount = wishlist?.[0]?.products?.length || 0

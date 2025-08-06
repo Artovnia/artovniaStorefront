@@ -11,6 +11,7 @@ interface SmartBestProductsSectionProps {
 
 export const SmartBestProductsSection = async ({ 
   heading = "Najlepsze produkty",
+ 
   locale = process.env.NEXT_PUBLIC_DEFAULT_REGION || "pl",
   limit = 10,
   home = false
@@ -31,7 +32,7 @@ export const SmartBestProductsSection = async ({
     if (allProducts.length === 0) {
       return (
         <section className="py-8 w-full">
-          <h2 className="mb-6 heading-lg font-bold tracking-tight uppercase font-instrument-serif">
+          <h2 className="mb-6 heading-lg font-bold tracking-tight normal-case font-instrument-serif italic">
             {heading}
           </h2>
           <div className="flex justify-center w-full py-8">
@@ -99,16 +100,11 @@ export const SmartBestProductsSection = async ({
       .sort((a, b) => b._score - a._score) // Sort by score descending
       .slice(0, limit) // Take top products
     
-    // Log the scoring for debugging (remove in production)
-    console.log('🏆 Smart Best Products Scoring:', bestProducts.map(p => ({
-      title: p.title,
-      score: p._score,
-      metrics: p._metrics
-    })))
+    
     
     return (
       <section className="py-8 w-full">
-        <h2 className="mb-6 heading-lg font-bold tracking-tight uppercase font-instrument-serif">
+        <h2 className="mb-6 heading-lg font-bold tracking-tight font-instrument-serif italic">
           {heading}
         </h2>
 
@@ -123,7 +119,7 @@ export const SmartBestProductsSection = async ({
     console.error("Error in SmartBestProductsSection:", error)
     return (
       <section className="py-8 w-full">
-        <h2 className="mb-6 heading-lg font-bold tracking-tight uppercase font-instrument-serif">
+        <h2 className="mb-6 heading-lg font-bold tracking-tight  font-instrument-serif">
           {heading}
         </h2>
         <div className="flex justify-center w-full py-8">

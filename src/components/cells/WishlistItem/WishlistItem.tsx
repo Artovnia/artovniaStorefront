@@ -2,7 +2,7 @@ import Link from "next/link"
 import Image from "next/image"
 import { HttpTypes } from "@medusajs/types"
 import { WishlistButton } from "../WishlistButton/WishlistButton"
-import { Wishlist } from "@/types/wishlist"
+import { SerializableWishlist } from "@/types/wishlist"
 import { convertToLocale } from "@/lib/helpers/money"
 import { Button } from "@/components/atoms"
 import clsx from "clsx"
@@ -23,7 +23,7 @@ export const WishlistItem = ({
   user,
 }: {
   product: ExtendedStoreProduct
-  wishlist: Wishlist[]
+  wishlist: SerializableWishlist[]
   user?: HttpTypes.StoreCustomer | null
 }) => {
   const price = convertToLocale({

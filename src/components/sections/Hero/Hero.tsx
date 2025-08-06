@@ -27,7 +27,7 @@ export const Hero = ({ image, heading, paragraph, buttons }: HeroProps) => {
             <h1 className="font-bold font-instrument-serif mb-6 uppercase display-md max-w-[652px]">
               {heading}
             </h1>
-            <p className="text-lg font-instrument-serif mb-8">{paragraph}</p>
+            <p className="text-xl font-instrument-serif mb-8">{paragraph}</p>
           </div>
         </div>
         {buttons.length && (

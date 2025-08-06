@@ -1,7 +1,7 @@
 import { retrieveCustomer } from "@/lib/data/customer"
 import { redirect } from "next/navigation"
 import { isEmpty } from "lodash"
-import { Wishlist as WishlistType } from "@/types/wishlist"
+import { SerializableWishlist as WishlistType } from "@/types/wishlist"
 import Link from "next/link"
 import { Button } from "@/components/atoms"
 import { WishlistItem } from "@/components/cells"

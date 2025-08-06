@@ -14,47 +14,62 @@ import { useRouter } from "next/navigation"
 import { useEffect, useState } from "react"
 import { retrieveCustomer } from "@/lib/data/customer"
 import { getUserWishlists } from "@/lib/data/wishlist"
-import { Wishlist } from "@/types/wishlist"
+import { SerializableWishlist } from "@/types/wishlist"
 
 export const ProductCard = ({
   product,
   sellerPage = false,
   themeMode = 'default',
+  user = null,
+  wishlist = [],
 }: {
   product: Hit<HttpTypes.StoreProduct> | Partial<Hit<BaseHit>>
   sellerPage?: boolean
   themeMode?: 'default' | 'light' | 'dark'
+  user?: HttpTypes.StoreCustomer | null
+  wishlist?: SerializableWishlist[]
 }) => {
   const { prefetchOnHover } = useHoverPrefetch()
   const router = useRouter()
   const productUrl = `/products/${product.handle}`
   
-  // State for user and wishlist data
-  const [user, setUser] = useState<HttpTypes.StoreCustomer | null>(null)
-  const [wishlist, setWishlist] = useState<Wishlist[]>([])
-  const [isLoading, setIsLoading] = useState(true)
+  // Internal state for when props are not provided (backward compatibility)
+  const [internalUser, setInternalUser] = useState<HttpTypes.StoreCustomer | null>(null)
+  const [internalWishlist, setInternalWishlist] = useState<SerializableWishlist[]>([])
+  const [isLoading, setIsLoading] = useState(false)
   
-  // Fetch user and wishlist data on component mount
+  // Use provided props if available, otherwise fetch internally
+  const effectiveUser = user !== null ? user : internalUser
+  const effectiveWishlist = wishlist.length > 0 ? wishlist : internalWishlist
+  
+  // Only fetch data internally if props weren't provided
   useEffect(() => {
+    // If props were provided, don't fetch internally
+    if (user !== null || wishlist.length > 0) {
+      return
+    }
+    
     async function fetchUserData() {
       try {
         setIsLoading(true)
         const customer = await retrieveCustomer()
-        setUser(customer)
+        setInternalUser(customer)
         
         if (customer) {
           const wishlistData = await getUserWishlists()
-          setWishlist(wishlistData.wishlists || [])
+          setInternalWishlist(wishlistData.wishlists || [])
         }
       } catch (error) {
-        console.error('Error fetching user data:', error)
+        // Handle auth errors gracefully
+        setInternalUser(null)
+        setInternalWishlist([])
       } finally {
         setIsLoading(false)
       }
     }
     
     fetchUserData()
-  }, [])
+  }, [user, wishlist])
   
   // Fallback prefetch method that works even if hook fails
   const handleMouseEnter = () => {
@@ -91,7 +106,7 @@ export const ProductCard = ({
     >
       <div className="relative w-full bg-primary aspect-square flex-shrink-0">
         <div className="absolute right-3 top-3 z-10 cursor-pointer">
-          <WishlistButton productId={product.id} user={user} wishlist={wishlist} />
+          <WishlistButton productId={product.id} user={effectiveUser} wishlist={effectiveWishlist} />
         </div>
         <Link href={productUrl} prefetch={true}>
           <div className="overflow-hidden w-full h-full flex justify-center items-center">

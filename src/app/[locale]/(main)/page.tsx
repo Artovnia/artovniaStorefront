@@ -47,7 +47,7 @@ export default async function Home({
         <Hero
           image="/images/hero/Image.jpg"
           heading="Witaj w Artovni"
-          paragraph="W naszym sklepie znajdziesz najlepsze produkty z ręczniaków, sztuk i rękodzieł."
+          paragraph="Platformie sprzedażowej sztuki i rękodzieła."
           buttons={[
             { label: "Zobacz produkty", path: "/categories" },
             {
@@ -62,21 +62,28 @@ export default async function Home({
       </div>
       
       {/* Smart Best Products Section */}
-      <div className="mx-auto max-w-[1920px] w-full px-4 lg:px-8 mb-8">
-        <SmartBestProductsSection />
+      <div className="mx-auto max-w-[1920px] w-full px-4 lg:px-8 mb-8 ">
+        <SmartBestProductsSection
+         />
       </div>
      
       {/* Full width dark section */}
       <div className="w-full bg-[#3B3634]">
         {/* Content container inside full-width section */}
-        <div className="mx-auto max-w-[1920px] w-full px-4 lg:px-8">
-          <HomeProductSection heading="Nowości" theme="light" />
+        <div className="mx-auto max-w-[1920px] w-full px-4 lg:px-8 h-[35vh] font-instrument-sans">
+          <HomeProductSection 
+            heading="Nowości" 
+            theme="light" 
+            headingFont="font-instrument-serif italic" 
+            headingSpacing="mb-12" 
+            textTransform="normal-case" 
+          />
         </div>
       </div>
       
       {/* Content with max-width container */}
-      <div className="mx-auto max-w-[1920px] w-full px-4 lg:px-8 mt-8">
-        <BannerSection />
+      <div className="mx-auto max-w-[1920px] w-full px-4 lg:px-8 mt-8 ">
+        {/*<BannerSection />*/}
         <ShopByStyleSection />
         <BlogSection />
       </div>

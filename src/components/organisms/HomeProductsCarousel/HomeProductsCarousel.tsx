@@ -4,6 +4,9 @@ import { listProducts } from "@/lib/data/products"
 import { Product } from "@/types/product"
 import { HttpTypes } from "@medusajs/types"
 import { Hit } from "instantsearch.js"
+import { retrieveCustomer } from "@/lib/data/customer"
+import { getUserWishlists } from "@/lib/data/wishlist"
+import { SerializableWishlist } from "@/types/wishlist"
 
 export const HomeProductsCarousel = async ({
   locale,
@@ -17,6 +20,35 @@ export const HomeProductsCarousel = async ({
   theme?: 'default' | 'light' | 'dark'
 }) => {
   try {
+    // Fetch user and wishlist data once for all ProductCards
+    // Handle authentication gracefully - don't fail if user is not logged in
+    let user: HttpTypes.StoreCustomer | null = null;
+    let wishlist: SerializableWishlist[] = [];
+    
+    try {
+      const customer = await retrieveCustomer();
+      user = customer;
+      
+      // Only fetch wishlist if user is authenticated
+      if (customer) {
+        try {
+          const wishlistData = await getUserWishlists();
+          wishlist = wishlistData.wishlists || [];
+        } catch (wishlistError) {
+          console.warn('Failed to fetch wishlist data:', wishlistError);
+          wishlist = [];
+        }
+      }
+    } catch (authError) {
+      // User is not authenticated - this is normal, don't log as error
+      // Only log if it's not a 401 error
+      if (authError && typeof authError === 'object' && 'status' in authError && authError.status !== 401) {
+        console.warn('Authentication error (non-401):', authError);
+      }
+      user = null;
+      wishlist = [];
+    }
+    
     // Prioritize provided products to avoid unnecessary API calls
     let products: any[] = [];
     
@@ -63,6 +95,8 @@ export const HomeProductsCarousel = async ({
             key={typedProduct.id}
             product={typedProduct as unknown as Hit<HttpTypes.StoreProduct>}
             themeMode={theme === 'light' ? 'light' : 'default'}
+            user={user}
+            wishlist={wishlist}
           />
         );
       })

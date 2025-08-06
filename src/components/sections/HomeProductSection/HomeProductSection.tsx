@@ -8,6 +8,9 @@ export const HomeProductSection = async ({
   home = false,
   theme = 'default',
   fullWidth = false,
+  headingFont = 'font-instrument-serif', // Default font for backward compatibility
+  headingSpacing = 'mb-6', // Default spacing for backward compatibility
+  textTransform = 'uppercase', // Default text transform for backward compatibility
 }: {
   heading: string
   locale?: string
@@ -15,10 +18,13 @@ export const HomeProductSection = async ({
   home?: boolean
   theme?: 'default' | 'light' | 'dark'
   fullWidth?: boolean
+  headingFont?: string
+  headingSpacing?: string
+  textTransform?: string
 }) => {
-  // Create a full width container that goes edge to edge
+  // Create a centered container that works within parent constraints
   return (
-    <section className={`py-8 w-full ${fullWidth ? 'relative' : ''}`}>
+    <section className={`w-full h-full flex flex-col justify-center items-center ${fullWidth ? 'relative' : ''}`}>
       {/* If fullWidth is true, add a background div that extends beyond parent container */}
       {fullWidth && (
         <div 
@@ -34,16 +40,20 @@ export const HomeProductSection = async ({
         />
       )}
       
-      <h2 className="mb-6 heading-lg font-bold tracking-tight uppercase font-instrument-serif text-white text-center">
-        {heading}
-      </h2>
+      <div className="w-full mx-auto flex flex-col justify-center items-center py-8">
+        <h2 className={`${headingSpacing} heading-lg font-bold tracking-tight ${textTransform} ${headingFont} text-white text-center`}>
+          {heading}
+        </h2>
 
-      <HomeProductsCarousel
-        locale={locale}
-        sellerProducts={products.slice(0, 4)}
-        home={home}
-        theme={theme}
-      />
+        <div className="w-full flex justify-center">
+          <HomeProductsCarousel
+            locale={locale}
+            sellerProducts={products.slice(0, 4)}
+            home={home}
+            theme={theme}
+          />
+        </div>
+      </div>
     </section>
   )
 }

@@ -12,5 +12,46 @@
       "EXPLANATION_PARAGRAPH1": "lorem ipsum",
       "EXPLANATION_PARAGRAPH2": "lorem ipsum",
       "EXPLANATION_PARAGRAPH3": "lorem ipsum"
+    },
+    "terms": {
+      "meta": {
+        "title": "Regulamin - Artovnia",
+        "description": "Regulamin sklepu internetowego Artovnia"
+      },
+      "header": {
+        "title": "Regulamin",
+        "effectiveDate": "Data wejścia w życie:",
+        "lastUpdated": "Ostatnia aktualizacja:"
+      },
+      "quickInfo": {
+        "title": "Szybkie informacje",
+        "storeInfo": "Sklep prowadzony przez Artovnia Sp. z o.o.",
+        "orderInfo": "Zamówienia realizowane w ciągu 1-3 dni roboczych",
+        "deliveryInfo": "Wysyłka kurierem lub do paczkomatów",
+        "paymentInfo": "Płatność online, kartą lub przelewem",
+        "returnInfo": "14 dni na zwrot"
+      },
+      "section": {
+        "generalProvisions": "Postanowienia ogólne",
+        "definitions": "Definicje",
+        "termsOfUse": "Zasady korzystania ze Sklepu Internetowego",
+        "registration": "Rejestracja i Konto Klienta",
+        "orders": "Zamówienia",
+        "pricesAndPayment": "Ceny i metody płatności",
+        "delivery": "Dostawa",
+        "complaintsAndReturns": "Reklamacje i zwroty",
+        "dataProtection": "Ochrona danych osobowych",
+        "finalProvisions": "Postanowienia końcowe"
+      },
+      "contact": {
+        "companyName": "Artovnia Sp. z o.o.",
+        "address": "ul. Przykładowa 12/34",
+        "postalCode": "00-001",
+        "city": "Warszawa",
+        "email": "kontakt@artovnia.pl",
+        "phone": "+48 123 456 789",
+        "nip": "NIP: 1234567890",
+        "regon": "REGON: 123456789"
+      }
     }
   }
