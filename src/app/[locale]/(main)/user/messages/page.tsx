@@ -51,42 +51,53 @@ export default async function MessagesPage({ searchParams }: PageProps) {
   // Add error handling for message threads retrieval
   let messageThreads: MessageThread[] = []
   let error: Error | null = null
+  let hasUnauthorizedError = false
   
   try {
+    // Attempt to fetch message threads
     let fetchedThreads = await listMessageThreads()
-    console.log(`Retrieved ${fetchedThreads.length} message threads for user`)
     
     // Validate the message threads data
     fetchedThreads = fetchedThreads.filter(thread => {
       // Ensure the thread has the required properties
       if (!thread || !thread.id) {
-        console.warn('Filtered out invalid thread:', thread)
         return false
       }
       return true
     })
     
-    // Sort threads to put unread messages at the top, then by most recent activity
-    messageThreads = fetchedThreads.sort((a, b) => {
-      // First sort by unread status (unread comes first)
-      const aHasUnread = hasUnreadMessages(a);
-      const bHasUnread = hasUnreadMessages(b);
-      
-      if (aHasUnread && !bHasUnread) return -1;
-      if (!aHasUnread && bHasUnread) return 1;
-      
-      // If both are unread or both are read, sort by most recent activity
-      const aLastActivity = a.last_message_at || a.updated_at || a.created_at;
-      const bLastActivity = b.last_message_at || b.updated_at || b.created_at;
-      
-      // Sort by most recent activity (descending order)
-      return new Date(bLastActivity).getTime() - new Date(aLastActivity).getTime();
-    });
-    
-    console.log('Sorted messages with unread at top and by recency');
+    // If we successfully got threads, sort them properly
+    if (fetchedThreads.length > 0) {
+      // Sort threads to put unread messages at the top, then by most recent activity
+      messageThreads = fetchedThreads.sort((a, b) => {
+        // First sort by unread status (unread comes first)
+        const aHasUnread = hasUnreadMessages(a);
+        const bHasUnread = hasUnreadMessages(b);
+        
+        if (aHasUnread && !bHasUnread) return -1;
+        if (!aHasUnread && bHasUnread) return 1;
+        
+        // If both are unread or both are read, sort by most recent activity
+        const aLastActivity = a.last_message_at || a.updated_at || a.created_at;
+        const bLastActivity = b.last_message_at || b.updated_at || b.created_at;
+        
+        // Sort by most recent activity (descending order)
+        return new Date(bLastActivity).getTime() - new Date(aLastActivity).getTime();
+      });
+    }
   } catch (err) {
-    console.error('Error retrieving message threads:', err)
-    error = err instanceof Error ? err : new Error(String(err))
+    // Check specifically for unauthorized error (status 401)
+    if (err instanceof Error && 
+        (err.message.includes('Unauthorized') || 
+         /\b401\b/.test(err.message) || 
+         (err as any)?.status === 401)) {
+      hasUnauthorizedError = true
+      // Don't log as error since this is expected for new users
+      console.log('User is not yet authorized for messages or has no message threads')
+    } else {
+      console.error('Error retrieving message threads:', err)
+      error = err instanceof Error ? err : new Error(String(err))
+    }
   }
   
   // Calculate total pages
@@ -107,10 +118,10 @@ export default async function MessagesPage({ searchParams }: PageProps) {
             <h1 className="heading-md uppercase">Wiadomości</h1>
           </div>
           
-          {isEmpty(paginatedThreads) ? (
+          {hasUnauthorizedError || isEmpty(paginatedThreads) ? (
             <div className="text-center">
               <h3 className="heading-lg text-primary uppercase">Brak wiadomości</h3>
-              <p className="text-lg text-secondary mt-2">
+              <p className="text-lg text-secondary mt-2 font-instrument-sans">
                 Nie rozpoczęto żadnych rozmów. Zacznij nową rozmowę, aby skontaktować się z sprzedawcami lub wsparciem.
               </p>
             </div>

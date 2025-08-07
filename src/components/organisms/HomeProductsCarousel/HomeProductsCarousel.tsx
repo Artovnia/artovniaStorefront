@@ -13,11 +13,13 @@ export const HomeProductsCarousel = async ({
   sellerProducts,
   home,
   theme = 'default',
+  isSellerSection = false,
 }: {
   locale: string
   sellerProducts: Product[]
   home: boolean
   theme?: 'default' | 'light' | 'dark'
+  isSellerSection?: boolean
 }) => {
   try {
     // Fetch user and wishlist data once for all ProductCards
@@ -52,7 +54,8 @@ export const HomeProductsCarousel = async ({
     // Prioritize provided products to avoid unnecessary API calls
     let products: any[] = [];
     
-    if (!sellerProducts || sellerProducts.length === 0) {
+    // Only fetch all products if not in seller section or if no seller products provided
+    if (!isSellerSection && (!sellerProducts || sellerProducts.length === 0)) {
       const result = await listProducts({
         countryCode: locale,
         queryParams: {

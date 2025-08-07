@@ -10,6 +10,7 @@ export const HomeProductSection = async ({
   fullWidth = false,
   headingFont = 'font-instrument-serif', // Default font for backward compatibility
   headingSpacing = 'mb-6', // Default spacing for backward compatibility
+  isSellerSection = false, // Identifies if this component shows a specific seller's products
 }: {
   heading: string
   locale?: string
@@ -20,6 +21,7 @@ export const HomeProductSection = async ({
   headingFont?: string
   headingSpacing?: string
   textTransform?: string
+  isSellerSection?: boolean
 }) => {
   // Create a centered container that works within parent constraints
   return (
@@ -50,6 +52,7 @@ export const HomeProductSection = async ({
             sellerProducts={products.slice(0, 4)}
             home={home}
             theme={theme}
+            isSellerSection={isSellerSection}
           />
         </div>
       </div>

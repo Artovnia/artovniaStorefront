@@ -64,18 +64,18 @@ export const Addresses = ({
           isEmpty(user.addresses) ? "space-y-8" : "space-y-4"
         )}
       >
-        <h1 className="heading-md uppercase">Addresses</h1>
+        <h1 className="heading-md uppercase">Adresy</h1>
         {isEmpty(user.addresses) ? (
           <div className="text-center">
             <h3 className="heading-lg text-primary uppercase">
-              No saved shipping addresses
+              Brak zapisanych adresów
             </h3>
             <p className="text-lg text-secondary mt-2">
-              You currently have no saved shipping addresses. <br />
-              Add an address to make your checkout process quicker and easier.
+              Nie masz zapisanych adresów. <br />
+              Dodaj adres aby ułatwić proces zakupu.
             </p>
             <Button onClick={handleAdd} className="mt-4">
-              Add address
+              Dodaj adres
             </Button>
           </div>
         ) : (
@@ -115,19 +115,19 @@ export const Addresses = ({
                     className="text-negative"
                     onClick={() => setDeleteAddress(address.id)}
                   >
-                    Delete
+                    Usuń
                   </Button>
                   <Button
                     variant="tonal"
                     onClick={() => handleEdit(address.id)}
                   >
-                    Edit
+                    Edytuj
                   </Button>
                 </div>
               </Card>
             ))}
             {user.addresses.length < 6 && (
-              <Button onClick={handleAdd}>Add address</Button>
+              <Button onClick={handleAdd}>Dodaj adres</Button>
             )}
           </>
         )}
@@ -136,8 +136,8 @@ export const Addresses = ({
         <Modal
           heading={
             defaultValues?.addressId
-              ? `Edit adddress: ${defaultValues.addressName}`
-              : "Add address"
+              ? `Edytuj adres: ${defaultValues.addressName}`
+              : "Dodaj adres"
           }
           onClose={() => setShowForm(false)}
         >
@@ -154,16 +154,16 @@ export const Addresses = ({
           onClose={() => setDeleteAddress(null)}
         >
           <div className="px-4 flex flex-col gap-4">
-            <p>Are you sure you want to delete this address?</p>
+            <p>Czy na pewno chcesz usunąć ten adres?</p>
             <div className="flex justify-end gap-4">
               <Button variant="tonal" onClick={() => setDeleteAddress(null)}>
-                Cancel
+                Anuluj
               </Button>
               <Button
                 variant="destructive"
                 onClick={() => handleDelete(deleteAddress)}
               >
-                Delete
+                Usuń
               </Button>
             </div>
           </div>

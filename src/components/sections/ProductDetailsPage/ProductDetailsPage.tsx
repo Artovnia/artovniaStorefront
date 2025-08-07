@@ -198,6 +198,7 @@ export const ProductDetailsPage = async ({
             headingSpacing="mb-0" 
             theme="dark"
             products={prod.seller?.products}
+            isSellerSection={true}
           />
         </div>
         

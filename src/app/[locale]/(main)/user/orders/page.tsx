@@ -19,13 +19,39 @@ export default async function UserPage({
   const orders = await listOrders()
 
   const { page } = await searchParams
+  
+  // Early check for empty orders to prevent errors when processing
+  if (isEmpty(orders)) {
+    return (
+      <main className="container">
+        <div className="grid grid-cols-1 md:grid-cols-4 mt-6 gap-5 md:gap-8">
+          <UserNavigation />
+          <div className="md:col-span-3 space-y-8">
+            <h1 className="heading-md uppercase">Zamówienia </h1>
+            <div className="text-center">
+              <h3 className="heading-lg text-primary uppercase">Brak zamówień</h3>
+              <p className="text-lg text-secondary mt-2 font-instrument-sans">
+                Nie dokonałeś jeszcze żadnego zamówienia. Po dokonaniu zamówienia
+                pojawi się tutaj.
+              </p>
+            </div>
+          </div>
+        </div>
+      </main>
+    )
+  }
 
+  // Only process orders if they exist
   const pages = Math.ceil(orders.length / LIMIT)
   const currentPage = +page || 1
   const offset = (+currentPage - 1) * LIMIT
 
   const orderSetsGrouped = orders.reduce((acc, order) => {
-    const orderSetId = (order as any).order_set.id
+    // Safely access order_set - it should exist but add a check just in case
+    const orderSet = (order as any).order_set
+    if (!orderSet) return acc
+    
+    const orderSetId = orderSet.id
     if (!acc[orderSetId]) {
       acc[orderSetId] = []
     }
@@ -56,13 +82,13 @@ export default async function UserPage({
       <div className="grid grid-cols-1 md:grid-cols-4 mt-6 gap-5 md:gap-8">
         <UserNavigation />
         <div className="md:col-span-3 space-y-8">
-          <h1 className="heading-md uppercase">Orders</h1>
+          <h1 className="heading-md uppercase font-instrument-serif">Zamówienia </h1>
           {isEmpty(orders) ? (
             <div className="text-center">
-              <h3 className="heading-lg text-primary uppercase">No orders</h3>
+              <h3 className="heading-lg text-primary uppercase font-instrument-serif">Brak zamówień</h3>
               <p className="text-lg text-secondary mt-2">
-                You haven&apos;t placed any order yet. Once you place an order,
-                it will appear here.
+                Nie dokonałeś jeszcze żadnego zamówienia. Po dokonaniu zamówienia
+                pojawi się tutaj.
               </p>
             </div>
           ) : (
