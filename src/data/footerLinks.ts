@@ -8,7 +8,7 @@ const links = {
   ],
   about: [
     { label: 'O nas', path: '#' },
-    { label: 'Blog', path: '#' },
+    { label: 'Blog', path: '/blog' },
     { label: 'Polityka prywatności', path: '#' },
     { label: 'Regulamin', path: '/terms' },
   ],

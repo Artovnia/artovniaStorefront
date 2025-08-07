@@ -8,10 +8,14 @@ import {
 } from "@/components/organisms"
 import { SelectField } from "@/components/molecules/SelectField/SelectField"
 import { Configure, useHits } from "react-instantsearch"
-import React from "react"
+import React, { useEffect, useState } from "react"
 import { InstantSearchNext } from "react-instantsearch-nextjs"
 import { liteClient as algoliasearch } from "algoliasearch/lite"
 import { useMemo } from "react"
+import { retrieveCustomer } from "@/lib/data/customer"
+import { getUserWishlists } from "@/lib/data/wishlist"
+import { SerializableWishlist } from "@/types/wishlist"
+import { HttpTypes } from "@medusajs/types"
 
 // Access environment variables directly
 const ALGOLIA_ID = process.env.NEXT_PUBLIC_ALGOLIA_ID || "";
@@ -63,12 +67,11 @@ export const AlgoliaProductsListing = ({
     // Use facetFilters for array field filtering - this is the correct Algolia approach
     facetFiltersList.push([`categories.id:${category_id}`]);
     
-    console.log(`[Algolia] Filtering by category_id: ${category_id}`);
+    
     
     // Add collection filter if specified
     if (collection_id) {
       facetFiltersList.push([`collections.id:${collection_id}`]);
-      console.log(`[Algolia] Also filtering by collection_id: ${collection_id}`);
     }
   }
   
@@ -163,13 +166,11 @@ export const AlgoliaProductsListing = ({
   // Add filters if any (for non-array fields)
   if (filters) {
     algoliaParams.filters = filters;
-    console.log(`[Algolia] Applied filters:`, filters);
   }
   
   // Add facet filters if any (for array fields like categories)
   if (facetFiltersList.length > 0) {
     algoliaParams.facetFilters = facetFiltersList;
-    console.log(`[Algolia] Applied facetFilters:`, facetFiltersList);
   }
   
   // Use as configureProps
@@ -214,6 +215,48 @@ const ProductsListing = ({ sortOptions }: ProductsListingProps) => {
     // sendEvent,
   } = useHits()
   const updateSearchParams = useUpdateSearchParams()
+  
+  // Centralized fetch of customer and wishlist data for all product cards
+  const [user, setUser] = useState<HttpTypes.StoreCustomer | null>(null)
+  const [wishlist, setWishlist] = useState<SerializableWishlist[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  
+  // Function to refresh wishlist data after wishlist changes
+  const refreshWishlist = async () => {
+    if (!user) return;
+    
+    try {
+      const wishlistData = await getUserWishlists()
+      setWishlist(wishlistData.wishlists || [])
+    } catch (error) {
+      console.error('Error refreshing wishlist:', error)
+    }
+  }
+  
+  // Fetch user and wishlist data
+  const fetchUserData = async () => {
+    try {
+      setIsLoading(true)
+      const customer = await retrieveCustomer()
+      setUser(customer)
+      
+      if (customer) {
+        const wishlistData = await getUserWishlists()
+        setWishlist(wishlistData.wishlists || [])
+      }
+    } catch (error) {
+      console.error('Error fetching user data:', error)
+      setUser(null)
+      setWishlist([])
+    } finally {
+      setIsLoading(false)
+    }
+  }
+  
+  // Initial fetch when component mounts
+  useEffect(() => {
+    fetchUserData()
+  }, []) // Empty dependency array - initial fetch only once when component mounts
 
   const selectOptionHandler = (value: string) => {
     // Update the URL search params to trigger re-render with new sort
@@ -256,7 +299,13 @@ const ProductsListing = ({ sortOptions }: ProductsListingProps) => {
             <div className="w-full">
               <ul className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3">
                 {items.map((hit) => (
-                  <ProductCard key={hit.objectID} product={hit} />
+                  <ProductCard 
+                    key={hit.objectID} 
+                    product={hit} 
+                    user={user}
+                    wishlist={wishlist}
+                    onWishlistChange={refreshWishlist}
+                  />
                 ))}
               </ul>
             </div>

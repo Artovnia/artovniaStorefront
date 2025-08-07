@@ -11,10 +11,12 @@ export const WishlistButton = ({
   productId,
   wishlist,
   user,
+  onWishlistChange,
 }: {
   productId: string
   wishlist?: SerializableWishlist[]
   user?: HttpTypes.StoreCustomer | null
+  onWishlistChange?: () => void
 }) => {
   
   
@@ -43,8 +45,9 @@ export const WishlistButton = ({
       // Update local state for both success and "already exists" cases
       setIsWishlisted(true)
       
-      if (result && typeof result === 'object' && 'alreadyExists' in result && result.alreadyExists) {
-      } else {
+      // Notify parent component about wishlist change if callback is provided
+      if (onWishlistChange) {
+        onWishlistChange()
       }
     } catch (error) {
       console.error('❌ Error adding to wishlist:', error)
@@ -64,6 +67,11 @@ export const WishlistButton = ({
       })
       // Update local state immediately after successful removal
       setIsWishlisted(false)
+      
+      // Notify parent component about wishlist change if callback is provided
+      if (onWishlistChange) {
+        onWishlistChange()
+      }
     } catch (error) {
       console.error('Error removing from wishlist:', error)
       

@@ -70,7 +70,7 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
 
   return (
     <BlogLayout>
-      <article className="max-w-4xl mx-auto">
+      <article className="max-w-4xl mx-auto font-instrument-sans bg-[#F4F0EB]">
         {/* Header */}
         <header className="mb-8">
           {post.categories && post.categories.length > 0 && (

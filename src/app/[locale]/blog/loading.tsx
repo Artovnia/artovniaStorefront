@@ -1,8 +1,8 @@
 export default function BlogLoading() {
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-[#F4F0EB]">
       {/* Header Skeleton */}
-      <div className="bg-white shadow-sm border-b">
+      <div className="bg-[#F4F0EB] shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center space-x-4">
@@ -18,7 +18,7 @@ export default function BlogLoading() {
       </div>
 
       {/* Navigation Skeleton */}
-      <div className="bg-white border-b">
+      <div className="bg-[#F4F0EB] border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex space-x-8 py-4">
             {[...Array(5)].map((_, i) => (
@@ -37,7 +37,7 @@ export default function BlogLoading() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {[...Array(6)].map((_, i) => (
-            <div key={i} className="bg-white rounded-lg shadow-md overflow-hidden animate-pulse">
+            <div key={i} className="bg-[#F4F0EB] rounded-lg shadow-md overflow-hidden animate-pulse">
               <div className="h-48 bg-gray-300"></div>
               <div className="p-6">
                 <div className="h-4 bg-gray-300 rounded mb-2"></div>

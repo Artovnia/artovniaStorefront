@@ -73,6 +73,7 @@ export default async function Home({
         <div className="mx-auto max-w-[1920px] w-full px-4 lg:px-8 h-[35vh] font-instrument-sans">
           <HomeProductSection 
             heading="Nowości" 
+          
             theme="light" 
             headingFont="font-instrument-serif italic" 
             headingSpacing="mb-12" 
@@ -84,7 +85,7 @@ export default async function Home({
       {/* Content with max-width container */}
       <div className="mx-auto max-w-[1920px] w-full px-4 lg:px-8 mt-8 ">
         {/*<BannerSection />*/}
-        <ShopByStyleSection />
+        {/*<ShopByStyleSection />*/}
         <BlogSection />
       </div>
     </main>

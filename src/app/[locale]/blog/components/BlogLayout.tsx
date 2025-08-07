@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { getBlogCategories } from '../lib/data'
 import BlogSearch from './BlogSearch'
+import { Footer } from '@/components/organisms/Footer/Footer'
 
 interface BlogLayoutProps {
   children: React.ReactNode
@@ -12,9 +13,9 @@ export default async function BlogLayout({ children, title, description }: BlogL
   const categories = await getBlogCategories()
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-[#F4F0EB]">
       {/* Header */}
-      <header className="bg-white shadow-sm border-b">
+      <header className="bg-[#F4F0EB] shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center space-x-4">
@@ -34,7 +35,7 @@ export default async function BlogLayout({ children, title, description }: BlogL
       </header>
 
       {/* Navigation */}
-      <nav className="bg-white border-b">
+      <nav className="bg-[#F4F0EB] border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex space-x-8 overflow-x-auto py-4">
             <Link
@@ -58,13 +59,13 @@ export default async function BlogLayout({ children, title, description }: BlogL
 
       {/* Page Header */}
       {(title || description) && (
-        <div className="bg-white">
+        <div className="bg-[#F4F0EB]">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
             {title && (
-              <h1 className="text-3xl font-bold text-gray-900 mb-2">{title}</h1>
+              <h1 className="text-3xl font-bold text-gray-900 mb-2 font-instrument-serif">{title}</h1>
             )}
             {description && (
-              <p className="text-lg text-gray-600">{description}</p>
+              <p className="text-lg text-gray-600 font-instrument-sans">{description}</p>
             )}
           </div>
         </div>
@@ -76,13 +77,7 @@ export default async function BlogLayout({ children, title, description }: BlogL
       </main>
 
       {/* Footer */}
-      <footer className="bg-white border-t mt-16">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="text-center text-gray-600">
-            <p>&copy; 2024 Artovnia Blog. All rights reserved.</p>
-          </div>
-        </div>
-      </footer>
+      <Footer />
     </div>
   )
 }

@@ -18,8 +18,8 @@ function BlogPostsSkeleton() {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
       {[...Array(6)].map((_, i) => (
-        <div key={i} className="bg-white rounded-lg shadow-md overflow-hidden animate-pulse">
-          <div className="h-48 bg-gray-300"></div>
+        <div key={i} className="bg-[#F4F0EB] rounded-lg shadow-md overflow-hidden animate-pulse">
+          <div className="h-48 bg-[#F4F0EB]"></div>
           <div className="p-6">
             <div className="h-4 bg-gray-300 rounded mb-2"></div>
             <div className="h-6 bg-gray-300 rounded mb-4"></div>
@@ -40,7 +40,7 @@ async function FeaturedPosts() {
   }
 
   return (
-    <section className="mb-12">
+    <section className="mb-12 font-instrument-sans bg-[#F4F0EB]">
       <h2 className="text-2xl font-bold text-gray-900 mb-6">Featured Posts</h2>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {featuredPosts.map((post) => (
@@ -56,7 +56,7 @@ async function AllPosts() {
 
   if (posts.length === 0) {
     return (
-      <div className="text-center py-12">
+      <div className="text-center py-12 font-instrument-sans bg-[#F4F0EB]">
         <h3 className="text-xl font-medium text-gray-900 mb-2">No blog posts yet</h3>
         <p className="text-gray-600">Check back soon for new content!</p>
       </div>
@@ -64,7 +64,7 @@ async function AllPosts() {
   }
 
   return (
-    <section>
+    <section className="font-instrument-sans bg-[#F4F0EB]">
       <h2 className="text-2xl font-bold text-gray-900 mb-6">All Posts</h2>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {posts.map((post) => (

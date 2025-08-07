@@ -10,7 +10,6 @@ export const HomeProductSection = async ({
   fullWidth = false,
   headingFont = 'font-instrument-serif', // Default font for backward compatibility
   headingSpacing = 'mb-6', // Default spacing for backward compatibility
-  textTransform = 'uppercase', // Default text transform for backward compatibility
 }: {
   heading: string
   locale?: string
@@ -41,7 +40,7 @@ export const HomeProductSection = async ({
       )}
       
       <div className="w-full mx-auto flex flex-col justify-center items-center py-8">
-        <h2 className={`${headingSpacing} heading-lg font-bold tracking-tight ${textTransform} ${headingFont} text-white text-center`}>
+        <h2 className={`${headingSpacing} heading-lg font-bold tracking-tight ${theme === 'dark' ? 'text-black' : 'text-white'} ${headingFont}  text-center`}>
           {heading}
         </h2>
 

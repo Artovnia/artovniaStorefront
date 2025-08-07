@@ -84,6 +84,39 @@ export async function getFeaturedPosts(): Promise<BlogPost[]> {
   }
 }
 
+// Fetch the 3 newest blog posts for home page
+export async function getLatestBlogPosts(): Promise<BlogPost[]> {
+  try {
+    const query = `
+      *[_type == "blogPost" && !(_id in path("drafts.**"))] | order(publishedAt desc)[0...3] {
+        _id,
+        title,
+        slug,
+        excerpt,
+        publishedAt,
+        author->{
+          name,
+          image
+        },
+        mainImage,
+        categories[]->{
+          title,
+          slug
+        },
+        tags
+      }
+    `
+    const posts = await client.fetch(query, {}, {
+      cache: 'force-cache',
+      next: { revalidate: 300 }, // Revalidate every 5 minutes
+    })
+    return posts || []
+  } catch (error) {
+    console.error('Error fetching latest blog posts:', error)
+    return []
+  }
+}
+
 // Fetch single blog post by slug
 export async function getBlogPost(slug: string): Promise<BlogPost | null> {
   try {

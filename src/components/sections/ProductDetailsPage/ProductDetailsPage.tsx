@@ -8,6 +8,8 @@ import { getCachedProduct } from "../../../lib/utils/persistent-cache"
 import ProductErrorBoundary from "@/components/molecules/ProductErrorBoundary/ProductErrorBoundary"
 import { hydrationLogger } from "@/lib/utils/hydration-logger"
 import { preloadProductImages } from "@/lib/utils/preload-resources"
+import { Breadcrumbs } from "@/components/atoms/Breadcrumbs/Breadcrumbs"
+import { buildProductBreadcrumbs } from "@/lib/utils/breadcrumbs"
 import Head from "next/head"
 
 export const ProductDetailsPage = async ({
@@ -99,6 +101,9 @@ export const ProductDetailsPage = async ({
 
  
 
+  // Generate breadcrumbs for the product
+  const breadcrumbs = buildProductBreadcrumbs(prod, locale)
+
   return (
     <>
       {/* CRITICAL: Preload main product image */}
@@ -115,6 +120,10 @@ export const ProductDetailsPage = async ({
       </Head>
       
       <ProductErrorBoundary>
+      {/* Breadcrumbs */}
+      <div className="max-w-[1920px] mx-auto px-4 lg:px-12 py-6 mb-4 text-xl">
+        <Breadcrumbs items={breadcrumbs} />
+      </div>
       <VendorAvailabilityProvider
         vendorId={vendorId}
         vendorName={prod.seller?.name}
@@ -158,9 +167,14 @@ export const ProductDetailsPage = async ({
           </div>
         </div>
         
-        <div className="my-8">
+        <div className="my-8 text-black">
           <HomeProductSection
             heading="Więcej od tego sprzedawcy"
+            headingFont="font-instrument-serif"
+            theme="dark"
+            
+
+            
             products={prod.seller?.products}
           />
         </div>

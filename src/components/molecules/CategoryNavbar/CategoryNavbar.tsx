@@ -36,7 +36,7 @@ export const CategoryNavbar = ({
   }
 
   return (
-    <nav className="flex md:items-center flex-col md:flex-row">
+    <nav className="flex md:items-center flex-col md:flex-row  ">
       <Link
         href="/categories"
         onClick={() => (onClose ? onClose(false) : null)}

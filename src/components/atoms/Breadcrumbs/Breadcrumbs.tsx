@@ -21,7 +21,7 @@ export function Breadcrumbs({
       className={cn('flex', className)}
       aria-label='Breadcrumb'
     >
-      <ol className='inline-flex items-center gap-2'>
+      <ol className='inline-flex items-center gap-4'>
         {items.map(({ path, label }, index) => {
           const isActive = pathname === path;
           return (
@@ -33,7 +33,7 @@ export function Breadcrumbs({
               <Link
                 href={path}
                 className={cn(
-                  'inline-flex items-center label-md text-primary',
+                  'inline-flex items-center  text-primary font-instrument-sans text-lg',
                   index > 0 && 'ml-2',
                   isActive && 'text-secondary'
                 )}
