@@ -97,7 +97,7 @@ export const Header = async () => {
           <CartDropdown cart={cart} />
         </div>
       </div>
-      <Navbar categories={categories} />
+      <Navbar categories={parentCategories} />
     </header>
   )
 }
