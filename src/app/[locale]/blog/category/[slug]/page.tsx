@@ -6,9 +6,9 @@ import BlogLayout from '../../components/BlogLayout'
 import BlogPostCard from '../../components/BlogPostCard'
 
 interface CategoryPageProps {
-  params: {
+  params: Promise<{
     slug: string
-  }
+  }>
 }
 
 export async function generateStaticParams() {
@@ -19,8 +19,9 @@ export async function generateStaticParams() {
 }
 
 export async function generateMetadata({ params }: CategoryPageProps): Promise<Metadata> {
+  const { slug } = await params
   const categories = await getBlogCategories()
-  const category = categories.find(cat => cat.slug.current === params.slug)
+  const category = categories.find(cat => cat.slug.current === slug)
 
   if (!category) {
     return {
@@ -79,8 +80,9 @@ async function CategoryPosts({ categorySlug }: { categorySlug: string }) {
 }
 
 export default async function CategoryPage({ params }: CategoryPageProps) {
+  const { slug } = await params
   const categories = await getBlogCategories()
-  const category = categories.find(cat => cat.slug.current === params.slug)
+  const category = categories.find(cat => cat.slug.current === slug)
 
   if (!category) {
     notFound()
@@ -92,7 +94,7 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
       description={category.description || `Browse all posts in ${category.title} category`}
     >
       <Suspense fallback={<PostsSkeleton />}>
-        <CategoryPosts categorySlug={params.slug} />
+        <CategoryPosts categorySlug={slug} />
       </Suspense>
     </BlogLayout>
   )

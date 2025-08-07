@@ -52,7 +52,7 @@ export const ParcelAccordion = ({
           <h2 className="label-md">
             Order date:{" "}
             <span className="text-primary lg:block xl:inline-block">
-              {format(createdAt || "", "yyyy-MM-dd")}
+              {format(new Date(createdAt) || "", "yyyy-MM-dd")}
             </span>
           </h2>
           <h2 className="label-md">

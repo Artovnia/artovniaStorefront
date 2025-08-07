@@ -20,7 +20,7 @@ export const CartItemsHeader = ({
             <div className="flex items-center gap-2">
               <Divider square />
               <p className="label-md text-secondary">
-                Data dołączenia: {format(seller.created_at || "", "yyyy-MM-dd")}
+                Data dołączenia: {seller.created_at ? format(new Date(seller.created_at), "yyyy-MM-dd") : "N/A"}
               </p>
             </div>
           )}

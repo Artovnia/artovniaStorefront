@@ -40,7 +40,7 @@ export const OrderCard = ({
             {order?.items?.[0]?.subtitle}
           </p>
           <p className="label-md text-secondary">
-            Date: {format(order.created_at, "MMM dd, yyyy")}
+            Date: {format(new Date(order.created_at), "MMM dd, yyyy")}
           </p>
         </div>
       </div>
@@ -54,7 +54,7 @@ export const OrderCard = ({
         ) : (
           <div className="h-full -mt-2">
             <p className="text-sm text-secondary">
-              {format(order.reviews[0].created_at, "MMM dd, yyyy")}
+              {format(new Date(order.reviews[0].created_at), "MMM dd, yyyy")}
             </p>
             <StarRating rate={order.reviews[0].rating} starSize={12} />
             <p className="label-md mt-2">{order.reviews[0].customer_note}</p>

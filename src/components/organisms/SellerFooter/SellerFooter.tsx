@@ -19,7 +19,7 @@ export const SellerFooter = ({ seller }: { seller: SellerProps }) => {
           </div>
         )} */}
         <Divider square />
-        <p>Dołączył {format(seller.created_at, "yyyy-MM-dd")}</p>
+        <p>Dołączył {format(new Date(seller.created_at), "yyyy-MM-dd")}</p>
         {/* <Divider square /> */}
         {/* <p>sold {seller.sold}</p> */}
       </div>

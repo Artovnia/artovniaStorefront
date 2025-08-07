@@ -9,7 +9,7 @@ import { useState, useEffect } from "react"
 import { addToCart } from "../../../lib/data/cart"
 import { SellerProps } from "../../../types/seller"
 import { WishlistButton } from "../WishlistButton/WishlistButton"
-import { Wishlist } from "../../../types/wishlist"
+import { Wishlist, SerializableWishlist } from "../../../types/wishlist"
 import { useVendorAvailability } from "../../organisms/VendorAvailabilityProvider/vendor-availability-provider"
 import { InformationCircleSolid } from "@medusajs/icons"
 import { useVariantSelection } from "../../context/VariantSelectionContext"
@@ -62,7 +62,7 @@ export const ProductDetailsHeader = ({
   product: ExtendedStoreProduct
   locale: string
   user: HttpTypes.StoreCustomer | null
-  wishlist?: Wishlist[]
+  wishlist?: SerializableWishlist[]
 }) => {
   // Get vendor availability status if the product has a seller
   const { isAvailable, availability, holidayMode, openHolidayModal } = useVendorAvailability();

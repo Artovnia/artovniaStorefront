@@ -18,7 +18,7 @@ const OrderDetails = ({ order, showStatus }: OrderDetailsProps) => {
     <div className="border rounded-sm p-4 bg-ui-bg-subtle grid lg:grid-cols-2">
       <Text className="mt-2">
         <span className="font-bold block">Order date</span>
-        <span>{format(order.created_at, "dd-MM-yyyy")}</span>
+        <span>{format(new Date(order.created_at), "dd-MM-yyyy")}</span>
       </Text>
       <Text className="mt-2 text-ui-fg-interactive">
         <span className="font-bold block">Order number</span> #

@@ -5,13 +5,14 @@ import BlogLayout from '../components/BlogLayout'
 import BlogPostCard from '../components/BlogPostCard'
 
 interface SearchPageProps {
-  searchParams: {
+  searchParams: Promise<{
     q?: string
-  }
+  }>
 }
 
 export async function generateMetadata({ searchParams }: SearchPageProps): Promise<Metadata> {
-  const query = searchParams.q || ''
+  const { q } = await searchParams
+  const query = q || ''
   
   return {
     title: query ? `Search results for &quot;${query}&quot; - Artovnia Blog` : 'Search - Artovnia Blog',
@@ -77,8 +78,9 @@ async function SearchResults({ query }: { query: string }) {
   )
 }
 
-export default function SearchPage({ searchParams }: SearchPageProps) {
-  const query = searchParams.q || ''
+export default async function SearchPage({ searchParams }: SearchPageProps) {
+  const { q } = await searchParams
+  const query = q || ''
 
   return (
     <BlogLayout

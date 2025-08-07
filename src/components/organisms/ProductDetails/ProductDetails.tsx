@@ -13,7 +13,7 @@ import { getUserWishlists } from "@/lib/data/wishlist"
 import { getProductReviews } from "@/lib/data/reviews"
 import { globalDeduplicator, measurementDeduplicator } from "@/lib/utils/performance"
 import { SellerProps } from "@/types/seller"
-import { Wishlist } from "@/types/wishlist"
+import { Wishlist, SerializableWishlist } from "@/types/wishlist"
 import { HttpTypes } from "@medusajs/types"
 import "@/types/medusa" // Import extended types
 import { ProductReviews } from "@/components/organisms/ProductReviews/ProductReviews"
@@ -57,7 +57,7 @@ export const ProductDetails = async ({
   const reviews = reviewsData.status === 'fulfilled' ? reviewsData.value?.reviews || [] : []
   const productMeasurements = measurements.status === 'fulfilled' ? measurements.value : null
 
-  let wishlist: Wishlist[] = []
+  let wishlist: SerializableWishlist[] = []
   if (customer) {
     try {
       // Use deduplication for wishlist fetching
