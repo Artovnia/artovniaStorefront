@@ -1,5 +1,6 @@
 import { ProductGallery } from "../../../components/organisms"
 import { ProductDetails } from "../../../components/organisms"
+import { ProductReviews } from "@/components/organisms/ProductReviews/ProductReviews"
 import { VendorAvailabilityProvider } from "../../../components/organisms/VendorAvailabilityProvider/vendor-availability-provider"
 import { listProducts } from "../../../lib/data/products"
 import { getVendorAvailability, getVendorHolidayMode, getVendorSuspension } from "../../../lib/data/vendor-availability"
@@ -11,6 +12,9 @@ import { preloadProductImages } from "@/lib/utils/preload-resources"
 import { Breadcrumbs } from "@/components/atoms/Breadcrumbs/Breadcrumbs"
 import { buildProductBreadcrumbs } from "@/lib/utils/breadcrumbs"
 import Head from "next/head"
+import { retrieveCustomer, isAuthenticated } from "@/lib/data/customer"
+import { getProductReviews } from "@/lib/data/reviews"
+import { globalDeduplicator } from "@/lib/utils/performance"
 
 export const ProductDetailsPage = async ({
   handle,
@@ -39,6 +43,18 @@ export const ProductDetailsPage = async ({
   )
 
   if (!prod) return null
+  
+  // Fetch customer, auth status, and reviews data for product reviews component
+  const [user, authenticated, reviewsData] = await Promise.allSettled([
+    globalDeduplicator.dedupe(`customer-${prod.id}`, retrieveCustomer),
+    globalDeduplicator.dedupe(`auth-${prod.id}`, isAuthenticated),
+    globalDeduplicator.dedupe(`reviews-${prod.id}`, () => getProductReviews(prod.id)),
+  ])
+
+  // Extract results with fallbacks
+  const customer = user.status === 'fulfilled' ? user.value : null
+  const isUserAuthenticated = authenticated.status === 'fulfilled' ? authenticated.value : false
+  const reviews = reviewsData.status === 'fulfilled' ? reviewsData.value?.reviews || [] : []
 
   
   
@@ -167,15 +183,31 @@ export const ProductDetailsPage = async ({
           </div>
         </div>
         
-        <div className="my-8 text-black">
+        <div className="my-24 text-black max-w-[1920px] mx-auto">
+          {/* Custom heading with mixed styling */}
+          <div className="mb-6 text-center">
+            <h2 className="heading-lg font-bold tracking-tight text-black">
+              <span className="font-instrument-serif">Więcej od </span>
+              <span className="font-instrument-serif italic">{prod.seller?.name}</span>
+            </h2>
+          </div>
+          
+          {/* HomeProductSection with empty heading */}
           <HomeProductSection
-            heading="Więcej od tego sprzedawcy"
-            headingFont="font-instrument-serif"
+            heading="" 
+            headingSpacing="mb-0" 
             theme="dark"
-            
-
-            
             products={prod.seller?.products}
+          />
+        </div>
+        
+        {/* Product Reviews moved from ProductDetails */}
+        <div className="max-w-[1920px] mx-auto">
+          <ProductReviews
+            productId={prod.id}
+            isAuthenticated={isUserAuthenticated}
+            customer={customer}
+            prefetchedReviews={reviews}
           />
         </div>
       </VendorAvailabilityProvider>

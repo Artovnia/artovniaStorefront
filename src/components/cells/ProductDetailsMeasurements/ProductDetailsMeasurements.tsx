@@ -104,7 +104,7 @@ export const ProductDetailsMeasurements = ({
         <div className="m-0">
           <ProductPageAccordion
             heading={accordionTitle}
-            defaultOpen={true}
+            defaultOpen={false}
           >
             <div className="w-full py-4 flex justify-center">
               <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-ui-border-interactive"></div>
@@ -120,7 +120,7 @@ export const ProductDetailsMeasurements = ({
     <div className="m-0">
       <ProductPageAccordion
         heading={accordionTitle}
-        defaultOpen={true}
+        defaultOpen={false}
       >
         {/* Show measurements for the current selected variant */}
         {measurements.map((measurement: SingleProductMeasurement) => (

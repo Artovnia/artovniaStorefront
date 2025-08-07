@@ -10,13 +10,11 @@ import {
 import { getProductMeasurements } from "@/lib/data/measurements"
 import { retrieveCustomer, isAuthenticated } from "@/lib/data/customer"
 import { getUserWishlists } from "@/lib/data/wishlist"
-import { getProductReviews } from "@/lib/data/reviews"
 import { globalDeduplicator, measurementDeduplicator } from "@/lib/utils/performance"
 import { SellerProps } from "@/types/seller"
 import { Wishlist, SerializableWishlist } from "@/types/wishlist"
 import { HttpTypes } from "@medusajs/types"
 import "@/types/medusa" // Import extended types
-import { ProductReviews } from "@/components/organisms/ProductReviews/ProductReviews"
 import { ProductGPSR } from "@/components/molecules/ProductGPSR/ProductGPSR"
 import { ProductAdditionalAttributes } from "@/components/cells/ProductAdditionalAttributes/ProductAdditionalAttributes"
 import { VariantSelectionProvider } from "@/components/context/VariantSelectionContext"
@@ -41,10 +39,9 @@ export const ProductDetails = async ({
   const currentLocale = supportedLocales.includes(locale) ? locale : 'en'
   
   // Optimized parallel data fetching with better cache keys
-  const [user, authenticated, reviewsData, measurements] = await Promise.allSettled([
+  const [user, authenticated, measurements] = await Promise.allSettled([
     globalDeduplicator.dedupe(`customer-${product.id}`, retrieveCustomer),
     globalDeduplicator.dedupe(`auth-${product.id}`, isAuthenticated),
-    globalDeduplicator.dedupe(`reviews-${product.id}`, () => getProductReviews(product.id)),
     measurementDeduplicator.dedupe(
       `measurements-${product.id}-${selectedVariantId || 'default'}-${currentLocale}`,
       () => getProductMeasurements(product.id, selectedVariantId, currentLocale)
@@ -54,7 +51,6 @@ export const ProductDetails = async ({
   // Extract results with fallbacks
   const customer = user.status === 'fulfilled' ? user.value : null
   const isUserAuthenticated = authenticated.status === 'fulfilled' ? authenticated.value : false
-  const reviews = reviewsData.status === 'fulfilled' ? reviewsData.value?.reviews || [] : []
   const productMeasurements = measurements.status === 'fulfilled' ? measurements.value : null
 
   let wishlist: SerializableWishlist[] = []
@@ -105,12 +101,6 @@ export const ProductDetails = async ({
         posted={product?.created_at || null}
       />
       <ProductDetailsSellerReviews seller={product.seller} />
-      <ProductReviews
-        productId={product.id}
-        isAuthenticated={isUserAuthenticated}
-        customer={customer}
-        prefetchedReviews={reviews}
-      />
     </div>
   )
 }

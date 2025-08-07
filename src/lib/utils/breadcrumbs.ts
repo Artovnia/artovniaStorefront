@@ -41,13 +41,9 @@ export function buildProductBreadcrumbs(
         path: `/categories/${category.handle}`
       })
     })
-  } else if (product.collection) {
-    // If no categories but has collection, use collection as fallback
-    breadcrumbs.push({
-      label: product.collection.title,
-      path: `/collections/${product.collection.handle}`
-    })
-  }
+  } 
+  // No more collection fallback - we always want to use categories
+  // If we don't have categories, we'll just show Home
 
   return breadcrumbs
 }

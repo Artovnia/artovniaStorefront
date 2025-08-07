@@ -6,7 +6,7 @@ import { useEffect, useRef, useState } from 'react';
 export const ProductPageAccordion = ({
   children,
   heading,
-  defaultOpen = true,
+  defaultOpen = false,
 }: {
   children: React.ReactNode;
   heading: string;
@@ -35,7 +35,7 @@ export const ProductPageAccordion = ({
         onClick={openHandler}
         className='flex justify-between items-center cursor-pointer px-4 py-8 hover:bg-gray-50 transition-colors duration-200'       
       >
-        <h4 className='label-lg uppercase text-gray-900'>{heading}</h4>
+        <h4 className='text-2xl font-instrument-serif text-gray-900'>{heading}</h4>
         <div className='relative'>
           <MinusThinIcon
             className={cn(
