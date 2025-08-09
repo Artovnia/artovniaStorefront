@@ -46,19 +46,8 @@ export const ProductVariants = ({
 }) => {
   const { selectedVariantId, setSelectedVariantId } = useVariantSelection()
 
-  // Log component mount for hydration debugging
-  useEffect(() => {
-    hydrationLogger.logComponentMount('ProductVariants', {
-      productId: product.id,
-      optionsCount: product.options?.length || 0,
-      selectedVariant: Object.keys(selectedVariant).length,
-      selectedVariantId
-    })
-    
-    return () => {
-      hydrationLogger.logComponentUnmount('ProductVariants')
-    }
-  }, [])
+  // ARCHITECTURAL CHANGE: Remove hydration logging that can cause memory issues
+  // URL-first architecture doesn't need complex hydration tracking
 
   // CRITICAL FIX: Find the currently selected variant to show only its available options
   const currentVariant = useMemo(() => {
@@ -95,7 +84,7 @@ export const ProductVariants = ({
     }))
   }, [product.options, product.variants])
 
-  // RADICAL SIMPLIFICATION: Ultra-lightweight option setter with minimal dependencies
+  // ARCHITECTURAL CHANGE: Ultra-simple option setter for URL-first navigation
   const setOptionValue = useCallback((optionTitle: string, value: string) => {
     if (!value || !product.variants) return
     
@@ -103,7 +92,6 @@ export const ProductVariants = ({
       console.log(`🎨 Option: ${optionTitle} = ${value}`);
     }
     
-    // CRITICAL: Direct variant lookup without complex option matching
     // Find variant by matching the specific option change
     const matchingVariant = product.variants.find(variant => {
       return variant.options?.some(variantOption => {
@@ -113,9 +101,10 @@ export const ProductVariants = ({
     })
     
     if (matchingVariant && matchingVariant.id !== selectedVariantId) {
+      // ARCHITECTURAL CHANGE: Direct URL navigation - no React state management
       setSelectedVariantId(matchingVariant.id)
     }
-  }, [product.variants, selectedVariantId, setSelectedVariantId]) // Minimal dependencies
+  }, [product.variants, selectedVariantId, setSelectedVariantId])
 
   return (
     <div className="my-4 space-y-2">

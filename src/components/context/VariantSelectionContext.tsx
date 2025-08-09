@@ -1,13 +1,16 @@
 "use client"
 
-import React, { createContext, useContext, useState, useEffect, useCallback, useMemo, useRef } from "react"
-import { usePathname, useRouter } from '@/i18n/routing'
+import React, { createContext, useContext, useMemo } from "react"
+import { useRouter } from 'next/navigation'
 import { useSearchParams } from 'next/navigation'
+
+// ARCHITECTURAL REDESIGN: URL-First, Server-Driven Variant Selection
+// No client state, no synchronization issues, no hydration mismatches
 
 type VariantSelectionContextType = {
   selectedVariantId: string
   setSelectedVariantId: (id: string) => void
-  updateUrlWithVariant: (id: string) => void
+  updateUrlWithVariant: (id: string) => void // Deprecated but kept for compatibility
 }
 
 const VariantSelectionContext = createContext<VariantSelectionContextType | undefined>(undefined)
@@ -19,90 +22,35 @@ export const VariantSelectionProvider = ({
   children: React.ReactNode
   initialVariantId?: string
 }) => {
-  const [selectedVariantId, setSelectedVariantId] = useState<string>(initialVariantId)
   const router = useRouter()
-  const pathname = usePathname()
   const searchParams = useSearchParams()
   
-  // RADICAL SIMPLIFICATION: Single timeout ref, no nested timeouts
-  const updateTimeoutRef = useRef<NodeJS.Timeout | null>(null)
-  // Track if we're currently updating to prevent cascading
-  const isUpdatingRef = useRef<boolean>(false)
+  // ARCHITECTURAL CHANGE: Read variant from URL only - no client state
+  const selectedVariantId = searchParams.get('variant') || initialVariantId
   
-  // Cleanup on unmount
-  useEffect(() => {
-    return () => {
-      if (updateTimeoutRef.current) {
-        clearTimeout(updateTimeoutRef.current)
-        updateTimeoutRef.current = null
-      }
-      isUpdatingRef.current = false
-    }
-  }, [])
-  
-  // RADICAL SIMPLIFICATION: Single, simple URL sync - no bidirectional sync
-  useEffect(() => {
-    const variantParam = searchParams.get('variant')
-    
-    // Only sync from URL if we're not currently updating and param is different
-    if (!isUpdatingRef.current && variantParam && variantParam !== selectedVariantId && variantParam.trim()) {
-      if (process.env.NODE_ENV === 'development') {
-        console.log(`🎯 URL sync: ${variantParam}`);
-      }
-      setSelectedVariantId(variantParam)
-    }
-  }, [searchParams]) // CRITICAL: Remove selectedVariantId dependency
-
-  // RADICAL SIMPLIFICATION: Ultra-simple variant setter with minimal async
-  const setSelectedVariantIdOptimized = useCallback((id: string) => {
-    // Basic validation
-    if (!id || id === selectedVariantId || !id.trim() || isUpdatingRef.current) return
+  // ARCHITECTURAL CHANGE: Direct URL navigation - no debouncing, no state sync
+  const setSelectedVariantId = (id: string) => {
+    if (!id || id === selectedVariantId || !id.trim()) return
     
     if (process.env.NODE_ENV === 'development') {
-      console.log(`🎯 Setting variant: ${id}`);
+      console.log(`🎯 Direct URL navigation to variant: ${id}`);
     }
     
-    // Set updating flag immediately
-    isUpdatingRef.current = true
+    // CRITICAL: Use window.location for immediate, synchronous navigation
+    // This avoids all React state/router conflicts
+    const url = new URL(window.location.href)
+    url.searchParams.set('variant', id)
     
-    // Update state immediately - no delays
-    setSelectedVariantId(id)
-    
-    // Clear any pending URL updates
-    if (updateTimeoutRef.current) {
-      clearTimeout(updateTimeoutRef.current)
-    }
-    
-    // CRITICAL: Minimal URL update with immediate flag reset
-    updateTimeoutRef.current = setTimeout(() => {
-      try {
-        // Use current URL to avoid stale searchParams
-        const currentUrl = new URL(window.location.href)
-        currentUrl.searchParams.set('variant', id)
-        
-        // Single router call
-        router.replace(currentUrl.pathname + currentUrl.search, { scroll: false })
-        
-        if (process.env.NODE_ENV === 'development') {
-          console.log(`🔄 URL updated: ${id}`);
-        }
-      } catch (error) {
-        if (process.env.NODE_ENV === 'development') {
-          console.warn('URL update failed:', error);
-        }
-      }
-      
-      // Reset flag immediately after URL update
-      isUpdatingRef.current = false
-    }, 50) // Reduced debounce time
-  }, [selectedVariantId, router]) // Minimal dependencies
-
-  // RADICAL SIMPLIFICATION: Remove unused updateUrlWithVariant from context
+    // Immediate navigation - no async operations
+    window.location.href = url.toString()
+  }
+  
+  // Simple context value - no complex memoization
   const contextValue = useMemo(() => ({
     selectedVariantId,
-    setSelectedVariantId: setSelectedVariantIdOptimized,
-    updateUrlWithVariant: () => {} // Deprecated - kept for compatibility
-  }), [selectedVariantId, setSelectedVariantIdOptimized])
+    setSelectedVariantId,
+    updateUrlWithVariant: setSelectedVariantId // Redirect to new implementation
+  }), [selectedVariantId])
 
   return (
     <VariantSelectionContext.Provider value={contextValue}>

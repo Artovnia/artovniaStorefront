@@ -91,20 +91,6 @@ export const ProductDetailsHeader = ({
 
   // CRITICAL FIX: Use selectedVariantId directly from context
   const currentVariantId = selectedVariantId || (product.variants?.[0]?.id || "")
-  
-  // RADICAL SIMPLIFICATION: Remove competing initialization - let context handle everything
-  // ProductDetailsHeader should only READ state, not manage it
-  useEffect(() => {
-    // Only initialize if we have no variant selected and variants exist
-    if (!selectedVariantId && product.variants && product.variants.length > 0) {
-      const firstVariantId = product.variants[0].id
-      if (process.env.NODE_ENV === 'development') {
-        console.log(`🎯 One-time initialization: ${firstVariantId}`);
-      }
-      // Single, immediate initialization - no delays or race conditions
-      setSelectedVariantId(firstVariantId)
-    }
-  }, [product.id, selectedVariantId, setSelectedVariantId]) // Include all deps but only run when needed
 
   // get variant price using current variant ID
   const { variantPrice } = getProductPrice({
