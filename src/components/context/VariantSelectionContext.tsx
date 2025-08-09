@@ -24,73 +24,85 @@ export const VariantSelectionProvider = ({
   const pathname = usePathname()
   const searchParams = useSearchParams()
   
-  // Simple debounce ref to prevent rapid updates
+  // RADICAL SIMPLIFICATION: Single timeout ref, no nested timeouts
   const updateTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  // Track if we're currently updating to prevent cascading
+  const isUpdatingRef = useRef<boolean>(false)
   
-  // CRITICAL FIX: Minimal URL update that doesn't block navigation
-  const updateUrlWithVariant = useCallback((id: string) => {
-    if (!id) return
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (updateTimeoutRef.current) {
+        clearTimeout(updateTimeoutRef.current)
+        updateTimeoutRef.current = null
+      }
+      isUpdatingRef.current = false
+    }
+  }, [])
+  
+  // RADICAL SIMPLIFICATION: Single, simple URL sync - no bidirectional sync
+  useEffect(() => {
+    const variantParam = searchParams.get('variant')
     
-    // Clear any pending updates
+    // Only sync from URL if we're not currently updating and param is different
+    if (!isUpdatingRef.current && variantParam && variantParam !== selectedVariantId && variantParam.trim()) {
+      if (process.env.NODE_ENV === 'development') {
+        console.log(`🎯 URL sync: ${variantParam}`);
+      }
+      setSelectedVariantId(variantParam)
+    }
+  }, [searchParams]) // CRITICAL: Remove selectedVariantId dependency
+
+  // RADICAL SIMPLIFICATION: Ultra-simple variant setter with minimal async
+  const setSelectedVariantIdOptimized = useCallback((id: string) => {
+    // Basic validation
+    if (!id || id === selectedVariantId || !id.trim() || isUpdatingRef.current) return
+    
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`🎯 Setting variant: ${id}`);
+    }
+    
+    // Set updating flag immediately
+    isUpdatingRef.current = true
+    
+    // Update state immediately - no delays
+    setSelectedVariantId(id)
+    
+    // Clear any pending URL updates
     if (updateTimeoutRef.current) {
       clearTimeout(updateTimeoutRef.current)
     }
     
-    // Simple debounced update - no blocking operations
+    // CRITICAL: Minimal URL update with immediate flag reset
     updateTimeoutRef.current = setTimeout(() => {
       try {
-        const params = new URLSearchParams(searchParams.toString())
-        params.set('variant', id)
+        // Use current URL to avoid stale searchParams
+        const currentUrl = new URL(window.location.href)
+        currentUrl.searchParams.set('variant', id)
         
-        // Direct router update without complex async operations
-        router.replace(`${pathname}?${params.toString()}`, { scroll: false })
+        // Single router call
+        router.replace(currentUrl.pathname + currentUrl.search, { scroll: false })
         
         if (process.env.NODE_ENV === 'development') {
-         
+          console.log(`🔄 URL updated: ${id}`);
         }
       } catch (error) {
         if (process.env.NODE_ENV === 'development') {
           console.warn('URL update failed:', error);
         }
       }
-    }, 100) // Simple 100ms debounce
-  }, [pathname, router, searchParams])
-  
-  // CRITICAL FIX: Simple URL sync without complex state tracking
-  useEffect(() => {
-    const variantParam = searchParams.get('variant')
-    
-    // Only sync if we have a different variant param
-    if (variantParam && variantParam !== selectedVariantId) {
-      if (process.env.NODE_ENV === 'development') {
-        console.log(`🎯 Syncing from URL param: ${variantParam}`);
-      }
-      setSelectedVariantId(variantParam)
-    }
-  }, [searchParams]) // Only depend on searchParams
-
-  // CRITICAL FIX: Simple variant selection without complex async operations
-  const setSelectedVariantIdOptimized = useCallback((id: string) => {
-    // Prevent unnecessary updates
-    if (!id || id === selectedVariantId) return
-    
-    if (process.env.NODE_ENV === 'development') {
       
-    }
-    
-    // Update state immediately
-    setSelectedVariantId(id)
-    
-    // Update URL with simple debounce
-    updateUrlWithVariant(id)
-  }, [selectedVariantId, updateUrlWithVariant])
+      // Reset flag immediately after URL update
+      isUpdatingRef.current = false
+    }, 50) // Reduced debounce time
+  }, [selectedVariantId, router]) // Minimal dependencies
 
-  // Memoized context value with stable references
+  // RADICAL SIMPLIFICATION: Remove unused updateUrlWithVariant from context
   const contextValue = useMemo(() => ({
     selectedVariantId,
     setSelectedVariantId: setSelectedVariantIdOptimized,
-    updateUrlWithVariant
-  }), [selectedVariantId, setSelectedVariantIdOptimized, updateUrlWithVariant])
+    updateUrlWithVariant: () => {} // Deprecated - kept for compatibility
+  }), [selectedVariantId, setSelectedVariantIdOptimized])
 
   return (
     <VariantSelectionContext.Provider value={contextValue}>

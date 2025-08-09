@@ -7,7 +7,6 @@ import { getVendorAvailability, getVendorHolidayMode, getVendorSuspension } from
 import { HomeProductSection } from "../HomeProductSection/HomeProductSection"
 import { getCachedProduct } from "../../../lib/utils/persistent-cache"
 import ProductErrorBoundary from "@/components/molecules/ProductErrorBoundary/ProductErrorBoundary"
-import { hydrationLogger } from "@/lib/utils/hydration-logger"
 import { preloadProductImages } from "@/lib/utils/preload-resources"
 import { Breadcrumbs } from "@/components/atoms/Breadcrumbs/Breadcrumbs"
 import { buildProductBreadcrumbs } from "@/lib/utils/breadcrumbs"

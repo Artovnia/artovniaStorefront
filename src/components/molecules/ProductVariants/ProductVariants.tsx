@@ -95,37 +95,27 @@ export const ProductVariants = ({
     }))
   }, [product.options, product.variants])
 
-  // CRITICAL FIX: Simplified option value setter - only update variant context
+  // RADICAL SIMPLIFICATION: Ultra-lightweight option setter with minimal dependencies
   const setOptionValue = useCallback((optionTitle: string, value: string) => {
     if (!value || !product.variants) return
     
-    // Log variant option selection for debugging
-    hydrationLogger.logEvent('variant_option_change', 'ProductVariants', {
-      optionTitle,
-      value,
-      productId: product.id,
-      currentVariantId: selectedVariantId,
-      timestamp: performance.now()
-    })
-    
-    // Find the variant that matches the new option selection
-    const newSelectedOptions = {
-      ...selectedVariant,
-      [optionTitle.toLowerCase()]: value
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`🎨 Option: ${optionTitle} = ${value}`);
     }
     
+    // CRITICAL: Direct variant lookup without complex option matching
+    // Find variant by matching the specific option change
     const matchingVariant = product.variants.find(variant => {
-      return variant.options?.every(variantOption => {
-        const optionKey = variantOption.option?.title?.toLowerCase()
-        return optionKey && newSelectedOptions[optionKey] === variantOption.value
+      return variant.options?.some(variantOption => {
+        return variantOption.option?.title?.toLowerCase() === optionTitle.toLowerCase() && 
+               variantOption.value === value
       })
     })
     
     if (matchingVariant && matchingVariant.id !== selectedVariantId) {
-      // CRITICAL FIX: Only update variant context - let context handle URL updates
       setSelectedVariantId(matchingVariant.id)
     }
-  }, [product.id, product.variants, selectedVariant, selectedVariantId, setSelectedVariantId])
+  }, [product.variants, selectedVariantId, setSelectedVariantId]) // Minimal dependencies
 
   return (
     <div className="my-4 space-y-2">
