@@ -175,9 +175,6 @@ export function CombinedDimensionFilter(): JSX.Element {
       })
       
       setDimensionRanges(newRanges)
-      
-      // Debug logging
-      console.log('🔍 [CombinedDimensionFilter] Calculated dimension ranges:', newRanges)
     }
   }, [results])
 
@@ -286,7 +283,7 @@ export function CombinedDimensionFilter(): JSX.Element {
         // Add filter for product-level dimensions (fallback)
         newFilters.push(`${dimensionType}${operator}${value}`)
         
-        console.log(`🔍 [CombinedDimensionFilter] Adding dimension filters:`, newFilters)
+
         
         // Update the helper state and trigger a search
         helper.setState({

@@ -118,7 +118,7 @@ export const ProductDetailsPage = async ({
  
 
   // Generate breadcrumbs for the product
-  const breadcrumbs = buildProductBreadcrumbs(prod, locale)
+  const breadcrumbs = await buildProductBreadcrumbs(prod, locale)
 
   return (
     <>

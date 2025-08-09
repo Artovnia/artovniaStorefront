@@ -76,7 +76,7 @@ export const listCategories = async ({
           product_categories: HttpTypes.StoreProductCategory[]
         }>("/store/product-categories", {
           query: {
-            fields: "handle, name, rank, *category_children",
+            fields: "handle, name, rank, parent_category_id, *category_children, *parent_category",
             limit,
             ...query,
           },
@@ -102,60 +102,209 @@ export const listCategories = async ({
 
   // Log performance info in development
   if (process.env.NODE_ENV === 'development') {
-    console.log('📊 Categories API Performance:', {
-      medusaStatus: categoriesResult.status,
-      algoliaStatus: categoriesWithProductsResult.status,
-      categoriesCount: categories.length,
-      categoriesWithProductsCount: categoriesWithProducts.size
-    })
+    
+    
+    // Debug: Log all categories with their parent info
+    
   }
 
-  // OPTIMIZED: Fast filtering with early returns and memoization
-  const filteredCategories = categoriesWithProducts.size > 0 
-    ? categories.filter(category => categoriesWithProducts.has(category.id))
-    : categories // Fallback to all categories if Algolia data unavailable
-
-  // OPTIMIZED: Reduce nested loops and use more efficient filtering
-  const categoriesWithFilteredChildren = filteredCategories.map(category => {
-    if (category.category_children?.length > 0) {
-      const filteredChildren = category.category_children.filter(child => 
-        categoriesWithProducts.size === 0 || categoriesWithProducts.has(child.id)
+  // BUILD PARENT-CHILD RELATIONSHIPS: First build the FULL recursive tree from ALL categories
+  const buildFullCategoryTree = (allCategories: HttpTypes.StoreProductCategory[]) => {
+    // Helper function to recursively build children
+    const buildChildren = (parentId: string): HttpTypes.StoreProductCategory[] => {
+      const children = allCategories.filter(category => 
+        category.parent_category_id === parentId || category.parent_category?.id === parentId
       )
-      return {
-        ...category,
-        category_children: filteredChildren
-      }
+      
+      return children.map(child => ({
+        ...child,
+        category_children: buildChildren(child.id) // Recursively build ALL children
+      }))
     }
-    return category
+
+    // Build the complete tree for all categories
+    return allCategories.map(category => ({
+      ...category,
+      category_children: buildChildren(category.id)
+    }))
+  }
+
+  // Build the complete tree first
+  const fullCategoryTree = buildFullCategoryTree(categories)
+
+ 
+
+  // THEN filter based on products, keeping categories that have products OR have children with products
+  const filterCategoriesWithProducts = (categoryTree: HttpTypes.StoreProductCategory[]): HttpTypes.StoreProductCategory[] => {
+    return categoryTree
+      .map(category => {
+        // Recursively filter children first
+        const filteredChildren = category.category_children 
+          ? filterCategoriesWithProducts(category.category_children)
+          : []
+        
+        return {
+          ...category,
+          category_children: filteredChildren
+        }
+      })
+      .filter(category => {
+        // Keep categories that either:
+        // 1. Have products directly, OR
+        // 2. Have children with products (after filtering), OR  
+        // 3. No product filtering is active
+        return categoriesWithProducts.size === 0 || 
+               categoriesWithProducts.has(category.id) || 
+               (category.category_children && category.category_children.length > 0)
+      })
+  }
+
+  const categoriesWithFilteredChildren = categoriesWithProducts.size > 0 
+    ? filterCategoriesWithProducts(fullCategoryTree)
+    : fullCategoryTree
+
+ 
+
+  // DYNAMIC PARENT DETECTION: Find actual top-level categories (no parent_category_id)
+  // If headingCategories is provided, use it as a filter, otherwise show all top-level categories
+  const topLevelCategories = categoriesWithFilteredChildren.filter(category => {
+    // Check both parent_category_id field and parent_category object for robust detection
+    const hasNoParentId = !category.parent_category_id || category.parent_category_id === null
+    const hasNoParentObj = !category.parent_category || 
+                          category.parent_category === null || 
+                          category.parent_category === undefined ||
+                          (typeof category.parent_category === 'object' && !category.parent_category.id)
+    
+    const isTopLevel = hasNoParentId && hasNoParentObj
+    
+    
+    
+    return isTopLevel
   })
 
-  // OPTIMIZED: Use Set for faster lookups instead of array.includes
-  const headingCategoriesSet = new Set(headingCategories.map(name => name.toLowerCase()))
-  
-  const parentCategories = categoriesWithFilteredChildren.filter(({ name }) =>
-    headingCategoriesSet.has(name.toLowerCase())
-  )
-
-  // OPTIMIZED: Build child category IDs set more efficiently
-  const allChildCategoryIds = new Set<string>()
-  for (const category of categoriesWithFilteredChildren) {
-    if (category.category_children?.length > 0) {
-      for (const child of category.category_children) {
-        allChildCategoryIds.add(child.id)
-      }
-    }
+  // FALLBACK: If no top-level categories found using parent_category, 
+  // use categories that have children but aren't children themselves
+  let fallbackParentCategories: HttpTypes.StoreProductCategory[] = []
+  if (topLevelCategories.length === 0) {
+    console.warn('⚠️ No top-level categories found using parent_category field. Using fallback detection.')
+    
+    // Build a set of all category IDs that are children
+    const childCategoryIds = new Set<string>()
+    categoriesWithFilteredChildren.forEach(category => {
+      category.category_children?.forEach(child => {
+        childCategoryIds.add(child.id)
+      })
+    })
+    
+    // Categories that have children but are not children themselves are likely parents
+    fallbackParentCategories = categoriesWithFilteredChildren.filter(category => 
+      category.category_children && 
+      category.category_children.length > 0 && 
+      !childCategoryIds.has(category.id)
+    )
+    
+    
   }
 
-  // OPTIMIZED: Filter with more efficient lookups
-  const childrenCategories = categoriesWithFilteredChildren.filter(
-    ({ name, id }) => 
-      !headingCategoriesSet.has(name.toLowerCase()) && 
-      !allChildCategoryIds.has(id)
-  )
+  const finalTopLevelCategories = topLevelCategories.length > 0 ? topLevelCategories : fallbackParentCategories
+
+  let parentCategories: HttpTypes.StoreProductCategory[]
+  if (headingCategories.length > 0) {
+    // Filter top-level categories by headingCategories if provided
+    const headingCategoriesSet = new Set(headingCategories.map(name => name.toLowerCase()))
+    parentCategories = finalTopLevelCategories.filter(({ name }) =>
+      headingCategoriesSet.has(name.toLowerCase())
+    )
+  } else {
+    // Show all top-level categories if no filter provided
+    parentCategories = finalTopLevelCategories
+  }
+
+  // CHILD CATEGORIES: Categories that have a parent_category_id
+  const childrenCategories = categoriesWithFilteredChildren.filter(category => {
+    // Check both parent_category_id field and parent_category object for robust detection
+    const hasParentId = category.parent_category_id && category.parent_category_id !== null
+    const hasParentObj = category.parent_category && 
+                        category.parent_category !== null && 
+                        category.parent_category !== undefined &&
+                        (typeof category.parent_category === 'object' && category.parent_category.id)
+    
+    const hasParent = hasParentId || hasParentObj
+    
+    
+    
+    return hasParent
+  })
+
+  
 
   return {
     categories: childrenCategories,
     parentCategories: parentCategories,
+  }
+}
+
+/**
+ * Build full category hierarchy path from root to leaf
+ * This is used for breadcrumbs to show the complete path
+ * Uses parent_category_id to reconstruct the full hierarchy chain
+ */
+export const getCategoryHierarchy = async (categoryHandle: string): Promise<HttpTypes.StoreProductCategory[]> => {
+  try {
+    // Get all categories with parent relationships - include parent_category_id field
+    const { product_categories } = await sdk.client.fetch<{
+      product_categories: HttpTypes.StoreProductCategory[]
+    }>("/store/product-categories", {
+      query: {
+        fields: "id, handle, name, rank, parent_category_id, *parent_category",
+        limit: 100,
+      },
+      cache: "force-cache",
+      next: { revalidate: 300 }
+    })
+
+    // Find the target category
+    const targetCategory = product_categories.find(cat => cat.handle === categoryHandle)
+    if (!targetCategory) {
+      console.warn(`Target category with handle "${categoryHandle}" not found`)
+      return []
+    }
+
+    // Build hierarchy path from leaf to root using parent_category_id
+    const hierarchy: HttpTypes.StoreProductCategory[] = []
+    let currentCategory: HttpTypes.StoreProductCategory | null = targetCategory
+
+    
+
+    // Prevent infinite loops with a visited set
+    const visitedIds = new Set<string>()
+
+    while (currentCategory && !visitedIds.has(currentCategory.id)) {
+      visitedIds.add(currentCategory.id)
+      hierarchy.unshift(currentCategory) // Add to beginning to build root-to-leaf path
+      
+      
+      
+      // Find parent category using parent_category_id field
+      if (currentCategory.parent_category_id) {
+        const parentId: string = currentCategory.parent_category_id
+        currentCategory = product_categories.find(cat => cat.id === parentId) || null
+        
+        if (!currentCategory && process.env.NODE_ENV === 'development') {
+          console.warn(`  ⚠️ Parent category with ID ${parentId} not found in fetched categories`)
+        }
+      } else {
+        // No parent_category_id means this is a root category
+        currentCategory = null
+      }
+    }
+
+    
+
+    return hierarchy
+  } catch (error) {
+    console.error('Error building category hierarchy:', error)
+    return []
   }
 }
 

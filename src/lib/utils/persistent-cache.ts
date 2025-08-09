@@ -25,9 +25,10 @@ class PersistentCache {
       ttl
     })
 
-    // Clean up expired entries periodically
+    // CRITICAL FIX: Async cleanup to prevent blocking variant selection
     if (this.cache.size > 100) {
-      this.cleanup()
+      // Use setTimeout to make cleanup non-blocking
+      setTimeout(() => this.cleanup(), 0)
     }
   }
 
@@ -69,12 +70,21 @@ class PersistentCache {
   }
 
   private cleanup(): void {
+    // CRITICAL FIX: Non-blocking cleanup to prevent variant selection freezing
+    if (this.cache.size < 50) return // Skip cleanup if cache is small
+    
     const now = Date.now()
+    const keysToDelete: string[] = []
+    
+    // Collect expired keys first
     for (const [key, entry] of this.cache.entries()) {
       if (now - entry.timestamp > entry.ttl) {
-        this.cache.delete(key)
+        keysToDelete.push(key)
       }
     }
+    
+    // Delete expired entries in batches to prevent blocking
+    keysToDelete.forEach(key => this.cache.delete(key))
   }
 
   getStats() {

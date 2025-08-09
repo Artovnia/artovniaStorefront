@@ -10,7 +10,8 @@ import {
 import { SafeI18nLink as Link } from "@/components/atoms/SafeI18nLink"
 import { HeartIcon } from "@/icons"
 import { listCategories } from "@/lib/data/categories"
-import { PARENT_CATEGORIES } from "@/const"
+import { sdk } from "@/lib/config"
+// Removed hardcoded PARENT_CATEGORIES import - now using dynamic detection
 import { retrieveCart } from "@/lib/data/cart"
 import { UserDropdown } from "@/components/cells/UserDropdown/UserDropdown"
 import { retrieveCustomer } from "@/lib/data/customer"
@@ -46,17 +47,22 @@ export const Header = async () => {
 
   const wishlistCount = wishlist?.[0]?.products?.length || 0
 
-  // Fetch categories with error handling
-  let categories: HttpTypes.StoreProductCategory[] = []
-  let parentCategories: HttpTypes.StoreProductCategory[] = []
+  // Fetch categories with full recursive tree using the fixed listCategories function
+  let topLevelCategories: HttpTypes.StoreProductCategory[] = []
+  let allCategoriesWithTree: HttpTypes.StoreProductCategory[] = []
+  
   try {
-    const categoryData = await listCategories({
-      headingCategories: PARENT_CATEGORIES,
-    })
-    categories = categoryData?.categories || []
-    parentCategories = categoryData?.parentCategories || []
+    // Use the FIXED listCategories function that builds the full recursive tree
+    const categoriesData = await listCategories()
+    
+    if (categoriesData && categoriesData.parentCategories) {
+      topLevelCategories = categoriesData.parentCategories
+      allCategoriesWithTree = [...categoriesData.parentCategories, ...categoriesData.categories]
+      
+      
+    }
   } catch (error) {
-    console.error("Error retrieving categories:", error)
+    console.error("🏠 Header: Error retrieving categories with listCategories:", error)
   }
 
   return (
@@ -64,10 +70,10 @@ export const Header = async () => {
       <div className="flex py-2 lg:px-8 px-4 ">
         <div className="flex items-center lg:w-1/3">
           <MobileNavbar
-            parentCategories={parentCategories}
-            childrenCategories={categories}
+            parentCategories={topLevelCategories}
+            childrenCategories={allCategoriesWithTree.filter((cat: HttpTypes.StoreProductCategory) => cat.parent_category_id)}
           />
-          <HeadingCategories categories={parentCategories} />
+          
         </div>
         <div className="flex lg:justify-center lg:w-1/3 items-center pl-4 lg:pl-0">
           <Link href="/" className="text-2xl font-bold">
@@ -97,7 +103,7 @@ export const Header = async () => {
           <CartDropdown cart={cart} />
         </div>
       </div>
-      <Navbar categories={parentCategories} />
+      <Navbar categories={topLevelCategories} />
     </header>
   )
 }

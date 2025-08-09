@@ -15,6 +15,7 @@ import { useEffect, useState } from "react"
 import { retrieveCustomer } from "@/lib/data/customer"
 import { getUserWishlists } from "@/lib/data/wishlist"
 import { SerializableWishlist } from "@/types/wishlist"
+import { getSellerByHandle } from "@/lib/data/seller"
 
 export const ProductCard = ({
   product,
@@ -34,6 +35,8 @@ export const ProductCard = ({
   const { prefetchOnHover } = useHoverPrefetch()
   const router = useRouter()
   const productUrl = `/products/${product.handle}`
+  // Use seller name from the product object directly instead of trying to fetch it
+  // The seller should already be included in the product data
   
   // Use provided props without additional internal state management
   // This avoids unnecessary duplicate API calls
@@ -62,19 +65,22 @@ export const ProductCard = ({
     product,
   })
 
+  
+
   return (
     <div
       className={clsx(
-        "relative group flex flex-col h-full",
+        "relative group flex flex-col h-full w-[280px]",
         {
-          "w-[250px] lg:w-[370px] p-2": sellerPage,
-          "w-full p-1": !sellerPage, // Use full width of container, let carousel control sizing
+          "p-2": sellerPage,
+          "p-1": !sellerPage
         }
       )}
       {...prefetchOnHover(productUrl)}
       onMouseEnter={handleMouseEnter}
     >
-      <div className="relative w-full bg-primary aspect-square flex-shrink-0">
+      {/* Product card size */}
+      <div className="relative bg-primary h-[350px] w-[280px] flex-shrink-0">
         <div className="absolute right-3 top-3 z-10 cursor-pointer">
           <WishlistButton 
             productId={product.id} 
@@ -91,7 +97,7 @@ export const ProductCard = ({
                 alt={product.title}
                 width={320}
                 height={320}
-                className="object-cover aspect-square w-full object-center h-full lg:group-hover:scale-105 transition-all duration-300 "
+                className="object-cover w-full object-center h-full lg:group-hover:scale-105 transition-all duration-300"
                 priority
               />
             ) : (
@@ -113,12 +119,20 @@ export const ProductCard = ({
       </div>
       <Link href={`/products/${product.handle}`}>
         <div className="flex justify-between p-3 flex-grow">
-          <div className="w-full">
-            <h3 className={`text-md font-bold truncate mb-2 leading-tight ${themeMode === 'light' ? 'text-white' : ''}`}>
+          <div className="w-full font-instrument-sans">
+            <h3 className={`text-md font-instrument-sans truncate mb-1 leading-tight ${themeMode === 'light' ? 'text-white' : ''}`}>
               {product.title}
             </h3>
+            
+            {/* Seller name below title */}
+            {product.seller && (
+              <p className={`font-instrument-serif text-md mb-2 ${themeMode === 'light' ? 'text-white/80' : 'text-black'}`}>
+                {product.seller.name}
+              </p>
+            )}
+            
             <div className="flex items-center gap-2">
-              <p className={`font-semibold text-md ${themeMode === 'light' ? 'text-white' : ''}`}>
+              <p className={`font-instrument-sans font-semibold text-md ${themeMode === 'light' ? 'text-white' : ''}`}>
                 {sellerCheapestPrice?.calculated_price ||
                   cheapestPrice?.calculated_price}
               </p>

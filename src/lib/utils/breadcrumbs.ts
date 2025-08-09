@@ -1,4 +1,5 @@
 import { HttpTypes } from "@medusajs/types"
+import { getCategoryHierarchy } from "@/lib/data/categories"
 
 export interface BreadcrumbItem {
   label: string
@@ -15,10 +16,10 @@ type ProductWithCategories = HttpTypes.StoreProduct & {
  * Build breadcrumbs for a product based on its categories and collections
  * Returns array of breadcrumb items: [Home, Main Category, Subcategory, Sub-subcategory]
  */
-export function buildProductBreadcrumbs(
+export async function buildProductBreadcrumbs(
   product: ProductWithCategories,
   locale: string = 'pl'
-): BreadcrumbItem[] {
+): Promise<BreadcrumbItem[]> {
   const breadcrumbs: BreadcrumbItem[] = []
 
   // Always start with Home
@@ -30,17 +31,26 @@ export function buildProductBreadcrumbs(
   // Get the primary category (first category if multiple exist)
   const primaryCategory = product.categories?.[0]
   
-  if (primaryCategory) {
-    // Build category hierarchy by traversing parent categories
-    const categoryHierarchy = buildCategoryHierarchy(primaryCategory)
-    
-    // Add each category level to breadcrumbs
-    categoryHierarchy.forEach(category => {
-      breadcrumbs.push({
-        label: category.name,
-        path: `/categories/${category.handle}`
+  if (primaryCategory?.handle) {
+    try {
+      // Use the new getCategoryHierarchy function to get full hierarchy from backend
+      const categoryHierarchy = await getCategoryHierarchy(primaryCategory.handle)
+      
+      // Add each category level to breadcrumbs
+      categoryHierarchy.forEach(category => {
+        breadcrumbs.push({
+          label: category.name,
+          path: `/categories/${category.handle}`
+        })
       })
-    })
+    } catch (error) {
+      console.error('Error building category hierarchy for breadcrumbs:', error)
+      // Fallback to just the primary category
+      breadcrumbs.push({
+        label: primaryCategory.name,
+        path: `/categories/${primaryCategory.handle}`
+      })
+    }
   } 
   // No more collection fallback - we always want to use categories
   // If we don't have categories, we'll just show Home

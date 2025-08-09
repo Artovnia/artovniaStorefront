@@ -5,7 +5,7 @@ import { HttpTypes } from "@medusajs/types"
 import { ProductVariants } from "../../../components/molecules"
 import useGetAllSearchParams from "../../../hooks/useGetAllSearchParams"
 import { getProductPrice } from "../../../lib/helpers/get-product-price"
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { addToCart } from "../../../lib/data/cart"
 import { SellerProps } from "../../../types/seller"
 import { WishlistButton } from "../WishlistButton/WishlistButton"
@@ -68,45 +68,46 @@ export const ProductDetailsHeader = ({
   const { isAvailable, availability, holidayMode, openHolidayModal } = useVendorAvailability();
   const [isAdding, setIsAdding] = useState(false)
   const { allSearchParams } = useGetAllSearchParams()
-  const { selectedVariantId, setSelectedVariantId, updateUrlWithVariant } = useVariantSelection()
+  const { selectedVariantId, setSelectedVariantId } = useVariantSelection() // Removed updateUrlWithVariant to prevent direct usage
 
-  // set default variant options
-  const selectedVariantOptions = {
-    ...optionsAsKeymap(product?.variants?.[0].options ?? null),
-    ...allSearchParams,
-  }
-
-  // Find the current variant ID based on selected options
-  const currentVariantId =
-    product.variants?.find((variant) =>
-      variant.options?.every((option: any) =>
-        selectedVariantOptions[option.option?.title.toLowerCase() || ""]?.includes(
-          option.value
-        )
-      )
-    )?.id || ""
+  // CRITICAL FIX: Calculate selectedVariantOptions based on current variant from context
+  const selectedVariantOptions = useMemo(() => {
+    // Find the currently selected variant
+    const currentVariant = selectedVariantId 
+      ? product.variants?.find(v => v.id === selectedVariantId)
+      : product.variants?.[0]
     
-  // Update the context when variant changes based on options
-  useEffect(() => {
-    if (currentVariantId && currentVariantId !== selectedVariantId) {
-      setSelectedVariantId(currentVariantId)
-      updateUrlWithVariant(currentVariantId)
+    if (!currentVariant) return {}
+    
+    // Create options map from the current variant
+    const variantOptions = optionsAsKeymap(currentVariant.options ?? undefined)
+    
+    // Merge with search params, but prioritize variant options
+    return {
+      ...allSearchParams,
+      ...variantOptions,
     }
-  }, [currentVariantId, selectedVariantId, setSelectedVariantId, updateUrlWithVariant])
+  }, [selectedVariantId, product.variants, allSearchParams])
+
+  // CRITICAL FIX: Use selectedVariantId directly from context
+  const currentVariantId = selectedVariantId || (product.variants?.[0]?.id || "")
   
-  // Initialize with first variant if none selected
+  // CRITICAL FIX: Initialize variant on mount and when product changes
   useEffect(() => {
+    // Only set initial variant if none is selected and we have variants
     if (!selectedVariantId && product.variants && product.variants.length > 0) {
       const firstVariantId = product.variants[0].id
+      if (process.env.NODE_ENV === 'development') {
+        
+      }
       setSelectedVariantId(firstVariantId)
-      updateUrlWithVariant(firstVariantId)
     }
-  }, [product.variants, selectedVariantId, setSelectedVariantId, updateUrlWithVariant])
+  }, [product.id, setSelectedVariantId]) // Depend on product.id to reinitialize when product changes
 
-  // get variant price
+  // get variant price using current variant ID
   const { variantPrice } = getProductPrice({
     product,
-    variantId: selectedVariantId,
+    variantId: currentVariantId,
   })
 
   // add the selected variant to the cart
@@ -130,7 +131,7 @@ export const ProductDetailsHeader = ({
   }
 
   // Debug variant and stock information
-  const selectedVariantObject = product.variants?.find(({ id }) => id === selectedVariantId);
+  const selectedVariantObject = product.variants?.find(({ id }) => id === currentVariantId);
   
   const variantStock = selectedVariantObject?.inventory_quantity || 0
 

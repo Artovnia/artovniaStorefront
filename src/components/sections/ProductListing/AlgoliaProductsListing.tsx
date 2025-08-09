@@ -283,21 +283,21 @@ const ProductsListing = ({ sortOptions }: ProductsListingProps) => {
       <div className="hidden md:block">
         <ProductListingActiveFilters />
       </div>
-      <div className="grid grid-cols-1 md:grid-cols-4 mt-6">
+      <div className="grid grid-cols-1 md:grid-cols-5 mt-6">
         <div>
           <AlgoliaProductSidebar />
         </div>
-        <div className="w-full col-span-3">
+        <div className="w-full col-span-4">
           {!items.length ? (
             <div className="text-center w-full my-10">
-              <h2 className="uppercase text-primary heading-lg">no results</h2>
+              <h2 className="uppercase text-primary heading-lg">Brak wyników</h2>
               <p className="mt-4 text-lg">
-                Sorry, we can&apos;t find any results for your criteria
+                Nie znaleziono produktów spełniających Twoje kryteria
               </p>
             </div>
           ) : (
             <div className="w-full">
-              <ul className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3">
+              <ul className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 xl:ml-20">
                 {items.map((hit) => (
                   <ProductCard 
                     key={hit.objectID} 

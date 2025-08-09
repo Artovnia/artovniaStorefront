@@ -100,11 +100,12 @@ export const CustomCarousel = ({
           msOverflowStyle: 'none', /* IE/Edge */
         }}
       >
-        <div className='flex gap-3 pb-4'>
+        {/* Adjust space between cards */}
+        <div className='flex gap-8 pb-4'>
           {items.map((slide, index) => (
             <div 
               key={index} 
-              className='flex-none w-[280px] sm:w-[300px] md:w-[320px] lg:w-[350px]'
+              className='flex-none w-[280px]'
             >
               {slide}
             </div>

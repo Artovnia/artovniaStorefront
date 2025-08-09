@@ -47,7 +47,6 @@ async function Category({
   
   // Decode the URL-encoded handle
   const decodedHandle = decodeURIComponent(handle)
-  console.log(`Trying to find category. Raw handle: ${handle}, decoded: ${decodedHandle}`)
   
   // Define a function to directly fetch categories
   const fetchAllCategories = async (): Promise<HttpTypes.StoreProductCategory[]> => {
@@ -60,7 +59,6 @@ async function Category({
           cache: "no-cache",
         });
       
-      console.log(`Found ${response.product_categories.length} categories in total`)
       return response.product_categories;
     } catch (error) {
       console.error('Error fetching all categories:', error)
@@ -73,7 +71,6 @@ async function Category({
   
   // If not found, try the direct approach
   if (!category) {
-    console.log('Category not found with normal approach, trying direct search...')
     const allCategories = await fetchAllCategories()
     
     // Try exact match on handle
@@ -106,17 +103,12 @@ async function Category({
     }
     
     if (category) {
-      console.log(`Found category by direct search: ${category.name} (${category.handle})`)
     }
   }
 
   // If category still doesn't exist, show a custom not found page
   if (!category) {
     console.error(`Category not found after all attempts: ${handle} / ${decodedHandle}`)
-    console.log('Available handles:', (await fetchAllCategories())
-      .map((c: HttpTypes.StoreProductCategory) => `${c.name} (${c.handle})`)
-      .join(', ')
-    )
     return notFound()
   }
 
