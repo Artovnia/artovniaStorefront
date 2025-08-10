@@ -48,15 +48,15 @@ export const ParcelAccordion = ({
         onClick={openHandler}
       >
         <div className="sm:col-span-4 flex flex-col lg:flex-row lg:items-center justify-between lg:gap-4 sm:pr-10">
-          <h2 className="heading-sm truncate">ORDER {orderDisplayId}</h2>
+          <h2 className="heading-sm truncate">Zamówienie {orderDisplayId}</h2>
           <h2 className="label-md">
-            Order date:{" "}
+            Data zamówienia:{" "}
             <span className="text-primary lg:block xl:inline-block">
               {format(new Date(createdAt) || "", "yyyy-MM-dd")}
             </span>
           </h2>
           <h2 className="label-md">
-            Total:{" "}
+            Suma zamówienia:{" "}
             <span className="text-primary lg:block xl:inline-block">
               {convertToLocale({ amount: total, currency_code })}
             </span>
@@ -65,7 +65,7 @@ export const ParcelAccordion = ({
         <div className="col-span-1 flex justify-end items-center gap-4">
           <Link href={`/user/orders/${orderId}`}>
             <Button variant="tonal" onClick={(e) => e.stopPropagation()}>
-              <span className="label-md text-primary">VIEW ORDER</span>
+              <span className="label-md text-primary">Zobacz zamówienie</span>
             </Button>
           </Link>
           <CollapseIcon

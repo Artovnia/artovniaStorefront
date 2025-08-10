@@ -6,6 +6,7 @@ import { HomeCategories } from "./HomeCategories/HomeCategories"
 import { BannerSection } from "./BannerSection/BannerSection"
 import { ShopByStyleSection } from "./ShopByStyle/ShopByStyleSection"
 import { BlogSection } from "./BlogSection/BlogSection"
+import { DesignerOfTheWeekSection } from "./DesignerOfTheWeekSection/DesignerOfTheWeekSection"
 import { ProductListing } from "./ProductListing/ProductListing"
 import { SellerPageHeader } from "./SellerPageHeader/SellerPageHeader"
 import { Cart } from "./Cart/Cart"
@@ -39,5 +40,6 @@ export {
   OrderReturnRequests,
   OrderReturnSection,
   OrderDetailsSection,
-  SmartBestProductsSection
+  SmartBestProductsSection,
+  DesignerOfTheWeekSection
 }

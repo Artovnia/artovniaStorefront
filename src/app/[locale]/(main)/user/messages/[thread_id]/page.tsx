@@ -35,25 +35,7 @@ export default async function MessageThreadPage(props: PageProps) {
   // This avoids the server-side errors and provides a better user experience
   // The actual marking as read happens in the MessageContainer component
   
-  console.log(`Loading thread ${thread_id} - will be marked as read client-side`)
   
-  // Add server-side debugging
-  console.log(`Message thread data:`, {
-    id: messageThread.id,
-    subject: messageThread.subject,
-    seller: messageThread.seller,
-    hasMessages: Array.isArray(messageThread.messages) && messageThread.messages.length > 0,
-    messageCount: messageThread.messages?.length || 0
-  })
-  
-  // Add server-side debugging
-  console.log('Message thread data:', {
-    id: messageThread.id,
-    subject: messageThread.subject,
-    seller: messageThread.seller,
-    hasMessages: !!messageThread.messages,
-    messageCount: messageThread.messages?.length || 0
-  })
 
   return (
     <main className="container">
@@ -65,7 +47,7 @@ export default async function MessageThreadPage(props: PageProps) {
         <div className="md:col-span-3 space-y-8">
           <div className="flex justify-between items-center">
             <div className="w-full">
-              <Link href="/user/messages" className="text-sm text-primary hover:underline mb-2 inline-block">
+              <Link href="/user/messages" className="text-sm text-black hover:underline mb-2 inline-block font-instrument-sans">
                 ← Wróć do tematów
               </Link>
               
@@ -83,14 +65,14 @@ export default async function MessageThreadPage(props: PageProps) {
                   </div>
                 ) : (
                   <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center">
-                    <span className="text-gray-500 text-sm">
+                    <span className="text-gray-500 text-sm font-instrument-sans">
                       {(messageThread.seller?.name || 'S').charAt(0).toUpperCase()}
                     </span>
                   </div>
                 )}
                 
                 <div>
-                  <h1 className="heading-md uppercase">Rozmowa z {messageThread.seller?.name || 'Sprzedawca'}</h1>
+                  <h1 className="heading-md uppercase font-instrument-sans">Rozmowa z {messageThread.seller?.name || 'Sprzedawca'}</h1>
                   {messageThread.subject && (
                     <h2 className="text-lg font-medium mt-1">{messageThread.subject}</h2>
                   )}

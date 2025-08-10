@@ -24,7 +24,7 @@ export const OrderAddresses = ({ shipping_address }: OrderAddressesProps) => {
   return (
     <Card className="p-6 mt-8">
       <div className="flex justify-between items-center mb-4">
-        <h3 className="heading-sm uppercase">Shipping Address</h3>
+        <h3 className="heading-sm uppercase">Adres wysyłki</h3>
       </div>
       
       <div className="text-md">

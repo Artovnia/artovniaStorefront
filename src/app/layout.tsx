@@ -10,7 +10,7 @@ import { ToastProvider } from "@/components/providers/ToastProvider"
 const instrumentSans = Instrument_Sans({
   variable: "--font-instrument-sans",
   subsets: ["latin"],
-  weight: ["400"],
+  weight: ["400", "500", "600", "700"],  // Added medium, semibold, and bold weights
 })
 
 const instrumentSerif = Instrument_Serif({

@@ -68,18 +68,10 @@ export const SingleOrderReturn = ({
   useEffect(() => {
     const fetchReasons = async () => {
       try {
-        console.log('SingleOrderReturn: Starting to fetch return reasons...');
         setReasonsLoading(true)
         
         const reasons = await retrieveReturnReasons()
-        
-        console.log('SingleOrderReturn: Return reasons API response:', {
-          received: !!reasons,
-          isArray: Array.isArray(reasons),
-          count: reasons?.length || 0,
-          sample: reasons?.[0] || null,
-          allReasons: reasons
-        });
+    
         
         // Convert to our internal ReturnReason type
         const formattedReasons: ReturnReason[] = reasons.map((reason: any) => ({
@@ -89,14 +81,7 @@ export const SingleOrderReturn = ({
           description: reason.description
         }))
         
-        console.log('SingleOrderReturn: Formatted return reasons:', {
-          count: formattedReasons.length,
-          reasons: formattedReasons
-        });
-        
         setReturnReasons(formattedReasons)
-        
-        console.log('SingleOrderReturn: Return reasons state updated successfully');
       } catch (error) {
         console.error('SingleOrderReturn: Error fetching return reasons:', {
           error,
@@ -104,7 +89,6 @@ export const SingleOrderReturn = ({
         });
       } finally {
         setReasonsLoading(false)
-        console.log('SingleOrderReturn: Return reasons loading finished');
       }
     }
     
@@ -115,20 +99,7 @@ export const SingleOrderReturn = ({
   const getReasonLabel = (lineItem: any): string => {
     const reasonId = lineItem?.reason_id;
     
-    if (process.env.NODE_ENV === 'development') {
-      console.log('Return reason debug:', {
-        lineItemId: lineItem?.id,
-        reasonId: reasonId,
-        reasonIdType: typeof reasonId,
-        hasReturnReasons: returnReasons && returnReasons.length > 0,
-        returnReasonsCount: returnReasons?.length || 0,
-        availableReasonIds: returnReasons?.map(r => r.id) || [],
-        availableReasonLabels: returnReasons?.map(r => ({ id: r.id, label: r.label })) || [],
-        isReasonIdNull: reasonId === null,
-        isReasonIdUndefined: reasonId === undefined,
-        isReasonIdEmpty: reasonId === ''
-      });
-    }
+    
     
     // Handle null, undefined, or empty reason_id (database issue)
     if (!reasonId || reasonId === null || reasonId === undefined || reasonId === '') {
@@ -289,34 +260,6 @@ export const SingleOrderReturn = ({
     // If no shipping methods or cost found, assume 0 (discounts applied)
   }
   
-  // Debug logging for shipping cost calculation
-  if (process.env.NODE_ENV === 'development') {
-    console.log('Shipping cost debug:', {
-      orderTotal: orderTotal,
-      itemsOnlyTotal: itemsOnlyTotal,
-      finalShippingCost: shippingCost,
-      hasDiscount: orderTotal < itemsOnlyTotal,
-      orderShippingTotal: orderShippingTotal,
-      orderShippingTotalType: typeof orderShippingTotal,
-      orderShippingTotalIsValid: orderShippingTotal !== null && orderShippingTotal !== undefined && !isNaN(orderShippingTotal),
-      orderShippingMethods: item?.order?.shipping_methods?.length || 0,
-      shippingMethodsData: item?.order?.shipping_methods?.map((method: any) => ({
-        id: method?.id,
-        amount: method?.amount,
-        name: method?.shipping_option?.name
-      })) || [],
-      calculationMethod: orderShippingTotal !== null && orderShippingTotal !== undefined && !isNaN(orderShippingTotal) 
-        ? 'order.shipping_total' 
-        : orderTotal > itemsOnlyTotal 
-        ? 'difference_calculation' 
-        : 'shipping_methods_or_zero',
-      orderData: {
-        id: item?.order?.id,
-        display_id: item?.order?.display_id,
-        hasShippingMethods: Array.isArray(item?.order?.shipping_methods) && item?.order?.shipping_methods.length > 0
-      }
-    });
-  }
 
   
   // 3. Calculate final total - use itemsTotal (returned items) + shipping cost
@@ -325,17 +268,7 @@ export const SingleOrderReturn = ({
   const shipping = Number(shippingCost) || 0;
   const total = subtotal + shipping;
   
-  // Debug logging for total calculation
-  if (process.env.NODE_ENV === 'development') {
-    console.log('Total calculation debug:', {
-      itemsTotal: itemsTotal,
-      subtotal: subtotal,
-      shippingCost: shippingCost,
-      shipping: shipping,
-      finalTotal: total,
-      orderOriginalTotal: item?.order?.total
-    });
-  }
+  
 
   // Map status to appropriate step in our 3-step progress bar
   let currentStep = 0 // Default to first step (pending)
@@ -353,9 +286,9 @@ export const SingleOrderReturn = ({
 
   return (
     <>
-      <Card className="bg-secondary p-4 flex justify-between mt-8">
-        <Heading level="h2">Zamówienie: #{item.order.display_id}</Heading>
-        <div className="flex flex-col gap-2 items-center">
+      <Card className="bg-secondary p-4 flex justify-between mt-8 border border-[#3B3634]">
+        <Heading level="h2" className="font-instrument-sans">Zamówienie: #{item.order.display_id}</Heading>
+        <div className="flex flex-col gap-2 items-center ">
           <p className="label-sm text-secondary">
             Data prośby zwrotu:{" "}
             {item?.created_at ? format(new Date(item.created_at), "MMM dd, yyyy") : "Brak daty"}
@@ -382,7 +315,7 @@ export const SingleOrderReturn = ({
           </p>
         </div>
         <div
-          className={cn("transition-all duration-300 overflow-hidden")}
+          className={cn("transition-all duration-300 overflow-hidden border border-[#3B3634] rounded-sm")}
           style={{
             maxHeight: isOpen ? `${height}px` : "0px",
             opacity: isOpen ? 1 : 0,
@@ -432,9 +365,9 @@ export const SingleOrderReturn = ({
                 // getReasonLabel function is now defined at component level
                 
                 return (
-                <div key={orderItem.id} className="flex items-center gap-2">
+                <div key={orderItem.id} className="flex items-center gap-2 border-b border-[#3B3634] pb-2">
                   <div className="flex items-center gap-4 w-1/2">
-                    <div className="rounded-sm overflow-hidden border">
+                    <div className="rounded-sm overflow-hidden border ">
                       {orderItem.thumbnail ? (
                         <Image
                           src={orderItem.thumbnail}
@@ -459,9 +392,9 @@ export const SingleOrderReturn = ({
                       <p className="label-md text-secondary">{orderItem.title}</p>
                     </div>
                   </div>
-                  <div className="flex justify-between w-1/2">
+                  <div className="flex justify-between w-1/2 ">
                     <p className="label-md !font-semibold text-primary">
-                      <Badge className="bg-primary text-primary border rounded-sm">
+                      <Badge className="bg-primary text-primary border border-[#3B3634] rounded-sm">
                         {(() => {
                           console.log('Badge rendering debug:', {
                             hasReturnLineItem: !!returnLineItem,
@@ -498,7 +431,7 @@ export const SingleOrderReturn = ({
           {/* Totals Section - Exact copy from OrderTotals component */}
           <div className="p-4 flex justify-between">
             <p className="text-secondary label-md mb-2">Podsumowanie:</p>
-            <span className="text-primary">
+            <span className="font-instrument-sans heading-md">
               {convertToLocale({
                 amount: itemsTotal,
                 currency_code,
@@ -508,7 +441,7 @@ export const SingleOrderReturn = ({
           
           <div className="p-4 flex justify-between border-t border-ui-border-base">
             <p className="text-secondary label-md">Dostawa:</p>
-            <span className="text-primary">
+            <span className="font-instrument-sans heading-md">
               {convertToLocale({
                 amount: shippingCost,
                 currency_code,
@@ -520,7 +453,7 @@ export const SingleOrderReturn = ({
           
           <div className="p-4 flex justify-between items-center">
             <p className="text-secondary label-md">Suma:</p>
-            <span className="text-primary heading-md">
+            <span className="font-instrument-sans heading-md">
               {convertToLocale({
                 amount: total,
                 currency_code,

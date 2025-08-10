@@ -78,20 +78,21 @@ export function MessageForm({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      <div className="space-y-2">
-        <label htmlFor="reply-message" className="block text-sm font-medium">Reply</label>
+      <div className="space-y-2 font-instrument-sans">
+        <label htmlFor="reply-message" className="block text-sm font-medium font-instrument-sans">Odpowiedz</label>
         <Textarea
+          className="bg-white"
           id="reply-message"
           value={content}
           onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setContent(e.target.value)}
-          placeholder="Type your message here..."
+          placeholder="Wpisz swoją wiadomość..."
           rows={4}
           required
         />
       </div>
       <div className="flex justify-end">
         <Button type="submit" variant="filled" disabled={isSubmitting}>
-          {isSubmitting ? "Sending..." : "Send Message"}
+          {isSubmitting ? "Wysyłanie..." : "Wyślij wiadomość"}
         </Button>
       </div>
     </form>

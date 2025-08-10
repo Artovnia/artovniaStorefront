@@ -7,6 +7,7 @@ import {
   ShopByStyleSection,
   HomeNewestProductsSection,
   SmartBestProductsSection,
+  DesignerOfTheWeekSection,
 } from "@/components/sections"
 
 import type { Metadata } from "next"
@@ -82,6 +83,11 @@ export default async function Home({
         </div>
       </div>
       
+      {/* Designer of the Week Section */}
+      <div className="w-full bg-[#F4F0EB] h-[55vh] py-8">
+        <DesignerOfTheWeekSection />
+      </div>
+
       {/* Content with max-width container */}
       <div className="mx-auto max-w-[1920px] w-full px-4 lg:px-8 mt-8 ">
         {/*<BannerSection />*/}

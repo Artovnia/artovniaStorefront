@@ -8,7 +8,7 @@ export default async function UserPage() {
   if (!user) return <LoginForm />
 
   return (
-    <main className=" max-w-[1920px] mx-auto py-12">
+    <main className="h-full max-w-[1920px] mx-auto py-12">
       <div className="grid grid-cols-1 md:grid-cols-4 mt-6 gap-5 md:gap-8">
         <UserNavigation />
         <div className="md:col-span-3">

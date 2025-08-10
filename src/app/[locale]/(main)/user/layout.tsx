@@ -3,5 +3,6 @@ export default function UserLayout({
 }: {
   children: React.ReactNode
 }) {
-  return <div className="-mt-6 font-instrument-serif text-xl">{children}</div>
+  // Changed h-full to w-full and removed any height constraint to work with parent flex-grow
+  return <div className="-mt-6 font-instrument-sans text-xl w-full">{children}</div>
 }

@@ -3,10 +3,11 @@ import { notFound } from 'next/navigation'
 import Image from 'next/image'
 import Link from 'next/link'
 import { format } from 'date-fns'
-import { getBlogPost, getBlogPosts } from '../lib/data'
+import { getBlogPost, getBlogPosts, getSellerPost, getSellerPosts } from '../lib/data'
 import { urlFor } from '../lib/sanity'
 import BlogLayout from '../components/BlogLayout'
 import PortableText from '../components/PortableText'
+import { SellerPostLayout } from '../components/SellerPostLayout'
 
 interface BlogPostPageProps {
   params: Promise<{
@@ -15,15 +16,32 @@ interface BlogPostPageProps {
 }
 
 export async function generateStaticParams() {
-  const posts = await getBlogPosts()
-  return posts.map((post) => ({
+  const [blogPosts, sellerPosts] = await Promise.all([
+    getBlogPosts(),
+    getSellerPosts()
+  ])
+  
+  const blogPostParams = blogPosts.map((post) => ({
     slug: post.slug.current,
   }))
+  
+  const sellerPostParams = sellerPosts.map((post) => ({
+    slug: post.slug.current,
+  }))
+  
+  return [...blogPostParams, ...sellerPostParams]
 }
 
 export async function generateMetadata({ params }: BlogPostPageProps): Promise<Metadata> {
   const { slug } = await params
-  const post = await getBlogPost(slug)
+  
+  // Try to fetch both blog post and seller post
+  const [blogPost, sellerPost] = await Promise.all([
+    getBlogPost(slug),
+    getSellerPost(slug)
+  ])
+  
+  const post = blogPost || sellerPost
 
   if (!post) {
     return {
@@ -31,8 +49,10 @@ export async function generateMetadata({ params }: BlogPostPageProps): Promise<M
     }
   }
 
+  // Handle metadata for both post types
   const title = post.seo?.metaTitle || post.title
-  const description = post.seo?.metaDescription || post.excerpt || ''
+  const description = post.seo?.metaDescription || 
+    ('excerpt' in post ? post.excerpt : 'shortDescription' in post ? post.shortDescription : '') || ''
   const imageUrl = post.mainImage ? urlFor(post.mainImage).width(1200).height(630).url() : undefined
 
   return {
@@ -44,7 +64,8 @@ export async function generateMetadata({ params }: BlogPostPageProps): Promise<M
       description,
       type: 'article',
       publishedTime: post.publishedAt,
-      authors: post.author?.name ? [post.author.name] : undefined,
+      authors: 'author' in post && post.author?.name ? [post.author.name] : 
+               'sellerName' in post ? [post.sellerName] : undefined,
       images: imageUrl ? [{ url: imageUrl, width: 1200, height: 630 }] : undefined,
     },
     twitter: {
@@ -58,14 +79,28 @@ export async function generateMetadata({ params }: BlogPostPageProps): Promise<M
 
 export default async function BlogPostPage({ params }: BlogPostPageProps) {
   const { slug } = await params
-  const post = await getBlogPost(slug)
+  
+  // Try to fetch both blog post and seller post
+  const [blogPost, sellerPost] = await Promise.all([
+    getBlogPost(slug),
+    getSellerPost(slug)
+  ])
+  
+  const post = blogPost || sellerPost
 
   if (!post) {
     notFound()
   }
 
-  const imageUrl = post.mainImage 
-    ? urlFor(post.mainImage).width(1200).height(600).url()
+  // If it's a seller post, render with SellerPostLayout
+  if (sellerPost) {
+    return <SellerPostLayout post={sellerPost as any} />
+  }
+
+  // Otherwise, render as regular blog post (we know it's a BlogPost now)
+  const blogPostData = post as import('../lib/data').BlogPost
+  const imageUrl = blogPostData.mainImage 
+    ? urlFor(blogPostData.mainImage).width(1200).height(600).url()
     : null
 
   return (
@@ -73,9 +108,9 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
       <article className="max-w-4xl mx-auto font-instrument-sans bg-[#F4F0EB]">
         {/* Header */}
         <header className="mb-8">
-          {post.categories && post.categories.length > 0 && (
+          {blogPostData.categories && blogPostData.categories.length > 0 && (
             <div className="flex flex-wrap gap-2 mb-4">
-              {post.categories.map((category) => (
+              {blogPostData.categories.map((category: any) => (
                 <Link
                   key={category.slug.current}
                   href={`/blog/category/${category.slug.current}`}
@@ -88,38 +123,38 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
           )}
           
           <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4 leading-tight">
-            {post.title}
+            {blogPostData.title}
           </h1>
           
-          {post.excerpt && (
+          {blogPostData.excerpt && (
             <p className="text-xl text-gray-600 mb-6 leading-relaxed">
-              {post.excerpt}
+              {blogPostData.excerpt}
             </p>
           )}
           
           <div className="flex items-center justify-between text-gray-500 border-b border-gray-200 pb-6">
             <div className="flex items-center space-x-4">
-              {post.author?.image && (
+              {blogPostData.author?.image && (
                 <div className="relative w-12 h-12">
                   <Image
-                    src={urlFor(post.author.image).width(48).height(48).url()}
-                    alt={post.author.name}
+                    src={urlFor(blogPostData.author.image).width(48).height(48).url()}
+                    alt={blogPostData.author.name}
                     fill
                     className="rounded-full object-cover"
                   />
                 </div>
               )}
               <div>
-                <p className="font-medium text-gray-900">{post.author?.name}</p>
-                <time dateTime={post.publishedAt} className="text-sm">
-                  {format(new Date(post.publishedAt), 'MMMM dd, yyyy')}
+                <p className="font-medium text-gray-900">{blogPostData.author?.name}</p>
+                <time dateTime={blogPostData.publishedAt} className="text-sm">
+                  {format(new Date(blogPostData.publishedAt), 'MMMM dd, yyyy')}
                 </time>
               </div>
             </div>
             
-            {post.tags && post.tags.length > 0 && (
+            {blogPostData.tags && blogPostData.tags.length > 0 && (
               <div className="flex flex-wrap gap-2">
-                {post.tags.map((tag) => (
+                {blogPostData.tags.map((tag: string) => (
                   <span
                     key={tag}
                     className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded"
@@ -137,7 +172,7 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
           <div className="relative w-full h-96 md:h-[500px] mb-8 rounded-lg overflow-hidden">
             <Image
               src={imageUrl}
-              alt={post.mainImage?.alt || post.title}
+              alt={blogPostData.mainImage?.alt || blogPostData.title}
               fill
               className="object-cover"
               priority
@@ -147,18 +182,18 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
 
         {/* Content */}
         <div className="prose prose-lg max-w-none">
-          <PortableText content={post.content} />
+          <PortableText content={blogPostData.content} />
         </div>
 
         {/* Author Bio */}
-        {post.author?.bio && (
+        {blogPostData.author?.bio && (
           <div className="mt-12 p-6 bg-gray-50 rounded-lg">
             <div className="flex items-start space-x-4">
-              {post.author.image && (
+              {blogPostData.author.image && (
                 <div className="relative w-16 h-16 flex-shrink-0">
                   <Image
-                    src={urlFor(post.author.image).width(64).height(64).url()}
-                    alt={post.author.name}
+                    src={urlFor(blogPostData.author.image).width(64).height(64).url()}
+                    alt={blogPostData.author.name}
                     fill
                     className="rounded-full object-cover"
                   />
@@ -166,10 +201,10 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
               )}
               <div>
                 <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                  About {post.author.name}
+                  About {blogPostData.author.name}
                 </h3>
                 <div className="text-gray-600">
-                  <PortableText content={post.author.bio} />
+                  <PortableText content={blogPostData.author.bio} />
                 </div>
               </div>
             </div>

@@ -32,10 +32,10 @@ export default async function Wishlist() {
           {isEmpty(wishlist?.[0]?.products) ? (
             <div className="w-96 mx-auto flex flex-col items-center justify-center">
               <h2 className="heading-lg text-primary uppercase mb-2">
-                Wishlist
+                Lista życzeń
               </h2>
               <p className="text-lg text-secondary mb-6">
-                Your wishlist is currently empty.
+                Twoja lista życzeń jest aktualnie pusta.
               </p>
               <Link href="/categories" className="w-full">
                 <Button className="w-full">Explore</Button>
@@ -43,9 +43,9 @@ export default async function Wishlist() {
             </div>
           ) : (
             <div className="flex flex-col gap-6">
-              <h2 className="heading-lg text-primary uppercase">Wishlist</h2>
+              <h2 className="heading-lg text-primary uppercase">Lista życzeń</h2>
               <div className="flex justify-between items-center">
-                <p>{count} listings</p>
+                <p>{count} produkty</p>
               </div>
               <div className="flex flex-wrap max-md:justify-center gap-4">
                 {wishlist?.[0].products?.map((product) => (

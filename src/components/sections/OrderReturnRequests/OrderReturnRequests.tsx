@@ -16,21 +16,14 @@ export const OrderReturnRequests = ({
   page: string
   currentReturn: string
 }) => {
-  // Add diagnostic logging for returns data
-  console.log(`OrderReturnRequests component received ${returns.length} returns`)
-  console.log('Returns statuses:', returns.map(r => ({ id: r.id, status: r.status })))
   
   const pages = Math.ceil(returns.length / LIMIT)
   const currentPage = +page || 1
   const offset = (+currentPage - 1) * LIMIT
 
-  // Log pagination details
-  console.log(`Pagination: page ${currentPage}/${pages}, offset ${offset}, showing ${Math.min(LIMIT, returns.length - offset)} items`)
-
   const processedReturns = returns.slice(offset, offset + LIMIT)
   
-  // Verify we're returning the expected number of items
-  console.log(`After slicing, processedReturns contains ${processedReturns.length} items`)
+
 
   if (isEmpty(processedReturns)) {
     return (

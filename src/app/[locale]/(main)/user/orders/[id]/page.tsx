@@ -23,18 +23,6 @@ export default async function UserPage({
   if (!user) return redirect("/login")
   if (!order) return redirect("/user/orders")
 
-  // For debugging
-  console.log(`Rendering order details for order ${order.id}:`, {
-    id: order.id,
-    display_id: order.display_id,
-    is_order_set: order.is_order_set,
-    has_orders: !!(order as any).orders,
-    orders_count: (order as any).orders?.length || 0,
-    item_count: order.items?.length || 0,
-    currency: order.currency_code,
-    status: order.status,
-    total: order.total
-  })
 
   // Ensure we have the correct data structure for OrderDetailsSection
   const orderData = {
@@ -53,25 +41,25 @@ export default async function UserPage({
   }
 
   return (
-    <main className="container">
-      <div className="grid grid-cols-1 md:grid-cols-4 mt-6 gap-5 md:gap-8">
+    <main className="container  ">
+      <div className="grid grid-cols-1 md:grid-cols-4 mt-6 gap-5 md:gap-8 ">
         <UserNavigation />
-        <div className="md:col-span-3">
+        <div className="md:col-span-3 ">
           <LocalizedClientLink href="/user/orders">
             <Button
               variant="tonal"
               className="label-md text-action-on-secondary uppercase flex items-center gap-2"
             >
               <ArrowLeftIcon className="size-4" />
-              All orders
+              Wszystkie zamówienia
             </Button>
           </LocalizedClientLink>
-          <div className="sm:flex items-center justify-between">
+          <div className="sm:flex items-center justify-between ">
             <h1 className="heading-md uppercase my-8">
-              Order #{orderData.display_id}
+              Zamówienie #{orderData.display_id}
             </h1>
             <p className="label-md text-secondary">
-              Order date:{" "}
+              Data zamówienia:{" "}
               <span className="text-primary">
                 {format(new Date(orderData.created_at || ""), "yyyy-MM-dd")}
               </span>

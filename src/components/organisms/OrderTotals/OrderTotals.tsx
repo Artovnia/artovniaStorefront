@@ -3,7 +3,6 @@ import { Card, Divider } from "@/components/atoms"
 import { convertToLocale } from "@/lib/helpers/money"
 
 export const OrderTotals = ({ orderSet }: { orderSet: any }) => {
-  console.log('OrderTotals - Full orderSet data:', JSON.stringify(orderSet, null, 2))
 
   const currency_code = orderSet.payment_collection?.currency_code || 
                        orderSet.currency_code || 
@@ -40,12 +39,6 @@ export const OrderTotals = ({ orderSet }: { orderSet: any }) => {
       shippingCost = orderTotal - itemSubtotal
     }
     
-    console.log(`Order ${order.id} breakdown:`, {
-      total: orderTotal,
-      itemSubtotal,
-      shippingCost,
-      calculatedTotal: itemSubtotal + shippingCost
-    })
     
     return {
       total: acc.total + orderTotal,
@@ -57,18 +50,13 @@ export const OrderTotals = ({ orderSet }: { orderSet: any }) => {
   // Use payment collection total if available as authoritative source
   const finalTotal = orderSet.payment_collection?.amount || totals.total
 
-  console.log('OrderTotals calculated values:', {
-    itemSubtotal: totals.itemSubtotal,
-    shipping: totals.shipping,
-    finalTotal,
-    currency_code
-  })
+  
 
   return (
-    <Card className="mb-8 p-4">
-      <p className="text-secondary label-md mb-2 flex justify-between">
+    <Card className="mb-8 p-4 border-b border-[#3B3634]">
+      <p className="text-secondary label-md mb-2 font-instrument-sans flex justify-between ">
         Podsumowanie:
-        <span className="text-primary">
+        <span className="text-black font-instrument-sans">
           {convertToLocale({
             amount: totals.itemSubtotal,
             currency_code,
@@ -77,7 +65,7 @@ export const OrderTotals = ({ orderSet }: { orderSet: any }) => {
       </p>
       <p className="text-secondary label-md flex justify-between">
         Dostawa:
-        <span className="text-primary">
+        <span className="text-black font-instrument-sans">
           {convertToLocale({
             amount: totals.shipping,
             currency_code,
@@ -87,7 +75,7 @@ export const OrderTotals = ({ orderSet }: { orderSet: any }) => {
       <Divider className="my-4" />
       <p className="text-secondary label-md flex justify-between items-center">
         Suma:{" "}
-        <span className="text-primary heading-md">
+        <span className="text-black font-instrument-sans heading-md">
           {convertToLocale({
             amount: finalTotal,
             currency_code,

@@ -1,4 +1,4 @@
-import { client, BLOG_POSTS_QUERY, BLOG_POST_QUERY, BLOG_CATEGORIES_QUERY, FEATURED_POSTS_QUERY } from './sanity'
+import { client, BLOG_POSTS_QUERY, BLOG_POST_QUERY, BLOG_CATEGORIES_QUERY, FEATURED_POSTS_QUERY, FEATURED_SELLER_POST_QUERY, SELLER_POST_QUERY, SELLER_POSTS_QUERY } from './sanity'
 
 export interface BlogPost {
   _id: string
@@ -53,6 +53,32 @@ export interface Author {
     twitter?: string
     linkedin?: string
     website?: string
+  }
+}
+
+export interface SellerPost {
+  _id: string
+  title: string
+  slug: {
+    current: string
+  }
+  sellerName: string
+  shortDescription: string
+  sellerHandle: string
+  mainImage?: any
+  secondaryImage?: any
+  content?: any
+  linkedProducts?: Array<{
+    productId: string
+    productName: string
+    productImage?: any
+  }>
+  publishedAt: string
+  featuredOnHomepage?: boolean
+  seo?: {
+    metaTitle?: string
+    metaDescription?: string
+    keywords?: string[]
   }
 }
 
@@ -210,6 +236,48 @@ export async function searchBlogPosts(searchTerm: string): Promise<BlogPost[]> {
     return posts || []
   } catch (error) {
     console.error('Error searching blog posts:', error)
+    return []
+  }
+}
+
+// Fetch featured seller post for homepage
+export async function getFeaturedSellerPost(): Promise<SellerPost | null> {
+  try {
+    const post = await client.fetch(FEATURED_SELLER_POST_QUERY, {}, {
+      cache: 'force-cache',
+      next: { revalidate: 300 }, // Revalidate every 5 minutes
+    })
+    return post || null
+  } catch (error) {
+    console.error('Error fetching featured seller post:', error)
+    return null
+  }
+}
+
+// Fetch single seller post by slug
+export async function getSellerPost(slug: string): Promise<SellerPost | null> {
+  try {
+    const post = await client.fetch(SELLER_POST_QUERY, { slug }, {
+      cache: 'force-cache',
+      next: { revalidate: 300 },
+    })
+    return post || null
+  } catch (error) {
+    console.error('Error fetching seller post:', error)
+    return null
+  }
+}
+
+// Fetch all seller posts
+export async function getSellerPosts(): Promise<SellerPost[]> {
+  try {
+    const posts = await client.fetch(SELLER_POSTS_QUERY, {}, {
+      cache: 'force-cache',
+      next: { revalidate: 300 },
+    })
+    return posts || []
+  } catch (error) {
+    console.error('Error fetching seller posts:', error)
     return []
   }
 }

@@ -1,78 +1,173 @@
 import { Link } from "@/i18n/routing"
 import footerLinks from "@/data/footerLinks"
-import { FacebookIcon, InstagramIcon, LinkedInIcon } from "@/icons/social"
+import { FacebookIcon, InstagramIcon, LinkedInIcon, YouTubeIcon } from "@/icons/social"
+import { HttpTypes } from "@medusajs/types"
+import { listCategories } from "@/lib/data/categories"
 
-export function Footer() {
+export async function Footer() {
+  // Fetch categories directly in Footer component
+  let categories: HttpTypes.StoreProductCategory[] = []
+  try {
+    const categoriesData = await listCategories()
+    if (categoriesData && categoriesData.parentCategories) {
+      categories = categoriesData.parentCategories
+    }
+  } catch (error) {
+    console.error("Footer: Error retrieving categories:", error)
+  }
+  const getIcon = (label: string) => {
+    switch(label) {
+      case 'Facebook':
+        return <FacebookIcon size={32} className="hover:scale-110 transition-transform duration-200" />
+      case 'Instagram':
+        return <InstagramIcon size={32} className="hover:scale-110 transition-transform duration-200" />
+      case 'LinkedIn':
+        return <LinkedInIcon size={32} className="hover:scale-110 transition-transform duration-200" />
+      case 'YouTube':
+        return <YouTubeIcon size={32} className="hover:scale-110 transition-transform duration-200" />
+      default:
+        return null
+    }
+  }
+
   return (
-    <footer className="bg-tertiary text-white font-instrument-sans justify-between">
-      <div className="grid grid-cols-1 lg:grid-cols-3 max-w-[1920px] mx-auto ">
-        {/* Customer Services Column */}
-        <div className="p-6 ">
-          <h2 className="heading-sm text-primary mb-12  text-white  font-bold">
-            Usługi klienta
-          </h2>
-          <nav className="space-y-3 font-instrument-sans uppercase" aria-label="Customer services navigation">
-            {footerLinks.customerServices.map(({ label, path }) => (
-              <Link key={label} href={path} className="block label-md">
-                {label}
+    <footer className="bg-tertiary text-white font-instrument-sans">
+      {/* Main Footer Content - 4 Columns */}
+      <div className="max-w-[1920px] mx-auto px-6 py-12">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+          
+          {/* Column 1: Sklep (Categories) */}
+          <div>
+            <h2 className="text-white font-instrument-sans font-bold text-lg mb-6 uppercase">
+              Sklep
+            </h2>
+            <nav className="space-y-3 font-instrument-sans uppercase" aria-label="Categories navigation">
+              <Link href="/categories" className="block text-white hover:text-primary transition-colors duration-200 text-sm">
+                Wszystkie produkty
               </Link>
-            ))}
-          </nav>
-        </div>
-
-        {/* About Column */}
-        <div className="p-6 ">
-          <h2 className="heading-sm text-primary mb-12  text-white font-instrument-sans font-bold">
-            O nas
-          </h2>
-          <nav className="space-y-3 font-instrument-sans uppercase" aria-label="About navigation">
-            {footerLinks.about.map(({ label, path }) => (
-              <Link key={label} href={path} className="block label-md">
-                {label}
-              </Link>
-            ))}
-          </nav>
-        </div>
-
-        {/* Connect Column */}
-        <div className="p-6 ">
-          <h2 className="heading-sm text-primary mb-12  text-white font-instrument-sans font-bold">
-            Social media
-          </h2>
-          <div className="flex space-x-5 mt-4" aria-label="Social media navigation">
-            {footerLinks.connect.map(({ label, path }) => {
-              const getIcon = () => {
-                switch(label) {
-                  case 'Facebook':
-                    return <FacebookIcon size={28} />
-                  case 'Instagram':
-                    return <InstagramIcon size={28} />
-                  case 'LinkedIn':
-                    return <LinkedInIcon size={28} />
-                  default:
-                    return null
-                }
-              }
-
-              return (
-                <Link
-                  key={label}
-                  href={path}
-                  className="hover:opacity-80 transition-opacity"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  aria-label={label}
+              {categories.slice(0, 6).map((category) => (
+                <Link 
+                  key={category.id} 
+                  href={`/categories/${category.handle}`} 
+                  className="block text-white hover:text-primary transition-colors duration-200 text-sm"
                 >
-                  {getIcon()}
+                  {category.name}
                 </Link>
-              )
-            })}
+              ))}
+            </nav>
+          </div>
+
+          {/* Column 2: O nas */}
+          <div>
+            <h2 className="text-white font-instrument-sans font-bold text-lg mb-6 uppercase">
+              O nas
+            </h2>
+            <nav className="space-y-3 font-instrument-sans uppercase" aria-label="About navigation">
+              {footerLinks.about.map(({ label, path }) => (
+                <Link 
+                  key={label} 
+                  href={path} 
+                  className="block text-white hover:text-primary transition-colors duration-200 text-sm"
+                >
+                  {label}
+                </Link>
+              ))}
+            </nav>
+          </div>
+
+          {/* Column 3: Dla kupujących */}
+          <div>
+            <h2 className="text-white font-instrument-sans font-bold text-lg mb-6 uppercase">
+              Dla kupujących
+            </h2>
+            <nav className="space-y-3 font-instrument-sans uppercase" aria-label="Customer services navigation">
+              <Link href="#" className="block text-white hover:text-primary transition-colors duration-200 text-sm">
+                Jak kupować?
+              </Link>
+              <Link href="#" className="block text-white hover:text-primary transition-colors duration-200 text-sm">
+                Formy dostawy
+              </Link>
+              <Link href="#" className="block text-white hover:text-primary transition-colors duration-200 text-sm">
+                Formy płatności
+              </Link>
+              <Link href="#" className="block text-white hover:text-primary transition-colors duration-200 text-sm">
+                Zwroty i reklamacje
+              </Link>
+              <Link href="#" className="block text-white hover:text-primary transition-colors duration-200 text-sm">
+                FAQ
+              </Link>
+            </nav>
+          </div>
+
+          {/* Column 4: Dla sprzedających */}
+          <div>
+            <h2 className="text-white font-instrument-sans font-bold text-lg mb-6 uppercase">
+              Dla sprzedających
+            </h2>
+            <nav className="space-y-3 font-instrument-sans uppercase" aria-label="Sellers navigation">
+              <Link href="#" className="block text-white hover:text-primary transition-colors duration-200 text-sm">
+                Zacznij z nami sprzedawać
+              </Link>
+              <Link href="#" className="block text-white hover:text-primary transition-colors duration-200 text-sm">
+                Regulamin dla sprzedawców
+              </Link>
+              <Link href="#" className="block text-white hover:text-primary transition-colors duration-200 text-sm">
+                Poradnik
+              </Link>
+              <Link href="#" className="block text-white hover:text-primary transition-colors duration-200 text-sm">
+                FAQ
+              </Link>
+            </nav>
+          </div>
+
+        </div>
+      </div>
+
+      {/* Social Media Icons - Centered below columns */}
+      <div className="w-full border-t border-white/20">
+        <div className="max-w-[1920px] mx-auto px-6 py-8">
+          <div className="flex justify-center items-center">
+            <h2 className="text-2xl font-instrument-serif font-medium tracking-wider mb-6">
+              ARTOVNIA
+            </h2>
+          </div>
+          <div className="flex justify-center space-x-6" aria-label="Social media navigation">
+            {footerLinks.connect.map(({ label, path }) => (
+              <Link
+                key={label}
+                href={path}
+                className="text-white hover:text-primary transition-all duration-200 p-2 rounded-full hover:bg-white/10"
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label={label}
+              >
+                {getIcon(label)}
+              </Link>
+            ))}
+            {/* Add YouTube icon */}
+            <Link
+              href="https://youtube.com"
+              className="text-white hover:text-primary transition-all duration-200 p-2 rounded-full hover:bg-white/10"
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="YouTube"
+            >
+              {getIcon('YouTube')}
+            </Link>
           </div>
         </div>
       </div>
 
-      <div className="py-6 ">
-        <p className="text-md text-secondary text-center font-instrument-sans text-white ">© 2025 Artovnia</p>
+      {/* Trademark/Copyright Section */}
+      <div className="bg-primary" style={{ backgroundColor: '#F4F0EB' }}>
+        <div className="max-w-[1920px] mx-auto px-6 py-2 flex justify-between items-center">
+          <p className="font-instrument-sans text-black text-sm">
+            © ARTOVNIA 2025
+          </p>
+          <p className="font-instrument-sans text-black text-xs">
+            Korzystanie z serwisu oznacza akceptację Regulaminu.
+          </p>
+        </div>
       </div>
     </footer>
   )

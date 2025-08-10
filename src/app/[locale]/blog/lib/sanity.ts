@@ -98,3 +98,56 @@ export const FEATURED_POSTS_QUERY = `
     }
   }
 `
+
+// GROQ queries for seller posts
+export const FEATURED_SELLER_POST_QUERY = `
+  *[_type == "sellerPost" && featuredOnHomepage == true && !(_id in path("drafts.**"))] | order(publishedAt desc)[0] {
+    _id,
+    title,
+    slug,
+    sellerName,
+    shortDescription,
+    sellerHandle,
+    mainImage,
+    secondaryImage,
+    publishedAt
+  }
+`
+
+export const SELLER_POST_QUERY = `
+  *[_type == "sellerPost" && slug.current == $slug && !(_id in path("drafts.**"))][0] {
+    _id,
+    title,
+    slug,
+    sellerName,
+    shortDescription,
+    sellerHandle,
+    mainImage,
+    secondaryImage,
+    content,
+    linkedProducts[] {
+      productId,
+      productName,
+      productImage
+    },
+    publishedAt,
+    seo {
+      metaTitle,
+      metaDescription,
+      keywords
+    }
+  }
+`
+
+export const SELLER_POSTS_QUERY = `
+  *[_type == "sellerPost" && !(_id in path("drafts.**"))] | order(publishedAt desc) {
+    _id,
+    title,
+    slug,
+    sellerName,
+    shortDescription,
+    sellerHandle,
+    mainImage,
+    publishedAt
+  }
+`

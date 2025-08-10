@@ -31,11 +31,8 @@ const CategoryItem = ({
   const [hoverTimeout, setHoverTimeout] = useState<NodeJS.Timeout | null>(null)
   const [descendantHovered, setDescendantHovered] = useState(false)
   
-  // Use the properly built category_children from the recursive tree
   const children = category.category_children || []
   const hasChildren = children.length > 0
-
-  
 
   const handleCategoryClick = () => {
     if (onClose) {
@@ -43,24 +40,20 @@ const CategoryItem = ({
     }
   }
 
-  // Handle when any descendant (child, grandchild, etc.) is hovered
   const handleDescendantHover = (categoryId: string, isHovered: boolean) => {
     setDescendantHovered(isHovered)
     
     if (isHovered) {
-      // A descendant is hovered, keep this dropdown open
       if (hoverTimeout) {
         clearTimeout(hoverTimeout)
         setHoverTimeout(null)
       }
     }
     
-    // Propagate up to parent
     onAnyDescendantHover?.(category.id, isHovered)
   }
 
   const handleMouseEnter = () => {
-    // Clear any existing timeout
     if (hoverTimeout) {
       clearTimeout(hoverTimeout)
       setHoverTimeout(null)
@@ -68,38 +61,29 @@ const CategoryItem = ({
     
     setIsHovered(true)
     
-    // Handle parent-level mutual exclusion
     if (level === 0) {
       onParentHover?.(category.id, true)
     } else {
-      // For child levels, notify parent about descendant hover
       onAnyDescendantHover?.(category.id, true)
     }
-    
   }
 
   const handleMouseLeave = () => {
-    // Only close if no descendant is hovered
     const timeout = setTimeout(() => {
       if (!descendantHovered) {
         setIsHovered(false)
         
-        // Handle parent-level mutual exclusion
         if (level === 0) {
           onParentHover?.(category.id, false)
         } else {
-          // For child levels, notify parent about descendant hover
           onAnyDescendantHover?.(category.id, false)
         }
-        
       }
-    }, 500) // 500ms delay for better UX
+    }, 500)
     
     setHoverTimeout(timeout)
-    
   }
 
-  // Clean up timeout on unmount
   useEffect(() => {
     return () => {
       if (hoverTimeout) {
@@ -135,27 +119,32 @@ const CategoryItem = ({
         </span>
       </Link>
       
-      {/* Dropdown for children */}
+      {/* Dropdown for children - NOW SEAMLESSLY CONNECTED */}
+
       {hasChildren && (
-        // For parent level (0): only show if this is the active parent
-        // For child levels (1+): show if hovered or descendant hovered
         level === 0 
           ? activeParentId === category.id
           : (isHovered || descendantHovered)
       ) && (
         <div 
-          className={cn(
-            "absolute z-50 bg-white border border-gray-200 shadow-lg rounded-sm min-w-[200px]",
-            level === 0 
-              ? "top-full left-0 mt-0" 
-              : "top-0 left-full ml-1"
-          )}
-          style={{
-            zIndex: 50 + level
-          }}
-          onMouseEnter={handleMouseEnter}
-          onMouseLeave={handleMouseLeave}
-        >
+        className={cn(
+          "absolute bg-[#FFFFFF] min-w-[200px]",
+          // Level 0: Dropdown from navbar - connected to bottom
+          level === 0 && [
+            "top-full left-0 z-50",
+            
+            "rounded-bl-sm " // Round bottom corners only
+          ],
+          // Level 1+: Dropdown from side - connected to right
+          level > 0 && [
+            "top-0 left-full z-50", // Same z-index for all levels
+           
+            "rounded-tr-sm rounded-br-sm" // Round right corners only
+          ]
+        )}
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
+      >
           {children.map((child) => (
             <CategoryItem 
               key={child.id} 
@@ -177,13 +166,8 @@ export const CategoryNavbar = ({ categories, onClose }: CategoryNavbarProps) => 
   const [activeParentId, setActiveParentId] = useState<string | null>(null)
   const [globalTimeout, setGlobalTimeout] = useState<NodeJS.Timeout | null>(null)
 
-  
-  
-
-  // Handle parent category hover - only one parent can be active at a time
   const handleParentHover = (categoryId: string, isHovered: boolean) => {
     if (isHovered) {
-      // Clear any existing global timeout
       if (globalTimeout) {
         clearTimeout(globalTimeout)
         setGlobalTimeout(null)
@@ -191,14 +175,12 @@ export const CategoryNavbar = ({ categories, onClose }: CategoryNavbarProps) => 
       
       setActiveParentId(categoryId)
       
-      // Set a safety timeout to close dropdown after 5 seconds of inactivity
       const timeout = setTimeout(() => {
         setActiveParentId(null)
-      }, 5000) // 5 second safety timeout (longer for deep navigation)
+      }, 5000)
       
       setGlobalTimeout(timeout)
     } else {
-      // Only clear if this was the active parent
       if (activeParentId === categoryId) {
         setActiveParentId(null)
         if (globalTimeout) {
@@ -209,23 +191,19 @@ export const CategoryNavbar = ({ categories, onClose }: CategoryNavbarProps) => 
     }
   }
 
-  // Smart navbar mouse leave - only close if mouse is truly leaving navbar area
   const handleNavbarMouseLeave = (e: React.MouseEvent) => {
     if (!activeParentId) return
     
-    // Get the navbar element bounds
     const navbar = e.currentTarget as HTMLElement
     const navbarRect = navbar.getBoundingClientRect()
     
-    // Add buffer zone for dropdowns (they extend below/right of navbar)
     const bufferZone = {
       top: navbarRect.top,
       left: navbarRect.left,
-      right: navbarRect.right + 300, // 300px buffer for right-side dropdowns
-      bottom: navbarRect.bottom + 400 // 400px buffer for dropdown height
+      right: navbarRect.right + 300,
+      bottom: navbarRect.bottom + 400
     }
     
-    // Check if mouse is still within the extended buffer zone
     const mouseX = e.clientX
     const mouseY = e.clientY
     
@@ -236,7 +214,6 @@ export const CategoryNavbar = ({ categories, onClose }: CategoryNavbarProps) => 
       mouseY <= bufferZone.bottom
     )
     
-    // Only close if mouse is truly outside the navbar + dropdown area
     if (!isWithinBuffer) {
       setActiveParentId(null)
       if (globalTimeout) {
@@ -246,7 +223,6 @@ export const CategoryNavbar = ({ categories, onClose }: CategoryNavbarProps) => 
     }
   }
 
-  // Cleanup timeout on unmount
   useEffect(() => {
     return () => {
       if (globalTimeout) {

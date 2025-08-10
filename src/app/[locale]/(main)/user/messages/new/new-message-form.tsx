@@ -53,7 +53,7 @@ export function NewMessageForm() {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      <div className="space-y-2">
+      <div className="space-y-2 font-instrument-sans">
         <label htmlFor="subject" className="block text-sm font-medium">Temat</label>
         <Input
           id="subject"
@@ -65,7 +65,7 @@ export function NewMessageForm() {
         />
       </div>
       
-      <div className="space-y-2">
+      <div className="space-y-2 font-instrument-sans">
         <label htmlFor="type" className="block text-sm font-medium">Typ wiadomości</label>
         <select
           id="type"
@@ -81,7 +81,7 @@ export function NewMessageForm() {
         </select>
       </div>
       
-      <div className="space-y-2">
+      <div className="space-y-2 font-instrument-sans">
         <label htmlFor="message-content" className="block text-sm font-medium">Wiadomość</label>
         <Textarea
           id="message-content"

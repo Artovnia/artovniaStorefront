@@ -6,15 +6,7 @@ import { MessageThread as ThreadType, MessageSender } from "@/lib/data/messages"
 
 export function MessageThread({ thread }: { thread: ThreadType }) {
   
-  // Add client-side debugging
-  console.log('Rendering MessageThread with thread:', {
-    id: thread.id,
-    subject: thread.subject,
-    messagesCount: thread.messages?.length || 0,
-    hasLastMessage: !!thread.last_message,
-    seller: thread.seller,
-    unreadCount: thread.unread_count
-  });
+  
   
   // Initialize messages array safely and sort by date (oldest first for display)
   const messages = thread.messages ? [...thread.messages].sort(
@@ -28,12 +20,7 @@ export function MessageThread({ thread }: { thread: ThreadType }) {
   
   // Log message details for debugging
   if (hasMessages) {
-    console.log('Thread messages:', messages.map(m => ({
-      id: m.id,
-      sender: m.sender_type,
-      date: m.created_at,
-      content: m.content?.substring(0, 30) + '...'
-    })));
+   
   }
   
   if (!hasMessages) {
@@ -69,8 +56,8 @@ export function MessageThread({ thread }: { thread: ThreadType }) {
             <div 
               className={`rounded-lg p-4 max-w-[80%] ring-1 ring-gray-200 ${
                 isUserMessage 
-                  ? 'bg-primary text-black' 
-                  : 'bg-gray-100'
+                  ? 'bg-white text-black' 
+                  : 'bg-[#3B3634] text-white'
               }`}
             >
               <div className="flex justify-between items-center mb-2">

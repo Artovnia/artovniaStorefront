@@ -19,7 +19,7 @@ export const CartSummary = ({
     <div>
       <div className="space-y-4 label-md text-secondary mb-4">
         <div className="flex justify-between">
-          <span>Produkty kutas:</span>
+          <span>Produkty:</span>
           <span className="text-primary">
             {convertToLocale({
               amount: item_total,

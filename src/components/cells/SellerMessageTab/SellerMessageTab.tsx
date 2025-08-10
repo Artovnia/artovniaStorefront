@@ -15,12 +15,12 @@ export const SellerMessageTab = ({
 }) => {
   // Log authentication status for debugging
   useEffect(() => {
-    console.log("SellerMessageTab received authentication status:", { isAuthenticated })
+    
   }, [isAuthenticated])
 
   return (
     <div className="grid grid-cols-1 mt-8">
-      <div className="border rounded-sm p-6">
+      <div className="border rounded-sm p-6 ring-1 ring-[#3B3634]">
         <h3 className="heading-sm uppercase border-b pb-4 mb-6">Napisz wiadomość do {seller_name}</h3>
         
         {/* Conditionally render the message form based on authentication status */}

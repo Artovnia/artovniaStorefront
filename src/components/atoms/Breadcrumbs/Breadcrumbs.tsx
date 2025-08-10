@@ -33,7 +33,7 @@ export function Breadcrumbs({
               <Link
                 href={path}
                 className={cn(
-                  'inline-flex items-center  text-primary font-instrument-serif  text-lg',
+                  'inline-flex items-center  text-primary font-instrument-sans  text-lg',
                   index > 0 && 'ml-2',
                   isActive && 'text-secondary'
                 )}

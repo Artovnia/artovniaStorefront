@@ -13,7 +13,7 @@ export const OrderParcels = async ({ orders }: { orders: any[] }) => {
       {orders.map((order, index) => (
         <div key={order.id} className="w-full mb-8">
           <div className="border rounded-sm p-4 bg-component-secondary font-semibold text-secondary uppercase">
-            Parcel {index + 1}
+            Paczka {index + 1}
           </div>
           <div className="border rounded-sm">
             <div className="p-4 border-b">

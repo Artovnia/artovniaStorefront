@@ -37,7 +37,7 @@ const CountrySelect = forwardRef<
         ref={innerRef}
         placeholder={placeholder}
         defaultValue={defaultValue}
-        className={clsx("w-full h-12 flex items-center bg-component-secondary")}
+        className={clsx("w-full h-12 flex items-center bg-white")}
         {...props}
       >
         {countryOptions?.map(({ value, label }, index) => (

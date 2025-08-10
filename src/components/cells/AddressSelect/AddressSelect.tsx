@@ -43,7 +43,7 @@ const AddressSelect = ({
       <div className="relative">
         <Listbox.Button
           className={clsx(
-            "relative w-full flex justify-between items-center px-4 py-[10px] bg-component-secondary text-left  cursor-default focus:outline-none border rounded-lg focus-visible:ring-2 focus-visible:ring-opacity-75 focus-visible:ring-white focus-visible:ring-offset-gray-300 focus-visible:ring-offset-2 focus-visible:border-gray-300 text-base-regular"
+            "relative w-full flex justify-between items-center px-4 py-[10px] bg-white text-left  cursor-default focus:outline-none border rounded-lg focus-visible:ring-2 focus-visible:ring-opacity-75 focus-visible:ring-white focus-visible:ring-offset-gray-300 focus-visible:ring-offset-2 focus-visible:border-gray-300 text-base-regular"
           )}
           data-testid="shipping-address-select"
         >
@@ -52,7 +52,7 @@ const AddressSelect = ({
               <span className="block truncate">
                 {selectedAddress
                   ? selectedAddress.address_name
-                  : "Choose an address"}
+                  : "Wybierz adres"}
               </span>
               <ChevronUpDown
                 className={clx("transition-rotate duration-200", {

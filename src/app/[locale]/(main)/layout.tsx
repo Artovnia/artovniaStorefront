@@ -9,9 +9,15 @@ export default async function RootLayout({
   return (
     <LuxuryLoadingProvider>
       <LuxuryLoadingOverlay />
-      <Header />
-      {children}
-      <Footer />
+      {/* Use flex column and min-h-screen to ensure footer is at bottom */}
+      <div className="flex flex-col min-h-screen">
+        <Header />
+        {/* flex-grow-1 makes this element take all available space */}
+        <div className="flex-grow">
+          {children}
+        </div>
+        <Footer />
+      </div>
     </LuxuryLoadingProvider>
   );
 }

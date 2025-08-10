@@ -86,7 +86,7 @@ export const Header = async () => {
             />
           </Link>
         </div>
-        <div className="flex items-center justify-end gap-2 lg:gap-4 w-full lg:w-1/3 py-4">
+        <div className="flex items-center justify-end gap-2 lg:gap-4 w-full lg:w-1/3 py-4 ">
           <a href="https://artovniapanel.netlify.app/login" className="text-lg mr-4  font-medium hover:text-action transition-colors hover:underline">ZAŁÓŻ SKLEP</a>
           <UserDropdown user={user} />
           {user && (

@@ -11,11 +11,7 @@ import clsx from "clsx"
 import { WishlistButton } from "@/components/cells/WishlistButton/WishlistButton"
 import { useHoverPrefetch } from "@/hooks/useHoverPrefetch"
 import { useRouter } from "next/navigation"
-import { useEffect, useState } from "react"
-import { retrieveCustomer } from "@/lib/data/customer"
-import { getUserWishlists } from "@/lib/data/wishlist"
 import { SerializableWishlist } from "@/types/wishlist"
-import { getSellerByHandle } from "@/lib/data/seller"
 
 export const ProductCard = ({
   product,
@@ -112,41 +108,40 @@ export const ProductCard = ({
           </div>
         </Link>
         <Link href={productUrl} prefetch={true}>
-          <Button className="absolute bg-[#3B3634] opacity-90  ring ring-[#3B3634]   text-white h-auto lg:h-[48px] lg:group-hover:block hidden w-full uppercase bottom-1 z-10">
+          <Button className="absolute bg-[#3B3634] opacity-90  ring ring-[#3B3634]   text-white h-auto lg:h-[48px] lg:group-hover:block hidden w-full uppercase bottom-1 z-10 overflow-hidden">
             Zobacz więcej
           </Button>
         </Link>
       </div>
       <Link href={`/products/${product.handle}`}>
-        <div className="flex justify-between p-3 flex-grow">
+        <div className="flex justify-between flex-grow mt-2">
           <div className="w-full font-instrument-sans">
-            <h3 className={`text-md font-instrument-sans truncate mb-1 leading-tight ${themeMode === 'light' ? 'text-white' : ''}`}>
+            <h3 className={`text-md font-instrument-sans truncate mb-1 leading-tight font-bold ${themeMode === 'light' ? 'text-white' : ''}`}>
               {product.title}
             </h3>
             
             {/* Seller name below title */}
             {product.seller && (
-              <p className={`font-instrument-serif text-md mb-2 ${themeMode === 'light' ? 'text-white/80' : 'text-black'}`}>
+              <p className={`font-instrument-sans text-sm mb-1  ${themeMode === 'light' ? 'text-white/80' : 'text-black'}`}>
                 {product.seller.name}
               </p>
             )}
             
             <div className="flex items-center gap-2">
               <p className={`font-instrument-sans font-semibold text-md ${themeMode === 'light' ? 'text-white' : ''}`}>
-                {sellerCheapestPrice?.calculated_price ||
-                  cheapestPrice?.calculated_price}
+                {(sellerCheapestPrice?.calculated_price || cheapestPrice?.calculated_price)?.replace(/PLN\s+([\d,.]+)/, '$1 zł')}
               </p>
               {sellerCheapestPrice?.calculated_price
                 ? sellerCheapestPrice?.calculated_price !==
                     sellerCheapestPrice?.original_price && (
                     <p className="text-xs text-gray-500 line-through">
-                      {sellerCheapestPrice?.original_price}
+                      {sellerCheapestPrice?.original_price?.replace(/PLN\s+([\d,.]+)/, '$1 zł')}
                     </p>
                   )
                 : cheapestPrice?.calculated_price !==
                     cheapestPrice?.original_price && (
                     <p className="text-xs text-gray-500 line-through">
-                      {cheapestPrice?.original_price}
+                      {cheapestPrice?.original_price?.replace(/PLN\s+([\d,.]+)/, '$1 zł')}
                     </p>
                   )}
             </div>
