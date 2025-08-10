@@ -18,16 +18,27 @@ export const CustomCarousel = ({
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [scrollPosition, setScrollPosition] = useState(0);
   const [maxScroll, setMaxScroll] = useState(1); // Initialize to non-zero to enable right arrow
+  const [showArrows, setShowArrows] = useState(false);
   
   // Responsive scroll amount for each button click (in pixels)
   const scrollAmount = 350; // Approximately one product card width
   
-  // Initialize scroll state on component mount
+  // Initialize scroll state and check window width on component mount
   useEffect(() => {
     if (scrollContainerRef.current) {
       const { scrollWidth, clientWidth } = scrollContainerRef.current;
       setMaxScroll(Math.max(0, scrollWidth - clientWidth));
     }
+    
+    // Check window width for arrow visibility
+    const checkWindowWidth = () => {
+      setShowArrows(window.innerWidth >= 868);
+    };
+    
+    checkWindowWidth();
+    window.addEventListener('resize', checkWindowWidth);
+    
+    return () => window.removeEventListener('resize', checkWindowWidth);
   }, [items]);
   
   const scrollNext = () => {
@@ -73,26 +84,33 @@ export const CustomCarousel = ({
   };
 
   return (
-    <div className='relative w-full max-w-full'>
-      {/* Desktop Navigation Arrows */}
-      <div className='hidden md:block'>
-        <button
-          className='absolute left-2 top-1/2 -translate-y-1/2 z-10 bg-white/80 hover:bg-white rounded-full p-2 shadow-md transition-all duration-200'
-          onClick={scrollPrev}
-        >
-          <ArrowLeftIcon color={arrowColor[variant]} size={20} />
-        </button>
-        <button
-          className='absolute right-2 top-1/2 -translate-y-1/2 z-10 bg-white/80 hover:bg-white rounded-full p-2 shadow-md transition-all duration-200'
-          onClick={scrollNext}
-        >
-          <ArrowRightIcon color={arrowColor[variant]} size={20} />
-        </button>
-      </div>
+    <div className='relative w-full max-w-[1920px] mx-auto px-5'>
+      {/* Navigation Arrows - Only show when screen width >= 868px */}
+      {showArrows && (
+        <div>
+          {/* Left Arrow */}
+          <button
+            className='absolute left-0  top-[175px] z-10 bg-white/80 hover:bg-white rounded-full p-2 shadow-md transition-all duration-200'
+            onClick={scrollPrev}
+            aria-label="Previous slide"
+          >
+            <ArrowLeftIcon color={arrowColor[variant]} size={20} />
+          </button>
+          
+          {/* Right Arrow */}
+          <button
+            className='absolute right-0 top-[175px] z-10 bg-white/80 hover:bg-white rounded-full p-2 shadow-md transition-all duration-200'
+            onClick={scrollNext}
+            aria-label="Next slide"
+          >
+            <ArrowRightIcon color={arrowColor[variant]} size={20} />
+          </button>
+        </div>
+      )}
 
-      {/* Responsive scrollable container */}
+      {/* Responsive scrollable container with conditional spacing for arrows */}
       <div 
-        className='w-full overflow-x-auto scrollbar-hide'
+        className={`w-full overflow-x-auto scrollbar-hide ${showArrows ? 'pl-16 pr-16' : 'pl-2 pr-2'}`}
         ref={scrollContainerRef}
         onScroll={handleScroll}
         style={{
@@ -100,12 +118,12 @@ export const CustomCarousel = ({
           msOverflowStyle: 'none', /* IE/Edge */
         }}
       >
-        {/* Adjust space between cards */}
-        <div className='flex gap-8 pb-4'>
+        {/* Card container with proper spacing */}
+        <div className='flex gap-8 pb-4 mx-auto'>
           {items.map((slide, index) => (
             <div 
               key={index} 
-              className='flex-none w-[280px]'
+              className='flex-none w-[280px]' 
             >
               {slide}
             </div>
@@ -123,20 +141,7 @@ export const CustomCarousel = ({
           />
         </div>
         <div className='flex gap-2'>
-          <button
-            className='p-2 rounded-full bg-gray-100 hover:bg-gray-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed'
-            onClick={scrollPrev}
-            disabled={scrollPosition <= 0}
-          >
-            <ArrowLeftIcon color={arrowColor[variant]} size={16} />
-          </button>
-          <button
-            className='p-2 rounded-full bg-gray-100 hover:bg-gray-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed'
-            onClick={scrollNext}
-            disabled={scrollPosition >= maxScroll}
-          >
-            <ArrowRightIcon color={arrowColor[variant]} size={16} />
-          </button>
+        
         </div>
       </div>
     </div>

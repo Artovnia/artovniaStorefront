@@ -49,10 +49,7 @@ export const ProductCard = ({
     }
   }
   
-  // Debug: Log ProductCard render and hover setup
-  if (process.env.NODE_ENV === 'development') {
-    
-  }
+  
   const { cheapestPrice } = getProductPrice({
     product,
   })
@@ -108,7 +105,7 @@ export const ProductCard = ({
           </div>
         </Link>
         <Link href={productUrl} prefetch={true}>
-          <Button className="absolute bg-[#3B3634] opacity-90  ring ring-[#3B3634]   text-white h-auto lg:h-[48px] lg:group-hover:block hidden w-full uppercase bottom-1 z-10 overflow-hidden">
+          <Button className="absolute bg-[#3B3634] opacity-90    text-white h-auto lg:h-[48px] lg:group-hover:block hidden w-full uppercase bottom-0 z-10 overflow-hidden">
             Zobacz więcej
           </Button>
         </Link>

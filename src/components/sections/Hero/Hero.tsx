@@ -13,7 +13,7 @@ type HeroProps = {
 
 export const Hero = ({ image, heading, paragraph, buttons }: HeroProps) => {
   return (
-    <section className="w-full flex container mt-5 flex-col lg:flex-row text-primary">
+    <section className="w-full flex mt-5 flex-col 2xl:flex-row text-primary">
       <Image
         src={decodeURIComponent(image)}
         width={700}

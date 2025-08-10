@@ -63,7 +63,7 @@ export default async function Home({
       </div>
       
       {/* Smart Best Products Section */}
-      <div className="mx-auto max-w-[1920px] w-full px-4 lg:px-8 mb-8 h-[55vh]">
+      <div className="mx-auto max-w-[1920px] w-full px-4 lg:px-8 mb-8 min-h-[400px] py-8">
         <SmartBestProductsSection
          />
       </div>
@@ -71,7 +71,7 @@ export default async function Home({
       {/* Full width dark section */}
       <div className="w-full bg-[#3B3634]">
         {/* Content container inside full-width section */}
-        <div className="mx-auto max-w-[1920px] w-full px-4 lg:px-8 h-[55vh] font-instrument-sans">
+        <div className="mx-auto max-w-[1920px] w-full px-4 lg:px-8 min-h-[400px] py-8 font-instrument-sans">
           <HomeProductSection 
             heading="Nowości" 
           
@@ -84,7 +84,7 @@ export default async function Home({
       </div>
       
       {/* Designer of the Week Section */}
-      <div className="w-full bg-[#F4F0EB] h-[55vh] py-8">
+      <div className="w-full bg-[#F4F0EB] min-h-[400px] py-8">
         <DesignerOfTheWeekSection />
       </div>
 
