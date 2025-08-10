@@ -88,9 +88,7 @@ export const ProductVariants = ({
   const setOptionValue = useCallback((optionTitle: string, value: string) => {
     if (!value || !product.variants) return
     
-    if (process.env.NODE_ENV === 'development') {
-      console.log(`🎨 Option: ${optionTitle} = ${value}`);
-    }
+    
     
     // Find variant by matching the specific option change
     const matchingVariant = product.variants.find(variant => {
@@ -115,7 +113,7 @@ export const ProductVariants = ({
             <span className="label-md text-primary">
               {selectedVariant[title.toLowerCase()] || 'Not selected'}
             </span>
-            <div className="flex gap-2 mt-2">
+            <div className="flex gap-2 mt-2 relative z-[5]">
               {(values || []).map(
                 ({
                   id,
@@ -123,6 +121,7 @@ export const ProductVariants = ({
                 }: ProductOptionValue) => (
                   <Chip
                     key={id}
+                    className="z-10"
                     selected={selectedVariant[title.toLowerCase()] === value}
                     color={title === "Color"}
                     value={value}

@@ -32,9 +32,7 @@ export const VariantSelectionProvider = ({
   const setSelectedVariantId = (id: string) => {
     if (!id || id === selectedVariantId || !id.trim()) return
     
-    if (process.env.NODE_ENV === 'development') {
-      console.log(`🎯 Direct URL navigation to variant: ${id}`);
-    }
+    
     
     // CRITICAL: Use window.location for immediate, synchronous navigation
     // This avoids all React state/router conflicts

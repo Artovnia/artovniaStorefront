@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
+import ReactDOM from 'react-dom'
 import Image from 'next/image'
 import { MedusaProductImage } from '@/types/product'
 
@@ -36,14 +37,22 @@ export const ImageZoomModal = ({
   isOpen,
   onClose,
 }: ImageZoomModalProps) => {
+  // All state hooks must be at the top of the component
   const [currentIndex, setCurrentIndex] = useState(initialIndex)
   const [isZoomed, setIsZoomed] = useState(false)
   const [zoomPosition, setZoomPosition] = useState({ x: 50, y: 50 })
+  const [mounted, setMounted] = useState(false)
 
   // Update current index when initialIndex changes
   useEffect(() => {
     setCurrentIndex(initialIndex)
   }, [initialIndex])
+
+  // Mount/unmount effect for portal
+  useEffect(() => {
+    setMounted(true)
+    return () => setMounted(false)
+  }, [])
 
   // Handle keyboard navigation
   useEffect(() => {
@@ -124,9 +133,10 @@ export const ImageZoomModal = ({
   if (!isOpen || !images.length) return null
 
   const currentImage = images[currentIndex]
-
-  return (
-    <div className="fixed inset-0 z-50 bg-black/95 backdrop-blur-sm">
+  
+  // The modal content
+  const modalContent = (
+    <div className="fixed inset-0 z-[9999] bg-black/95 backdrop-blur-sm min-h-screen" style={{ isolation: 'isolate' }}>
       {/* Header with close button and counter */}
       <div className="absolute top-0 left-0 right-0 z-10 flex justify-between items-center p-4 bg-gradient-to-b from-black/50 to-transparent">
         <div className="text-white text-sm font-medium">
@@ -227,5 +237,13 @@ export const ImageZoomModal = ({
         </div>
       )}
     </div>
+  )
+  
+  // Return portal only on client side
+  if (!mounted) return null
+  
+  return ReactDOM.createPortal(
+    modalContent,
+    document.body
   )
 }
