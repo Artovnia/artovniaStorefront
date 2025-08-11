@@ -5,6 +5,8 @@ import {
   ProductCard,
   ProductListingActiveFilters,
   ProductsPagination,
+  CategorySidebar,
+  ProductFilterBar,
 } from "@/components/organisms"
 import { SelectField } from "@/components/molecules/SelectField/SelectField"
 import { Configure, useHits } from "react-instantsearch"
@@ -34,11 +36,13 @@ export const AlgoliaProductsListing = ({
   collection_id,
   seller_handle,
   locale = process.env.NEXT_PUBLIC_DEFAULT_REGION,
+  categories = [],
 }: {
   category_id?: string
   collection_id?: string
   locale?: string
   seller_handle?: string
+  categories?: HttpTypes.StoreProductCategory[]
 }) => {
   const searchParams = useSearchParams()
 
@@ -184,14 +188,21 @@ export const AlgoliaProductsListing = ({
   // We can now use the correct replica index based on the sort option
   // The replica indices are configured in the backend to have the right sorting
   
+  // Create a stable key for InstantSearch to prevent unnecessary remounting
+  // Only include essential parameters that should trigger a full reset
+  const instantSearchKey = useMemo(() => {
+    return `${category_id || 'all'}-${collection_id || 'all'}-${seller_handle || 'all'}`;
+  }, [category_id, collection_id, seller_handle]);
+
   // Use the correct indexName based on sort selection
   return (
     <InstantSearchNext 
+      key={instantSearchKey}
       searchClient={searchClient} 
       indexName={activeIndexName}
     >
       <Configure {...configureProps} />
-      <ProductsListing sortOptions={sortOptions} />
+      <ProductsListing sortOptions={sortOptions} category_id={category_id} categories={categories} />
     </InstantSearchNext>
   )
 }
@@ -205,10 +216,12 @@ interface SortOption {
 // Define props interface for the ProductsListing component
 interface ProductsListingProps {
   sortOptions?: SortOption[]
+  category_id?: string
+  categories?: HttpTypes.StoreProductCategory[]
 }
 
 
-const ProductsListing = ({ sortOptions }: ProductsListingProps) => {
+const ProductsListing = ({ sortOptions, category_id, categories = [] }: ProductsListingProps) => {
   const {
     items,
     results,
@@ -267,52 +280,62 @@ const ProductsListing = ({ sortOptions }: ProductsListingProps) => {
 
   return (
     <>
-      <div className="flex justify-between w-full items-center">
-        <div className="my-4 label-md">{`${results?.nbHits} listings`}</div>
-        {sortOptions && sortOptions.length > 0 && (
-          <div className="hidden md:flex gap-2 items-center">
-            Sort by:{" "}
-            <SelectField
-              className="min-w-[200px]"
-              options={sortOptions}
-              selectOption={selectOptionHandler}
+      {/* Main Layout: (Results Count + Category Sidebar) + (Filter Bar + Products) */}
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
+        {/* Left Column: Results Count + Category Sidebar */}
+        <div className="lg:col-span-1">
+          {/* Results Count - Above category sidebar */}
+          <div className="mb-4">
+            <div className="label-md">{`${results?.nbHits} wyników`}</div>
+          </div>
+          
+          {/* Category Sidebar */}
+          <div className="sticky top-24">
+            <CategorySidebar 
+              parentCategoryHandle={category_id ? undefined : undefined} 
+              className="bg-primary p-4"
+              categories={categories}
             />
           </div>
-        )}
-      </div>
-      <div className="hidden md:block">
-        <ProductListingActiveFilters />
-      </div>
-      <div className="grid grid-cols-1 md:grid-cols-5 mt-6">
-        <div>
-          <AlgoliaProductSidebar />
         </div>
-        <div className="w-full col-span-4">
-          {!items.length ? (
-            <div className="text-center w-full my-10">
-              <h2 className="uppercase text-primary heading-lg">Brak wyników</h2>
-              <p className="mt-4 text-lg">
-                Nie znaleziono produktów spełniających Twoje kryteria
-              </p>
-            </div>
-          ) : (
-            <div className="w-full">
-              <ul className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 xl:ml-20">
-                {items.map((hit) => (
-                  <ProductCard 
-                    key={hit.objectID} 
-                    product={hit} 
-                    user={user}
-                    wishlist={wishlist}
-                    onWishlistChange={refreshWishlist}
-                  />
-                ))}
-              </ul>
-            </div>
-          )}
+
+        {/* Right Column: Filter Bar + Products */}
+        <div className="lg:col-span-4">
+          {/* Filter Bar - Above products */}
+          <div className="mb-6">
+            <ProductFilterBar />
+          </div>
+
+          {/* Products Grid - Below filter bar */}
+          <div className="w-full">
+            {!items.length ? (
+              <div className="text-center w-full my-10">
+                <h2 className="uppercase text-primary heading-lg">Brak wyników</h2>
+                <p className="mt-4 text-lg">
+                  Nie znaleziono produktów spełniających Twoje kryteria
+                </p>
+              </div>
+            ) : (
+              <div className="w-full">
+                <ul className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                  {items.map((hit) => (
+                    <ProductCard 
+                      key={hit.objectID} 
+                      product={hit} 
+                      user={user}
+                      wishlist={wishlist}
+                      onWishlistChange={refreshWishlist}
+                    />
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
+
+          {/* Pagination */}
+          <ProductsPagination pages={results?.nbPages || 1} />
         </div>
       </div>
-      <ProductsPagination pages={results?.nbPages || 1} />
     </>
   )
 }

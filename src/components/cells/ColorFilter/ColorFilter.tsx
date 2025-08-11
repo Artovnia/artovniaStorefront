@@ -5,9 +5,10 @@ import {
   FilterCheckboxOption,
 } from '@/components/molecules';
 import { cn } from '@/lib/utils';
-import { useEffect, useState } from 'react';
-import { useRefinementList, useInstantSearch } from 'react-instantsearch';
+import { useEffect, useState, useMemo, useCallback } from 'react';
+import { useRefinementList } from 'react-instantsearch';
 import { useColorTaxonomy, ColorFamily } from '@/lib/data/colors';
+import { useFilterStore } from '@/stores/filterStore';
 
 // Utility function to create inline style for hex colors
 const createColorStyle = (hex: string): React.CSSProperties => {
@@ -31,96 +32,88 @@ export interface ColorFacetItem {
   isRefined: boolean;
 }
 
-export const ColorFilter = (): JSX.Element => {
-  // Get refinement list for color_families
-  const { items: algoliaFacetItems, refine } = useRefinementList({
-    attribute: 'color_families',
-    limit: 100,
-    operator: 'or',
-  });
-  
-  // Get instant search results for debugging
-  const { results } = useInstantSearch();
-  
+interface ColorFilterProps {
+  algoliaFacetItems?: Array<{
+    value: string;
+    count: number;
+    isRefined: boolean;
+  }>;
+}
+
+export const ColorFilter = ({ algoliaFacetItems = [] }: ColorFilterProps): JSX.Element => {
   // Get all color families from database
   const { colorTaxonomy, isLoading, error } = useColorTaxonomy();
+  
+  // Zustand store for persistent color selection (UI-only)
+  const { selectedColors, addColor, removeColor } = useFilterStore();
   
   // State for processed color filters
   const [colorFilters, setColorFilters] = useState<ColorFacetItem[]>([]);
   
-  useEffect(() => {
-    if (!colorTaxonomy || colorTaxonomy.length === 0) {
-      setColorFilters([]);
-      return;
-    }
-    
-    // Create a map of Algolia facet data for quick lookup
-    const algoliaFacetMap = new Map<string, { count: number; isRefined: boolean }>();
-    
+  // Memoize the Algolia facet map to prevent unnecessary recalculations
+  const algoliaFacetMap = useMemo(() => {
+    const map = new Map<string, { count: number; isRefined: boolean }>();
     algoliaFacetItems?.forEach(item => {
-      algoliaFacetMap.set(item.value, {
+      map.set(item.value, {
         count: item.count,
         isRefined: item.isRefined
       });
     });
-    
-    // If no Algolia facets but we have products with color data, try to extract from results
-    if (algoliaFacetItems.length === 0 && results) {
-      const resultObj = results as any;
-      if (resultObj.hits && resultObj.hits.length > 0) {
-        const colorFamilyCount = new Map<string, number>();
-        
-        resultObj.hits.forEach((hit: any) => {
-          if (hit.color_families && Array.isArray(hit.color_families)) {
-            hit.color_families.forEach((family: string) => {
-              colorFamilyCount.set(family, (colorFamilyCount.get(family) || 0) + 1);
-            });
-          }
-        });
-        
-        // Add extracted data to algoliaFacetMap
-        colorFamilyCount.forEach((count, family) => {
-          algoliaFacetMap.set(family, { count, isRefined: false });
-        });
-      }
+    return map;
+  }, [algoliaFacetItems]);
+
+  // Memoize the processed color filters to prevent unnecessary recalculations
+  const processedColorFilters = useMemo(() => {
+    if (!colorTaxonomy || colorTaxonomy.length === 0) {
+      return [];
     }
     
-    // Process all color families from database
+    // Process all color families from database with Algolia data
     const processedItems: ColorFacetItem[] = colorTaxonomy.map(family => {
       // Look up this family in Algolia facets using the family name
       const algoliaData = algoliaFacetMap.get(family.name);
       
+      // Use Zustand store for UI state (persistent across dropdown open/close)
+      const isRefined = selectedColors.includes(family.name);
+      
       const item: ColorFacetItem = {
         label: family.display_name,
-        amount: algoliaData?.count || 0,
+        amount: algoliaData?.count || 0, // Get count from Algolia
         colorStyle: createColorStyle(family.hex_base || '#d1d5db'),
         value: family.name, // This is the key for filtering
         tooltip: `${family.colors?.length || 0} kolorów w rodzinie ${family.display_name}`,
-        isRefined: algoliaData?.isRefined || false
+        isRefined: isRefined // Use Zustand store state for UI
       };
       
       return item;
     });
     
-    // Sort only by count (desc) and then by name, ignore refined status
-    // This keeps colors in a consistent position regardless of selection state
-    const sortedItems = processedItems.sort((a, b) => {
+    // Sort by count (desc) and then by name for consistent ordering
+    return processedItems.sort((a, b) => {
       if (a.amount !== b.amount) {
         return b.amount - a.amount;
       }
       return a.label.localeCompare(b.label);
     });
-    
-    setColorFilters(sortedItems);
-    
-  }, [colorTaxonomy, algoliaFacetItems, results]);
+  }, [colorTaxonomy, selectedColors, algoliaFacetMap]);
+
+  // Update state only when processed filters change
+  useEffect(() => {
+    setColorFilters(processedColorFilters);
+  }, [processedColorFilters]);
   
-  // This function will toggle the selection state for a color family
-  const handleSelect = (familyName: string): void => {
-    // Use refine function from InstantSearch to toggle selection state
-    // The refine function should handle both selection and deselection
-    refine(familyName);
-  };
+  // Memoize the handleSelect function to prevent unnecessary re-renders
+  const handleSelect = useCallback((familyName: string): void => {
+    if (selectedColors.includes(familyName)) {
+      removeColor(familyName);
+    } else {
+      addColor(familyName);
+    }
+  }, [selectedColors, removeColor, addColor]);
+
+
+
+
 
   // Show loading state
   if (isLoading && colorFilters.length === 0) {

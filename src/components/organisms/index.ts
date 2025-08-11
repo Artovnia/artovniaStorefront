@@ -27,6 +27,8 @@ import { OrderAddresses } from "./OrderAddresses/OrderAddresses"
 import { OrderParcels } from "./OrderParcels/OrderParcels"
 import { OrderTotals } from "./OrderTotals/OrderTotals"
 import { SingleOrderReturn } from "./SingleOrderReturn/SingleOrderReturn"
+import { CategorySidebar } from "./CategorySidebar/CategorySidebar"
+import { ProductFilterBar } from "./ProductFilterBar/ProductFilterBar"
 
 export {
   ProductCard,
@@ -58,4 +60,6 @@ export {
   OrderParcels,
   OrderTotals,
   SingleOrderReturn,
+  CategorySidebar,
+  ProductFilterBar,
 }

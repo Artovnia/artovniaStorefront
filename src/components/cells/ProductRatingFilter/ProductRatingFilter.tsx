@@ -6,37 +6,43 @@ import {
 } from '@/components/molecules';
 import { StarRating } from '@/components/atoms';
 import { cn } from '@/lib/utils';
-import { useRefinementList } from 'react-instantsearch';
+import { useFilterStore } from '@/stores/filterStore';
 
-export const ProductRatingFilter = () => {
-  // Use average_rating attribute from Algolia index
-  const { items, refine } = useRefinementList({
-    attribute: 'average_rating',
-    limit: 5,
-    sortBy: ['name:desc'],  // Sort from 5 stars to 1 star
-  });
+interface ProductRatingFilterProps {
+  algoliaRatingItems?: Array<{
+    label: string;
+    count: number;
+    isRefined: boolean;
+  }>;
+}
+
+export const ProductRatingFilter = ({ algoliaRatingItems = [] }: ProductRatingFilterProps) => {
+  // Get rating selection from Zustand store
+  const { selectedRating, setSelectedRating } = useFilterStore();
   
-  // Function to check if a rating is currently refined/selected
+  // Function to check if a rating is currently refined/selected (using Zustand store)
   const isRatingSelected = (rating: string) => {
-    const foundItem = items.find(item => item.label === rating);
-    return foundItem?.isRefined || false;
+    return selectedRating === rating;
   };
   
-  // Handle rating selection/deselection
+  // Handle rating selection/deselection (UI-only, updates Zustand store)
   const handleRatingSelect = (rating: string) => {
-    // This tells Algolia to toggle the refinement for this rating
-    refine(rating);
+    if (selectedRating === rating) {
+      setSelectedRating(null); // Deselect if already selected
+    } else {
+      setSelectedRating(rating); // Select new rating
+    }
   };
 
   // Create an array with all possible ratings (5 to 1)
   const allRatings = [5, 4, 3, 2, 1].map(rating => {
     const ratingStr = String(rating);
     // Find this rating in the Algolia items or create a default entry
-    const foundItem = items.find(item => item.label === ratingStr);
+    const foundItem = algoliaRatingItems.find(item => item.label === ratingStr);
     return {
       label: ratingStr,
       count: foundItem ? foundItem.count : 0,
-      isRefined: foundItem ? foundItem.isRefined : false
+      isRefined: selectedRating === ratingStr // Use Zustand store state for UI
     };
   });
 

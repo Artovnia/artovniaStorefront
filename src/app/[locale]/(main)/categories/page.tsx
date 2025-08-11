@@ -1,6 +1,8 @@
 import { ProductListingSkeleton } from "@/components/organisms/ProductListingSkeleton/ProductListingSkeleton"
 import { Suspense, lazy } from "react"
 import { Breadcrumbs } from "@/components/atoms"
+import { listCategories } from "@/lib/data/categories"
+import { HttpTypes } from "@medusajs/types"
 
 // CRITICAL FIX: Ultra-aggressive code splitting to reduce 4.2 MB bundle
 // Split heavy Algolia components into completely separate chunks
@@ -24,6 +26,22 @@ async function AllCategories({
 }) {
   const { locale } = await params
 
+  // Fetch all categories with full tree structure (same as specific category pages)
+  let allCategoriesWithTree: HttpTypes.StoreProductCategory[] = []
+  
+  try {
+    // Use the SAME listCategories function that Header/Navbar uses for full tree structure
+    const categoriesData = await listCategories()
+    
+    if (categoriesData && categoriesData.parentCategories) {
+      // Combine parent categories (with full tree) and child categories for complete dataset
+      allCategoriesWithTree = [...categoriesData.parentCategories, ...categoriesData.categories]
+    }
+  } catch (error) {
+    console.error("Error retrieving categories with listCategories:", error)
+    allCategoriesWithTree = []
+  }
+
   const breadcrumbsItems = [
     {
       path: "/",
@@ -33,9 +51,7 @@ async function AllCategories({
 
   return (
     <main className="mx-auto max-w-[1920px] pt-24 pb-24">
-      <div className="hidden md:block mb-2">
-        <Breadcrumbs items={breadcrumbsItems} />
-      </div>
+   
 
       <h1 className="heading-xl uppercase font-instrument-serif">Wszystkie produkty</h1>
 
@@ -61,7 +77,10 @@ async function AllCategories({
         {!ALGOLIA_ID || !ALGOLIA_SEARCH_KEY ? (
           <ProductListing showSidebar />
         ) : (
-          <AlgoliaProductsListing locale={locale} />
+          <AlgoliaProductsListing 
+            locale={locale}
+            categories={allCategoriesWithTree}
+          />
         )}
       </Suspense>
     </main>

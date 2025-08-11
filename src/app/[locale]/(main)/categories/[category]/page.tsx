@@ -1,5 +1,5 @@
 import { ProductListingSkeleton } from "@/components/organisms/ProductListingSkeleton/ProductListingSkeleton"
-import { getCategoryByHandle } from "@/lib/data/categories"
+import { getCategoryByHandle, listCategories } from "@/lib/data/categories"
 import { Suspense } from "react"
 
 import type { Metadata } from "next"
@@ -48,22 +48,20 @@ async function Category({
   // Decode the URL-encoded handle
   const decodedHandle = decodeURIComponent(handle)
   
-  // Define a function to directly fetch categories
-  const fetchAllCategories = async (): Promise<HttpTypes.StoreProductCategory[]> => {
-    try {
-      const response = await sdk.client.fetch<{product_categories: HttpTypes.StoreProductCategory[]}>
-        (`/store/product-categories`, {
-          query: {
-            limit: 100,
-          },
-          cache: "no-cache",
-        });
-      
-      return response.product_categories;
-    } catch (error) {
-      console.error('Error fetching all categories:', error)
-      return []
+  // Fetch all categories with full tree structure (same as Header/Navbar)
+  let allCategoriesWithTree: HttpTypes.StoreProductCategory[] = []
+  
+  try {
+    // Use the SAME listCategories function that Header/Navbar uses for full tree structure
+    const categoriesData = await listCategories()
+    
+    if (categoriesData && categoriesData.parentCategories) {
+      // Combine parent categories (with full tree) and child categories for complete dataset
+      allCategoriesWithTree = [...categoriesData.parentCategories, ...categoriesData.categories]
     }
+  } catch (error) {
+    console.error("Error retrieving categories with listCategories:", error)
+    allCategoriesWithTree = []
   }
   
   // Try to fetch the specific category first
@@ -71,10 +69,9 @@ async function Category({
   
   // If not found, try the direct approach
   if (!category) {
-    const allCategories = await fetchAllCategories()
     
     // Try exact match on handle
-    const exactHandleMatch = allCategories.find((cat: HttpTypes.StoreProductCategory) => 
+    const exactHandleMatch = allCategoriesWithTree.find((cat: HttpTypes.StoreProductCategory) => 
       cat.handle?.toLowerCase() === decodedHandle.toLowerCase()
     )
     if (exactHandleMatch) {
@@ -83,7 +80,7 @@ async function Category({
     
     // If not found, try matching on name
     if (!category) {
-      const nameMatch = allCategories.find((cat: HttpTypes.StoreProductCategory) => 
+      const nameMatch = allCategoriesWithTree.find((cat: HttpTypes.StoreProductCategory) => 
         cat.name?.toLowerCase() === decodedHandle.toLowerCase()
       )
       if (nameMatch) {
@@ -93,16 +90,13 @@ async function Category({
     
     // If still not found, try partial matching
     if (!category) {
-      const partialMatch = allCategories.find((cat: HttpTypes.StoreProductCategory) => 
+      const partialMatch = allCategoriesWithTree.find((cat: HttpTypes.StoreProductCategory) => 
         cat.handle?.toLowerCase().includes(decodedHandle.toLowerCase()) ||
         cat.name?.toLowerCase().includes(decodedHandle.toLowerCase())
       )
       if (partialMatch) {
         category = partialMatch
       }
-    }
-    
-    if (category) {
     }
   }
 
@@ -121,9 +115,7 @@ async function Category({
 
   return (
     <main className="container">
-      <div className="hidden md:block mb-2">
-        <Breadcrumbs items={breadcrumbsItems} />
-      </div>
+     
 
       <h1 className="heading-xl uppercase">{category.name}</h1>
 
@@ -131,7 +123,11 @@ async function Category({
         {!ALGOLIA_ID || !ALGOLIA_SEARCH_KEY ? (
           <ProductListing category_id={category.id} showSidebar />
         ) : (
-          <AlgoliaProductsListing category_id={category.id} locale={locale} />
+          <AlgoliaProductsListing 
+            category_id={category.id} 
+            locale={locale}
+            categories={allCategoriesWithTree}
+          />
         )}
       </Suspense>
     </main>
