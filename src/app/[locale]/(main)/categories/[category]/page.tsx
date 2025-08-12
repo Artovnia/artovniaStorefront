@@ -1,5 +1,6 @@
 import { Metadata } from "next"
 import { notFound } from "next/navigation"
+import Link from "next/link"
 import { HttpTypes } from "@medusajs/types"
 
 import { getCategoryByHandle, listCategories } from "@/lib/data/categories"
@@ -7,11 +8,11 @@ import { getRegion } from "@/lib/data/regions"
 import { AlgoliaProductsListing } from "@/components/sections/ProductListing/AlgoliaProductsListing"
 
 type Props = {
-  params: { category: string; locale: string }
+  params: Promise<{ category: string; locale: string }>
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const { category: categoryHandle } = params
+  const { category: categoryHandle } = await params
 
   try {
     const category = await getCategoryByHandle([categoryHandle])
@@ -49,7 +50,7 @@ function getAllDescendantCategoryIds(category: HttpTypes.StoreProductCategory): 
 }
 
 export default async function CategoryPage({ params }: Props) {
-  const { category: categoryHandle, locale } = params
+  const { category: categoryHandle, locale } = await params
 
   try {
     // Get the specific category
@@ -76,11 +77,7 @@ export default async function CategoryPage({ params }: Props) {
     // Get all descendant category IDs for product aggregation
     const categoryIds = getAllDescendantCategoryIds(finalCategory)
     
-    if (process.env.NODE_ENV === 'development') {
-      console.log(`🏷️ Category page: Category "${finalCategory.name}" (${finalCategory.id})`)
-      console.log(`🏷️ Category page: Has ${finalCategory.category_children?.length || 0} direct children`)
-      console.log(`🏷️ Category page: Aggregating products from ${categoryIds.length} total categories:`, categoryIds)
-    }
+    
 
     // Get region for any region-specific logic
     const region = await getRegion("us")
@@ -112,21 +109,21 @@ export default async function CategoryPage({ params }: Props) {
           {/* Breadcrumbs */}
           {breadcrumbs.length > 1 && (
             <nav className="flex items-center space-x-2 text-sm text-ui-fg-muted">
-              <a href="/" className="hover:text-ui-fg-base">
+              <Link href="/" className="hover:text-ui-fg-base">
                 Strona główna
-              </a>
+              </Link>
               {breadcrumbs.map((crumb, index) => (
                 <div key={crumb.id} className="flex items-center space-x-2">
                   <span>/</span>
                   {index === breadcrumbs.length - 1 ? (
                     <span className="text-ui-fg-base font-medium">{crumb.name}</span>
                   ) : (
-                    <a 
+                    <Link 
                       href={`/categories/${crumb.handle}`}
                       className="hover:text-ui-fg-base"
                     >
                       {crumb.name}
-                    </a>
+                    </Link>
                   )}
                 </div>
               ))}
@@ -149,7 +146,7 @@ export default async function CategoryPage({ params }: Props) {
               <h2 className="text-lg font-medium">Podkategorie</h2>
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                 {finalCategory.category_children.map((child) => (
-                  <a
+                  <Link
                     key={child.id}
                     href={`/categories/${child.handle}`}
                     className="flex flex-col gap-2 p-4 border border-ui-border-base rounded-lg hover:shadow-elevation-card-rest transition-shadow"
@@ -160,7 +157,7 @@ export default async function CategoryPage({ params }: Props) {
                         {child.description}
                       </p>
                     )}
-                  </a>
+                  </Link>
                 ))}
               </div>
             </div>
