@@ -137,12 +137,53 @@ export const listCategories = async ({
       filteredCategories = product_categories
     } else {
       console.log(`🏠 listCategories: Filtering categories based on Algolia data`)
-      filteredCategories = product_categories.filter(category => {
-        const hasProducts = categoriesWithProducts.has(category.id)
-        if (!hasProducts) {
-          console.log(`🏠 listCategories: Filtering out category "${category.name}" (${category.id}) - no products`)
+      
+      // CRITICAL: Include full category tree - not just categories with products
+      // We need to include parent categories even if they don't have direct products
+      const categoriesToInclude = new Set<string>()
+      
+      // First, add all categories that have products
+      product_categories.forEach(category => {
+        if (categoriesWithProducts.has(category.id)) {
+          categoriesToInclude.add(category.id)
+          console.log(`🏠 listCategories: Including category "${category.name}" (${category.id}) - has products`)
         }
-        return hasProducts
+      })
+      
+      // Then, add all parent categories for categories that have products
+      // This ensures we have the full tree structure
+      const addParentCategories = (categoryId: string, depth = 0) => {
+        if (depth > 10) return // Prevent infinite loops
+        
+        const category = product_categories.find(cat => cat.id === categoryId)
+        if (!category) return
+        
+        const parentId = category.parent_category_id || category.parent_category?.id
+        if (parentId) {
+          if (!categoriesToInclude.has(parentId)) {
+            const parentCategory = product_categories.find(cat => cat.id === parentId)
+            if (parentCategory) {
+              categoriesToInclude.add(parentId)
+              console.log(`🏠 listCategories: Including parent category "${parentCategory.name}" (${parentId}) - needed for tree structure`)
+              // Recursively add grandparents
+              addParentCategories(parentId, depth + 1)
+            }
+          }
+        }
+      }
+      
+      // Add parent categories for all categories with products
+      Array.from(categoriesToInclude).forEach(categoryId => {
+        addParentCategories(categoryId)
+      })
+      
+      // Filter to only include categories in our tree
+      filteredCategories = product_categories.filter(category => {
+        const shouldInclude = categoriesToInclude.has(category.id)
+        if (!shouldInclude) {
+          console.log(`🏠 listCategories: Filtering out category "${category.name}" (${category.id}) - not in product tree`)
+        }
+        return shouldInclude
       })
     }
 
