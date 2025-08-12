@@ -1,5 +1,6 @@
 import { sdk } from "@/lib/config"
 import { HttpTypes } from "@medusajs/types"
+import { client as algoliaClient } from "@/lib/client"
 // Note: Removed persistent-cache import as it may not exist
 // Using simple caching approach instead
 
@@ -12,40 +13,65 @@ interface CategoriesProps {
 }
 
 /**
- * Get categories that have products from Medusa backend
+ * Get categories that have products from Algolia index
  * This is used to filter categories to only show those with actual products
  */
 export const getCategoriesWithProducts = async (): Promise<Set<string>> => {
   try {
-    // Fetch all products with their category information
-    const { products } = await sdk.client.fetch<{
-      products: { categories?: { id: string }[] }[]
-    }>("/store/products", {
-      query: {
-        fields: "categories.id",
-        limit: 1000, // Get more products to ensure we capture all categories
-      },
-      cache: "force-cache",
-      next: { revalidate: 300 } // Cache for 5 minutes
-    })
+    const algoliaIndexName = process.env.NEXT_PUBLIC_ALGOLIA_PRODUCTS_INDEX || "products"
+    
+    // Search all products in Algolia to get category information
+    // Use empty query to get all products, with high limit to capture all categories
+    const searchResponse = await algoliaClient.search([
+      {
+        indexName: algoliaIndexName,
+        params: {
+          query: '',
+          hitsPerPage: 1000, // Get many products to ensure we capture all categories
+          attributesToRetrieve: ['categories'], // Only get category data for efficiency
+          facets: ['categories.id'], // Get facet data for categories
+        }
+      }
+    ])
 
     // Extract unique category IDs that have products
     const categoryIds = new Set<string>()
     
-    products.forEach(product => {
-      if (product.categories && product.categories.length > 0) {
-        product.categories.forEach(category => {
-          if (category.id) {
-            categoryIds.add(category.id)
+    // Get the first (and only) search result - use any to avoid TypeScript issues
+    const firstResult = (searchResponse as any).results[0]
+    
+    if (firstResult) {
+      // Method 1: Extract from individual product hits
+      if (firstResult.hits && Array.isArray(firstResult.hits)) {
+        firstResult.hits.forEach((product: any) => {
+          if (product.categories && Array.isArray(product.categories)) {
+            product.categories.forEach((category: any) => {
+              if (category.id) {
+                categoryIds.add(category.id)
+              }
+            })
           }
         })
       }
-    })
+      
+      // Method 2: Also extract from facets if available (more comprehensive)
+      if (firstResult.facets && firstResult.facets['categories.id']) {
+        Object.keys(firstResult.facets['categories.id']).forEach(categoryId => {
+          if (categoryId && categoryId !== 'undefined' && categoryId !== 'null') {
+            categoryIds.add(categoryId)
+          }
+        })
+      }
 
-    console.log(`📊 Found ${categoryIds.size} categories with products out of ${products.length} products`)
+      if (process.env.NODE_ENV === 'development') {
+        console.log(`📊 Algolia: Found ${categoryIds.size} categories with products out of ${firstResult.hits?.length || 0} products`)
+        console.log(`📊 Algolia: Categories with products:`, Array.from(categoryIds).slice(0, 10), categoryIds.size > 10 ? '...' : '')
+      }
+    }
+    
     return categoryIds
   } catch (error) {
-    console.error("Error fetching categories with products from backend:", error)
+    console.error("Error fetching categories with products from Algolia:", error)
     // Return empty set on error - will show all categories as fallback
     return new Set()
   }
@@ -55,133 +81,49 @@ export const listCategories = async ({
   query,
   headingCategories = [],
 }: Partial<CategoriesProps> = {}) => {
-  const limit = query?.limit || 100
-
-  // CRITICAL OPTIMIZATION: Parallel API calls instead of sequential
-  // This reduces blocking time from 2+ seconds to under 500ms
-  const [categoriesResult, categoriesWithProductsResult] = await Promise.allSettled([
-    // Fetch all categories from Medusa with caching
-    sdk.client
-      .fetch<{
-        product_categories: HttpTypes.StoreProductCategory[]
-      }>("/store/product-categories", {
-        query: {
-          fields: "handle, name, rank, parent_category_id, *category_children, *parent_category",
-          limit,
-          ...query,
-        },
-        cache: "force-cache", // Use aggressive caching
-        next: { revalidate: 300 } // Cache for 5 minutes
-      })
-      .then(({ product_categories }) => product_categories),
-    
-    // Get categories that have products from Algolia (parallel execution)
-    getCategoriesWithProducts()
-  ])
-
-  // Handle results with proper error handling
-  const categories = categoriesResult.status === 'fulfilled' 
-    ? categoriesResult.value 
-    : []
-  
-  const categoriesWithProducts = categoriesWithProductsResult.status === 'fulfilled'
-    ? categoriesWithProductsResult.value
-    : new Set<string>()
-
-  
-
-  // BUILD PARENT-CHILD RELATIONSHIPS: Build proper tree structure without duplicates
-  const buildFullCategoryTree = (allCategories: HttpTypes.StoreProductCategory[]) => {
-    // Create a map for faster lookups with proper typing
-    const categoryMap = new Map<string, HttpTypes.StoreProductCategory>()
-    
-    // Initialize all categories with empty children arrays
-    allCategories.forEach(cat => {
-      categoryMap.set(cat.id, { 
-        ...cat, 
-        category_children: [] as HttpTypes.StoreProductCategory[] 
-      })
-    })
-    
-    // Build parent-child relationships
-    allCategories.forEach(category => {
-      const parentId = category.parent_category_id || category.parent_category?.id
-      if (parentId && categoryMap.has(parentId)) {
-        const parent = categoryMap.get(parentId)!
-        const child = categoryMap.get(category.id)!
-        if (!parent.category_children) {
-          parent.category_children = []
-        }
-        parent.category_children.push(child)
+  try {
+    // Simplified version to fix import issues
+    const { product_categories } = await sdk.client.fetch<{
+      product_categories: HttpTypes.StoreProductCategory[]
+    }>("/store/product-categories", {
+      query: {
+        fields: "handle, name, rank, parent_category_id, *category_children, *parent_category",
+        limit: query?.limit || 100,
+        ...query,
       }
     })
-    
-    // Return all categories with populated children (no duplicates)
-    return Array.from(categoryMap.values())
-  }
 
-  // Build the complete tree first
-  const fullCategoryTree = buildFullCategoryTree(categories)
-
- 
-
-  // THEN filter based on products, keeping categories that have products OR have children with products
-  const filterCategoriesWithProducts = (categoryTree: HttpTypes.StoreProductCategory[]): HttpTypes.StoreProductCategory[] => {
-    const filterRecursively = (categories: HttpTypes.StoreProductCategory[]): HttpTypes.StoreProductCategory[] => {
-      return categories
-        .map(category => {
-          // Recursively filter children first
-          const filteredChildren = category.category_children 
-            ? filterRecursively(category.category_children)
-            : []
-          
-          return {
-            ...category,
-            category_children: filteredChildren
-          }
-        })
-        .filter(category => {
-          // Keep category if:
-          // 1. It has products directly
-          // 2. It has children with products (after filtering)
-          // 3. If no product filtering available (categoriesWithProducts is empty), show all
-          const hasProducts = categoriesWithProducts.size === 0 || categoriesWithProducts.has(category.id)
-          const hasChildrenWithProducts = category.category_children && category.category_children.length > 0
-          
-          const shouldKeep = hasProducts || hasChildrenWithProducts
-          
-          if (process.env.NODE_ENV === 'development') {
-            console.log(`🔍 Category "${category.name}" (${category.id}): hasProducts=${hasProducts}, hasChildren=${hasChildrenWithProducts}, keep=${shouldKeep}`)
-          }
-          
-          return shouldKeep
-        })
+    if (!product_categories || product_categories.length === 0) {
+      return {
+        categories: [],
+        parentCategories: [],
+        count: 0
+      }
     }
-    
-    return filterRecursively(categoryTree)
-  }
 
-  // Always filter categories based on products to only show relevant ones
-  const finalCategories = filterCategoriesWithProducts(fullCategoryTree)
+    // Get categories that have products from Algolia
+    const categoriesWithProducts = await getCategoriesWithProducts()
 
-  // Return only top-level categories (those without parents)
-  const topLevelCategories = finalCategories.filter(cat => {
-    const hasNoParentId = !cat.parent_category_id
-    const hasNoParentObj = !cat.parent_category || 
-                         cat.parent_category === null || 
-                         (typeof cat.parent_category === 'object' && !cat.parent_category.id)
-    
-    return hasNoParentId && hasNoParentObj
-  })
+    // Filter categories to only show those with products or children with products
+    const filteredCategories = product_categories.filter(category => {
+      return categoriesWithProducts.size === 0 || categoriesWithProducts.has(category.id)
+    })
 
-  if (process.env.NODE_ENV === 'development') {
-    console.log(`📊 Categories summary: ${categories.length} total → ${fullCategoryTree.length} in tree → ${finalCategories.length} with products → ${topLevelCategories.length} top-level`)
-    console.log(`📊 Categories with products: ${Array.from(categoriesWithProducts).join(', ')}`)
-  }
+    // Get parent categories (top-level categories)
+    const parentCategories = filteredCategories.filter(category => !category.parent_category_id)
 
-  return {
-    categories: topLevelCategories,
-    parentCategories: topLevelCategories,
+    return {
+      categories: filteredCategories,
+      parentCategories: parentCategories,
+      count: filteredCategories.length
+    }
+  } catch (error) {
+    console.error("Error in listCategories:", error)
+    return {
+      categories: [],
+      parentCategories: [],
+      count: 0
+    }
   }
 }
 
