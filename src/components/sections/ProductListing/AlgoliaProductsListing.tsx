@@ -31,21 +31,26 @@ import useUpdateSearchParams from "@/hooks/useUpdateSearchParams"
 import { PRODUCT_LIMIT } from "@/const"
 import { ProductListingSkeleton } from "@/components/organisms/ProductListingSkeleton/ProductListingSkeleton"
 
-export const AlgoliaProductsListing = ({
-  category_id,
-  category_ids,
-  collection_id,
-  seller_handle,
-  locale = process.env.NEXT_PUBLIC_DEFAULT_REGION,
-  categories = [],
-}: {
+interface AlgoliaProductsListingProps {
   category_id?: string
   category_ids?: string[]
   collection_id?: string
   locale?: string
   seller_handle?: string
   categories?: HttpTypes.StoreProductCategory[]
-}) => {
+  currentCategory?: HttpTypes.StoreProductCategory
+}
+
+export const AlgoliaProductsListing = (props: AlgoliaProductsListingProps) => {
+  const {
+    category_id,
+    category_ids,
+    collection_id,
+    seller_handle,
+    locale = process.env.NEXT_PUBLIC_DEFAULT_REGION,
+    categories = [],
+    currentCategory,
+  } = props
   const searchParams = useSearchParams()
 
   // Get URL parameters for filtering and pagination

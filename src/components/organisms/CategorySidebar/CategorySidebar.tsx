@@ -10,14 +10,45 @@ interface CategorySidebarProps {
   parentCategoryHandle?: string
   className?: string
   categories: HttpTypes.StoreProductCategory[] // Required - no fallback fetching
+  currentCategory?: HttpTypes.StoreProductCategory // Current category for header display
 }
 
 export const CategorySidebar = ({ 
   parentCategoryHandle,
   className,
-  categories
+  categories,
+  currentCategory
 }: CategorySidebarProps) => {
-  const { category: currentCategoryHandle } = useParams()
+  const params = useParams()
+  const rawCategoryHandle = params.category
+  // Decode URL-encoded category handle (e.g., "sto%C5%82y" → "stoły")
+  const currentCategoryHandle = rawCategoryHandle ? decodeURIComponent(rawCategoryHandle as string) : null
+  
+  // Find the current category from the categories list if not provided
+  const resolvedCurrentCategory = useMemo(() => {
+    if (currentCategory) {
+      return currentCategory
+    }
+    if (!currentCategoryHandle || !categories) {
+      return null
+    }
+    
+    // Simple recursive search through categories
+    const findCategoryByHandle = (cats: HttpTypes.StoreProductCategory[], handle: string): HttpTypes.StoreProductCategory | null => {
+      for (const cat of cats) {
+        if (cat.handle === handle) {
+          return cat
+        }
+        if (cat.category_children && cat.category_children.length > 0) {
+          const found = findCategoryByHandle(cat.category_children, handle)
+          if (found) return found
+        }
+      }
+      return null
+    }
+    
+    return findCategoryByHandle(categories, currentCategoryHandle as string)
+  }, [currentCategory, currentCategoryHandle, categories])
   
   // Process categories for display - always show full tree structure
   const topLevelCategories = useMemo(() => {
@@ -56,6 +87,18 @@ export const CategorySidebar = ({
 
   return (
     <div className={cn("w-full", className)}>
+      {/* Current Category Header */}
+      {resolvedCurrentCategory && (
+        <div className="mb-6">
+          <h1 className="heading-xl uppercase">{resolvedCurrentCategory.name}</h1>
+          {resolvedCurrentCategory.description && (
+            <p className="text-base-regular text-ui-fg-subtle mb-6">
+              {resolvedCurrentCategory.description}
+            </p>
+          )}
+        </div>
+      )}
+
       {/* Category List */}
       <nav className="space-y-1">
         {/* "All Products" link */}
