@@ -25,8 +25,33 @@ export const CategorySidebar = ({
       return []
     }
     
-    // Always show all top-level categories (no parent_category_id)
-    return categories.filter(cat => !cat.parent_category_id)
+    // AGGRESSIVE DEDUPLICATION: Remove any duplicate categories by ID first
+    const uniqueCategories = Array.from(
+      new Map(categories.map(cat => [cat.id, cat])).values()
+    )
+    
+    // Enhanced parent detection - check both parent_category_id and parent_category object
+    const topLevel = uniqueCategories.filter(cat => {
+      const hasNoParentId = !cat.parent_category_id || cat.parent_category_id === null
+      const hasNoParentObj = !cat.parent_category || 
+                           cat.parent_category === null || 
+                           (typeof cat.parent_category === 'object' && !cat.parent_category.id)
+      
+      return hasNoParentId && hasNoParentObj
+    })
+    
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`🔍 CategorySidebar: ${categories.length} total categories → ${uniqueCategories.length} unique → ${topLevel.length} top-level`);
+      
+      // Check for duplicates
+      const ids = categories.map(c => c.id)
+      const duplicateIds = ids.filter((id, index) => ids.indexOf(id) !== index)
+      if (duplicateIds.length > 0) {
+        console.warn(`⚠️ CategorySidebar: Found duplicate category IDs:`, [...new Set(duplicateIds)]);
+      }
+    }
+    
+    return topLevel
   }, [categories])
 
   return (
@@ -37,7 +62,7 @@ export const CategorySidebar = ({
         <Link
           href="/categories"
           className={cn(
-            "block px-3 py-2 text-sm font-medium font-instrument-sans rounded-md transition-colors",
+            "block px-3 py-2 text-md font-medium font-instrument-sans rounded-md transition-colors",
             !currentCategoryHandle 
               ? "bg-primary text-black underline decoration-1 underline-offset-4" 
               : "text-black hover:bg-gray-100"
@@ -59,7 +84,7 @@ export const CategorySidebar = ({
       {/* Category Count */}
       {topLevelCategories.length > 0 && (
         <div className="mt-6 pt-4 border-t border-[#3B3634]">
-          <p className="text-xs text-black font-instrument-sans">
+          <p className="text-md text-black font-instrument-sans">
             {topLevelCategories.length} {topLevelCategories.length === 1 ? 'kategoria' : 'kategorii'}
           </p>
         </div>
@@ -88,14 +113,14 @@ const CategorySidebarItem = ({
   // Always expand all categories to show full tree structure
   const isExpanded = true // Show full tree by default
 
-  // No toggle needed - always show full category tree
+ 
 
   return (
     <div>
       <Link
         href={`/categories/${category.handle}`}
         className={cn(
-          "flex items-center justify-between px-3 py-2 text-sm font-medium font-instrument-sans rounded-md transition-colors group",
+          "flex items-center justify-between px-3 py-2 text-md font-medium font-instrument-sans rounded-md transition-colors group",
           isActive 
             ? "bg-primary text-black underline decoration-1 underline-offset-4" 
             : "text-black hover:bg-gray-100",
@@ -108,7 +133,7 @@ const CategorySidebarItem = ({
           {category.name}
         </span>
         
-        {/* Arrow/triangle removed as requested */}
+        
       </Link>
 
       {/* Child Categories */}

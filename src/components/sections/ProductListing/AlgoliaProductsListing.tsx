@@ -33,12 +33,14 @@ import { ProductListingSkeleton } from "@/components/organisms/ProductListingSke
 
 export const AlgoliaProductsListing = ({
   category_id,
+  category_ids,
   collection_id,
   seller_handle,
   locale = process.env.NEXT_PUBLIC_DEFAULT_REGION,
   categories = [],
 }: {
   category_id?: string
+  category_ids?: string[]
   collection_id?: string
   locale?: string
   seller_handle?: string
@@ -64,19 +66,26 @@ export const AlgoliaProductsListing = ({
     filterParts.push(`seller.handle:"${seller_handle}"`);
   }
   
-  // Add category filter if specified
-  if (category_id) {
+  // Add category filter if specified - support both single category_id and multiple category_ids
+  const effectiveCategoryIds = category_ids || (category_id ? [category_id] : [])
+  
+  if (effectiveCategoryIds.length > 0) {
     // For Algolia array filtering, use facetFilters which is the recommended approach
     // Categories are stored as an array of objects with id and name fields
     // Use facetFilters for array field filtering - this is the correct Algolia approach
-    facetFiltersList.push([`categories.id:${category_id}`]);
     
+    // For multiple categories, create OR filter (any product in any of these categories)
+    const categoryFilters = effectiveCategoryIds.map(id => `categories.id:${id}`)
+    facetFiltersList.push(categoryFilters);
     
-    
-    // Add collection filter if specified
-    if (collection_id) {
-      facetFiltersList.push([`collections.id:${collection_id}`]);
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`🔍 Algolia filtering by categories:`, effectiveCategoryIds);
     }
+  }
+  
+  // Add collection filter if specified
+  if (collection_id) {
+    facetFiltersList.push([`collections.id:${collection_id}`]);
   }
   
   // Add any additional facet filters from URL parameters
@@ -282,8 +291,8 @@ const ProductsListing = ({ sortOptions, category_id, categories = [] }: Products
     <>
       {/* Main Layout: (Results Count + Category Sidebar) + (Filter Bar + Products) */}
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
-        {/* Left Column: Results Count + Category Sidebar */}
-        <div className="lg:col-span-1">
+        {/* Left Column: Results Count + Category Sidebar - Hidden below 768px (md breakpoint) */}
+        <div className="hidden lg:block lg:col-span-1">
           {/* Results Count - Above category sidebar */}
           <div className="mb-4">
             <div className="label-md">{`${results?.nbHits} wyników`}</div>
@@ -316,8 +325,8 @@ const ProductsListing = ({ sortOptions, category_id, categories = [] }: Products
                 </p>
               </div>
             ) : (
-              <div className="w-full">
-                <ul className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="w-full flex justify-center xl:justify-start">
+                <ul className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4 w-fit mx-auto xl:mx-0">
                   {items.map((hit) => (
                     <ProductCard 
                       key={hit.objectID} 

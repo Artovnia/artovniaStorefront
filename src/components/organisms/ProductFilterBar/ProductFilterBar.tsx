@@ -1,6 +1,7 @@
 "use client"
 
 import React, { useState, useRef, useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import { cn } from '@/lib/utils'
 import { Input, StarRating } from "@/components/atoms"
 import { FilterCheckboxOption } from "@/components/molecules"
@@ -21,27 +22,63 @@ interface FilterDropdownProps {
 
 const FilterDropdown = ({ label, children, isActive, className }: FilterDropdownProps) => {
   const [isOpen, setIsOpen] = useState(false)
+  const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0, right: 0 })
   const dropdownRef = useRef<HTMLDivElement>(null)
+  const buttonRef = useRef<HTMLButtonElement>(null)
+
+  // Calculate dropdown position
+  useEffect(() => {
+    if (isOpen && buttonRef.current) {
+      const rect = buttonRef.current.getBoundingClientRect()
+      const scrollTop = window.pageYOffset || document.documentElement.scrollTop
+      
+      setDropdownPosition({
+        top: rect.bottom + scrollTop + 8, // 8px margin
+        left: rect.left,
+        right: window.innerWidth - rect.right
+      })
+    }
+  }, [isOpen])
 
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node) &&
+          buttonRef.current && !buttonRef.current.contains(event.target as Node)) {
         setIsOpen(false)
       }
     }
 
-    document.addEventListener('mousedown', handleClickOutside)
-    return () => document.removeEventListener('mousedown', handleClickOutside)
-  }, [])
+    if (isOpen) {
+      document.addEventListener('mousedown', handleClickOutside)
+      return () => document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [isOpen])
+
+  const dropdownContent = isOpen && (
+    <div 
+      ref={dropdownRef}
+      className="fixed bg-primary border border-[#3B3634] rounded-lg shadow-lg z-[9999] min-w-[250px] max-w-[400px]"
+      style={{
+        top: `${dropdownPosition.top}px`,
+        left: window.innerWidth >= 640 ? 'auto' : `${dropdownPosition.left}px`,
+        right: window.innerWidth >= 640 ? `${dropdownPosition.right}px` : 'auto',
+      }}
+    >
+      <div className="p-4 max-h-[400px] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-gray-100">
+        {children}
+      </div>
+    </div>
+  )
 
   return (
-    <div className={cn("relative", className)} ref={dropdownRef}>
+    <div className={cn("relative", className)}>
       <button
+        ref={buttonRef}
         onClick={() => setIsOpen(!isOpen)}
         className={cn(
-          "flex items-center gap-2 px-4 py-2 rounded-full border transition-all duration-200",
-          "text-sm font-medium whitespace-nowrap",
+          "flex items-center gap-2 px-3 py-2 sm:px-4 rounded-full border transition-all duration-200",
+          "text-xs sm:text-sm font-medium whitespace-nowrap min-w-0 font-instrument-sans",
           isActive || isOpen
             ? "bg-primary text-black border-primary shadow-md"
             : "bg-primary text-black border-[#3B3634] hover:border-[#3B3634] hover:shadow-sm"
@@ -61,12 +98,9 @@ const FilterDropdown = ({ label, children, isActive, className }: FilterDropdown
         </svg>
       </button>
 
-      {isOpen && (
-        <div className="absolute top-full left-0 mt-2 bg-primary border border-[#3B3634] rounded-lg shadow-lg z-50 min-w-[250px] max-w-[400px]">
-          <div className="p-4">
-            {children}
-          </div>
-        </div>
+      {typeof window !== 'undefined' && createPortal(
+        dropdownContent,
+        document.body
       )}
     </div>
   )
@@ -175,7 +209,16 @@ export const ProductFilterBar = ({ className }: ProductFilterBarProps) => {
     searchParams.get("max_price") ||
     selectedColors.length > 0 ||
     selectedRating ||
-    searchParams.get("size")
+    searchParams.get("size") ||
+    // Add dimension filters from URL parameters
+    searchParams.get("min_length") ||
+    searchParams.get("max_length") ||
+    searchParams.get("min_width") ||
+    searchParams.get("max_width") ||
+    searchParams.get("min_height") ||
+    searchParams.get("max_height") ||
+    searchParams.get("min_weight") ||
+    searchParams.get("max_weight")
   )
 
   // Get active filters for display
@@ -244,15 +287,38 @@ export const ProductFilterBar = ({ className }: ProductFilterBarProps) => {
       })
     }
     
+    // Add dimension filters from URL parameters
+    const dimensionParams = [
+      { key: 'min_length', label: 'Min długość', unit: 'mm' },
+      { key: 'max_length', label: 'Max długość', unit: 'mm' },
+      { key: 'min_width', label: 'Min szerokość', unit: 'mm' },
+      { key: 'max_width', label: 'Max szerokość', unit: 'mm' },
+      { key: 'min_height', label: 'Min wysokość', unit: 'mm' },
+      { key: 'max_height', label: 'Max wysokość', unit: 'mm' },
+      { key: 'min_weight', label: 'Min waga', unit: 'g' },
+      { key: 'max_weight', label: 'Max waga', unit: 'g' },
+    ]
+    
+    dimensionParams.forEach(({ key, label, unit }) => {
+      const value = searchParams.get(key)
+      if (value) {
+        filters.push({
+          key: key,
+          label: `${label}: ${value}${unit}`,
+          onRemove: () => updateSearchParams(key, "")
+        })
+      }
+    })
+    
     return filters
   }
 
   const activeFilters = getActiveFilters()
 
   return (
-    <div className={cn("w-full bg-primary border-b border-[#3B3634] py-4", className)}>
+    <div className={cn("w-full bg-primary border-b border-[#3B3634] py-4 px-4 sm:px-6", className)}>
       {/* Filter Buttons Row */}
-      <div className="flex flex-wrap items-center gap-3 mb-4">
+      <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-4 overflow-x-auto scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-gray-100 pb-2">
         {/* Sort Filter */}
         <SortFilter />
         
@@ -283,9 +349,22 @@ export const ProductFilterBar = ({ className }: ProductFilterBarProps) => {
               updateSearchParams("size", "")
               updateSearchParams("condition", "")
               
+              // Clear dimension filters from URL as well
+              updateSearchParams("min_length", "")
+              updateSearchParams("max_length", "")
+              updateSearchParams("min_width", "")
+              updateSearchParams("max_width", "")
+              updateSearchParams("min_height", "")
+              updateSearchParams("max_height", "")
+              updateSearchParams("min_weight", "")
+              updateSearchParams("max_weight", "")
+              
               // Clear all Zustand store filters
-              const { clearColors, clearRating, clearAllFilters } = useFilterStore.getState()
-              clearAllFilters() // This should clear all Zustand filters at once
+              const { clearAllFilters } = useFilterStore.getState()
+              clearAllFilters()
+              
+              // Dispatch custom event to clear dimension filters in CombinedDimensionFilter
+              window.dispatchEvent(new CustomEvent('clearAllDimensionFilters'))
             }}
             style={{
               marginLeft: 'auto',
@@ -358,7 +437,7 @@ const SortFilter = () => {
   return (
     <FilterDropdown label={`Sortuj według: ${currentSortLabel}`} isActive={Boolean(currentSort)}>
       <div className="space-y-2">
-        <h4 className="font-medium text-gray-900 mb-3">Sortuj według</h4>
+        <h4 className="font-medium text-black mb-3 font-instrument-sans">Sortuj według</h4>
         {sortOptions.map((option) => (
           <label key={option.value} className="flex items-center gap-2 cursor-pointer">
             <input
@@ -367,9 +446,9 @@ const SortFilter = () => {
               value={option.value}
               checked={currentSort === option.value}
               onChange={() => updateSearchParams("sortBy", option.value)}
-              className="text-primary focus:ring-primary"
+              className="font-instrument-sans focus:ring-primary"
             />
-            <span className="text-sm text-gray-700">{option.label}</span>
+            <span className="text-sm text-black font-instrument-sans">{option.label}</span>
           </label>
         ))}
       </div>
@@ -400,8 +479,8 @@ const PriceFilterDropdown = () => {
   return (
     <FilterDropdown label="Cena" isActive={isActive}>
       <form onSubmit={handleSubmit} className="space-y-4">
-        <h4 className="font-medium text-black">Zakres cen</h4>
-        <div className="flex gap-2">
+        <h4 className="font-medium text-black font-instrument-sans">Zakres cen</h4>
+        <div className="flex gap-2 flex-col sm:flex-row">
           <Input
             placeholder="Min"
             icon={<span className="text-xs font-medium">zł</span>}
@@ -410,7 +489,7 @@ const PriceFilterDropdown = () => {
               const value = e.target.value
               if (/^[0-9]*$/.test(value)) setMin(value)
             }}
-            className="flex-1"
+            className="flex-1 font-instrument-sans"
           />
           <Input
             placeholder="Max"
@@ -420,12 +499,12 @@ const PriceFilterDropdown = () => {
               const value = e.target.value
               if (/^[0-9]*$/.test(value)) setMax(value)
             }}
-            className="flex-1"
+            className="flex-1 font-instrument-sans"
           />
         </div>
         <button
           type="submit"
-          className="w-full bg-primary text-black py-2 px-4 rounded-md hover:bg-primary/90 transition-colors"
+          className="w-full bg-[#3B3634] text-white py-2 px-4  hover:bg-gray-800 transition-colors font-instrument-sans text-sm"
         >
           Zastosuj
         </button>
@@ -442,7 +521,7 @@ const ColorFilterDropdown = ({ colorFacetItems }: { colorFacetItems: any[] }) =>
   return (
     <FilterDropdown label="Kolor" isActive={isActive}>
       <div>
-        <h4 className="font-medium text-black mb-3">Wybierz kolor</h4>
+        <h4 className="font-medium text-black mb-3 font-instrument-sans">Wybierz kolor</h4>
         <ColorFilter algoliaFacetItems={colorFacetItems} />
       </div>
     </FilterDropdown>
@@ -457,7 +536,7 @@ const SizeFilterDropdown = () => {
   return (
     <FilterDropdown label="Rozmiar" isActive={isActive}>
       <div>
-        <h4 className="font-medium text-black mb-3">Wybierz rozmiar</h4>
+        <h4 className="font-medium text-black mb-3 font-instrument-sans">Wybierz rozmiar</h4>
         <SizeFilter />
       </div>
     </FilterDropdown>
@@ -476,7 +555,7 @@ const DimensionsFilterDropdown = () => {
   return (
     <FilterDropdown label="Wymiary" isActive={isActive}>
       <div>
-        <h4 className="font-medium text-black mb-3">Wymiary produktu</h4>
+        <h4 className="font-medium text-black mb-3 font-instrument-sans">Wymiary produktu</h4>
         <CombinedDimensionFilter />
       </div>
     </FilterDropdown>
@@ -491,10 +570,9 @@ const RatingFilterDropdown = ({ ratingFacetItems }: { ratingFacetItems: any[] })
   return (
     <FilterDropdown label="Ocena" isActive={isActive}>
       <div>
-        <h4 className="font-medium text-black mb-3">Minimalna ocena</h4>
+        <h4 className="font-medium text-black mb-3 font-instrument-sans">Minimalna ocena</h4>
         <ProductRatingFilter algoliaRatingItems={ratingFacetItems} />
       </div>
     </FilterDropdown>
   )
 }
-

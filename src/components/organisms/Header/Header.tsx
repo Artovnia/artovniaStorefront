@@ -57,9 +57,12 @@ export const Header = async () => {
     
     if (categoriesData && categoriesData.parentCategories) {
       topLevelCategories = categoriesData.parentCategories
-      allCategoriesWithTree = [...categoriesData.parentCategories, ...categoriesData.categories]
+      // FIX: Use only categories array since it now contains the full deduplicated tree
+      allCategoriesWithTree = categoriesData.categories
       
-      
+      if (process.env.NODE_ENV === 'development') {
+        console.log(`🏠 Header: Using ${topLevelCategories.length} parent categories and ${allCategoriesWithTree.length} total categories`);
+      }
     }
   } catch (error) {
     console.error("🏠 Header: Error retrieving categories with listCategories:", error)
@@ -67,11 +70,11 @@ export const Header = async () => {
 
   return (
     <header>
-      <div className="flex py-2 lg:px-8 px-4 max-w-[1920px] mx-auto">
+      <div className="flex py-2 max-w-[1920px] mx-auto">
         <div className="flex items-center lg:w-1/3">
           <MobileNavbar
             parentCategories={topLevelCategories}
-            childrenCategories={allCategoriesWithTree.filter((cat: HttpTypes.StoreProductCategory) => cat.parent_category_id)}
+            childrenCategories={allCategoriesWithTree}
           />
           
         </div>

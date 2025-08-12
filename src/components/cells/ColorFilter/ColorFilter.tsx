@@ -152,7 +152,7 @@ export const ColorFilter = ({ algoliaFacetItems = [] }: ColorFilterProps): JSX.E
               />
               <div
                 className={cn(
-                  'w-5 h-5 border border-gray-300 rounded-sm flex-shrink-0 ml-2',
+                  'w-5 h-5 border border-gray-300 rounded-full flex-shrink-0 ml-2',
                   amount === 0 && 'opacity-30'
                 )}
                 style={colorStyle}

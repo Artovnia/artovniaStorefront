@@ -36,6 +36,15 @@ export const metadata: Metadata = {
   metadataBase: new URL(
     process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"
   ),
+  icons: {
+    icon: '/A.svg',
+    shortcut: '/A.svg',
+    apple: '/A.svg',
+    other: {
+      rel: 'apple-touch-icon',
+      url: '/A.svg',
+    },
+  },
 }
 
 export default async function RootLayout({

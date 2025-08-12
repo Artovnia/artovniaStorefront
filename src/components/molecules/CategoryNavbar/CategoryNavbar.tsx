@@ -239,7 +239,7 @@ export const CategoryNavbar = ({ categories, onClose }: CategoryNavbarProps) => 
       <Link
         href="/categories"
         onClick={() => onClose?.()}
-        className="uppercase px-4 my-3 md:my-0 flex items-center justify-between text-lg hover:bg-primary/10 transition-colors"
+        className="uppercase  my-3 md:my-0 flex items-center justify-between text-lg hover:bg-primary/10 transition-colors"
       >
         Wszystkie produkty
       </Link>

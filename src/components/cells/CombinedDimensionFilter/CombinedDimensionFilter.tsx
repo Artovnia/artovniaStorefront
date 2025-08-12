@@ -4,7 +4,7 @@
 import { Accordion } from "@/components/molecules"
 import useUpdateSearchParams from "@/hooks/useUpdateSearchParams"
 import { useSearchParams } from "next/navigation"
-import React, { useEffect, useState } from "react"
+import React, { useEffect, useState, useCallback } from "react"
 import { useHits, useInstantSearch } from "react-instantsearch"
 
 // Define TypeScript types for improved type safety
@@ -215,18 +215,15 @@ export function CombinedDimensionFilter(): JSX.Element {
   // Handle dimension change
   const handleDimensionChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target
-
-    // Validate that input is either empty or a number
-    if (value === '' || /^\d+$/.test(value)) {
-      // Update the input value state
-      setDimensionInputs((prev) => ({
-        ...prev,
-        [name]: value
-      }))
-
-      // Apply the filter directly to update URL and Algolia
-      applyDimensionFilter(name, value)
-    }
+    
+    // Update local state
+    setDimensionInputs(prev => ({
+      ...prev,
+      [name]: value
+    }))
+    
+    // Apply filter immediately on change
+    applyDimensionFilter(name, value)
   }
 
   // Apply dimension filter when Enter is pressed or input changes
@@ -310,8 +307,10 @@ export function CombinedDimensionFilter(): JSX.Element {
     }
   }
 
-  // Clear all dimension filters
-  const clearAllDimensionFilters = () => {
+  // Clear all dimension filters - use useCallback to ensure stable reference
+  const clearAllDimensionFilters = useCallback(() => {
+    console.log('🧽 CombinedDimensionFilter: clearAllDimensionFilters called')
+    
     // Get all dimension params from search params to clear them
     const dimensionParams = [
       'min_length', 'max_length',
@@ -319,6 +318,8 @@ export function CombinedDimensionFilter(): JSX.Element {
       'min_height', 'max_height',
       'min_weight', 'max_weight'
     ]
+
+    console.log('📝 CombinedDimensionFilter: Current dimension inputs before clear:', dimensionInputs)
 
     // Clear inputs
     setDimensionInputs({
@@ -332,6 +333,8 @@ export function CombinedDimensionFilter(): JSX.Element {
       max_weight: ''
     })
 
+    console.log('🔗 CombinedDimensionFilter: Clearing URL params:', dimensionParams)
+    
     // Clear URL params
     dimensionParams.forEach(param => {
       updateSearchParams(param, null)
@@ -368,7 +371,23 @@ export function CombinedDimensionFilter(): JSX.Element {
       
       helper.search()
     }
-  }
+  }, [updateSearchParams, helper]) // Add dependency array for useCallback
+
+  // Listen for clear all filters event from ProductFilterBar
+  useEffect(() => {
+    const handleClearAllDimensionFilters = () => {
+      console.log('🎯 CombinedDimensionFilter: Received clearAllDimensionFilters event')
+      clearAllDimensionFilters()
+    }
+
+    console.log('🔧 CombinedDimensionFilter: Adding event listener for clearAllDimensionFilters')
+    window.addEventListener('clearAllDimensionFilters', handleClearAllDimensionFilters)
+    
+    return () => {
+      console.log('🧹 CombinedDimensionFilter: Removing event listener for clearAllDimensionFilters')
+      window.removeEventListener('clearAllDimensionFilters', handleClearAllDimensionFilters)
+    }
+  }, []) // Empty dependency array is fine since clearAllDimensionFilters doesn't depend on props/state
 
   // Check if any dimension filter is active
   const hasActiveFilter = Boolean(

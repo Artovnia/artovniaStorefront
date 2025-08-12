@@ -33,6 +33,20 @@ interface FilterState {
   setSelectedCondition: (condition: string | null) => void
   clearCondition: () => void
   
+  // Dimension filters
+  dimensionFilters: {
+    min_length: string
+    max_length: string
+    min_width: string
+    max_width: string
+    min_height: string
+    max_height: string
+    min_weight: string
+    max_weight: string
+  }
+  setDimensionFilter: (key: string, value: string) => void
+  clearDimensionFilters: () => void
+  
   // Clear all filters
   clearAllFilters: () => void
 }
@@ -83,6 +97,36 @@ export const useFilterStore = create<FilterState>()(
       setSelectedCondition: (condition) => set({ selectedCondition: condition }),
       clearCondition: () => set({ selectedCondition: '' }),
       
+      // Dimension filters
+      dimensionFilters: {
+        min_length: '',
+        max_length: '',
+        min_width: '',
+        max_width: '',
+        min_height: '',
+        max_height: '',
+        min_weight: '',
+        max_weight: ''
+      },
+      setDimensionFilter: (key, value) => set((state) => ({
+        dimensionFilters: {
+          ...state.dimensionFilters,
+          [key]: value
+        }
+      })),
+      clearDimensionFilters: () => set({
+        dimensionFilters: {
+          min_length: '',
+          max_length: '',
+          min_width: '',
+          max_width: '',
+          min_height: '',
+          max_height: '',
+          min_weight: '',
+          max_weight: ''
+        }
+      }),
+      
       // Clear all filters
       clearAllFilters: () => set({
         selectedColors: [],
@@ -90,7 +134,17 @@ export const useFilterStore = create<FilterState>()(
         maxPrice: '',
         selectedSizes: [],
         selectedRating: null,
-        selectedCondition: ''
+        selectedCondition: '',
+        dimensionFilters: {
+          min_length: '',
+          max_length: '',
+          min_width: '',
+          max_width: '',
+          min_height: '',
+          max_height: '',
+          min_weight: '',
+          max_weight: ''
+        }
       })
     }),
     {
