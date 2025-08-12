@@ -12,17 +12,41 @@ interface CategoriesProps {
 }
 
 /**
- * Get categories that have products from Algolia
+ * Get categories that have products from Medusa backend
  * This is used to filter categories to only show those with actual products
  */
 export const getCategoriesWithProducts = async (): Promise<Set<string>> => {
   try {
-    // Simplified approach - return empty set to avoid Algolia TypeScript issues
-    // This will show all categories instead of filtering by products
-    console.warn("Algolia category filtering temporarily disabled to fix TypeScript issues")
-    return new Set()
+    // Fetch all products with their category information
+    const { products } = await sdk.client.fetch<{
+      products: { categories?: { id: string }[] }[]
+    }>("/store/products", {
+      query: {
+        fields: "categories.id",
+        limit: 1000, // Get more products to ensure we capture all categories
+      },
+      cache: "force-cache",
+      next: { revalidate: 300 } // Cache for 5 minutes
+    })
+
+    // Extract unique category IDs that have products
+    const categoryIds = new Set<string>()
+    
+    products.forEach(product => {
+      if (product.categories && product.categories.length > 0) {
+        product.categories.forEach(category => {
+          if (category.id) {
+            categoryIds.add(category.id)
+          }
+        })
+      }
+    })
+
+    console.log(`📊 Found ${categoryIds.size} categories with products out of ${products.length} products`)
+    return categoryIds
   } catch (error) {
-    console.error("Error fetching categories with products from Algolia:", error)
+    console.error("Error fetching categories with products from backend:", error)
+    // Return empty set on error - will show all categories as fallback
     return new Set()
   }
 }
@@ -103,100 +127,61 @@ export const listCategories = async ({
 
   // THEN filter based on products, keeping categories that have products OR have children with products
   const filterCategoriesWithProducts = (categoryTree: HttpTypes.StoreProductCategory[]): HttpTypes.StoreProductCategory[] => {
-    return categoryTree
-      .map(category => {
-        // Recursively filter children first
-        const filteredChildren = category.category_children 
-          ? filterCategoriesWithProducts(category.category_children)
-          : []
-        
-        return {
-          ...category,
-          category_children: filteredChildren
-        }
-      })
-      .filter(category => {
-        // Keep categories that either:
-        // 1. Have products directly, OR
-        // 2. Have children with products (after filtering), OR  
-        // 3. No product filtering is active
-        return categoriesWithProducts.size === 0 || 
-               categoriesWithProducts.has(category.id) || 
-               (category.category_children && category.category_children.length > 0)
-      })
+    const filterRecursively = (categories: HttpTypes.StoreProductCategory[]): HttpTypes.StoreProductCategory[] => {
+      return categories
+        .map(category => {
+          // Recursively filter children first
+          const filteredChildren = category.category_children 
+            ? filterRecursively(category.category_children)
+            : []
+          
+          return {
+            ...category,
+            category_children: filteredChildren
+          }
+        })
+        .filter(category => {
+          // Keep category if:
+          // 1. It has products directly
+          // 2. It has children with products (after filtering)
+          // 3. If no product filtering available (categoriesWithProducts is empty), show all
+          const hasProducts = categoriesWithProducts.size === 0 || categoriesWithProducts.has(category.id)
+          const hasChildrenWithProducts = category.category_children && category.category_children.length > 0
+          
+          const shouldKeep = hasProducts || hasChildrenWithProducts
+          
+          if (process.env.NODE_ENV === 'development') {
+            console.log(`🔍 Category "${category.name}" (${category.id}): hasProducts=${hasProducts}, hasChildren=${hasChildrenWithProducts}, keep=${shouldKeep}`)
+          }
+          
+          return shouldKeep
+        })
+    }
+    
+    return filterRecursively(categoryTree)
   }
 
-  const categoriesWithFilteredChildren = categoriesWithProducts.size > 0 
-    ? filterCategoriesWithProducts(fullCategoryTree)
-    : fullCategoryTree
+  // Always filter categories based on products to only show relevant ones
+  const finalCategories = filterCategoriesWithProducts(fullCategoryTree)
 
- 
-
-  // DYNAMIC PARENT DETECTION: Find actual top-level categories (no parent_category_id)
-  // If headingCategories is provided, use it as a filter, otherwise show all top-level categories
-  const topLevelCategories = categoriesWithFilteredChildren.filter(category => {
-    // Check both parent_category_id field and parent_category object for robust detection
-    const hasNoParentId = !category.parent_category_id || category.parent_category_id === null
-    const hasNoParentObj = !category.parent_category || 
-                          category.parent_category === null || 
-                          category.parent_category === undefined ||
-                          (typeof category.parent_category === 'object' && !category.parent_category.id)
+  // Return only top-level categories (those without parents)
+  const topLevelCategories = finalCategories.filter(cat => {
+    const hasNoParentId = !cat.parent_category_id
+    const hasNoParentObj = !cat.parent_category || 
+                         cat.parent_category === null || 
+                         (typeof cat.parent_category === 'object' && !cat.parent_category.id)
     
-    const isTopLevel = hasNoParentId && hasNoParentObj
-    
-    
-    
-    return isTopLevel
+    return hasNoParentId && hasNoParentObj
   })
 
-  // FALLBACK: If no top-level categories found using parent_category, 
-  // use categories that have children but aren't children themselves
-  let fallbackParentCategories: HttpTypes.StoreProductCategory[] = []
-  if (topLevelCategories.length === 0) {
-    
-    
-    // Build a set of all category IDs that are children
-    const childCategoryIds = new Set<string>()
-    categoriesWithFilteredChildren.forEach(category => {
-      category.category_children?.forEach(child => {
-        childCategoryIds.add(child.id)
-      })
-    })
-    
-    // Categories that have children but are not children themselves are likely parents
-    fallbackParentCategories = categoriesWithFilteredChildren.filter(category => 
-      category.category_children && 
-      category.category_children.length > 0 && 
-      !childCategoryIds.has(category.id)
-    )
-    
-    
+  if (process.env.NODE_ENV === 'development') {
+    console.log(`📊 Categories summary: ${categories.length} total → ${fullCategoryTree.length} in tree → ${finalCategories.length} with products → ${topLevelCategories.length} top-level`)
+    console.log(`📊 Categories with products: ${Array.from(categoriesWithProducts).join(', ')}`)
   }
-
-  const finalTopLevelCategories = topLevelCategories.length > 0 ? topLevelCategories : fallbackParentCategories
-
-  let parentCategories: HttpTypes.StoreProductCategory[]
-  if (headingCategories.length > 0) {
-    // Filter top-level categories by headingCategories if provided
-    const headingCategoriesSet = new Set(headingCategories.map(name => name.toLowerCase()))
-    parentCategories = finalTopLevelCategories.filter(({ name }) =>
-      headingCategoriesSet.has(name.toLowerCase())
-    )
-  } else {
-    // Show all top-level categories if no filter provided
-    parentCategories = finalTopLevelCategories
-  }
-
-  // DEDUPLICATION FIX: Return only unique categories to prevent React key conflicts
-  const uniqueCategories = Array.from(
-    new Map(categoriesWithFilteredChildren.map(cat => [cat.id, cat])).values()
-  )
-
-  
 
   return {
-    categories: uniqueCategories, // Return deduplicated categories
-    parentCategories: parentCategories,
+    categories: topLevelCategories,
+    parentCategories: topLevelCategories,
   }
 }
 
@@ -230,30 +215,41 @@ export const getCategoryHierarchy = async (categoryHandle: string): Promise<Http
     const hierarchy: HttpTypes.StoreProductCategory[] = []
     let currentCategory: HttpTypes.StoreProductCategory | null = targetCategory
 
-    
-
-    // Prevent infinite loops with a visited set
+    // Prevent infinite loops with a visited set and max depth
     const visitedIds = new Set<string>()
+    const maxDepth = 10 // Reasonable max depth for category hierarchy
+    let depth = 0
 
-    while (currentCategory && !visitedIds.has(currentCategory.id)) {
+    while (currentCategory && !visitedIds.has(currentCategory.id) && depth < maxDepth) {
       visitedIds.add(currentCategory.id)
       hierarchy.unshift(currentCategory) // Add to beginning to build root-to-leaf path
+      depth++
       
-      
+      if (process.env.NODE_ENV === 'development') {
+        console.log(`🔍 Building hierarchy: ${currentCategory.name} (${currentCategory.id}) at depth ${depth}`)
+      }
       
       // Find parent category using parent_category_id field
       if (currentCategory.parent_category_id) {
         const parentId: string = currentCategory.parent_category_id
         currentCategory = product_categories.find(cat => cat.id === parentId) || null
         
-        
+        if (!currentCategory && process.env.NODE_ENV === 'development') {
+          console.warn(`Parent category with ID "${parentId}" not found`)
+        }
       } else {
         // No parent_category_id means this is a root category
         currentCategory = null
       }
     }
 
-    
+    if (depth >= maxDepth) {
+      console.warn(`Category hierarchy depth exceeded maximum (${maxDepth}) for category: ${categoryHandle}`)
+    }
+
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`📊 Built hierarchy for "${categoryHandle}": ${hierarchy.map(c => c.name).join(' → ')}`)
+    }
 
     return hierarchy
   } catch (error) {
