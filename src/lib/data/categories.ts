@@ -259,8 +259,8 @@ export const getCategoryHierarchy = async (categoryHandle: string): Promise<Http
       product_categories: HttpTypes.StoreProductCategory[]
     }>("/store/product-categories", {
       query: {
-        fields: "id, handle, name, rank, parent_category_id, *parent_category",
-        limit: 100,
+        fields: "id, handle, name, rank, parent_category_id, mpath, *parent_category",
+        limit: 1000, // CRITICAL: Match the limit from listCategories
       },
       cache: "force-cache",
       next: { revalidate: 300 }
@@ -323,31 +323,68 @@ export const getCategoryHierarchy = async (categoryHandle: string): Promise<Http
 /**
  * Get all descendant category IDs for a given category (including the category itself)
  * This is used for parent category pages to show products from all child categories
+ * Now enhanced to work with mpath-based category structure
  */
-export const getAllDescendantCategoryIds = (category: HttpTypes.StoreProductCategory): string[] => {
-  const ids = [category.id]
-  
-  if (category.category_children && category.category_children.length > 0) {
-    category.category_children.forEach(child => {
-      ids.push(...getAllDescendantCategoryIds(child))
+export const getAllDescendantCategoryIds = async (categoryId: string): Promise<string[]> => {
+  try {
+    // Fetch all categories to find descendants using mpath
+    const { product_categories } = await sdk.client.fetch<{
+      product_categories: HttpTypes.StoreProductCategory[]
+    }>("/store/product-categories", {
+      query: {
+        fields: "id, handle, name, mpath, parent_category_id",
+        limit: 1000,
+      },
+      cache: "force-cache",
+      next: { revalidate: 300 }
     })
+
+    if (!product_categories) {
+      return [categoryId]
+    }
+
+    // Find the target category
+    const targetCategory = product_categories.find(cat => cat.id === categoryId)
+    if (!targetCategory) {
+      return [categoryId]
+    }
+
+    const descendantIds = [categoryId]
+    
+    // Find all categories that have this category in their mpath (are descendants)
+    product_categories.forEach(category => {
+      const mpath = (category as any).mpath
+      if (mpath && typeof mpath === 'string' && category.id !== categoryId) {
+        // Check if this category's mpath contains the target category ID
+        if (mpath.includes(categoryId)) {
+          descendantIds.push(category.id)
+        }
+      }
+    })
+    
+    console.log(`📊 Found ${descendantIds.length} descendant categories for ${targetCategory.name} (${categoryId})`)
+    return descendantIds
+  } catch (error) {
+    console.error(`Error fetching descendant categories for ${categoryId}:`, error)
+    return [categoryId]
   }
-  
-  return ids
 }
 
 export const getCategoryByHandle = async (categoryHandle: string[]) => {
+  // Decode handle outside try-catch to ensure it's accessible in error handling
+  const decodedHandle = categoryHandle.map(segment => decodeURIComponent(segment)).join("/")
+  
   try {
-    const decodedHandle = categoryHandle.map(segment => decodeURIComponent(segment)).join("/")
-
+    // First try to find by exact handle
     const response = await sdk.client.fetch<HttpTypes.StoreProductCategoryListResponse>(
       `/store/product-categories`,
       {
         query: {
-          fields: "*category_children",
+          fields: "handle, name, rank, parent_category_id, mpath, *category_children, *parent_category",
           handle: decodedHandle,
         },
-        cache: "no-cache",
+        cache: "force-cache",
+        next: { revalidate: 300 }
       }
     )
     
@@ -355,15 +392,17 @@ export const getCategoryByHandle = async (categoryHandle: string[]) => {
       return response.product_categories[0]
     }
     
+    // Fallback: search through all categories
     try {
       const allCategoriesResponse = await sdk.client.fetch<HttpTypes.StoreProductCategoryListResponse>(
         `/store/product-categories`,
         {
           query: {
-            fields: "*category_children",
-            limit: 100,
+            fields: "handle, name, rank, parent_category_id, mpath, *category_children, *parent_category",
+            limit: 1000, // CRITICAL: Match other functions - increased from 100
           },
-          cache: "no-cache",
+          cache: "force-cache",
+          next: { revalidate: 300 }
         }
       )
       
@@ -378,11 +417,13 @@ export const getCategoryByHandle = async (categoryHandle: string[]) => {
         }
       }
     } catch (fallbackError) {
-      // Silently handle fallback errors
+      console.warn(`Fallback category search failed for handle: ${decodedHandle}`, fallbackError)
     }
     
+    console.warn(`Category not found for handle: ${decodedHandle}`)
     return null
   } catch (error) {
+    console.error(`Error fetching category by handle: ${decodedHandle}`, error)
     return null
   }
 }
