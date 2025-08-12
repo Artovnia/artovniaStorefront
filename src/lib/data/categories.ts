@@ -216,7 +216,7 @@ export const listCategories = async ({
           }
         }
       })
-      
+
       // Filter to only include categories in our tree
       filteredCategories = product_categories.filter(category => {
         const shouldInclude = categoriesToInclude.has(category.id)
@@ -227,15 +227,80 @@ export const listCategories = async ({
       })
     }
 
-    // Get parent categories (top-level categories)
-    const parentCategories = filteredCategories.filter(category => !category.parent_category_id)
+    // CRITICAL: Reconstruct hierarchical tree structure for UI components
+    // The UI expects children to be nested in category_children arrays
+    console.log(`🏠 listCategories: Reconstructing hierarchical tree from ${filteredCategories.length} flat categories`)
+    
+    // Create a map for quick lookup with proper typing
+    const categoryMap = new Map(filteredCategories.map(cat => [cat.id, { 
+      ...cat, 
+      category_children: [] as HttpTypes.StoreProductCategory[] 
+    }]))
+    
+    // Build the tree structure
+    const hierarchicalCategories: HttpTypes.StoreProductCategory[] = []
+    
+    filteredCategories.forEach(category => {
+      const categoryWithChildren = categoryMap.get(category.id)!
+      
+      if (!category.parent_category_id) {
+        // This is a root category
+        hierarchicalCategories.push(categoryWithChildren)
+        console.log(`🏠 listCategories: Added root category "${category.name}" (${category.id})`)
+      } else {
+        // This is a child category - add it to its parent's children array
+        const parent = categoryMap.get(category.parent_category_id)
+        if (parent) {
+          parent.category_children = parent.category_children || []
+          parent.category_children.push(categoryWithChildren)
+          console.log(`🏠 listCategories: Added child category "${category.name}" (${category.id}) to parent "${parent.name}" (${parent.id})`)
+        } else {
+          // Parent not in filtered list - this shouldn't happen with mpath logic, but add as root as fallback
+          hierarchicalCategories.push(categoryWithChildren)
+          console.log(`🏠 listCategories: ⚠️ Parent not found for "${category.name}" (${category.id}), adding as root`)
+        }
+      }
+    })
 
-    console.log(`🏠 listCategories: Final result - ${filteredCategories.length} categories, ${parentCategories.length} parent categories`)
+    // Sort categories by rank for consistent display
+    const sortByRank = (categories: HttpTypes.StoreProductCategory[]) => {
+      return categories.sort((a, b) => (a.rank || 0) - (b.rank || 0))
+    }
+    
+    // Recursively sort all levels
+    const sortCategoriesRecursively = (categories: HttpTypes.StoreProductCategory[]) => {
+      const sorted = sortByRank(categories)
+      sorted.forEach(category => {
+        if (category.category_children && category.category_children.length > 0) {
+          category.category_children = sortCategoriesRecursively(category.category_children)
+        }
+      })
+      return sorted
+    }
+    
+    const sortedHierarchicalCategories = sortCategoriesRecursively(hierarchicalCategories)
+    
+    console.log(`🏠 listCategories: Final hierarchical result - ${sortedHierarchicalCategories.length} root categories`)
+    sortedHierarchicalCategories.forEach(cat => {
+      const childCount = cat.category_children?.length || 0
+      console.log(`🏠 listCategories: Root: "${cat.name}" (${cat.id}) with ${childCount} children`)
+      if (childCount > 0) {
+        cat.category_children?.forEach(child => {
+          const grandChildCount = child.category_children?.length || 0
+          console.log(`🏠 listCategories:   Child: "${child.name}" (${child.id}) with ${grandChildCount} grandchildren`)
+          if (grandChildCount > 0) {
+            child.category_children?.forEach(grandChild => {
+              console.log(`🏠 listCategories:     GrandChild: "${grandChild.name}" (${grandChild.id})`)
+            })
+          }
+        })
+      }
+    })
 
     return {
-      categories: filteredCategories,
-      parentCategories: parentCategories,
-      count: filteredCategories.length
+      categories: sortedHierarchicalCategories, // Now returns hierarchical structure
+      parentCategories: sortedHierarchicalCategories, // Same as categories since they're already top-level
+      count: filteredCategories.length // Total count of all categories (flat)
     }
   } catch (error) {
     console.error("🏠 listCategories: Error:", error)
