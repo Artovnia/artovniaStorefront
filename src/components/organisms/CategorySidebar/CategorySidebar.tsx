@@ -73,6 +73,8 @@ export const CategorySidebar = ({
     
     if (process.env.NODE_ENV === 'development') {
       console.log(`🔍 CategorySidebar: ${categories.length} total categories → ${uniqueCategories.length} unique → ${topLevel.length} top-level`);
+      console.log(`🔍 CategorySidebar: Received categories:`, categories.map(c => `"${c.name}" (${c.id}) parent: ${c.parent_category_id || 'none'}`));
+      console.log(`🔍 CategorySidebar: Top-level categories:`, topLevel.map(c => `"${c.name}" (${c.id})`));
       
       // Check for duplicates
       const ids = categories.map(c => c.id)
@@ -80,6 +82,12 @@ export const CategorySidebar = ({
       if (duplicateIds.length > 0) {
         console.warn(`⚠️ CategorySidebar: Found duplicate category IDs:`, [...new Set(duplicateIds)]);
       }
+      
+      // Debug hierarchical structure
+      topLevel.forEach(cat => {
+        const childCount = cat.category_children?.length || 0
+        console.log(`🔍 CategorySidebar: "${cat.name}" has ${childCount} children:`, cat.category_children?.map(c => c.name) || []);
+      });
     }
     
     return topLevel

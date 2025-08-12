@@ -170,8 +170,11 @@ export const listCategories = async ({
           // mpath format: .parent_id.grandparent_id.category_id
           const mpath = (category as any).mpath
           if (mpath && typeof mpath === 'string') {
+            console.log(`🏠 listCategories: Processing mpath for "${category.name}": "${mpath}"`)
+            
             // Extract all category IDs from mpath (remove leading/trailing dots and split)
             const pathIds = mpath.split('.').filter(id => id && id.trim() !== '')
+            console.log(`🏠 listCategories: Extracted path IDs: [${pathIds.join(', ')}]`)
             
             pathIds.forEach(pathId => {
               if (pathId && pathId !== category.id) {
@@ -181,6 +184,16 @@ export const listCategories = async ({
                   console.log(`🏠 listCategories: Including parent category "${parentCategory.name}" (${pathId}) - from mpath`)
                 } else {
                   console.log(`🏠 listCategories: ⚠️ Parent category ${pathId} from mpath not found in fetched categories`)
+                  // Let's search for categories that might be the parent by name or handle
+                  const possibleParents = product_categories.filter(cat => 
+                    cat.name?.toLowerCase().includes('biżuteria') || 
+                    cat.name?.toLowerCase().includes('jewelry') ||
+                    cat.handle?.toLowerCase().includes('bizuteria') ||
+                    cat.handle?.toLowerCase().includes('jewelry')
+                  )
+                  if (possibleParents.length > 0) {
+                    console.log(`🏠 listCategories: Possible parent categories for ${pathId}:`, possibleParents.map(p => `"${p.name}" (${p.id})`))
+                  }
                 }
               }
             })
