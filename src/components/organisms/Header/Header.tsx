@@ -9,7 +9,7 @@ import {
 } from "@/components/cells"
 import { SafeI18nLink as Link } from "@/components/atoms/SafeI18nLink"
 import { HeartIcon } from "@/icons"
-import { listCategories } from "@/lib/data/categories"
+import { listCategories, listCategoriesWithProducts } from "@/lib/data/categories"
 import { sdk } from "@/lib/config"
 // Removed hardcoded PARENT_CATEGORIES import - now using dynamic detection
 import { retrieveCart } from "@/lib/data/cart"
@@ -47,25 +47,24 @@ export const Header = async () => {
 
   const wishlistCount = wishlist?.[0]?.products?.length || 0
 
-  // Fetch categories with full recursive tree using the fixed listCategories function
+  // Fetch only categories that have products to avoid performance issues
   let topLevelCategories: HttpTypes.StoreProductCategory[] = []
   let allCategoriesWithTree: HttpTypes.StoreProductCategory[] = []
   
   try {
-    // Use the FIXED listCategories function that builds the full recursive tree
-    const categoriesData = await listCategories()
+    // Use listCategoriesWithProducts to show only populated categories
+    const categoriesData = await listCategoriesWithProducts()
     
     if (categoriesData && categoriesData.parentCategories) {
       topLevelCategories = categoriesData.parentCategories
-      // FIX: Use only categories array since it now contains the full deduplicated tree
       allCategoriesWithTree = categoriesData.categories
       
       if (process.env.NODE_ENV === 'development') {
-        console.log(`🏠 Header: Using ${topLevelCategories.length} parent categories and ${allCategoriesWithTree.length} total categories`);
+        console.log(`🏠 Header: Using ${topLevelCategories.length} parent categories and ${allCategoriesWithTree.length} total categories with products`);
       }
     }
   } catch (error) {
-    console.error("🏠 Header: Error retrieving categories with listCategories:", error)
+    console.error("🏠 Header: Error retrieving categories with products:", error)
   }
 
   return (

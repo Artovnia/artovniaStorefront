@@ -211,57 +211,77 @@ function buildCategoryTree(flatCategories: HttpTypes.StoreProductCategory[]): Ht
 }
 
 /**
- * Get categories that have products (for UI components that want to filter)
- * This is optional - components can use this to show only populated categories
+ * OPTIMIZED: Get categories that have products (for UI components that want to filter)
+ * This fetches all categories once and filters efficiently to reduce server load
  */
 export const listCategoriesWithProducts = async (): Promise<{
   parentCategories: HttpTypes.StoreProductCategory[]
   categories: HttpTypes.StoreProductCategory[]
 }> => {
   try {
-    console.log(`🏠 listCategoriesWithProducts: Getting categories with products`)
+    console.log(`🏠 listCategoriesWithProducts: Getting categories with products (optimized)`)
     
-    // Get all categories first
-    const allCategoriesResult = await listCategories()
-    
-    // Get categories that have products from Algolia
+    // Get categories that have products from Algolia first (lightweight check)
     const categoriesWithProducts = await getCategoriesWithProducts()
     
     if (categoriesWithProducts.size === 0) {
-      console.log(`🏠 listCategoriesWithProducts: No product data from Algolia, returning all categories`)
-      return allCategoriesResult
+      console.log(`🏠 listCategoriesWithProducts: No product data from Algolia, showing essential categories only`)
+      // Return essential top-level categories when no product data available
+      const essentialCategories = await getEssentialCategories()
+      return essentialCategories
     }
     
-    // Filter to only include categories with products and their complete parent chains
+    // Fetch all categories from database (single request)
+    const response = await sdk.client.fetch<HttpTypes.StoreProductCategoryListResponse>(
+      `/store/product-categories`,
+      {
+        query: {
+          fields: "id, handle, name, rank, parent_category_id, mpath",
+          limit: 1000,
+        },
+        cache: "force-cache",
+        next: { revalidate: 300 }
+      }
+    )
+    
+    const allCategories = response?.product_categories || []
+    console.log(`🏠 listCategoriesWithProducts: Fetched ${allCategories.length} categories from database`)
+    
+    // OPTIMIZED: Build inclusion set efficiently
     const categoriesToInclude = new Set<string>()
     
-    // Include categories with products
+    // Step 1: Include categories with products
     categoriesWithProducts.forEach(categoryId => {
       categoriesToInclude.add(categoryId)
     })
     
-    // Include complete parent chains for categories with products
-    allCategoriesResult.categories.forEach(category => {
-      if (categoriesWithProducts.has(category.id)) {
-        // Walk up the parent chain using getCategoryHierarchy logic
-        let currentCategory: HttpTypes.StoreProductCategory | undefined = category
-        while (currentCategory?.parent_category_id) {
-          categoriesToInclude.add(currentCategory.parent_category_id)
-          currentCategory = allCategoriesResult.categories.find(cat => cat.id === currentCategory!.parent_category_id)
-        }
+    // Step 2: Include complete parent chains using mpath (more efficient than walking)
+    allCategories.forEach(category => {
+      if (categoriesWithProducts.has(category.id) && (category as any).mpath) {
+        // Parse mpath to get all ancestors at once
+        const ancestorIds = (category as any).mpath.split('.').filter((id: string) => id && id.trim() !== '')
+        ancestorIds.forEach((ancestorId: string) => {
+          categoriesToInclude.add(ancestorId)
+        })
       }
     })
     
-    // Filter categories
-    const filteredCategories = allCategoriesResult.categories.filter(cat => 
-      categoriesToInclude.has(cat.id)
-    )
+    // Step 3: Include essential top-level categories (for navigation structure)
+    const essentialTopLevel = ['Ona', 'On', 'Dom', 'Dziecko', 'Zwierzęta', 'Akcesoria']
+    allCategories.forEach(category => {
+      if (essentialTopLevel.includes(category.name || '') && !category.parent_category_id) {
+        categoriesToInclude.add(category.id)
+      }
+    })
     
-    // Rebuild tree with filtered categories
+    // Filter to only included categories
+    const filteredCategories = allCategories.filter(cat => categoriesToInclude.has(cat.id))
+    
+    // Build clean tree
     const filteredTree = buildCategoryTree(filteredCategories)
     const filteredParents = filteredTree.filter(cat => !cat.parent_category_id)
     
-    console.log(`🏠 listCategoriesWithProducts: Filtered to ${filteredCategories.length} categories with products`)
+    console.log(`🏠 listCategoriesWithProducts: Filtered to ${filteredCategories.length} categories with products (${filteredParents.length} top-level)`)
     
     return {
       parentCategories: filteredParents,
@@ -269,8 +289,44 @@ export const listCategoriesWithProducts = async (): Promise<{
     }
   } catch (error) {
     console.error('Error in listCategoriesWithProducts:', error)
-    // Fallback to all categories
-    return await listCategories()
+    // Fallback to essential categories
+    return await getEssentialCategories()
+  }
+}
+
+/**
+ * Get essential top-level categories as fallback
+ */
+async function getEssentialCategories(): Promise<{
+  parentCategories: HttpTypes.StoreProductCategory[]
+  categories: HttpTypes.StoreProductCategory[]
+}> {
+  try {
+    const response = await sdk.client.fetch<HttpTypes.StoreProductCategoryListResponse>(
+      `/store/product-categories`,
+      {
+        query: {
+          fields: "id, handle, name, rank, parent_category_id",
+          limit: 50, // Only fetch top-level categories
+        },
+        cache: "force-cache",
+        next: { revalidate: 300 }
+      }
+    )
+    
+    const allCategories = response?.product_categories || []
+    const essentialNames = ['Ona', 'On', 'Dom', 'Dziecko', 'Zwierzęta', 'Akcesoria']
+    const essentialCategories = allCategories.filter(cat => 
+      essentialNames.includes(cat.name || '') && !cat.parent_category_id
+    )
+    
+    return {
+      parentCategories: essentialCategories,
+      categories: essentialCategories
+    }
+  } catch (error) {
+    console.error('Error fetching essential categories:', error)
+    return { parentCategories: [], categories: [] }
   }
 }
 
