@@ -20,8 +20,6 @@ export const getCategoriesWithProducts = async (): Promise<Set<string>> => {
   try {
     const algoliaIndexName = process.env.NEXT_PUBLIC_ALGOLIA_PRODUCTS_INDEX || "products"
     
-    console.log(`🔍 Algolia: Starting search on index "${algoliaIndexName}"`)
-    console.log(`🔍 Algolia: Environment variables - ID: ${process.env.NEXT_PUBLIC_ALGOLIA_ID ? 'SET' : 'MISSING'}, Key: ${process.env.NEXT_PUBLIC_ALGOLIA_SEARCH_KEY ? 'SET' : 'MISSING'}`)
     
     // Search all products in Algolia to get category information
     // Use empty query to get all products, with high limit to capture all categories
@@ -37,8 +35,6 @@ export const getCategoriesWithProducts = async (): Promise<Set<string>> => {
       }
     ])
 
-    console.log(`🔍 Algolia: Search response received, results count: ${(searchResponse as any).results?.length || 0}`)
-
     // Extract unique category IDs that have products
     const categoryIds = new Set<string>()
     
@@ -46,23 +42,21 @@ export const getCategoriesWithProducts = async (): Promise<Set<string>> => {
     const firstResult = (searchResponse as any).results[0]
     
     if (firstResult) {
-      console.log(`🔍 Algolia: First result - hits: ${firstResult.hits?.length || 0}, facets available: ${firstResult.facets ? 'YES' : 'NO'}`)
       
       // Method 1: Extract from individual product hits
       if (firstResult.hits && Array.isArray(firstResult.hits)) {
-        console.log(`🔍 Algolia: Processing ${firstResult.hits.length} product hits`)
         firstResult.hits.forEach((product: any, index: number) => {
           if (product.categories && Array.isArray(product.categories)) {
             product.categories.forEach((category: any) => {
               if (category.id) {
                 categoryIds.add(category.id)
                 if (index < 3) { // Log first few for debugging
-                  console.log(`🔍 Algolia: Product ${index} has category "${category.name}" (${category.id})`)
+                 
                 }
               }
             })
           } else if (index < 3) {
-            console.log(`🔍 Algolia: Product ${index} has no categories or invalid format:`, product.categories)
+           
           }
         })
       }
@@ -70,21 +64,14 @@ export const getCategoriesWithProducts = async (): Promise<Set<string>> => {
       // Method 2: Also extract from facets if available (more comprehensive)
       if (firstResult.facets && firstResult.facets['categories.id']) {
         const facetKeys = Object.keys(firstResult.facets['categories.id'])
-        console.log(`🔍 Algolia: Processing ${facetKeys.length} category facets`)
         facetKeys.forEach(categoryId => {
           if (categoryId && categoryId !== 'undefined' && categoryId !== 'null') {
             categoryIds.add(categoryId)
           }
         })
-      } else {
-        console.log(`🔍 Algolia: No category facets found in response`)
-      }
+      } 
 
-      console.log(`📊 Algolia: Found ${categoryIds.size} categories with products out of ${firstResult.hits?.length || 0} products`)
-      console.log(`📊 Algolia: Categories with products:`, Array.from(categoryIds).slice(0, 10), categoryIds.size > 10 ? '...' : '')
-    } else {
-      console.log(`🔍 Algolia: No results found in search response`)
-    }
+    } 
     
     return categoryIds
   } catch (error) {
@@ -105,7 +92,7 @@ export const listCategories = async (): Promise<{
   categories: HttpTypes.StoreProductCategory[]
 }> => {
   try {
-    console.log(`🏠 listCategories: Fetching all categories from database`)
+    
     
     // Fetch all categories from Medusa backend - simple and clean
     const response = await sdk.client.fetch<HttpTypes.StoreProductCategoryListResponse>(
@@ -121,7 +108,6 @@ export const listCategories = async (): Promise<{
     )
     
     const allCategories = response?.product_categories || []
-    console.log(`🏠 listCategories: Fetched ${allCategories.length} categories from database`)
     
     // Build a clean hierarchical tree - no complex filtering
     const hierarchicalCategories = buildCategoryTree(allCategories)
@@ -129,7 +115,6 @@ export const listCategories = async (): Promise<{
     // Get top-level categories (those without parents)
     const parentCategories = hierarchicalCategories.filter(cat => !cat.parent_category_id)
     
-    console.log(`🏠 listCategories: Built tree with ${parentCategories.length} top-level categories`)
     
     return {
       parentCategories,
@@ -219,13 +204,13 @@ export const listCategoriesWithProducts = async (): Promise<{
   categories: HttpTypes.StoreProductCategory[]
 }> => {
   try {
-    console.log(`🏠 listCategoriesWithProducts: Getting categories with products (optimized)`)
+    
     
     // Get categories that have products from Algolia first (lightweight check)
     const categoriesWithProducts = await getCategoriesWithProducts()
     
     if (categoriesWithProducts.size === 0) {
-      console.log(`🏠 listCategoriesWithProducts: No product data from Algolia, showing essential categories only`)
+    
       // Return essential top-level categories when no product data available
       const essentialCategories = await getEssentialCategories()
       return essentialCategories
@@ -245,7 +230,6 @@ export const listCategoriesWithProducts = async (): Promise<{
     )
     
     const allCategories = response?.product_categories || []
-    console.log(`🏠 listCategoriesWithProducts: Fetched ${allCategories.length} categories from database`)
     
     // OPTIMIZED: Build inclusion set efficiently
     const categoriesToInclude = new Set<string>()
@@ -285,7 +269,7 @@ export const listCategoriesWithProducts = async (): Promise<{
     const filteredTree = buildCategoryTree(filteredCategories)
     const filteredParents = filteredTree.filter(cat => !cat.parent_category_id)
     
-    console.log(`🏠 listCategoriesWithProducts: Filtered to ${filteredCategories.length} categories with products (${filteredParents.length} top-level)`)
+    
     
     return {
       parentCategories: filteredParents,
@@ -398,9 +382,6 @@ export const getCategoryHierarchy = async (categoryHandle: string): Promise<Http
       hierarchy.unshift(currentCategory) // Add to beginning to build root-to-leaf path
       depth++
       
-      if (process.env.NODE_ENV === 'development') {
-        console.log(`🔍 Building hierarchy: ${currentCategory.name} (${currentCategory.id}) at depth ${depth}`)
-      }
       
       // Find parent category using parent_category_id field
       if (currentCategory.parent_category_id) {
@@ -420,9 +401,7 @@ export const getCategoryHierarchy = async (categoryHandle: string): Promise<Http
       console.warn(`Category hierarchy depth exceeded maximum (${maxDepth}) for category: ${categoryHandle}`)
     }
 
-    if (process.env.NODE_ENV === 'development') {
-      console.log(`📊 Built hierarchy for "${categoryHandle}": ${hierarchy.map(c => c.name).join(' → ')}`)
-    }
+   
 
     return hierarchy
   } catch (error) {
@@ -473,7 +452,6 @@ export const getAllDescendantCategoryIds = async (categoryId: string): Promise<s
       }
     })
     
-    console.log(`📊 Found ${descendantIds.length} descendant categories for ${targetCategory.name} (${categoryId})`)
     return descendantIds
   } catch (error) {
     console.error(`Error fetching descendant categories for ${categoryId}:`, error)

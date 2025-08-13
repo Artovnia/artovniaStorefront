@@ -1,96 +1,92 @@
 "use client"
-import { useEffect, useState } from "react"
-import { useSearchParams } from "next/navigation"
-
+import { useEffect } from "react"
 import { Input } from "@/components/atoms"
-import { Accordion, FilterCheckboxOption } from "@/components/molecules"
+import { Accordion } from "@/components/molecules"
 import useUpdateSearchParams from "@/hooks/useUpdateSearchParams"
-import { DollarIcon } from "@/icons"
-import useFilters from "@/hooks/useFilters"
+import { useFilterStore } from "@/stores/filterStore"
 
-export const PriceFilter = () => {
-  const [min, setMin] = useState("")
-  const [max, setMax] = useState("")
+interface PriceFilterProps {
+  onClose?: () => void;
+  showButton?: boolean;
+}
 
+export const PriceFilter = ({ onClose, showButton = true }: PriceFilterProps = {}) => {
   const updateSearchParams = useUpdateSearchParams()
-  const { updateFilters } = useFilters("sale")
-  const searchParams = useSearchParams()
+  
+  // Use Zustand store for state management (like ColorFilter and ProductRatingFilter)
+  const { minPrice, maxPrice, setMinPrice, setMaxPrice } = useFilterStore()
 
-  const selected = searchParams.get("sale")
-
-  useEffect(() => {
-    setMin(searchParams.get("min_price") || "")
-    setMax(searchParams.get("max_price") || "")
-  }, [searchParams])
-
-  const selectHandler = (option: string) => {
-    updateFilters(option)
+  // Apply price filter immediately on change
+  const applyPriceFilter = (type: 'min' | 'max', value: string) => {
+    const paramName = type === 'min' ? 'min_price' : 'max_price'
+    
+    // Update URL param - this will trigger the search automatically
+    updateSearchParams(paramName, value || null)
   }
 
-  const priceChangeHandler = (field: string, value: string) => {
-    const reg = new RegExp("^[0-9]+$")
-    if (reg.test(value)) {
-      if (field === "min") setMin(value)
-      if (field === "max") setMax(value)
+  // Handle price input changes with immediate filtering
+  const handlePriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target
+    
+    // Only allow numeric input
+    if (value === '' || /^[0-9]*$/.test(value)) {
+      if (name === 'min_price') {
+        setMinPrice(value)
+        applyPriceFilter('min', value)
+      } else if (name === 'max_price') {
+        setMaxPrice(value)
+        applyPriceFilter('max', value)
+      }
     }
   }
 
-  const updateMinPriceHandler = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault()
-    // Track what we're doing with logs
-    console.log("Setting min_price to:", min)
-    // Need to make sure we're setting a value Algolia can handle
-    if (min && !isNaN(Number(min))) {
-      updateSearchParams("min_price", min)
-    } else {
-      // Clear the parameter if it's not a valid number
-      updateSearchParams("min_price", "")
-    }
-  }
-
-  const updateMaxPriceHandler = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault()
-    // Track what we're doing with logs
-    console.log("Setting max_price to:", max)
-    // Need to make sure we're setting a value Algolia can handle
-    if (max && !isNaN(Number(max))) {
-      updateSearchParams("max_price", max)
-    } else {
-      // Clear the parameter if it's not a valid number
-      updateSearchParams("max_price", "")
+  // Handle Enter key press
+  const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      const { name, value } = e.currentTarget
+      if (name === 'min_price') {
+        applyPriceFilter('min', value)
+      } else if (name === 'max_price') {
+        applyPriceFilter('max', value)
+      }
     }
   }
 
   return (
     <Accordion heading="Cena">
-      <div className="flex gap-2 mb-6">
-        <form method="POST" onSubmit={updateMinPriceHandler}>
-          <Input
-            
-            placeholder="Min"
-            icon={<DollarIcon size={16} />}
-            onChange={(e) => priceChangeHandler("min", e.target.value)}
-            value={min}
-          />
-          <input type="submit" className="hidden" />
-        </form>
-        <form method="POST" onSubmit={updateMaxPriceHandler}>
-          <Input
-            placeholder="Max"
-            icon={<DollarIcon size={16} />}
-            onChange={(e) => priceChangeHandler("max", e.target.value)}
-            value={max}
-          />
-          <input type="submit" className="hidden" />
-        </form>
+      <div className="space-y-4">
+        <h4 className="font-medium text-black font-instrument-sans">Zakres cen</h4>
+        <div className="flex gap-2 flex-col sm:flex-row">
+          <div className="flex-1">
+            <div className="relative">
+              <input
+                type="text"
+                className="w-full border border-gray-300 rounded py-2 pl-2 pr-8 font-instrument-sans"
+                placeholder="Min"
+                value={minPrice}
+                name="min_price"
+                onChange={handlePriceChange}
+                onKeyDown={handleKeyPress}
+              />
+              <span className="absolute right-2 top-2 text-xs font-medium text-gray-500">zł</span>
+            </div>
+          </div>
+          <div className="flex-1">
+            <div className="relative">
+              <input
+                type="text"
+                className="w-full border border-gray-300 rounded py-2 pl-2 pr-8 font-instrument-sans"
+                placeholder="Max"
+                value={maxPrice}
+                name="max_price"
+                onChange={handlePriceChange}
+                onKeyDown={handleKeyPress}
+              />
+              <span className="absolute right-2 top-2 text-xs font-medium text-gray-500">zł</span>
+            </div>
+          </div>
+        </div>
       </div>
-      {/* <div className='px-4'>
-        <FilterCheckboxOption
-          checked={Boolean(selected)}
-          onCheck={selectHandler}
-          label={'On Sale'}
-        />
-      </div> */}
     </Accordion>
   )
 }

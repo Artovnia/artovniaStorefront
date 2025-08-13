@@ -14,9 +14,11 @@ interface ProductRatingFilterProps {
     count: number;
     isRefined: boolean;
   }>;
+  onClose?: () => void;
+  showButton?: boolean;
 }
 
-export const ProductRatingFilter = ({ algoliaRatingItems = [] }: ProductRatingFilterProps) => {
+export const ProductRatingFilter = ({ algoliaRatingItems = [], onClose, showButton = true }: ProductRatingFilterProps) => {
   // Get rating selection from Zustand store
   const { selectedRating, setSelectedRating } = useFilterStore();
   
@@ -69,6 +71,8 @@ export const ProductRatingFilter = ({ algoliaRatingItems = [] }: ProductRatingFi
           </li>
         ))}
       </ul>
+      
+      
     </Accordion>
   );
 };

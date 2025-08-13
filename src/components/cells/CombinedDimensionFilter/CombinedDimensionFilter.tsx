@@ -26,12 +26,17 @@ type DimensionRanges = {
   weight: { min: number; max: number } | null;
 }
 
+interface CombinedDimensionFilterProps {
+  onClose?: () => void;
+  showButton?: boolean;
+}
+
 /**
  * CombinedDimensionFilter component for filtering products by all physical dimensions
  * Handles length, width, height, and weight filtering with min/max ranges
  * Works with both product-level and variant-level dimensions
  */
-export function CombinedDimensionFilter(): JSX.Element {
+export function CombinedDimensionFilter({ onClose, showButton = true }: CombinedDimensionFilterProps = {}): JSX.Element {
   // State for all dimension values using a single state object
   const [dimensionInputs, setDimensionInputs] = useState<DimensionInputs>({
     min_length: "",
@@ -569,7 +574,7 @@ export function CombinedDimensionFilter(): JSX.Element {
       
       {/* Clear filters button */}
       {hasActiveFilter && (
-        <div className="text-center">
+        <div className="text-center mb-4">
           <button 
             onClick={clearAllDimensionFilters}
             className="text-sm text-blue-600 hover:text-blue-800"
@@ -578,6 +583,8 @@ export function CombinedDimensionFilter(): JSX.Element {
           </button>
         </div>
       )}
+      
+     
     </Accordion>
   )
 }

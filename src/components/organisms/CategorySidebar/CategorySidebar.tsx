@@ -27,7 +27,7 @@ export const CategorySidebar = ({
   
   // Helper function to preserve existing filters when switching categories
   const buildCategoryUrl = (categoryHandle: string) => {
-    const baseUrl = `/categories/${categoryHandle}`
+    const baseUrl = categoryHandle ? `/categories/${categoryHandle}` : '/categories'
     const currentFilters = searchParams.toString()
     return currentFilters ? `${baseUrl}?${currentFilters}` : baseUrl
   }
@@ -58,18 +58,18 @@ export const CategorySidebar = ({
     return findCategoryByHandle(categories, currentCategoryHandle as string)
   }, [currentCategory, currentCategoryHandle, categories])
   
-  // ENHANCED: Process categories for display with better tree structure handling
-  const topLevelCategories = useMemo(() => {
+  // Find the current parent category and its tree
+  const currentParentCategoryTree = useMemo(() => {
     if (!categories || categories.length === 0) {
-      return []
+      return null
     }
     
-    // AGGRESSIVE DEDUPLICATION: Remove any duplicate categories by ID first
+    // Remove any duplicate categories by ID first
     const uniqueCategories = Array.from(
       new Map(categories.map(cat => [cat.id, cat])).values()
     )
     
-    // Enhanced parent detection - check both parent_category_id and parent_category object
+    // Get all top-level categories
     const topLevel = uniqueCategories.filter(cat => {
       const hasNoParentId = !cat.parent_category_id || cat.parent_category_id === null
       const hasNoParentObj = !cat.parent_category || 
@@ -79,54 +79,39 @@ export const CategorySidebar = ({
       return hasNoParentId && hasNoParentObj
     })
     
-    if (process.env.NODE_ENV === 'development') {
-      console.log(`🔍 CategorySidebar: ${categories.length} total categories → ${uniqueCategories.length} unique → ${topLevel.length} top-level`);
-      console.log(`🔍 CategorySidebar: Received categories:`, categories.map(c => `"${c.name}" (${c.id}) parent: ${c.parent_category_id || 'none'}`));
-      console.log(`🔍 CategorySidebar: Top-level categories:`, topLevel.map(c => `"${c.name}" (${c.id})`));
-      
-      // Check for duplicates
-      const ids = categories.map(c => c.id)
-      const duplicateIds = ids.filter((id, index) => ids.indexOf(id) !== index)
-      if (duplicateIds.length > 0) {
-        console.warn(`⚠️ CategorySidebar: Found duplicate category IDs:`, [...new Set(duplicateIds)]);
-      }
-      
-      // Debug hierarchical structure with more detail
-      topLevel.forEach(cat => {
-        const childCount = cat.category_children?.length || 0
-        console.log(`🔍 CategorySidebar: "${cat.name}" has ${childCount} children:`, cat.category_children?.map(c => c.name) || []);
-        
-        // Debug grandchildren too
-        if (cat.category_children) {
-          cat.category_children.forEach(child => {
-            const grandChildCount = child.category_children?.length || 0
-            if (grandChildCount > 0) {
-              console.log(`🔍 CategorySidebar:   "${child.name}" has ${grandChildCount} grandchildren:`, child.category_children?.map(gc => gc.name) || []);
-            }
-          })
-        }
-      });
-      
-      // Debug: Check if we're missing any categories that should be visible
-      const allChildrenIds = new Set<string>()
-      const collectAllChildren = (cats: HttpTypes.StoreProductCategory[]) => {
-        cats.forEach(cat => {
-          allChildrenIds.add(cat.id)
-          if (cat.category_children) {
-            collectAllChildren(cat.category_children)
-          }
-        })
-      }
-      collectAllChildren(topLevel)
-      
-      const missingCategories = uniqueCategories.filter(cat => !allChildrenIds.has(cat.id))
-      if (missingCategories.length > 0) {
-        console.warn(`⚠️ CategorySidebar: ${missingCategories.length} categories not in tree structure:`, missingCategories.map(c => `"${c.name}" (${c.id})`))
-      }
+    // If no current category, return null (show "All Products" only)
+    if (!currentCategoryHandle) {
+      return null
     }
     
-    return topLevel
-  }, [categories])
+    // Find which top-level category contains the current category
+    const findTopLevelParent = (targetHandle: string): HttpTypes.StoreProductCategory | null => {
+      // Helper function to check if a category contains the target (recursively)
+      const containsTarget = (category: HttpTypes.StoreProductCategory, target: string): boolean => {
+        if (category.handle === target) return true
+        
+        if (category.category_children && category.category_children.length > 0) {
+          return category.category_children.some(child => containsTarget(child, target))
+        }
+        
+        return false
+      }
+      
+      // Find which top-level category contains our target
+      for (const topLevelCategory of topLevel) {
+        if (containsTarget(topLevelCategory, targetHandle)) {
+          return topLevelCategory
+        }
+      }
+      
+      return null
+    }
+    
+    // Find the parent category for the current category
+    const parentCategory = findTopLevelParent(currentCategoryHandle)
+    
+    return parentCategory
+  }, [categories, currentCategoryHandle])
 
   return (
     <div className={cn("w-full", className)}>
@@ -157,21 +142,22 @@ export const CategorySidebar = ({
           Wszystkie produkty
         </Link>
 
-        {/* All Top-Level Categories (Full Tree) */}
-        {topLevelCategories.map((category: HttpTypes.StoreProductCategory) => (
+        {/* Current Parent Category Tree Only */}
+        {currentParentCategoryTree && (
           <CategorySidebarItem
-            key={category.id}
-            category={category}
+            key={currentParentCategoryTree.id}
+            category={currentParentCategoryTree}
             currentCategoryHandle={currentCategoryHandle as string}
+            buildCategoryUrl={buildCategoryUrl}
           />
-        ))}
+        )}
       </nav>
 
-      {/* Category Count */}
-      {topLevelCategories.length > 0 && (
+      {/* Category Tree Info */}
+      {currentParentCategoryTree && (
         <div className="mt-6 pt-4 border-t border-[#3B3634]">
           <p className="text-md text-black font-instrument-sans">
-            {topLevelCategories.length} {topLevelCategories.length === 1 ? 'kategoria' : 'kategorii'}
+            Kategoria: {currentParentCategoryTree.name}
           </p>
         </div>
       )}
@@ -183,12 +169,14 @@ interface CategorySidebarItemProps {
   category: HttpTypes.StoreProductCategory
   currentCategoryHandle: string
   level?: number
+  buildCategoryUrl: (categoryHandle: string) => string
 }
 
 const CategorySidebarItem = ({ 
   category, 
   currentCategoryHandle,
-  level = 0 
+  level = 0,
+  buildCategoryUrl
 }: CategorySidebarItemProps) => {
   const hasChildren = category.category_children && category.category_children.length > 0
   const isActive = category.handle === currentCategoryHandle
@@ -196,10 +184,30 @@ const CategorySidebarItem = ({
     child.handle === currentCategoryHandle
   )
 
-  // Always expand all categories to show full tree structure
-  const isExpanded = true // Show full tree by default
-
- 
+  // Always show full tree, but only expand branches that lead to the current category
+  const isInCurrentPath = useMemo(() => {
+    if (!currentCategoryHandle) return false
+    
+    // Check if current category is this category
+    if (category.handle === currentCategoryHandle) return true
+    
+    // Check if current category is a descendant of this category
+    const isDescendant = (cat: HttpTypes.StoreProductCategory, targetHandle: string): boolean => {
+      if (cat.category_children && cat.category_children.length > 0) {
+        for (const child of cat.category_children) {
+          if (child.handle === targetHandle || isDescendant(child, targetHandle)) {
+            return true
+          }
+        }
+      }
+      return false
+    }
+    
+    return isDescendant(category, currentCategoryHandle)
+  }, [category, currentCategoryHandle])
+  
+  // Show all children at level 0 (top-level), but only expand deeper levels if they're in the current path
+  const isExpanded = level === 0 || isInCurrentPath || isActive || isParentOfActive
 
   return (
     <div>
@@ -213,13 +221,10 @@ const CategorySidebarItem = ({
           level === 1 && "ml-4",
           level >= 2 && "ml-8"
         )}
-
       >
         <span className="flex-1">
           {category.name}
         </span>
-        
-        
       </Link>
 
       {/* Child Categories */}
@@ -231,6 +236,7 @@ const CategorySidebarItem = ({
               category={child}
               currentCategoryHandle={currentCategoryHandle}
               level={level + 1}
+              buildCategoryUrl={buildCategoryUrl}
             />
           ))}
         </div>

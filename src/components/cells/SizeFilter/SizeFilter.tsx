@@ -9,7 +9,12 @@ import { useSearchParams } from "next/navigation"
 import { useRefinementList, useInstantSearch } from "react-instantsearch"
 import { useSizeAttributes } from "../../../hooks/useUniversalAttributes"
 
-export const SizeFilter = () => {
+interface SizeFilterProps {
+  onClose?: () => void;
+  showButton?: boolean;
+}
+
+export const SizeFilter = ({ onClose, showButton = true }: SizeFilterProps = {}) => {
   const { attributes: sizeAttributes, loading, error } = useSizeAttributes()
   const { results } = useInstantSearch()
   const searchParams = useSearchParams()
@@ -241,8 +246,8 @@ export const SizeFilter = () => {
     return allSizes
   }, [sizeItems, primarySizeAttribute, results])
   
-  // Check if a size filter is active
-  const isFilterActive = (size: string): boolean => {
+  // Check if a size filter is currently active
+  const isFilterActive = (size: string) => {
     return currentSizeFilters.includes(size)
   }
   
@@ -285,7 +290,7 @@ export const SizeFilter = () => {
   
   // Debug logging
   useEffect(() => {
-
+    // Debug logging can be added here if needed
   }, [attributePaths, activePath, primarySizeAttribute, currentSizeFilters, allSizes.length, sizeItems.length])
 
   if (loading) {
@@ -329,6 +334,10 @@ export const SizeFilter = () => {
           Wyczyść filtry
         </button>
       )}
+      
+      
     </Accordion>
   )
 }
+
+export default SizeFilter

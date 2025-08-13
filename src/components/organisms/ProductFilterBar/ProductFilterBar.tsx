@@ -5,7 +5,7 @@ import { createPortal } from 'react-dom'
 import { cn } from '@/lib/utils'
 import { Input, StarRating } from "@/components/atoms"
 import { FilterCheckboxOption } from "@/components/molecules"
-import { ColorFilter, SizeFilter, ProductRatingFilter } from "@/components/cells"
+import { ColorFilter, SizeFilter, ProductRatingFilter, PriceFilter } from "@/components/cells"
 import { CombinedDimensionFilter } from "@/components/cells/CombinedDimensionFilter/CombinedDimensionFilter"
 import { useSearchParams } from 'next/navigation'
 import useUpdateSearchParams from '@/hooks/useUpdateSearchParams'
@@ -58,15 +58,27 @@ const FilterDropdown = ({ label, children, isActive, className }: FilterDropdown
   const dropdownContent = isOpen && (
     <div 
       ref={dropdownRef}
-      className="fixed bg-primary border border-[#3B3634] rounded-lg shadow-lg z-[9999] min-w-[250px] max-w-[400px]"
+      className="fixed bg-primary border border-[#3B3634] rounded-lg shadow-lg z-[9999] min-w-[250px] max-w-[400px] flex flex-col"
       style={{
         top: `${dropdownPosition.top}px`,
         left: window.innerWidth >= 640 ? 'auto' : `${dropdownPosition.left}px`,
         right: window.innerWidth >= 640 ? `${dropdownPosition.right}px` : 'auto',
+        maxHeight: '400px',
       }}
     >
-      <div className="p-4 max-h-[400px] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-gray-100">
-        {children}
+      {/* Scrollable content area */}
+      <div className="p-4 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-gray-100 flex-1">
+        {React.cloneElement(children as React.ReactElement, { onClose: () => setIsOpen(false), showButton: false } as any)}
+      </div>
+      
+      {/* Fixed button area - show for all filters including price */}
+      <div className="border-t border-[#3B3634] bg-primary rounded-b-lg">
+        <button
+          onClick={() => setIsOpen(false)}
+          className="w-full bg-[#3B3634] rounded-b-lg text-white py-2 px-4 font-instrument-sans text-sm hover:bg-opacity-90 transition-colors"
+        >
+          Zapisz
+        </button>
       </div>
     </div>
   )
@@ -343,9 +355,11 @@ export const ProductFilterBar = ({ className }: ProductFilterBarProps) => {
         {hasActiveFilters && (
           <button
             onClick={() => {
-              // Clear URL-based filters
-              updateSearchParams("min_price", "")
-              updateSearchParams("max_price", "")
+              // Clear all Zustand store filters (this handles ColorFilter, ProductRatingFilter, and now PriceFilter)
+              const { clearAllFilters } = useFilterStore.getState()
+              clearAllFilters()
+              
+              // Clear URL-based filters for components that still use URL params
               updateSearchParams("size", "")
               updateSearchParams("condition", "")
               
@@ -358,10 +372,6 @@ export const ProductFilterBar = ({ className }: ProductFilterBarProps) => {
               updateSearchParams("max_height", "")
               updateSearchParams("min_weight", "")
               updateSearchParams("max_weight", "")
-              
-              // Clear all Zustand store filters
-              const { clearAllFilters } = useFilterStore.getState()
-              clearAllFilters()
               
               // Dispatch custom event to clear dimension filters in CombinedDimensionFilter
               window.dispatchEvent(new CustomEvent('clearAllDimensionFilters'))
@@ -458,60 +468,21 @@ const SortFilter = () => {
 
 // Price Filter Component
 const PriceFilterDropdown = () => {
-  const [min, setMin] = useState("")
-  const [max, setMax] = useState("")
-  const updateSearchParams = useUpdateSearchParams()
   const searchParams = useSearchParams()
-
-  useEffect(() => {
-    setMin(searchParams.get("min_price") || "")
-    setMax(searchParams.get("max_price") || "")
-  }, [searchParams])
-
   const isActive = Boolean(searchParams.get("min_price") || searchParams.get("max_price"))
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    if (min) updateSearchParams("min_price", min)
-    if (max) updateSearchParams("max_price", max)
-  }
 
   return (
     <FilterDropdown label="Cena" isActive={isActive}>
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <h4 className="font-medium text-black font-instrument-sans">Zakres cen</h4>
-        <div className="flex gap-2 flex-col sm:flex-row">
-          <Input
-            placeholder="Min"
-            icon={<span className="text-xs font-medium">zł</span>}
-            value={min}
-            onChange={(e) => {
-              const value = e.target.value
-              if (/^[0-9]*$/.test(value)) setMin(value)
-            }}
-            className="flex-1 font-instrument-sans"
-          />
-          <Input
-            placeholder="Max"
-            icon={<span className="text-xs font-medium">zł</span>}
-            value={max}
-            onChange={(e) => {
-              const value = e.target.value
-              if (/^[0-9]*$/.test(value)) setMax(value)
-            }}
-            className="flex-1 font-instrument-sans"
-          />
-        </div>
-        <button
-          type="submit"
-          className="w-full bg-[#3B3634] text-white py-2 px-4  hover:bg-gray-800 transition-colors font-instrument-sans text-sm"
-        >
-          Zastosuj
-        </button>
-      </form>
+      <PriceFilterContent />
     </FilterDropdown>
   )
 }
+
+const PriceFilterContent = ({ onClose }: { onClose?: () => void }) => (
+  <div>
+    <PriceFilter onClose={onClose} />
+  </div>
+)
 
 // Color Filter Component
 const ColorFilterDropdown = ({ colorFacetItems }: { colorFacetItems: any[] }) => {
@@ -520,13 +491,17 @@ const ColorFilterDropdown = ({ colorFacetItems }: { colorFacetItems: any[] }) =>
 
   return (
     <FilterDropdown label="Kolor" isActive={isActive}>
-      <div>
-        <h4 className="font-medium text-black mb-3 font-instrument-sans">Wybierz kolor</h4>
-        <ColorFilter algoliaFacetItems={colorFacetItems} />
-      </div>
+      <ColorFilterContent colorFacetItems={colorFacetItems} />
     </FilterDropdown>
   )
 }
+
+const ColorFilterContent = ({ colorFacetItems, onClose }: { colorFacetItems: any[], onClose?: () => void }) => (
+  <div>
+    <h4 className="font-medium text-black mb-3 font-instrument-sans">Wybierz kolor</h4>
+    <ColorFilter algoliaFacetItems={colorFacetItems} onClose={onClose} />
+  </div>
+)
 
 // Size Filter Component
 const SizeFilterDropdown = () => {
@@ -535,13 +510,17 @@ const SizeFilterDropdown = () => {
 
   return (
     <FilterDropdown label="Rozmiar" isActive={isActive}>
-      <div>
-        <h4 className="font-medium text-black mb-3 font-instrument-sans">Wybierz rozmiar</h4>
-        <SizeFilter />
-      </div>
+      <SizeFilterContent />
     </FilterDropdown>
   )
 }
+
+const SizeFilterContent = ({ onClose }: { onClose?: () => void }) => (
+  <div>
+    <h4 className="font-medium text-black mb-3 font-instrument-sans">Wybierz rozmiar</h4>
+    <SizeFilter onClose={onClose} />
+  </div>
+)
 
 // Dimensions Filter Component
 const DimensionsFilterDropdown = () => {
@@ -554,13 +533,17 @@ const DimensionsFilterDropdown = () => {
 
   return (
     <FilterDropdown label="Wymiary" isActive={isActive}>
-      <div>
-        <h4 className="font-medium text-black mb-3 font-instrument-sans">Wymiary produktu</h4>
-        <CombinedDimensionFilter />
-      </div>
+      <DimensionsFilterContent />
     </FilterDropdown>
   )
 }
+
+const DimensionsFilterContent = ({ onClose }: { onClose?: () => void }) => (
+  <div>
+    <h4 className="font-medium text-black mb-3 font-instrument-sans">Wymiary produktu</h4>
+    <CombinedDimensionFilter onClose={onClose} />
+  </div>
+)
 
 // Rating Filter Component
 const RatingFilterDropdown = ({ ratingFacetItems }: { ratingFacetItems: any[] }) => {
@@ -569,10 +552,14 @@ const RatingFilterDropdown = ({ ratingFacetItems }: { ratingFacetItems: any[] })
 
   return (
     <FilterDropdown label="Ocena" isActive={isActive}>
-      <div>
-        <h4 className="font-medium text-black mb-3 font-instrument-sans">Minimalna ocena</h4>
-        <ProductRatingFilter algoliaRatingItems={ratingFacetItems} />
-      </div>
+      <RatingFilterContent ratingFacetItems={ratingFacetItems} />
     </FilterDropdown>
   )
 }
+
+const RatingFilterContent = ({ ratingFacetItems, onClose }: { ratingFacetItems: any[], onClose?: () => void }) => (
+  <div>
+    <h4 className="font-medium text-black mb-3 font-instrument-sans">Minimalna ocena</h4>
+    <ProductRatingFilter algoliaRatingItems={ratingFacetItems} onClose={onClose} />
+  </div>
+)

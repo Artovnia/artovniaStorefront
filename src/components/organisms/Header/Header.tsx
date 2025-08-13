@@ -58,10 +58,6 @@ export const Header = async () => {
     if (categoriesData && categoriesData.parentCategories) {
       topLevelCategories = categoriesData.parentCategories
       allCategoriesWithTree = categoriesData.categories
-      
-      if (process.env.NODE_ENV === 'development') {
-        console.log(`🏠 Header: Using ${topLevelCategories.length} parent categories and ${allCategoriesWithTree.length} total categories with products`);
-      }
     }
   } catch (error) {
     console.error("🏠 Header: Error retrieving categories with products:", error)

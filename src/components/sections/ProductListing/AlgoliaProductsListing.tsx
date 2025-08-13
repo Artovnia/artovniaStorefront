@@ -75,16 +75,19 @@ export const AlgoliaProductsListing = (props: AlgoliaProductsListingProps) => {
   const effectiveCategoryIds = category_ids || (category_id ? [category_id] : [])
   
   if (effectiveCategoryIds.length > 0) {
-    // Use the new category_ids field that contains the complete ancestor chain
-    // This enables proper parent category aggregation (e.g., "On" shows products from "Biżuteria" descendants)
-    // For multiple categories, create OR filter (any product in any of these categories)
-    const categoryFilters = effectiveCategoryIds.map(id => `category_ids:${id}`)
-    facetFiltersList.push(categoryFilters);
+    // SAFE APPROACH: Try new category_ids field first, fallback to original categories.id
+    // This ensures backward compatibility while we transition to the new hierarchy system
     
-    if (process.env.NODE_ENV === 'development') {
-      console.log(`🔍 Algolia filtering by category hierarchy:`, effectiveCategoryIds);
-      console.log(`🔍 Algolia category filters:`, categoryFilters);
-    }
+    // Primary filter: Use new category_ids field for hierarchy support
+    const newCategoryFilters = effectiveCategoryIds.map(id => `category_ids:${id}`)
+    
+    // Fallback filter: Use original categories.id for immediate compatibility
+    const originalCategoryFilters = effectiveCategoryIds.map(id => `categories.id:${id}`)
+    
+    // Use both approaches to ensure results are found
+    // This creates: (category_ids:id1 OR category_ids:id2) OR (categories.id:id1 OR categories.id:id2)
+    facetFiltersList.push([...newCategoryFilters, ...originalCategoryFilters]);
+    
   }
   
   // Add collection filter if specified

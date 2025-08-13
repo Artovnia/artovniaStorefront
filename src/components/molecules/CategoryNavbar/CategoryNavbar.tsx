@@ -4,35 +4,28 @@ import { cn } from "@/lib/utils"
 import { HttpTypes } from "@medusajs/types"
 import { SafeI18nLink as Link } from "@/components/atoms/SafeI18nLink"
 import { useParams } from "next/navigation"
-import { useState, useMemo, useEffect } from "react"
+import { useState, useMemo, useEffect, useRef } from "react"
 
 interface CategoryNavbarProps {
   categories: HttpTypes.StoreProductCategory[]
   onClose?: () => void
+  onDropdownStateChange?: (activeCategory: HttpTypes.StoreProductCategory | null, isVisible: boolean) => void
 }
 
-const CategoryItem = ({ 
-  category, 
-  level = 0,
-  onClose,
-  onAnyDescendantHover,
-  activeParentId,
-  onParentHover
-}: { 
+interface CategoryDropdownProps {
   category: HttpTypes.StoreProductCategory
-  level?: number
   onClose?: () => void
-  onAnyDescendantHover?: (categoryId: string, isHovered: boolean) => void
-  activeParentId?: string | null
-  onParentHover?: (categoryId: string, isHovered: boolean) => void
+}
+
+// Parent Category Item - just the navbar button
+
+const CategoryNavItem = ({ category, isActive, onHover, onClose }: {
+  category: HttpTypes.StoreProductCategory
+  isActive: boolean
+  onHover: () => void
+  onClose?: () => void
 }) => {
   const { category: currentCategoryHandle } = useParams()
-  const [isHovered, setIsHovered] = useState(false)
-  const [hoverTimeout, setHoverTimeout] = useState<NodeJS.Timeout | null>(null)
-  const [descendantHovered, setDescendantHovered] = useState(false)
-  
-  const children = category.category_children || []
-  const hasChildren = children.length > 0
 
   const handleCategoryClick = () => {
     if (onClose) {
@@ -40,133 +33,118 @@ const CategoryItem = ({
     }
   }
 
-  const handleDescendantHover = (categoryId: string, isHovered: boolean) => {
-    setDescendantHovered(isHovered)
-    
-    if (isHovered) {
-      if (hoverTimeout) {
-        clearTimeout(hoverTimeout)
-        setHoverTimeout(null)
-      }
-    }
-    
-    onAnyDescendantHover?.(category.id, isHovered)
-  }
-
-  const handleMouseEnter = () => {
-    if (hoverTimeout) {
-      clearTimeout(hoverTimeout)
-      setHoverTimeout(null)
-    }
-    
-    setIsHovered(true)
-    
-    if (level === 0) {
-      onParentHover?.(category.id, true)
-    } else {
-      onAnyDescendantHover?.(category.id, true)
-    }
-  }
-
-  const handleMouseLeave = () => {
-    const timeout = setTimeout(() => {
-      if (!descendantHovered) {
-        setIsHovered(false)
-        
-        if (level === 0) {
-          onParentHover?.(category.id, false)
-        } else {
-          onAnyDescendantHover?.(category.id, false)
-        }
-      }
-    }, 500)
-    
-    setHoverTimeout(timeout)
-  }
-
-  useEffect(() => {
-    return () => {
-      if (hoverTimeout) {
-        clearTimeout(hoverTimeout)
-      }
-    }
-  }, [hoverTimeout])
-
   return (
-    <div 
-      className="relative"
-      onMouseEnter={handleMouseEnter}
-      onMouseLeave={handleMouseLeave}
-    >
+    <div onMouseEnter={onHover}>
       <Link
         href={`/categories/${category.handle}`}
         onClick={handleCategoryClick}
         className={cn(
-          "uppercase px-4 py-2 hover:bg-primary transition-colors text-lg block whitespace-nowrap",
-          category.handle === currentCategoryHandle && "bg-primary md:bg-primary/10",
-          level === 0 && "my-3 md:my-0 flex items-center justify-between",
-          level === 0 && category.handle === currentCategoryHandle && "md:border-b md:border-primary",
-          level > 0 && "hover:bg-primary/20 text-base"
+          "uppercase px-4 py-2 hover:bg-primary/10 transition-colors text-lg block whitespace-nowrap font-medium",
+          "flex items-center justify-between my-3 md:my-0",
+          category.handle === currentCategoryHandle && "md:border-b-2 md:border-primary text-primary",
+          isActive && "bg-primary/5",
+          "font-['Instrument_Sans']"
         )}
       >
         <span className="flex items-center justify-between w-full">
           {category.name}
-          {hasChildren && (
-            <span className="ml-2 text-sm">
-              {level === 0 ? "" : "▶"}
-            </span>
-          )}
         </span>
       </Link>
-      
-      {/* Dropdown for children - NOW SEAMLESSLY CONNECTED */}
-
-      {hasChildren && (
-        level === 0 
-          ? activeParentId === category.id
-          : (isHovered || descendantHovered)
-      ) && (
-        <div 
-        className={cn(
-          "absolute bg-[#FFFFFF] min-w-[200px]",
-          // Level 0: Dropdown from navbar - connected to bottom
-          level === 0 && [
-            "top-full left-0 z-50",
-            
-            "rounded-bl-sm " // Round bottom corners only
-          ],
-          // Level 1+: Dropdown from side - connected to right
-          level > 0 && [
-            "top-0 left-full z-50", // Same z-index for all levels
-           
-            "rounded-tr-sm rounded-br-sm" // Round right corners only
-          ]
-        )}
-        onMouseEnter={handleMouseEnter}
-        onMouseLeave={handleMouseLeave}
-      >
-          {children.map((child) => (
-            <CategoryItem 
-              key={child.id} 
-              category={child} 
-              level={level + 1}
-              onClose={onClose}
-              onAnyDescendantHover={handleDescendantHover}
-              activeParentId={activeParentId}
-              onParentHover={onParentHover}
-            />
-          ))}
-        </div>
-      )}
     </div>
   )
 }
 
-export const CategoryNavbar = ({ categories, onClose }: CategoryNavbarProps) => {
-  const [activeParentId, setActiveParentId] = useState<string | null>(null)
-  const [globalTimeout, setGlobalTimeout] = useState<NodeJS.Timeout | null>(null)
-  
-  // ENHANCED: Process categories to show only top-level categories with proper children
+export const FullWidthDropdown = ({ 
+  activeCategory, 
+  isVisible, 
+  onClose,
+  onMouseEnter,
+  onMouseLeave 
+}: {
+  activeCategory: HttpTypes.StoreProductCategory | null
+  isVisible: boolean
+  onClose?: () => void
+  onMouseEnter: () => void
+  onMouseLeave: () => void
+}) => {
+  const { category: currentCategoryHandle } = useParams()
+
+  const handleCategoryClick = () => {
+    if (onClose) {
+      onClose()
+    }
+  }
+
+  if (!isVisible || !activeCategory) return null
+
+  const children = activeCategory.category_children || []
+
+  return (
+    <div 
+      className={cn(
+        "w-full z-50",
+        "bg-primary border-t border-[#3B3634] shadow-lg ring-1 ring-[#BFB7AD]",
+        "max-h-[400px] overflow-y-auto",
+        "font-['Instrument_Sans']"
+      )}
+      onMouseEnter={onMouseEnter}
+      onMouseLeave={onMouseLeave}
+    >
+      <div className="max-w-[1200px] mx-auto p-6">
+        {/* Multi-column Grid Layout - Centered and Compact */}
+        <div className={cn(
+          "grid gap-6 justify-center",
+          children.length === 1 && "grid-cols-1 max-w-xs mx-auto",
+          children.length === 2 && "grid-cols-2 max-w-lg mx-auto", 
+          children.length === 3 && "grid-cols-3 max-w-3xl mx-auto",
+          children.length >= 4 && "grid-cols-4 max-w-4xl mx-auto"
+        )}>
+          {children.map((child: HttpTypes.StoreProductCategory) => (
+            <div key={child.id} className="space-y-3">
+              {/* Child Category Header (Semibold) */}
+              <Link
+                href={`/categories/${child.handle}`}
+                onClick={handleCategoryClick}
+                className={cn(
+                  "block text-lg font-semibold text-black hover:text-primary transition-colors hover:underline ",
+                  child.handle === currentCategoryHandle && "text-primary"
+                )}
+              >
+                {child.name}
+              </Link>
+              
+              {/* Grandchildren List */}
+              {child.category_children && child.category_children.length > 0 && (
+                <div className="space-y-2">
+                  {child.category_children.map((grandchild: HttpTypes.StoreProductCategory) => (
+                    <Link
+                      key={grandchild.id}
+                      href={`/categories/${grandchild.handle}`}
+                      onClick={handleCategoryClick}
+                      className={cn(
+                        "block text-sm font-normal text-black hover:text-gray-900 hover:underline transition-colors capitalize",
+                        grandchild.handle === currentCategoryHandle && "text-primary font-medium"
+                      )}
+                    >
+                      {grandchild.name}
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+export const CategoryNavbar = ({ categories, onClose, onDropdownStateChange }: CategoryNavbarProps) => {
+  const [activeCategory, setActiveCategory] = useState<HttpTypes.StoreProductCategory | null>(null)
+  const [isDropdownVisible, setIsDropdownVisible] = useState(false)
+  const [hoverTimeout, setHoverTimeout] = useState<NodeJS.Timeout | null>(null)
+
+  // Process categories to show only top-level categories with proper children
   const topLevelCategories = useMemo(() => {
     if (!categories || categories.length === 0) {
       return []
@@ -182,109 +160,95 @@ export const CategoryNavbar = ({ categories, onClose }: CategoryNavbarProps) => 
       return hasNoParentId && hasNoParentObj
     })
     
-    if (process.env.NODE_ENV === 'development') {
-      console.log(`🔍 CategoryNavbar: ${categories.length} total categories → ${topLevel.length} top-level`)
-      console.log(`🔍 CategoryNavbar: Top-level categories:`, topLevel.map(c => `"${c.name}" (${c.id})`))
-      
-      // Debug children structure
-      topLevel.forEach(cat => {
-        const childCount = cat.category_children?.length || 0
-        if (childCount > 0) {
-          console.log(`🔍 CategoryNavbar: "${cat.name}" has ${childCount} children:`, cat.category_children?.map(c => c.name) || [])
-        }
-      })
-    }
+    
     
     return topLevel
   }, [categories])
 
-  const handleParentHover = (categoryId: string, isHovered: boolean) => {
-    if (isHovered) {
-      if (globalTimeout) {
-        clearTimeout(globalTimeout)
-        setGlobalTimeout(null)
-      }
-      
-      setActiveParentId(categoryId)
-      
-      const timeout = setTimeout(() => {
-        setActiveParentId(null)
-      }, 5000)
-      
-      setGlobalTimeout(timeout)
-    } else {
-      if (activeParentId === categoryId) {
-        setActiveParentId(null)
-        if (globalTimeout) {
-          clearTimeout(globalTimeout)
-          setGlobalTimeout(null)
-        }
-      }
+  const handleCategoryHover = (category: HttpTypes.StoreProductCategory) => {
+    if (hoverTimeout) {
+      clearTimeout(hoverTimeout)
+      setHoverTimeout(null)
+    }
+    
+    const hasChildren = category.category_children && category.category_children.length > 0
+    if (hasChildren) {
+      setActiveCategory(category)
+      setIsDropdownVisible(true)
     }
   }
 
-  const handleNavbarMouseLeave = (e: React.MouseEvent) => {
-    if (!activeParentId) return
-    
-    const navbar = e.currentTarget as HTMLElement
-    const navbarRect = navbar.getBoundingClientRect()
-    
-    const bufferZone = {
-      top: navbarRect.top,
-      left: navbarRect.left,
-      right: navbarRect.right + 300,
-      bottom: navbarRect.bottom + 400
-    }
-    
-    const mouseX = e.clientX
-    const mouseY = e.clientY
-    
-    const isWithinBuffer = (
-      mouseX >= bufferZone.left &&
-      mouseX <= bufferZone.right &&
-      mouseY >= bufferZone.top &&
-      mouseY <= bufferZone.bottom
-    )
-    
-    if (!isWithinBuffer) {
-      setActiveParentId(null)
-      if (globalTimeout) {
-        clearTimeout(globalTimeout)
-        setGlobalTimeout(null)
-      }
+  const handleNavbarMouseLeave = () => {
+    const timeout = setTimeout(() => {
+      setIsDropdownVisible(false)
+      setActiveCategory(null)
+    }, 200)
+    setHoverTimeout(timeout)
+  }
+
+  const handleDropdownMouseEnter = () => {
+    if (hoverTimeout) {
+      clearTimeout(hoverTimeout)
+      setHoverTimeout(null)
     }
   }
+
+  const handleDropdownMouseLeave = () => {
+    const timeout = setTimeout(() => {
+      setIsDropdownVisible(false)
+      setActiveCategory(null)
+    }, 200)
+    setHoverTimeout(timeout)
+  }
+
+  // Notify parent component when dropdown state changes
+  useEffect(() => {
+    if (onDropdownStateChange) {
+      onDropdownStateChange(activeCategory, isDropdownVisible)
+    }
+  }, [activeCategory, isDropdownVisible, onDropdownStateChange])
 
   useEffect(() => {
     return () => {
-      if (globalTimeout) {
-        clearTimeout(globalTimeout)
+      if (hoverTimeout) {
+        clearTimeout(hoverTimeout)
       }
     }
-  }, [globalTimeout])
+  }, [hoverTimeout])
 
   return (
     <nav 
-      className="flex md:items-center flex-col md:flex-row relative"
+      className={cn(
+        "flex md:items-center flex-col md:flex-row relative",
+        "font-['Instrument_Sans']"
+      )}
       onMouseLeave={handleNavbarMouseLeave}
     >
+      {/* All Products Link */}
       <Link
         href="/categories"
         onClick={() => onClose?.()}
-        className="uppercase  my-3 md:my-0 flex items-center justify-between text-lg hover:bg-primary/10 transition-colors"
+        className={cn(
+          "uppercase my-3 md:my-0 flex items-center justify-between text-lg hover:bg-primary/10 transition-colors mr-2",
+          "px-4 py-2 font-medium",
+          "font-['Instrument_Sans']"
+        )}
       >
         Wszystkie produkty
       </Link>
       
+      {/* Parent Category Navigation Items */}
       {topLevelCategories.map((category) => (
-        <CategoryItem 
+        <CategoryNavItem
           key={category.id} 
           category={category}
+          isActive={activeCategory?.id === category.id}
+          onHover={() => handleCategoryHover(category)}
           onClose={onClose}
-          activeParentId={activeParentId}
-          onParentHover={handleParentHover}
         />
       ))}
+
+      {/* Dropdown is now handled at the Navbar level */}
     </nav>
   )
 }

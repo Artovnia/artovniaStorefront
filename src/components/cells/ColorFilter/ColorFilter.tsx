@@ -38,9 +38,11 @@ interface ColorFilterProps {
     count: number;
     isRefined: boolean;
   }>;
+  onClose?: () => void;
+  showButton?: boolean;
 }
 
-export const ColorFilter = ({ algoliaFacetItems = [] }: ColorFilterProps): JSX.Element => {
+export const ColorFilter = ({ algoliaFacetItems = [], onClose, showButton = true }: ColorFilterProps): JSX.Element => {
   // Get all color families from database
   const { colorTaxonomy, isLoading, error } = useColorTaxonomy();
   
@@ -166,6 +168,8 @@ export const ColorFilter = ({ algoliaFacetItems = [] }: ColorFilterProps): JSX.E
           </li>
         )}
       </ul>
+      
+     
     </Accordion>
   );
 };
