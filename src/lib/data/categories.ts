@@ -144,7 +144,7 @@ export const listCategories = async ({
     console.log(`🏠 listCategories: Categories with products:`, Array.from(categoriesWithProducts))
 
     // CRITICAL FIX: If Algolia returns no categories with products, show ALL categories as fallback
-    // ENHANCED: More robust category filtering that preserves complete trees
+    // FIXED: Targeted category filtering that preserves essential navigation structure
     let filteredCategories: HttpTypes.StoreProductCategory[]
     
     if (categoriesWithProducts.size === 0) {
@@ -153,10 +153,19 @@ export const listCategories = async ({
     } else {
       console.log(`🏠 listCategories: Filtering categories based on Algolia data`)
       
-      // ENHANCED: Build complete category trees - include all ancestors and descendants
+      // FIXED: More targeted approach - preserve main navigation structure
       const categoriesToInclude = new Set<string>()
       
-      // Step 1: Add all categories that have products
+      // Step 1: Always include main top-level navigation categories
+      const mainTopLevelCategories = ['Ona', 'On', 'Dziecko', 'Dom', 'Zwierzęta', 'Akcesoria']
+      product_categories.forEach(category => {
+        if (mainTopLevelCategories.includes(category.name || '') && !category.parent_category_id) {
+          categoriesToInclude.add(category.id)
+          console.log(`🏠 listCategories: ✅ Including main navigation category "${category.name}" (${category.id})`)
+        }
+      })
+      
+      // Step 2: Add categories that have products
       product_categories.forEach(category => {
         if (categoriesWithProducts.has(category.id)) {
           categoriesToInclude.add(category.id)
@@ -164,10 +173,10 @@ export const listCategories = async ({
         }
       })
       
-      // Step 2: Add all ancestors (parents) of categories with products
+      // Step 3: Add complete ancestor chains for categories with products
       product_categories.forEach(category => {
         if (categoriesWithProducts.has(category.id)) {
-          // Use mpath for complete hierarchy if available
+          // Build complete ancestor chain using mpath or parent_category_id
           const mpath = (category as any).mpath
           if (mpath && typeof mpath === 'string') {
             const pathIds = mpath.split('.').filter(id => id && id.trim() !== '')
@@ -176,7 +185,7 @@ export const listCategories = async ({
                 const parentCategory = product_categories.find(cat => cat.id === pathId)
                 if (parentCategory) {
                   categoriesToInclude.add(pathId)
-                  console.log(`🏠 listCategories: ✅ Including parent "${parentCategory.name}" (${pathId}) - ancestor of product category`)
+                  console.log(`🏠 listCategories: ✅ Including ancestor "${parentCategory.name}" (${pathId}) - from mpath`)
                 }
               }
             })
@@ -184,83 +193,122 @@ export const listCategories = async ({
             // Fallback: traverse parent_category_id chain
             let currentCategory = category
             const visitedIds = new Set<string>()
+            const maxDepth = 10 // Prevent infinite loops
+            let depth = 0
             
-            while (currentCategory?.parent_category_id && !visitedIds.has(currentCategory.parent_category_id)) {
+            while (currentCategory?.parent_category_id && !visitedIds.has(currentCategory.parent_category_id) && depth < maxDepth) {
               visitedIds.add(currentCategory.parent_category_id)
               const parentId = currentCategory.parent_category_id
               const parentCategory = product_categories.find(cat => cat.id === parentId)
               
               if (parentCategory) {
                 categoriesToInclude.add(parentId)
-                console.log(`🏠 listCategories: ✅ Including parent "${parentCategory.name}" (${parentId}) - ancestor chain`)
+                console.log(`🏠 listCategories: ✅ Including ancestor "${parentCategory.name}" (${parentId}) - from parent chain`)
                 currentCategory = parentCategory
               } else {
                 break
               }
+              depth++
             }
           }
         }
       })
       
-      // Step 3: Add all descendants (children) of included categories to preserve tree structure
-      const addDescendants = (categoryId: string) => {
-        product_categories.forEach(category => {
-          if (category.parent_category_id === categoryId && !categoriesToInclude.has(category.id)) {
-            categoriesToInclude.add(category.id)
-            console.log(`🏠 listCategories: ✅ Including child "${category.name}" (${category.id}) - descendant of included category`)
-            // Recursively add children of this child
-            addDescendants(category.id)
-          }
-        })
-      }
-      
-      // Apply descendant inclusion for all currently included categories
+      // Step 4: ONLY add direct children of included categories (not all descendants)
       const currentlyIncluded = Array.from(categoriesToInclude)
       currentlyIncluded.forEach(categoryId => {
-        addDescendants(categoryId)
+        product_categories.forEach(category => {
+          if (category.parent_category_id === categoryId && !categoriesToInclude.has(category.id)) {
+            // Only add direct children, don't recurse further to avoid over-inclusion
+            categoriesToInclude.add(category.id)
+            console.log(`🏠 listCategories: ✅ Including direct child "${category.name}" (${category.id}) - child of included category`)
+          }
+        })
       })
       
       // Filter to only include categories in the inclusion set
       filteredCategories = product_categories.filter(category => {
         const shouldInclude = categoriesToInclude.has(category.id)
         if (!shouldInclude && process.env.NODE_ENV === 'development') {
-          console.log(`🏠 listCategories: ❌ Excluding "${category.name}" (${category.id}) - not in product tree`)
+          // Only log important categories that are being excluded
+          if (category.name && (category.name.includes('Biżuteria') || category.name.includes('Obrazy') || category.name.includes('Naszyjniki'))) {
+            console.log(`🏠 listCategories: ❌ Excluding important category "${category.name}" (${category.id}) - not in filtered set`)
+          }
         }
         return shouldInclude
       })
       
-      console.log(`🏠 listCategories: After enhanced filtering: ${filteredCategories.length} categories (from ${product_categories.length} total)`)
+      console.log(`🏠 listCategories: After targeted filtering: ${filteredCategories.length} categories (from ${product_categories.length} total)`)
     }
 
-    // The UI expects children to be nested in category_children arrays
+    // FIXED: Improved hierarchical tree reconstruction with deduplication
     console.log(`🏠 listCategories: Reconstructing hierarchical tree from ${filteredCategories.length} flat categories`)
     
-    // Create a map for quick lookup with proper typing
-    const categoryMap = new Map(filteredCategories.map(cat => [cat.id, { 
-      ...cat, 
-      category_children: [] as HttpTypes.StoreProductCategory[] 
-    }]))
-    
-    // Build the tree structure
-    const hierarchicalCategories: HttpTypes.StoreProductCategory[] = []
+    // STEP 1: Deduplicate categories by name and parent to handle database duplicates
+    const deduplicatedCategories = new Map<string, HttpTypes.StoreProductCategory>()
+    const categoryKeyMap = new Map<string, string>() // Maps category ID to deduplication key
     
     filteredCategories.forEach(category => {
-      const categoryWithChildren = categoryMap.get(category.id)!
+      // Create a unique key based on name and parent to identify duplicates
+      const parentKey = category.parent_category_id || 'ROOT'
+      const dedupKey = `${category.name}_${parentKey}`
       
+      if (!deduplicatedCategories.has(dedupKey)) {
+        // First occurrence of this category name/parent combination
+        deduplicatedCategories.set(dedupKey, {
+          ...category,
+          category_children: [] as HttpTypes.StoreProductCategory[]
+        })
+        categoryKeyMap.set(category.id, dedupKey)
+        console.log(`🏠 listCategories: ✅ Keeping category "${category.name}" (${category.id}) as primary`)
+      } else {
+        // Duplicate found - map this ID to the existing category
+        categoryKeyMap.set(category.id, dedupKey)
+        console.log(`🏠 listCategories: 🔄 Mapping duplicate "${category.name}" (${category.id}) to existing category`)
+      }
+    })
+    
+    const uniqueCategories = Array.from(deduplicatedCategories.values())
+    console.log(`🏠 listCategories: After deduplication: ${uniqueCategories.length} unique categories (from ${filteredCategories.length} total)`)
+    
+    // STEP 2: Create lookup map for deduplicated categories
+    const categoryMap = new Map(uniqueCategories.map(cat => [cat.id, cat]))
+    
+    // STEP 3: Build the tree structure with proper parent resolution
+    const hierarchicalCategories: HttpTypes.StoreProductCategory[] = []
+    
+    uniqueCategories.forEach(category => {
       if (!category.parent_category_id) {
         // This is a root category
-        hierarchicalCategories.push(categoryWithChildren)
+        hierarchicalCategories.push(category)
         console.log(`🏠 listCategories: Added root category "${category.name}" (${category.id})`)
       } else {
-        // This is a child category - add it to its parent's children array
-        const parent = categoryMap.get(category.parent_category_id)
+        // Find parent using deduplication mapping
+        let parent = categoryMap.get(category.parent_category_id)
+        
+        // If direct parent not found, try to find it through deduplication mapping
+        if (!parent) {
+          const parentDedupKey = categoryKeyMap.get(category.parent_category_id)
+          if (parentDedupKey) {
+            parent = deduplicatedCategories.get(parentDedupKey)
+          }
+        }
+        
+        // If still no parent found, look for parent by name in the unique categories
+        if (!parent) {
+          const originalParent = filteredCategories.find(cat => cat.id === category.parent_category_id)
+          if (originalParent) {
+            parent = uniqueCategories.find(cat => cat.name === originalParent.name)
+          }
+        }
+        
         if (parent) {
           parent.category_children = parent.category_children || []
-          parent.category_children.push(categoryWithChildren)
+          parent.category_children.push(category)
           console.log(`🏠 listCategories: Added child category "${category.name}" (${category.id}) to parent "${parent.name}" (${parent.id})`)
         } else {
-          // Parent not in filtered list - this shouldn't happen with mpath logic, but add as root as fallback
-          hierarchicalCategories.push(categoryWithChildren)
+          // Parent not found - add as root category
+          hierarchicalCategories.push(category)
           console.log(`🏠 listCategories: ⚠️ Parent not found for "${category.name}" (${category.id}), adding as root`)
         }
       }
