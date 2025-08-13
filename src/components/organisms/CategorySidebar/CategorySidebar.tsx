@@ -50,7 +50,7 @@ export const CategorySidebar = ({
     return findCategoryByHandle(categories, currentCategoryHandle as string)
   }, [currentCategory, currentCategoryHandle, categories])
   
-  // Process categories for display - always show full tree structure
+  // ENHANCED: Process categories for display with better tree structure handling
   const topLevelCategories = useMemo(() => {
     if (!categories || categories.length === 0) {
       return []
@@ -83,11 +83,38 @@ export const CategorySidebar = ({
         console.warn(`⚠️ CategorySidebar: Found duplicate category IDs:`, [...new Set(duplicateIds)]);
       }
       
-      // Debug hierarchical structure
+      // Debug hierarchical structure with more detail
       topLevel.forEach(cat => {
         const childCount = cat.category_children?.length || 0
         console.log(`🔍 CategorySidebar: "${cat.name}" has ${childCount} children:`, cat.category_children?.map(c => c.name) || []);
+        
+        // Debug grandchildren too
+        if (cat.category_children) {
+          cat.category_children.forEach(child => {
+            const grandChildCount = child.category_children?.length || 0
+            if (grandChildCount > 0) {
+              console.log(`🔍 CategorySidebar:   "${child.name}" has ${grandChildCount} grandchildren:`, child.category_children?.map(gc => gc.name) || []);
+            }
+          })
+        }
       });
+      
+      // Debug: Check if we're missing any categories that should be visible
+      const allChildrenIds = new Set<string>()
+      const collectAllChildren = (cats: HttpTypes.StoreProductCategory[]) => {
+        cats.forEach(cat => {
+          allChildrenIds.add(cat.id)
+          if (cat.category_children) {
+            collectAllChildren(cat.category_children)
+          }
+        })
+      }
+      collectAllChildren(topLevel)
+      
+      const missingCategories = uniqueCategories.filter(cat => !allChildrenIds.has(cat.id))
+      if (missingCategories.length > 0) {
+        console.warn(`⚠️ CategorySidebar: ${missingCategories.length} categories not in tree structure:`, missingCategories.map(c => `"${c.name}" (${c.id})`))
+      }
     }
     
     return topLevel

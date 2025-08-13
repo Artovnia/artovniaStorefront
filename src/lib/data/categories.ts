@@ -144,7 +144,7 @@ export const listCategories = async ({
     console.log(`🏠 listCategories: Categories with products:`, Array.from(categoriesWithProducts))
 
     // CRITICAL FIX: If Algolia returns no categories with products, show ALL categories as fallback
-    // This prevents the case where Algolia works but finds no product-category relationships
+    // ENHANCED: More robust category filtering that preserves complete trees
     let filteredCategories: HttpTypes.StoreProductCategory[]
     
     if (categoriesWithProducts.size === 0) {
@@ -153,94 +153,85 @@ export const listCategories = async ({
     } else {
       console.log(`🏠 listCategories: Filtering categories based on Algolia data`)
       
-      // CRITICAL: Use mpath to reconstruct full category hierarchy
-      // When a category has products, include ALL categories in its mpath (full tree to root)
+      // ENHANCED: Build complete category trees - include all ancestors and descendants
       const categoriesToInclude = new Set<string>()
       
-      // First, find all categories that have products and extract their full hierarchy using mpath
+      // Step 1: Add all categories that have products
       product_categories.forEach(category => {
         if (categoriesWithProducts.has(category.id)) {
-          console.log(`🏠 listCategories: Including category "${category.name}" (${category.id}) - has products`)
-          console.log(`🏠 listCategories: Category mpath: ${(category as any).mpath || 'NO_MPATH'}`)
-          
-          // Add the category itself
           categoriesToInclude.add(category.id)
-          
-          // Parse mpath to get all parent category IDs
-          // mpath format: .parent_id.grandparent_id.category_id
+          console.log(`🏠 listCategories: ✅ Including category "${category.name}" (${category.id}) - has products`)
+        }
+      })
+      
+      // Step 2: Add all ancestors (parents) of categories with products
+      product_categories.forEach(category => {
+        if (categoriesWithProducts.has(category.id)) {
+          // Use mpath for complete hierarchy if available
           const mpath = (category as any).mpath
           if (mpath && typeof mpath === 'string') {
-            console.log(`🏠 listCategories: Processing mpath for "${category.name}": "${mpath}"`)
-            
-            // Extract all category IDs from mpath (remove leading/trailing dots and split)
             const pathIds = mpath.split('.').filter(id => id && id.trim() !== '')
-            console.log(`🏠 listCategories: Extracted path IDs: [${pathIds.join(', ')}]`)
-            
             pathIds.forEach(pathId => {
               if (pathId && pathId !== category.id) {
                 const parentCategory = product_categories.find(cat => cat.id === pathId)
                 if (parentCategory) {
                   categoriesToInclude.add(pathId)
-                  console.log(`🏠 listCategories: Including parent category "${parentCategory.name}" (${pathId}) - from mpath`)
-                } else {
-                  console.log(`🏠 listCategories: ⚠️ Parent category ${pathId} from mpath not found in fetched categories`)
-                  // Let's search for categories that might be the parent by name or handle
-                  const possibleParents = product_categories.filter(cat => 
-                    cat.name?.toLowerCase().includes('biżuteria') || 
-                    cat.name?.toLowerCase().includes('jewelry') ||
-                    cat.handle?.toLowerCase().includes('bizuteria') ||
-                    cat.handle?.toLowerCase().includes('jewelry')
-                  )
-                  if (possibleParents.length > 0) {
-                    console.log(`🏠 listCategories: Possible parent categories for ${pathId}:`, possibleParents.map(p => `"${p.name}" (${p.id})`))
-                  }
+                  console.log(`🏠 listCategories: ✅ Including parent "${parentCategory.name}" (${pathId}) - ancestor of product category`)
                 }
               }
             })
           } else {
-            console.log(`🏠 listCategories: ⚠️ Category "${category.name}" has no mpath, using fallback parent_category_id`)
-            // Fallback to old method if mpath is not available
+            // Fallback: traverse parent_category_id chain
             let currentCategory = category
-            let depth = 0
-            while (currentCategory && depth < 10) {
-              const parentId = currentCategory.parent_category_id || currentCategory.parent_category?.id
-              if (parentId && !categoriesToInclude.has(parentId)) {
-                const parentCategory = product_categories.find(cat => cat.id === parentId)
-                if (parentCategory) {
-                  categoriesToInclude.add(parentId)
-                  console.log(`🏠 listCategories: Including parent category "${parentCategory.name}" (${parentId}) - fallback method`)
-                  currentCategory = parentCategory
-                } else {
-                  break
-                }
+            const visitedIds = new Set<string>()
+            
+            while (currentCategory?.parent_category_id && !visitedIds.has(currentCategory.parent_category_id)) {
+              visitedIds.add(currentCategory.parent_category_id)
+              const parentId = currentCategory.parent_category_id
+              const parentCategory = product_categories.find(cat => cat.id === parentId)
+              
+              if (parentCategory) {
+                categoriesToInclude.add(parentId)
+                console.log(`🏠 listCategories: ✅ Including parent "${parentCategory.name}" (${parentId}) - ancestor chain`)
+                currentCategory = parentCategory
               } else {
                 break
               }
-              depth++
             }
-          }
-        } else {
-          // DEBUG: Log specific categories we're looking for
-          if (category.id === 'pcat_01K19H5PKKZ6YPV7FTTPM9FGMA' || category.handle === 'obrazy') {
-            console.log(`🏠 listCategories: ❌ CRITICAL: "Obrazy" category found in Medusa but NOT in Algolia products list!`)
-            console.log(`🏠 listCategories: Category details: "${category.name}" (${category.id}) handle: ${category.handle}`)
-            console.log(`🏠 listCategories: Category mpath: ${(category as any).mpath || 'NO_MPATH'}`)
-            console.log(`🏠 listCategories: Algolia categories:`, Array.from(categoriesWithProducts).slice(0, 5), '...')
           }
         }
       })
-
-      // Filter to only include categories in our tree
+      
+      // Step 3: Add all descendants (children) of included categories to preserve tree structure
+      const addDescendants = (categoryId: string) => {
+        product_categories.forEach(category => {
+          if (category.parent_category_id === categoryId && !categoriesToInclude.has(category.id)) {
+            categoriesToInclude.add(category.id)
+            console.log(`🏠 listCategories: ✅ Including child "${category.name}" (${category.id}) - descendant of included category`)
+            // Recursively add children of this child
+            addDescendants(category.id)
+          }
+        })
+      }
+      
+      // Apply descendant inclusion for all currently included categories
+      const currentlyIncluded = Array.from(categoriesToInclude)
+      currentlyIncluded.forEach(categoryId => {
+        addDescendants(categoryId)
+      })
+      
+      // Filter to only include categories in the inclusion set
       filteredCategories = product_categories.filter(category => {
         const shouldInclude = categoriesToInclude.has(category.id)
-        if (!shouldInclude && (category.name === 'Dom' || category.name === 'Dekoracje' || category.name === 'Obrazy')) {
-          console.log(`🏠 listCategories: ❌ Filtering out important category "${category.name}" (${category.id}) - not in product tree`)
+        if (!shouldInclude && process.env.NODE_ENV === 'development') {
+          console.log(`🏠 listCategories: ❌ Excluding "${category.name}" (${category.id}) - not in product tree`)
         }
         return shouldInclude
       })
+      
+      console.log(`🏠 listCategories: After enhanced filtering: ${filteredCategories.length} categories (from ${product_categories.length} total)`)
     }
 
-    // CRITICAL: Reconstruct hierarchical tree structure for UI components
     // The UI expects children to be nested in category_children arrays
     console.log(`🏠 listCategories: Reconstructing hierarchical tree from ${filteredCategories.length} flat categories`)
     

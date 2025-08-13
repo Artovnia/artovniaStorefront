@@ -165,6 +165,38 @@ const CategoryItem = ({
 export const CategoryNavbar = ({ categories, onClose }: CategoryNavbarProps) => {
   const [activeParentId, setActiveParentId] = useState<string | null>(null)
   const [globalTimeout, setGlobalTimeout] = useState<NodeJS.Timeout | null>(null)
+  
+  // ENHANCED: Process categories to show only top-level categories with proper children
+  const topLevelCategories = useMemo(() => {
+    if (!categories || categories.length === 0) {
+      return []
+    }
+    
+    // Filter to get only top-level categories (no parent_category_id)
+    const topLevel = categories.filter(cat => {
+      const hasNoParentId = !cat.parent_category_id || cat.parent_category_id === null
+      const hasNoParentObj = !cat.parent_category || 
+                           cat.parent_category === null || 
+                           (typeof cat.parent_category === 'object' && !cat.parent_category.id)
+      
+      return hasNoParentId && hasNoParentObj
+    })
+    
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`🔍 CategoryNavbar: ${categories.length} total categories → ${topLevel.length} top-level`)
+      console.log(`🔍 CategoryNavbar: Top-level categories:`, topLevel.map(c => `"${c.name}" (${c.id})`))
+      
+      // Debug children structure
+      topLevel.forEach(cat => {
+        const childCount = cat.category_children?.length || 0
+        if (childCount > 0) {
+          console.log(`🔍 CategoryNavbar: "${cat.name}" has ${childCount} children:`, cat.category_children?.map(c => c.name) || [])
+        }
+      })
+    }
+    
+    return topLevel
+  }, [categories])
 
   const handleParentHover = (categoryId: string, isHovered: boolean) => {
     if (isHovered) {
@@ -244,7 +276,7 @@ export const CategoryNavbar = ({ categories, onClose }: CategoryNavbarProps) => 
         Wszystkie produkty
       </Link>
       
-      {categories.map((category) => (
+      {topLevelCategories.map((category) => (
         <CategoryItem 
           key={category.id} 
           category={category}
