@@ -1,16 +1,12 @@
 import { ProductListingSkeleton } from "@/components/organisms/ProductListingSkeleton/ProductListingSkeleton"
-import { getCategoryByHandle, listCategories } from "@/lib/data/categories"
+import { getCategoryByHandle, listCategoriesWithProducts } from "@/lib/data/categories"
 import { Suspense } from "react"
 
 import type { Metadata } from "next"
 import { generateCategoryMetadata } from "@/lib/helpers/seo"
-import { Breadcrumbs } from "@/components/atoms"
 import { AlgoliaProductsListing, ProductListing } from "@/components/sections"
 import { notFound } from "next/navigation"
-import { headers } from "next/headers"
-import { sdk } from "@/lib/config"
 import { HttpTypes } from "@medusajs/types"
-import Link from "next/link"
 
 const ALGOLIA_ID = process.env.NEXT_PUBLIC_ALGOLIA_ID
 const ALGOLIA_SEARCH_KEY = process.env.NEXT_PUBLIC_ALGOLIA_SEARCH_KEY
@@ -66,19 +62,18 @@ async function Category({
   // Decode the URL-encoded handle
   const decodedHandle = decodeURIComponent(handle)
   
-  // Fetch all categories with full tree structure (same as Header/Navbar)
+  // Fetch only categories with products (same as Header/Navbar for consistency)
   let allCategoriesWithTree: HttpTypes.StoreProductCategory[] = []
   
   try {
-    // Use the SAME listCategories function that Header/Navbar uses for full tree structure
-    const categoriesData = await listCategories()
+    // Use listCategoriesWithProducts to show only populated categories in sidebar
+    const categoriesData = await listCategoriesWithProducts()
     
-    if (categoriesData && categoriesData.parentCategories) {
-      // Combine parent categories (with full tree) and child categories for complete dataset
-      allCategoriesWithTree = [...categoriesData.parentCategories, ...categoriesData.categories]
+    if (categoriesData && categoriesData.categories) {
+      allCategoriesWithTree = categoriesData.categories
     }
   } catch (error) {
-    console.error("Error retrieving categories with listCategories:", error)
+    console.error("Error retrieving categories with products:", error)
     allCategoriesWithTree = []
   }
   

@@ -1,7 +1,6 @@
 import { ProductListingSkeleton } from "@/components/organisms/ProductListingSkeleton/ProductListingSkeleton"
 import { Suspense, lazy } from "react"
-import { Breadcrumbs } from "@/components/atoms"
-import { listCategories } from "@/lib/data/categories"
+import { listCategoriesWithProducts } from "@/lib/data/categories"
 import { HttpTypes } from "@medusajs/types"
 
 // CRITICAL FIX: Ultra-aggressive code splitting to reduce 4.2 MB bundle
@@ -26,16 +25,15 @@ async function AllCategories({
 }) {
   const { locale } = await params
 
-  // Fetch all categories with full tree structure (same as specific category pages)
+  // Fetch only categories with products (same as Header/Navbar for consistency)
   let allCategoriesWithTree: HttpTypes.StoreProductCategory[] = []
   
   try {
-    // Use the SAME listCategories function that Header/Navbar uses for full tree structure
-    const categoriesData = await listCategories()
+    // Use listCategoriesWithProducts to show only populated categories in sidebar
+    const categoriesData = await listCategoriesWithProducts()
     
-    if (categoriesData && categoriesData.parentCategories) {
-      // Combine parent categories (with full tree) and child categories for complete dataset
-      allCategoriesWithTree = [...categoriesData.parentCategories, ...categoriesData.categories]
+    if (categoriesData && categoriesData.categories) {
+      allCategoriesWithTree = categoriesData.categories
     }
   } catch (error) {
     console.error("Error retrieving categories with listCategories:", error)

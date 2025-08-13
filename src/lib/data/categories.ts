@@ -266,11 +266,15 @@ export const listCategoriesWithProducts = async (): Promise<{
       }
     })
     
-    // Step 3: Include essential top-level categories (for navigation structure)
+    // Step 3: Include essential top-level categories ONLY if they have products in their tree
     const essentialTopLevel = ['Ona', 'On', 'Dom', 'Dziecko', 'Zwierzęta', 'Akcesoria']
     allCategories.forEach(category => {
       if (essentialTopLevel.includes(category.name || '') && !category.parent_category_id) {
-        categoriesToInclude.add(category.id)
+        // Only include if this category or its descendants have products
+        const hasProductsInTree = hasProductsInCategoryTree(category, allCategories, categoriesWithProducts)
+        if (hasProductsInTree) {
+          categoriesToInclude.add(category.id)
+        }
       }
     })
     
@@ -292,6 +296,30 @@ export const listCategoriesWithProducts = async (): Promise<{
     // Fallback to essential categories
     return await getEssentialCategories()
   }
+}
+
+/**
+ * Check if a category or any of its descendants have products
+ */
+function hasProductsInCategoryTree(
+  category: HttpTypes.StoreProductCategory, 
+  allCategories: HttpTypes.StoreProductCategory[], 
+  categoriesWithProducts: Set<string>
+): boolean {
+  // Check if this category has products
+  if (categoriesWithProducts.has(category.id)) {
+    return true
+  }
+  
+  // Check all descendants recursively
+  const descendants = allCategories.filter(cat => cat.parent_category_id === category.id)
+  for (const descendant of descendants) {
+    if (hasProductsInCategoryTree(descendant, allCategories, categoriesWithProducts)) {
+      return true
+    }
+  }
+  
+  return false
 }
 
 /**
