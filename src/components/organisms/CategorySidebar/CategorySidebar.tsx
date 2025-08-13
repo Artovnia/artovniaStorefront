@@ -3,7 +3,7 @@
 import { cn } from "@/lib/utils"
 import { HttpTypes } from "@medusajs/types"
 import { SafeI18nLink as Link } from "@/components/atoms/SafeI18nLink"
-import { useParams } from "next/navigation"
+import { useParams, useSearchParams } from "next/navigation"
 import { useMemo } from "react"
 
 interface CategorySidebarProps {
@@ -20,9 +20,17 @@ export const CategorySidebar = ({
   currentCategory
 }: CategorySidebarProps) => {
   const params = useParams()
+  const searchParams = useSearchParams()
   const rawCategoryHandle = params.category
   // Decode URL-encoded category handle (e.g., "sto%C5%82y" → "stoły")
   const currentCategoryHandle = rawCategoryHandle ? decodeURIComponent(rawCategoryHandle as string) : null
+  
+  // Helper function to preserve existing filters when switching categories
+  const buildCategoryUrl = (categoryHandle: string) => {
+    const baseUrl = `/categories/${categoryHandle}`
+    const currentFilters = searchParams.toString()
+    return currentFilters ? `${baseUrl}?${currentFilters}` : baseUrl
+  }
   
   // Find the current category from the categories list if not provided
   const resolvedCurrentCategory = useMemo(() => {
@@ -138,7 +146,7 @@ export const CategorySidebar = ({
       <nav className="space-y-1">
         {/* "All Products" link */}
         <Link
-          href="/categories"
+          href={buildCategoryUrl('')}
           className={cn(
             "block px-3 py-2 text-md font-medium font-instrument-sans rounded-md transition-colors",
             !currentCategoryHandle 
@@ -196,7 +204,7 @@ const CategorySidebarItem = ({
   return (
     <div>
       <Link
-        href={`/categories/${category.handle}`}
+        href={buildCategoryUrl(category.handle)}
         className={cn(
           "flex items-center justify-between px-3 py-2 text-md font-medium font-instrument-sans rounded-md transition-colors group",
           isActive 

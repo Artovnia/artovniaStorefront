@@ -75,16 +75,15 @@ export const AlgoliaProductsListing = (props: AlgoliaProductsListingProps) => {
   const effectiveCategoryIds = category_ids || (category_id ? [category_id] : [])
   
   if (effectiveCategoryIds.length > 0) {
-    // For Algolia array filtering, use facetFilters which is the recommended approach
-    // Categories are stored as an array of objects with id and name fields
-    // Use facetFilters for array field filtering - this is the correct Algolia approach
-    
+    // Use the new category_ids field that contains the complete ancestor chain
+    // This enables proper parent category aggregation (e.g., "On" shows products from "Biżuteria" descendants)
     // For multiple categories, create OR filter (any product in any of these categories)
-    const categoryFilters = effectiveCategoryIds.map(id => `categories.id:${id}`)
+    const categoryFilters = effectiveCategoryIds.map(id => `category_ids:${id}`)
     facetFiltersList.push(categoryFilters);
     
     if (process.env.NODE_ENV === 'development') {
-      console.log(`🔍 Algolia filtering by categories:`, effectiveCategoryIds);
+      console.log(`🔍 Algolia filtering by category hierarchy:`, effectiveCategoryIds);
+      console.log(`🔍 Algolia category filters:`, categoryFilters);
     }
   }
   
