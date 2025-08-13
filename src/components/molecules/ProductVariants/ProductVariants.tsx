@@ -56,8 +56,23 @@ export const ProductVariants = ({
   }, [selectedVariantId, product.variants])
 
   // CRITICAL FIX: Generate available options based on all variants, not just current variant
+  // Also filter out default variants when they're the only option
   const availableOptions = useMemo(() => {
     if (!product.variants || !product.options) return []
+    
+    // Check if product has only default variants (should be hidden)
+    const hasOnlyDefaultVariants = product.variants.length === 1 && 
+      product.variants[0]?.options?.every(opt => 
+        opt.option?.title?.toLowerCase().includes('default') || 
+        opt.value?.toLowerCase().includes('default') ||
+        opt.option?.title === 'Default Title' ||
+        opt.value === 'Default Value'
+      )
+    
+    // If only default variants exist, don't render any options
+    if (hasOnlyDefaultVariants) {
+      return []
+    }
     
     const optionsMap = new Map<string, Set<string>>()
     
@@ -65,6 +80,16 @@ export const ProductVariants = ({
     product.variants.forEach(variant => {
       variant.options?.forEach(variantOption => {
         const optionTitle = variantOption.option?.title?.toLowerCase()
+        const optionValue = variantOption.value?.toLowerCase()
+        
+        // Skip default options entirely
+        if (optionTitle?.includes('default') || 
+            optionValue?.includes('default') ||
+            variantOption.option?.title === 'Default Title' ||
+            variantOption.value === 'Default Value') {
+          return
+        }
+        
         if (optionTitle && variantOption.value) {
           if (!optionsMap.has(optionTitle)) {
             optionsMap.set(optionTitle, new Set())
@@ -74,14 +99,25 @@ export const ProductVariants = ({
       })
     })
     
-    // Convert back to the expected format
-    return product.options.map(option => ({
-      ...option,
-      values: Array.from(optionsMap.get(option.title.toLowerCase()) || []).map(value => ({
-        id: `${option.id}-${value}`,
-        value
-      }))
-    }))
+    // Convert back to the expected format, filtering out options with only one value
+    return product.options
+      .map(option => {
+        const values = Array.from(optionsMap.get(option.title.toLowerCase()) || [])
+        
+        // Skip options that have no values or only one value (no real choice)
+        if (values.length <= 1) {
+          return null
+        }
+        
+        return {
+          ...option,
+          values: values.map(value => ({
+            id: `${option.id}-${value}`,
+            value
+          }))
+        }
+      })
+      .filter(Boolean) // Remove null entries
   }, [product.options, product.variants])
 
   // ARCHITECTURAL CHANGE: Ultra-simple option setter for URL-first navigation
@@ -104,36 +140,47 @@ export const ProductVariants = ({
     }
   }, [product.variants, selectedVariantId, setSelectedVariantId])
 
+  // Don't render anything if no meaningful options are available
+  if (availableOptions.length === 0) {
+    return null
+  }
+
   return (
     <div className="my-4 space-y-2">
       {availableOptions.map(
-        ({ id, title, values }: ProductOption) => (
-          <div key={id}>
-            <span className="label-md text-secondary">{title}: </span>
-            <span className="label-md text-primary">
-              {selectedVariant[title.toLowerCase()] || 'Not selected'}
-            </span>
-            <div className="flex gap-2 mt-2 relative z-[5]">
-              {(values || []).map(
-                ({
-                  id,
-                  value,
-                }: ProductOptionValue) => (
-                  <Chip
-                    key={id}
-                    className="z-10"
-                    selected={selectedVariant[title.toLowerCase()] === value}
-                    color={title === "Color"}
-                    value={value}
-                    onSelect={() =>
-                      setOptionValue(title, value || "")
-                    }
-                  />
-                )
-              )}
+        (option) => {
+          if (!option) return null // Type guard for filtered null values
+          
+          const { id, title, values } = option
+          
+          return (
+            <div key={id}>
+              <span className="label-md text-secondary">{title}: </span>
+              <span className="label-md text-primary">
+                {selectedVariant[title.toLowerCase()] || 'Not selected'}
+              </span>
+              <div className="flex gap-2 mt-2 relative z-[5]">
+                {(values || []).map(
+                  ({
+                    id,
+                    value,
+                  }: ProductOptionValue) => (
+                    <Chip
+                      key={id}
+                      className="z-10"
+                      selected={selectedVariant[title.toLowerCase()] === value}
+                      color={title === "Color"}
+                      value={value}
+                      onSelect={() =>
+                        setOptionValue(title, value || "")
+                      }
+                    />
+                  )
+                )}
+              </div>
             </div>
-          </div>
-        )
+          )
+        }
       )}
     </div>
   )

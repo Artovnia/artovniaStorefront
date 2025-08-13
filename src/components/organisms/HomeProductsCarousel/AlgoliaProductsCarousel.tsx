@@ -1,14 +1,10 @@
 "use client"
 
-import { HttpTypes } from "@medusajs/types"
 import { Carousel } from "@/components/cells"
 import { client } from "@/lib/client"
 import { Configure, useHits } from "react-instantsearch"
 import { InstantSearchNext } from "react-instantsearch-nextjs"
 import { ProductCard } from "../ProductCard/ProductCard"
-import { listProducts } from "@/lib/data/products"
-import { useEffect, useState } from "react"
-import { getProductPrice } from "@/lib/helpers/get-product-price"
 
 export const AlgoliaProductsCarousel = ({
   locale,
@@ -34,21 +30,12 @@ export const AlgoliaProductsCarousel = ({
 }
 
 const ProductsListing = ({ locale }: { locale: string }) => {
-  const [prod, setProd] = useState<HttpTypes.StoreProduct[] | null>(null)
+  // OPTIMIZATION: Remove redundant Medusa API call - use only Algolia data
+  // This eliminates the expensive listProducts call that fetches ALL products
   const { items } = useHits()
-
-  useEffect(() => {
-    listProducts({
-      countryCode: locale,
-      queryParams: {
-        limit: 99999,
-        fields:
-          "*variants.calculated_price,*seller.reviews,-thumbnail,-images,-type,-tags,-variants.options,-options,-collection,-collection_id",
-      },
-    }).then(({ response }) => {
-      setProd(response.products)
-    })
-  }, [locale])
+  
+  // REMOVED: Redundant useEffect that was fetching 99999 products from Medusa
+  // The Algolia hits already contain all necessary product data
 
   return (
     <>
@@ -66,24 +53,12 @@ const ProductsListing = ({ locale }: { locale: string }) => {
             <Carousel
               align="start"
               items={items.map((hit) => {
-                // Merge hit with the API product data if found
-                const apiProduct = prod?.find((p) => {
-                  const { cheapestPrice } = getProductPrice({
-                    product: p,
-                  })
-                  return p.id === hit.objectID && Boolean(cheapestPrice) && p
-                })
-                
-                // Combine the hit with any data from the API product
-                const mergedProduct = {
-                  ...hit,
-                  // Add any additional properties from apiProduct if needed
-                }
-                
+                // OPTIMIZATION: Use Algolia hit data directly
+                // No need to merge with API data since Algolia contains all necessary product info
                 return (
                   <ProductCard
                     key={hit.objectID}
-                    product={mergedProduct}
+                    product={hit}
                   />
                 )
               })}

@@ -149,6 +149,7 @@ export const CategorySidebar = ({
             category={currentParentCategoryTree}
             currentCategoryHandle={currentCategoryHandle as string}
             buildCategoryUrl={buildCategoryUrl}
+            currentParentCategoryTree={currentParentCategoryTree}
           />
         )}
       </nav>
@@ -176,8 +177,9 @@ const CategorySidebarItem = ({
   category, 
   currentCategoryHandle,
   level = 0,
-  buildCategoryUrl
-}: CategorySidebarItemProps) => {
+  buildCategoryUrl,
+  currentParentCategoryTree
+}: CategorySidebarItemProps & { currentParentCategoryTree?: HttpTypes.StoreProductCategory | null }) => {
   const hasChildren = category.category_children && category.category_children.length > 0
   const isActive = category.handle === currentCategoryHandle
   const isParentOfActive = category.category_children?.some((child: HttpTypes.StoreProductCategory) => 
@@ -203,11 +205,25 @@ const CategorySidebarItem = ({
       return false
     }
     
-    return isDescendant(category, currentCategoryHandle)
+    // Check if this category is an ancestor of the current category
+    const isAncestor = isDescendant(category, currentCategoryHandle)
+    
+    return isAncestor
   }, [category, currentCategoryHandle])
   
-  // Show all children at level 0 (top-level), but only expand deeper levels if they're in the current path
-  const isExpanded = level === 0 || isInCurrentPath || isActive || isParentOfActive
+  // FIXED: Show full tree when viewing a parent category
+  // When viewing a top-level category, we want to show its complete tree structure
+  const isViewingTopLevelCategory = currentParentCategoryTree?.handle === currentCategoryHandle
+  
+  // Expansion logic:
+  // - Level 0 (top-level): Always expanded
+  // - If viewing top-level category: Show complete tree (expand all levels)
+  // - Otherwise: Only expand if in current path, active, or parent of active
+  const isExpanded = level === 0 || 
+                    isViewingTopLevelCategory || 
+                    isInCurrentPath || 
+                    isActive || 
+                    isParentOfActive
 
   return (
     <div>
@@ -237,6 +253,7 @@ const CategorySidebarItem = ({
               currentCategoryHandle={currentCategoryHandle}
               level={level + 1}
               buildCategoryUrl={buildCategoryUrl}
+              currentParentCategoryTree={currentParentCategoryTree}
             />
           ))}
         </div>

@@ -196,19 +196,73 @@ export const AlgoliaProductsListing = (props: AlgoliaProductsListingProps) => {
   // Use as configureProps
   const configureProps = algoliaParams;
   
-  // Create a memoized search client to prevent re-renders
+  // Create a memoized search client with caching to prevent excessive queries
   const searchClient = useMemo(() => {
-    return algoliasearch(ALGOLIA_ID, ALGOLIA_SEARCH_KEY);
+    const client = algoliasearch(ALGOLIA_ID, ALGOLIA_SEARCH_KEY);
+    
+    // OPTIMIZATION: Add client-side caching and request deduplication
+    const originalSearch = client.search;
+    const cache = new Map();
+    const pendingRequests = new Map(); // For deduplication
+    const CACHE_TTL = 5 * 60 * 1000; // 5 minutes cache
+    
+    client.search = (requests) => {
+      const cacheKey = JSON.stringify(requests);
+      
+      // Check cache first
+      const cached = cache.get(cacheKey);
+      if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
+        console.log('🚀 Using cached Algolia result');
+        return Promise.resolve(cached.result);
+      }
+      
+      // Check if same request is already pending (deduplication)
+      const pendingRequest = pendingRequests.get(cacheKey);
+      if (pendingRequest) {
+        console.log('⚡ Deduplicating concurrent Algolia request');
+        return pendingRequest;
+      }
+      
+      // Make new request
+      const requestPromise = originalSearch.call(client, requests).then(result => {
+        // Cache the result
+        cache.set(cacheKey, { result, timestamp: Date.now() });
+        
+        // Remove from pending requests
+        pendingRequests.delete(cacheKey);
+        
+        // Clean old cache entries (keep cache size manageable)
+        if (cache.size > 50) {
+          const oldestKey = cache.keys().next().value;
+          cache.delete(oldestKey);
+        }
+        
+        return result;
+      }).catch(error => {
+        // Remove from pending requests on error
+        pendingRequests.delete(cacheKey);
+        throw error;
+      });
+      
+      // Store pending request for deduplication
+      pendingRequests.set(cacheKey, requestPromise);
+      
+      return requestPromise;
+    };
+    
+    return client;
   }, []);
   
   // We can now use the correct replica index based on the sort option
   // The replica indices are configured in the backend to have the right sorting
   
-  // Create a stable key for InstantSearch to prevent unnecessary remounting
+  // OPTIMIZATION: Create a more stable key for InstantSearch to prevent unnecessary remounting
   // Only include essential parameters that should trigger a full reset
+  // Exclude frequently changing parameters like sort to prevent excessive remounts
   const instantSearchKey = useMemo(() => {
-    return `${category_id || 'all'}-${collection_id || 'all'}-${seller_handle || 'all'}`;
-  }, [category_id, collection_id, seller_handle]);
+    const categoryKey = category_ids ? category_ids.join(',') : (category_id || 'all');
+    return `${categoryKey}-${collection_id || 'all'}-${seller_handle || 'all'}`;
+  }, [category_id, category_ids, collection_id, seller_handle]);
 
   // Use the correct indexName based on sort selection
   return (

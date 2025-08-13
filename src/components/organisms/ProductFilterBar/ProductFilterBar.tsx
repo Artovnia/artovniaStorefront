@@ -68,7 +68,7 @@ const FilterDropdown = ({ label, children, isActive, className }: FilterDropdown
     >
       {/* Scrollable content area */}
       <div className="p-4 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-gray-100 flex-1">
-        {React.cloneElement(children as React.ReactElement, { onClose: () => setIsOpen(false), showButton: false } as any)}
+        {React.cloneElement(children as React.ReactElement, { onClose: () => setIsOpen(false), showbutton: false } as any)}
       </div>
       
       {/* Fixed button area - show for all filters including price */}
@@ -129,20 +129,21 @@ export const ProductFilterBar = ({ className }: ProductFilterBarProps) => {
   // Get color and rating selections from Zustand store
   const { selectedColors, clearColors, selectedRating, clearRating } = useFilterStore()
   
-  // Algolia color refinement hook - this triggers the actual filtering
+  // OPTIMIZATION NOTE: Each useRefinementList creates a separate Algolia query
+  // Consider consolidating these into a single query in the future
+  
+  // Get facet items for color filter using Algolia's useRefinementList
   const { items: colorFacetItems, refine: refineColor } = useRefinementList({
-    attribute: 'color_families',
-    limit: 100,
-    operator: 'or',
+    attribute: 'variants.color',
+    limit: 50,
   })
   
-  // Algolia rating refinement hook - this triggers the actual filtering
+  // Get facet items for rating filter
   const { items: ratingFacetItems, refine: refineRating } = useRefinementList({
     attribute: 'average_rating',
-    limit: 5,
-    sortBy: ['name:desc'],
+    limit: 10,
   })
-  
+
   // Sync Zustand color selections with Algolia refinements
   useEffect(() => {
     if (colorFacetItems.length === 0) return; // Wait for Algolia to be ready

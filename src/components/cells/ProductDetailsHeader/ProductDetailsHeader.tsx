@@ -165,7 +165,7 @@ export const ProductDetailsHeader = ({
           onClick={handleAddToCart}
           disabled={isAdding || !canAddToCart}
           loading={isAdding}
-          className="w-full uppercase mb-1 py-3 flex justify-center"
+          className="w-full uppercase mb-1 py-3 flex justify-center mt-6"
           size="large"
         >
           {!variantStock || !variantHasPrice

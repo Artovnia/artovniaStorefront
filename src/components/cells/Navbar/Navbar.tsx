@@ -20,22 +20,29 @@ export const Navbar = ({
   }
 
   const handleDropdownMouseEnter = () => {
+   
     if (hoverTimeout) {
       clearTimeout(hoverTimeout)
       setHoverTimeout(null)
+     
     }
   }
 
   const handleDropdownMouseLeave = () => {
+   
     const timeout = setTimeout(() => {
+     
       setIsDropdownVisible(false)
       setDropdownActiveCategory(null)
-    }, 200)
+    }, 200) // Reduced timeout for quicker closing
     setHoverTimeout(timeout)
   }
 
   return (
-    <div className="w-full border ring-1 ring-[#BFB7AD] relative">
+    <div 
+      className="w-full border ring-1 ring-[#BFB7AD] relative"
+      onMouseLeave={handleDropdownMouseLeave}
+    >
       <div className="flex py-4 justify-between max-w-[1920px] mx-auto">
         <div className="hidden md:flex w-full">
           <CategoryNavbar 
@@ -49,18 +56,20 @@ export const Navbar = ({
         </div>
       </div>
       
-      {/* Full-Width Dropdown at Navbar level */}
+      {/* Full-Width Dropdown at Navbar level - Positioned absolutely to overlay */}
       {isDropdownVisible && (
-        <FullWidthDropdown
-          activeCategory={dropdownActiveCategory}
-          isVisible={isDropdownVisible}
-          onClose={() => {
-            setIsDropdownVisible(false)
-            setDropdownActiveCategory(null)
-          }}
-          onMouseEnter={handleDropdownMouseEnter}
-          onMouseLeave={handleDropdownMouseLeave}
-        />
+        <div className="absolute left-0 right-0 top-full w-full z-50">
+          <FullWidthDropdown
+            activeCategory={dropdownActiveCategory}
+            isVisible={isDropdownVisible}
+            onClose={() => {
+              setIsDropdownVisible(false)
+              setDropdownActiveCategory(null)
+            }}
+            onMouseEnter={() => {}} // Remove duplicate hover handlers
+            onMouseLeave={() => {}} // Remove duplicate hover handlers
+          />
+        </div>
       )}
     </div>
   )

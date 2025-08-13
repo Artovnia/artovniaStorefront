@@ -4,12 +4,13 @@ import { cn } from "@/lib/utils"
 import { HttpTypes } from "@medusajs/types"
 import { SafeI18nLink as Link } from "@/components/atoms/SafeI18nLink"
 import { useParams } from "next/navigation"
-import { useState, useMemo, useEffect, useRef } from "react"
+import { useMemo } from "react"
 
 interface CategoryNavbarProps {
   categories: HttpTypes.StoreProductCategory[]
   onClose?: () => void
   onDropdownStateChange?: (activeCategory: HttpTypes.StoreProductCategory | null, isVisible: boolean) => void
+  shouldResetDropdown?: boolean
 }
 
 interface CategoryDropdownProps {
@@ -90,10 +91,10 @@ export const FullWidthDropdown = ({
       onMouseEnter={onMouseEnter}
       onMouseLeave={onMouseLeave}
     >
-      <div className="max-w-[1200px] mx-auto p-6">
+      <div className="max-w-[768px] justify-start mx-auto p-6">
         {/* Multi-column Grid Layout - Centered and Compact */}
         <div className={cn(
-          "grid gap-6 justify-center",
+          "grid gap-6 justify-start",
           children.length === 1 && "grid-cols-1 max-w-xs mx-auto",
           children.length === 2 && "grid-cols-2 max-w-lg mx-auto", 
           children.length === 3 && "grid-cols-3 max-w-3xl mx-auto",
@@ -140,9 +141,6 @@ export const FullWidthDropdown = ({
 }
 
 export const CategoryNavbar = ({ categories, onClose, onDropdownStateChange }: CategoryNavbarProps) => {
-  const [activeCategory, setActiveCategory] = useState<HttpTypes.StoreProductCategory | null>(null)
-  const [isDropdownVisible, setIsDropdownVisible] = useState(false)
-  const [hoverTimeout, setHoverTimeout] = useState<NodeJS.Timeout | null>(null)
 
   // Process categories to show only top-level categories with proper children
   const topLevelCategories = useMemo(() => {
@@ -166,55 +164,13 @@ export const CategoryNavbar = ({ categories, onClose, onDropdownStateChange }: C
   }, [categories])
 
   const handleCategoryHover = (category: HttpTypes.StoreProductCategory) => {
-    if (hoverTimeout) {
-      clearTimeout(hoverTimeout)
-      setHoverTimeout(null)
-    }
-    
     const hasChildren = category.category_children && category.category_children.length > 0
-    if (hasChildren) {
-      setActiveCategory(category)
-      setIsDropdownVisible(true)
+    if (hasChildren && onDropdownStateChange) {
+      onDropdownStateChange(category, true)
     }
   }
 
-  const handleNavbarMouseLeave = () => {
-    const timeout = setTimeout(() => {
-      setIsDropdownVisible(false)
-      setActiveCategory(null)
-    }, 200)
-    setHoverTimeout(timeout)
-  }
 
-  const handleDropdownMouseEnter = () => {
-    if (hoverTimeout) {
-      clearTimeout(hoverTimeout)
-      setHoverTimeout(null)
-    }
-  }
-
-  const handleDropdownMouseLeave = () => {
-    const timeout = setTimeout(() => {
-      setIsDropdownVisible(false)
-      setActiveCategory(null)
-    }, 200)
-    setHoverTimeout(timeout)
-  }
-
-  // Notify parent component when dropdown state changes
-  useEffect(() => {
-    if (onDropdownStateChange) {
-      onDropdownStateChange(activeCategory, isDropdownVisible)
-    }
-  }, [activeCategory, isDropdownVisible, onDropdownStateChange])
-
-  useEffect(() => {
-    return () => {
-      if (hoverTimeout) {
-        clearTimeout(hoverTimeout)
-      }
-    }
-  }, [hoverTimeout])
 
   return (
     <nav 
@@ -222,7 +178,6 @@ export const CategoryNavbar = ({ categories, onClose, onDropdownStateChange }: C
         "flex md:items-center flex-col md:flex-row relative",
         "font-['Instrument_Sans']"
       )}
-      onMouseLeave={handleNavbarMouseLeave}
     >
       {/* All Products Link */}
       <Link
@@ -242,7 +197,7 @@ export const CategoryNavbar = ({ categories, onClose, onDropdownStateChange }: C
         <CategoryNavItem
           key={category.id} 
           category={category}
-          isActive={activeCategory?.id === category.id}
+          isActive={false} // Simplified - no active state tracking in CategoryNavbar
           onHover={() => handleCategoryHover(category)}
           onClose={onClose}
         />
