@@ -114,54 +114,56 @@ export const CategorySidebar = ({
   }, [categories, currentCategoryHandle])
 
   return (
-    <div className={cn("w-full", className)}>
-      {/* Current Category Header */}
-      {resolvedCurrentCategory && (
-        <div className="mb-6">
-          <h1 className="heading-xl uppercase">{resolvedCurrentCategory.name}</h1>
-          {resolvedCurrentCategory.description && (
-            <p className="text-base-regular text-ui-fg-subtle mb-6">
-              {resolvedCurrentCategory.description}
-            </p>
-          )}
-        </div>
-      )}
-
-      {/* Category List */}
-      <nav className="space-y-1">
-        {/* "All Products" link */}
-        <Link
-          href={buildCategoryUrl('')}
-          className={cn(
-            "block px-3 py-2 text-md font-medium font-instrument-sans rounded-md transition-colors",
-            !currentCategoryHandle 
-              ? "bg-primary text-black underline decoration-1 underline-offset-4" 
-              : "text-black hover:bg-gray-100"
-          )}
-        >
-          Wszystkie produkty
-        </Link>
-
-        {/* Current Parent Category Tree Only */}
-        {currentParentCategoryTree && (
-          <CategorySidebarItem
-            key={currentParentCategoryTree.id}
-            category={currentParentCategoryTree}
-            currentCategoryHandle={currentCategoryHandle as string}
-            buildCategoryUrl={buildCategoryUrl}
-            currentParentCategoryTree={currentParentCategoryTree}
-          />
+    <div className="w-full sticky top-24">
+      <div className={cn("w-full", className)}>
+        {/* Current Category Header */}
+        {resolvedCurrentCategory && (
+          <div className="mb-6">
+            <h1 className="heading-xl uppercase">{resolvedCurrentCategory.name}</h1>
+            {resolvedCurrentCategory.description && (
+              <p className="text-base-regular text-ui-fg-subtle mb-6">
+                {resolvedCurrentCategory.description}
+              </p>
+            )}
+          </div>
         )}
-      </nav>
 
-      {/* Category Tree Info */}
-      {currentParentCategoryTree && (
-        <div className="mt-6 pt-4 border-t border-[#3B3634]">
-          <p className="text-md text-black font-instrument-sans">
-            Kategoria: {currentParentCategoryTree.name}
-          </p>
-        </div>
-      )}
+        {/* Navigation */}
+        <nav className="space-y-1">
+          {/* All Products Link */}
+          <Link
+            href={buildCategoryUrl('')}
+            className={cn(
+              "flex items-center justify-between px-3 py-2 text-md font-medium font-instrument-sans rounded-md transition-colors group",
+              !currentCategoryHandle 
+                ? "bg-primary text-black underline decoration-1 underline-offset-4" 
+                : "text-black hover:bg-gray-100"
+            )}
+          >
+            <span className="flex-1">Wszystkie produkty</span>
+          </Link>
+
+          {/* Category Tree */}
+          {currentParentCategoryTree && (
+            <CategorySidebarItem
+              key={currentParentCategoryTree.id}
+              category={currentParentCategoryTree}
+              currentCategoryHandle={currentCategoryHandle as string}
+              buildCategoryUrl={buildCategoryUrl}
+              currentParentCategoryTree={currentParentCategoryTree}
+            />
+          )}
+        </nav>
+
+        {/* Category Tree Info */}
+        {currentParentCategoryTree && (
+          <div className="mt-6 pt-4 border-t border-[#3B3634]">
+            <p className="text-md text-black font-instrument-sans">
+              Kategoria: {currentParentCategoryTree.name}
+            </p>
+          </div>
+        )}
+      </div>
     </div>
   )
 }

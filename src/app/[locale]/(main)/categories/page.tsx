@@ -51,10 +51,6 @@ async function AllCategories({
     <main className="mx-auto max-w-[1920px] pt-24 pb-24">
    
 
-      <h1 className="heading-xl uppercase font-instrument-serif">Wszystkie produkty</h1>
-
-
-      
       <Suspense 
         fallback={
           <div className="space-y-4">

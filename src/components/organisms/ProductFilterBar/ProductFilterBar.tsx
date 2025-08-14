@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState, useRef, useEffect } from 'react'
+import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react'
 import { createPortal } from 'react-dom'
 import { cn } from '@/lib/utils'
 import { Input, StarRating } from "@/components/atoms"
@@ -120,76 +120,83 @@ const FilterDropdown = ({ label, children, isActive, className }: FilterDropdown
 
 interface ProductFilterBarProps {
   className?: string
+  // SOLUTION 1: Accept centralized facet data as props to reduce Algolia queries
+  colorFacetItems?: any[]
+  ratingFacetItems?: any[]
+  refineColor?: (value: string) => void
+  refineRating?: (value: string) => void
 }
 
-export const ProductFilterBar = ({ className }: ProductFilterBarProps) => {
+export const ProductFilterBar = ({ 
+  className,
+  colorFacetItems = [],
+  ratingFacetItems = [],
+  refineColor,
+  refineRating
+}: ProductFilterBarProps) => {
   const searchParams = useSearchParams()
   const updateSearchParams = useUpdateSearchParams()
   
   // Get color and rating selections from Zustand store
   const { selectedColors, clearColors, selectedRating, clearRating } = useFilterStore()
   
-  // OPTIMIZATION NOTE: Each useRefinementList creates a separate Algolia query
-  // Consider consolidating these into a single query in the future
-  
-  // Get facet items for color filter using Algolia's useRefinementList
-  const { items: colorFacetItems, refine: refineColor } = useRefinementList({
-    attribute: 'variants.color',
-    limit: 50,
-  })
-  
-  // Get facet items for rating filter
-  const { items: ratingFacetItems, refine: refineRating } = useRefinementList({
-    attribute: 'average_rating',
-    limit: 10,
-  })
+  // SOLUTION 1: Removed useRefinementList hooks - now using centralized facet data from props
+  // This eliminates multiple Algolia queries and reduces total query count significantly
 
-  // Sync Zustand color selections with Algolia refinements
-  useEffect(() => {
-    if (colorFacetItems.length === 0) return; // Wait for Algolia to be ready
-    
-    const algoliaRefinedColors = colorFacetItems
-      .filter(item => item.isRefined)
-      .map(item => item.value);
-    
-    // Check if synchronization is needed
-    const zustandSet = new Set(selectedColors);
-    const algoliaSet = new Set(algoliaRefinedColors);
-    
-    const needsSync = 
-      zustandSet.size !== algoliaSet.size ||
-      selectedColors.some(color => !algoliaSet.has(color)) ||
-      algoliaRefinedColors.some(color => !zustandSet.has(color));
-    
-    if (needsSync) {
-      // Batch all refinements to prevent multiple re-renders
-      const refinementsToApply: string[] = [];
-      
-      // Collect colors that need to be unrefined
-      algoliaRefinedColors.forEach(color => {
-        if (!zustandSet.has(color)) {
-          refinementsToApply.push(color);
-        }
-      });
-      
-      // Collect colors that need to be refined
-      selectedColors.forEach(color => {
-        if (!algoliaSet.has(color)) {
-          refinementsToApply.push(color);
-        }
-      });
-      
-      // Apply all refinements in a single batch to minimize re-renders
-      if (refinementsToApply.length > 0) {
-        // Use requestAnimationFrame to defer refinements until after current render cycle
-        requestAnimationFrame(() => {
-          refinementsToApply.forEach(color => {
-            refineColor(color);
-          });
-        });
+  // SOLUTION 2: Debounced synchronization to prevent rapid-fire queries
+  const debouncedSyncColors = useCallback(
+    (() => {
+      let timeoutId: NodeJS.Timeout
+      return (colors: string[], facetItems: any[], refine?: (value: string) => void) => {
+        clearTimeout(timeoutId)
+        timeoutId = setTimeout(() => {
+          if (!refine || facetItems.length === 0) return
+
+          const algoliaRefinedColors = facetItems
+            .filter(item => item.isRefined)
+            .map(item => item.value)
+
+          const zustandSet = new Set(colors)
+          const algoliaSet = new Set(algoliaRefinedColors)
+
+          const needsSync = 
+            zustandSet.size !== algoliaSet.size ||
+            colors.some(color => !algoliaSet.has(color)) ||
+            algoliaRefinedColors.some(color => !zustandSet.has(color))
+
+          if (needsSync) {
+            const refinementsToApply: string[] = []
+            
+            algoliaRefinedColors.forEach(color => {
+              if (!zustandSet.has(color)) {
+                refinementsToApply.push(color)
+              }
+            })
+            
+            colors.forEach(color => {
+              if (!algoliaSet.has(color)) {
+                refinementsToApply.push(color)
+              }
+            })
+
+            if (refinementsToApply.length > 0) {
+              requestAnimationFrame(() => {
+                refinementsToApply.forEach(color => {
+                  refine(color)
+                })
+              })
+            }
+          }
+        }, 300) // 300ms debounce
       }
-    }
-  }, [selectedColors, colorFacetItems, refineColor])
+    })(),
+    []
+  )
+
+  // Sync Zustand color selections with Algolia refinements using debounced approach
+  useEffect(() => {
+    debouncedSyncColors(selectedColors, colorFacetItems, refineColor)
+  }, [selectedColors, colorFacetItems, refineColor, debouncedSyncColors])
   
   // Sync Zustand rating selection with Algolia refinements
   useEffect(() => {
@@ -200,7 +207,7 @@ export const ProductFilterBar = ({ className }: ProductFilterBarProps) => {
     // Check if synchronization is needed
     const needsSync = selectedRating !== algoliaRefinedRating;
     
-    if (needsSync) {
+    if (needsSync && refineRating) {
       // Use requestAnimationFrame to defer refinements until after current render cycle
       requestAnimationFrame(() => {
         // Clear current refinement if there is one
@@ -256,18 +263,25 @@ export const ProductFilterBar = ({ className }: ProductFilterBarProps) => {
       })
     }
     
-    // Add color filters from Zustand store
-    selectedColors.forEach((colorValue: string, index: number) => {
-      filters.push({
-        key: `color-${index}`,
-        label: `Kolor: ${colorValue}`,
-        onRemove: () => {
-          // Remove from Zustand store - this will trigger UI update
-          const { removeColor } = useFilterStore.getState()
-          removeColor(colorValue)
-        }
-      })
-    })
+    // Add color filters from Algolia facet items (for proper Clear All functionality)
+    if (colorFacetItems && refineColor) {
+      colorFacetItems
+        .filter(item => item.isRefined) // Only show refined/selected colors
+        .forEach((item, index) => {
+          filters.push({
+            key: `color-${index}`,
+            label: `Kolor: ${item.label}`,
+            onRemove: () => {
+              // Use Algolia refine function to properly clear the refinement
+              refineColor(item.value)
+              
+              // Also remove from Zustand store for UI consistency
+              const { removeColor } = useFilterStore.getState()
+              removeColor(item.value)
+            }
+          })
+        })
+    }
     
     const size = searchParams.get("size")
     if (size) {

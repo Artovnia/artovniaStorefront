@@ -1,7 +1,7 @@
 'use client';
 import { v4 as uuidv4 } from 'uuid';
 import { PaginationButton } from '@/components/atoms';
-import { CollapseIcon, MeatballsMenuIcon } from '@/icons';
+import { useState } from 'react';
 
 export const Pagination = ({
   pages,
@@ -12,49 +12,88 @@ export const Pagination = ({
   setPage: (page: number) => void;
   currentPage: number;
 }) => {
+  const [goToPage, setGoToPage] = useState('');
+
+  const handleGoToPage = () => {
+    const pageNum = parseInt(goToPage, 10);
+    if (!isNaN(pageNum) && pageNum >= 1 && pageNum <= pages) {
+      setPage(pageNum);
+      setGoToPage('');
+    }
+  };
+
+  const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      handleGoToPage();
+    }
+  };
+
   const renderPaginationButtons = () => {
     const buttons = [];
-
-    if (currentPage > 2) {
-      buttons.push(
-        <PaginationButton key={uuidv4()} disabled>
-          <MeatballsMenuIcon />
-        </PaginationButton>
-      );
-    }
-
-    if (currentPage > 1) {
-      buttons.push(
-        <PaginationButton
-          key={uuidv4()}
-          onClick={() => setPage(currentPage - 1)}
-        >
-          {currentPage - 1}
-        </PaginationButton>
-      );
-    }
-
+    
+    // First page
     buttons.push(
-      <PaginationButton key={uuidv4()} isActive>
-        {currentPage}
+      <PaginationButton 
+        key="first-page"
+        isActive={currentPage === 1}
+        onClick={() => currentPage !== 1 && setPage(1)}
+      >
+        1
       </PaginationButton>
     );
 
-    if (currentPage < pages) {
+    // Dots or second page
+    if (currentPage > 3) {
+      buttons.push(
+        <div key="dots-start" className="mx-1 flex items-center">...</div>
+      );
+    } else if (pages >= 2) {
       buttons.push(
         <PaginationButton
-          key={uuidv4()}
-          onClick={() => setPage(currentPage + 1)}
+          key="page-2"
+          isActive={currentPage === 2}
+          onClick={() => setPage(2)}
         >
-          {currentPage + 1}
+          2
         </PaginationButton>
       );
     }
 
-    if (currentPage < pages - 1) {
+    // Current page (if not 1, 2 or last page)
+    if (currentPage > 2 && currentPage < pages - 1) {
       buttons.push(
-        <PaginationButton key={uuidv4()} disabled>
-          <MeatballsMenuIcon />
+        <PaginationButton key="current-page" isActive>
+          {currentPage}
+        </PaginationButton>
+      );
+    }
+
+    // Dots or second-to-last page
+    if (currentPage < pages - 2) {
+      buttons.push(
+        <div key="dots-end" className="mx-1 flex items-center">...</div>
+      );
+    } else if (pages > 2) {
+      buttons.push(
+        <PaginationButton
+          key={`page-${pages-1}`}
+          isActive={currentPage === pages - 1}
+          onClick={() => setPage(pages - 1)}
+        >
+          {pages - 1}
+        </PaginationButton>
+      );
+    }
+
+    // Last page (if more than one page)
+    if (pages > 1) {
+      buttons.push(
+        <PaginationButton
+          key={`last-page-${pages}`}
+          isActive={currentPage === pages}
+          onClick={() => currentPage !== pages && setPage(pages)}
+        >
+          {pages}
         </PaginationButton>
       );
     }
@@ -63,24 +102,49 @@ export const Pagination = ({
   };
 
   return (
-    <div className='flex items-center'>
+    <div className='flex items-center gap-2'>
+      {/* Previous page button */}
       <PaginationButton
-        disabled={Boolean(currentPage === 1)}
-        onClick={() => setPage(currentPage - 1)}
-        className='border-none'
+        isNavArrow
+        disabled={currentPage === 1}
+        onClick={() => currentPage > 1 && setPage(currentPage - 1)}
       >
-        <CollapseIcon size={20} className='rotate-90' />
+        <span className="text-lg font-bold">&lsaquo;</span>
       </PaginationButton>
 
-      {renderPaginationButtons()}
+      {/* Page buttons */}
+      <div className='flex items-center gap-1'>
+        {renderPaginationButtons()}
+      </div>
 
+      {/* Next page button */}
       <PaginationButton
-        disabled={Boolean(currentPage === pages)}
-        onClick={() => setPage(currentPage + 1)}
-        className='border-none'
+        isNavArrow
+        disabled={currentPage === pages}
+        onClick={() => currentPage < pages && setPage(currentPage + 1)}
       >
-        <CollapseIcon size={20} className='-rotate-90' />
+        <span className="text-lg font-bold">&rsaquo;</span>
       </PaginationButton>
+
+      {/* Go to page input */}
+      <div className='flex items-center ml-4'>
+        <span className='mr-2 text-sm font-instrument-sans'>Idź do strony:</span>
+        <div className='flex relative ring-1 ring-[#3B3634] rounded-full overflow-hidden'>
+          <input
+            type="text"
+            value={goToPage}
+            onChange={(e) => setGoToPage(e.target.value.replace(/[^0-9]/g, ''))}
+            onKeyPress={handleKeyPress}
+            className='w-12 h-10 px-3 bg-primary text-sm focus:outline-none border-none'
+          />
+          <button 
+            onClick={handleGoToPage}
+            className='h-10 px-3 text-[#3B3634] hover:bg-[#BFB7AD] text-sm focus:outline-none border-none bg-transparent'
+          >
+            <span className="text-lg font-bold">&rarr;</span>
+          </button>
+        </div>
+      </div>
     </div>
   );
 };

@@ -9,15 +9,16 @@ import {
   ProductFilterBar,
 } from "@/components/organisms"
 import { SelectField } from "@/components/molecules/SelectField/SelectField"
-import { Configure, useHits } from "react-instantsearch"
+import { Configure, useHits, useRefinementList } from "react-instantsearch"
 import React, { useEffect, useState } from "react"
 import { InstantSearchNext } from "react-instantsearch-nextjs"
 import { liteClient as algoliasearch } from "algoliasearch/lite"
 import { useMemo } from "react"
-import { retrieveCustomer } from "@/lib/data/customer"
+
 import { getUserWishlists } from "@/lib/data/wishlist"
 import { SerializableWishlist } from "@/types/wishlist"
 import { HttpTypes } from "@medusajs/types"
+import { retrieveCustomer } from "@/lib/data/customer"
 
 // Access environment variables directly
 const ALGOLIA_ID = process.env.NEXT_PUBLIC_ALGOLIA_ID || "";
@@ -256,13 +257,14 @@ export const AlgoliaProductsListing = (props: AlgoliaProductsListingProps) => {
   // We can now use the correct replica index based on the sort option
   // The replica indices are configured in the backend to have the right sorting
   
-  // OPTIMIZATION: Create a more stable key for InstantSearch to prevent unnecessary remounting
+  // SOLUTION 4: Optimize InstantSearch key to prevent unnecessary remounts
   // Only include essential parameters that should trigger a full reset
   // Exclude frequently changing parameters like sort to prevent excessive remounts
   const instantSearchKey = useMemo(() => {
+    // Only include category and collection - remove seller_handle to prevent frequent remounts
     const categoryKey = category_ids ? category_ids.join(',') : (category_id || 'all');
-    return `${categoryKey}-${collection_id || 'all'}-${seller_handle || 'all'}`;
-  }, [category_id, category_ids, collection_id, seller_handle]);
+    return `${categoryKey}-${collection_id || 'all'}`;
+  }, [category_id, category_ids, collection_id]); // Removed seller_handle from dependencies
 
   // Use the correct indexName based on sort selection
   return (
@@ -272,7 +274,14 @@ export const AlgoliaProductsListing = (props: AlgoliaProductsListingProps) => {
       indexName={activeIndexName}
     >
       <Configure {...configureProps} />
-      <ProductsListing sortOptions={sortOptions} category_id={category_id} categories={categories} />
+      <ProductsListing 
+        sortOptions={sortOptions} 
+        category_id={category_id} 
+        categories={categories}
+        // Pass category_ids for parent category aggregation
+        category_ids={category_ids}
+        currentCategory={currentCategory}
+      />
     </InstantSearchNext>
   )
 }
@@ -287,11 +296,19 @@ interface SortOption {
 interface ProductsListingProps {
   sortOptions?: SortOption[]
   category_id?: string
+  category_ids?: string[]
   categories?: HttpTypes.StoreProductCategory[]
+  currentCategory?: HttpTypes.StoreProductCategory
 }
 
 
-const ProductsListing = ({ sortOptions, category_id, categories = [] }: ProductsListingProps) => {
+const ProductsListing = ({ 
+  sortOptions, 
+  category_id, 
+  category_ids, 
+  categories = [], 
+  currentCategory 
+}: ProductsListingProps) => {
   const {
     items,
     results,
@@ -299,11 +316,58 @@ const ProductsListing = ({ sortOptions, category_id, categories = [] }: Products
   } = useHits()
   const updateSearchParams = useUpdateSearchParams()
   
+  // SOLUTION  // RESTORED: Algolia color filtering using color_families attribute
+  // Based on the product object structure, color_families contains the family names we need
+  const { items: colorFacetItems, refine: refineColor } = useRefinementList({
+    attribute: 'color_families', // This is the correct attribute for color family filtering
+    limit: 50,
+  })
+
+  // Debug: Log color facet items to understand the data structure
+  useEffect(() => {
+    console.log('AlgoliaProductsListing - Color Facet Items:', {
+      attribute: 'variants.color',
+      count: colorFacetItems?.length || 0,
+      items: colorFacetItems?.slice(0, 5) || [],
+      sampleItem: colorFacetItems?.[0] || null
+    });
+    
+    // Also log the results to see if there are any products with color data
+    if (results?.hits && results.hits.length > 0) {
+      const sampleProduct = results.hits[0];
+      console.log('AlgoliaProductsListing - Sample Product Data:', {
+        totalHits: results.hits.length,
+        productKeys: Object.keys(sampleProduct),
+        sampleProduct: sampleProduct,
+        colorDataAnalysis: {
+          'variants.color': sampleProduct['variants.color'],
+          'color': sampleProduct['color'],
+          'colors': sampleProduct['colors'],
+          'variant_colors': sampleProduct['variant_colors'],
+          'variants': sampleProduct.variants?.slice(0, 2),
+          allVariantKeys: sampleProduct.variants?.[0] ? Object.keys(sampleProduct.variants[0]) : []
+        }
+      });
+      
+      // Also check available facets from Algolia
+      console.log('AlgoliaProductsListing - Available Facets:', {
+        facets: results.facets ? Object.keys(results.facets) : [],
+        disjunctiveFacets: results.disjunctiveFacets || [],
+        hierarchicalFacets: results.hierarchicalFacets || []
+      });
+    }
+  }, [colorFacetItems, results])
+  
+  const { items: ratingFacetItems, refine: refineRating } = useRefinementList({
+    attribute: 'average_rating',
+    limit: 10,
+  })
+
   // Centralized fetch of customer and wishlist data for all product cards
   const [user, setUser] = useState<HttpTypes.StoreCustomer | null>(null)
   const [wishlist, setWishlist] = useState<SerializableWishlist[]>([])
-  const [isLoading, setIsLoading] = useState(true)
-  
+  const [isLoading, setIsLoading] = useState(false)
+
   // Function to refresh wishlist data after wishlist changes
   const refreshWishlist = async () => {
     if (!user) return;
@@ -346,34 +410,46 @@ const ProductsListing = ({ sortOptions, category_id, categories = [] }: Products
     updateSearchParams("sortBy", value);
   }
 
+  // Debug: Log color facet items to understand the data structure
+  useEffect(() => {
+    console.log('AlgoliaProductsListing - Color Facet Items (color_families):', {
+      attribute: 'color_families',
+      count: colorFacetItems?.length || 0,
+      items: colorFacetItems?.slice(0, 5) || [],
+      sampleItem: colorFacetItems?.[0] || null
+    });
+  }, [colorFacetItems]);
+
   if (!results?.processingTimeMS) return <ProductListingSkeleton />
 
   return (
     <>
-      {/* Main Layout: (Results Count + Category Sidebar) + (Filter Bar + Products) */}
-      <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-8 w-full">
         {/* Left Column: Results Count + Category Sidebar - Hidden below 768px (md breakpoint) */}
         <div className="hidden lg:block lg:col-span-1">
           {/* Results Count - Above category sidebar */}
-          <div className="mb-4">
-            <div className="label-md">{`${results?.nbHits} wyników`}</div>
+          <div className="mb-4  ">
+            <div className="label-md sticky top-24">{`${results?.nbHits || 0} wyników`}</div>
           </div>
           
           {/* Category Sidebar */}
-          <div className="sticky top-24">
-            <CategorySidebar 
-              parentCategoryHandle={category_id ? undefined : undefined} 
-              className="bg-primary p-4"
-              categories={categories}
-            />
-          </div>
+          <CategorySidebar 
+            parentCategoryHandle={category_id ? undefined : undefined} 
+            className="bg-primary p-4"
+            categories={categories}
+          />
         </div>
 
         {/* Right Column: Filter Bar + Products */}
         <div className="lg:col-span-4">
           {/* Filter Bar - Above products */}
           <div className="mb-6">
-            <ProductFilterBar />
+            <ProductFilterBar 
+              colorFacetItems={colorFacetItems}
+              ratingFacetItems={ratingFacetItems}
+              refineColor={refineColor}
+              refineRating={refineRating}
+            />
           </div>
 
           {/* Products Grid - Below filter bar */}
@@ -388,7 +464,7 @@ const ProductsListing = ({ sortOptions, category_id, categories = [] }: Products
             ) : (
               <div className="w-full flex justify-center xl:justify-start">
                 <ul className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4 w-fit mx-auto xl:mx-0">
-                  {items.map((hit) => (
+                  {items.map((hit: any) => (
                     <ProductCard 
                       key={hit.objectID} 
                       product={hit} 
@@ -401,10 +477,12 @@ const ProductsListing = ({ sortOptions, category_id, categories = [] }: Products
               </div>
             )}
           </div>
-
-          {/* Pagination */}
-          <ProductsPagination pages={results?.nbPages || 1} />
         </div>
+      </div>
+      
+      {/* Pagination - Centered on full page width */}
+      <div className="w-full mt-10">
+        <ProductsPagination pages={results?.nbPages || 1} />
       </div>
     </>
   )

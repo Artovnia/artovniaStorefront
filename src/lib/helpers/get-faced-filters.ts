@@ -9,7 +9,7 @@ const getOption = (label: string) => {
       // This should match the path that SizeFilter is using
       return "variant_attribute_values.RomiaryKlasyczne"
     case "color":
-      return "variants.color"
+      return "color_families"
     case "condition":
       return "variants.condition"
     case "rating":

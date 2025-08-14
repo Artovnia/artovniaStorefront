@@ -6,6 +6,7 @@ interface ButtonProps
   className?: string;
   isActive?: boolean;
   disabled?: boolean;
+  isNavArrow?: boolean;
 }
 
 export const PaginationButton = ({
@@ -13,15 +14,17 @@ export const PaginationButton = ({
   className = '',
   isActive = false,
   disabled = false,
+  isNavArrow = false,
   ...props
 }: ButtonProps) => {
   return (
     <button
       className={cn(
-        'border w-10 h-10 rounded-sm label-md flex items-center justify-center hover:bg-component-hover cursor-pointer',
-        isActive && 'border-primary',
-        disabled &&
-          'border text-disabled bg-primary hover:bg-primary cursor-default',
+        'w-10 h-10 flex items-center justify-center rounded-full text-sm font-normal cursor-pointer',
+        isNavArrow ? 'border-[#3B3634] hover:bg-[#BFB7AD]' : 'border-none',
+        isActive && !disabled && 'ring-1 ring-[#3B3634] text-[#3B3634] border-none',
+        !isActive && !disabled && !isNavArrow && 'hover:bg-[#BFB7AD]',
+        disabled && 'text-gray-300 cursor-default hover:bg-transparent',
         className
       )}
       disabled={disabled}
