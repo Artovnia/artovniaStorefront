@@ -9,31 +9,29 @@ import { pl } from "date-fns/locale"
 
 const TermsOfUseContent = () => {
   const t = useTranslations("terms")
-  const [lastUpdated] = useState(new Date(2023, 9, 15)) // October 15, 2023 (example date - update as needed)
-  const [effectiveDate] = useState(new Date(2023, 9, 15)) // October 15, 2023 (example date - update as needed)
+  const [lastUpdated] = useState(new Date(2025, 8, 15)) // October 15, 2025 (example date - update as needed)
+  const [effectiveDate] = useState(new Date(2025, 8, 15)) // October 15, 2025 (example date - update as needed)
 
   return (
     <div className="terms-content">
       {/* Header Section */}
       <header className="mb-10">
         <h1 className="font-instrument-serif text-3xl md:text-4xl mb-4 font-medium">
-          Regulamin
+          {t("header")}
         </h1>
         <div className="text-sm text-gray-500 mb-6">
           <p>
-            Data wejścia w życie:{" "}
-            {format(effectiveDate, "d MMMM yyyy", { locale: pl })}
+            {t("effectiveDate")}: {format(effectiveDate, "d MMMM yyyy", { locale: pl })}
           </p>
           <p>
-            Ostatnia aktualizacja:{" "}
-            {format(lastUpdated, "d MMMM yyyy", { locale: pl })}
+            {t("lastUpdated")}: {format(lastUpdated, "d MMMM yyyy", { locale: pl })}
           </p>
         </div>
       </header>
 
       {/* Quick Info Box */}
       <div className="bg-gray-50 border border-gray-200 rounded-md p-5 mb-10">
-        <h2 className="font-medium text-lg mb-2">Na skróty:</h2>
+        <h2 className="font-medium text-lg mb-2">{t("quickInfo.title")}</h2>
         <ul className="list-disc ml-5 space-y-1 text-sm text-gray-600">
           <li>Artovnia sp. z o.o. prowadzi sklep internetowy pod adresem artovnia.com</li>
           <li>Zamówienia można składać 24 godziny na dobę przez cały rok</li>
@@ -51,7 +49,7 @@ const TermsOfUseContent = () => {
             <>
               <Disclosure.Button className="flex w-full justify-between items-center text-left">
                 <h2 className="text-xl font-medium font-instrument-sans">
-                  § 1. Postanowienia ogólne
+                  § 1. {t("section.general")}
                 </h2>
                 <CollapseIcon
                   size={18}
@@ -159,7 +157,7 @@ const TermsOfUseContent = () => {
             <>
               <Disclosure.Button className="flex w-full justify-between items-center text-left">
                 <h2 className="text-xl font-medium font-instrument-sans">
-                  § 3. {t("section.termsOfUse")}
+                  § 3. {t("section.usageRules")}
                 </h2>
                 <CollapseIcon
                   size={18}
@@ -206,7 +204,7 @@ const TermsOfUseContent = () => {
             <>
               <Disclosure.Button className="flex w-full justify-between items-center text-left">
                 <h2 className="text-xl font-medium font-instrument-sans">
-                  § 4. {t("section.registration")}
+                  § 4. {t("section.salesProcedure")}
                 </h2>
                 <CollapseIcon
                   size={18}
@@ -245,7 +243,7 @@ const TermsOfUseContent = () => {
             <>
               <Disclosure.Button className="flex w-full justify-between items-center text-left">
                 <h2 className="text-xl font-medium font-instrument-sans">
-                  § 5. {t("section.orders")}
+                  § 5. {t("section.deliveryPayment")}
                 </h2>
                 <CollapseIcon
                   size={18}
@@ -283,7 +281,7 @@ const TermsOfUseContent = () => {
                 <p>
                   4. Po złożeniu Zamówienia, Klient otrzymuje wiadomość e-mail,
                   zawierającą potwierdzenie wszystkich istotnych elementów
-                  Zamówienia. Umowę sprzedaży traktuje się jako zawartą z momentu
+                  Zamówienia. Umowę sprzedaży traktuje się jako zawartą z momentem
                   otrzymania przez Klienta wiadomości e-mail, o której mowa w
                   zdaniu poprzedzającym.
                 </p>
@@ -305,7 +303,7 @@ const TermsOfUseContent = () => {
             <>
               <Disclosure.Button className="flex w-full justify-between items-center text-left">
                 <h2 className="text-xl font-medium font-instrument-sans">
-                  § 6. {t("section.pricesAndPayment")}
+                  § 6. {t("section.warranty")}
                 </h2>
                 <CollapseIcon
                   size={18}
@@ -351,7 +349,7 @@ const TermsOfUseContent = () => {
             <>
               <Disclosure.Button className="flex w-full justify-between items-center text-left">
                 <h2 className="text-xl font-medium font-instrument-sans">
-                  § 7. {t("section.delivery")}
+                  § 7. {t("section.complaints")}
                 </h2>
                 <CollapseIcon
                   size={18}
@@ -396,7 +394,7 @@ const TermsOfUseContent = () => {
             <>
               <Disclosure.Button className="flex w-full justify-between items-center text-left">
                 <h2 className="text-xl font-medium font-instrument-sans">
-                  § 8. {t("section.complaintsAndReturns")}
+                  § 8. {t("section.contractWithdrawal")}
                 </h2>
                 <CollapseIcon
                   size={18}
@@ -557,12 +555,12 @@ const TermsOfUseContent = () => {
       {/* Footer with Contact Info */}
       <div className="mt-12 pt-8 border-t border-gray-200">
         <div className="text-sm text-gray-600">
-          <p className="font-medium mb-2">Artovnia sp. z o.o.</p>
-          <p>ul. Przykładowa 1, 00-123 Warszawa</p>
-          <p>kontakt@artovnia.com</p>
-          <p>+48 000 000 000</p>
-          <p>NIP: 0000000000</p>
-          <p>REGON: 000000000</p>
+          <p className="font-medium mb-2">{t("contactInfo.company")}</p>
+          <p>{t("contactInfo.address")}</p>
+          <p>{t("contactInfo.email")}</p>
+          <p>{t("contactInfo.phone")}</p>
+          <p>{t("contactInfo.taxId")}</p>
+          <p>{t("contactInfo.regon")}</p>
         </div>
       </div>
     </div>

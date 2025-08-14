@@ -10,6 +10,7 @@ import { ColorFilter } from "./ColorFilter/ColorFilter"
 import { ProductRatingFilter } from "./ProductRatingFilter/ProductRatingFilter"
 import { ActiveFilterElement } from "./ActiveFilterElement/ActiveFilterElement"
 import { MobileNavbar } from "./MobileNavbar/MobileNavbar"
+import { HierarchicalMobileMenu } from "./HierarchicalMobileMenu/HierarchicalMobileMenu"
 import { ProductDetailsHeader } from "./ProductDetailsHeader/ProductDetailsHeader"
 import { ProductPageDetails } from "./ProductPageDetails/ProductPageDetails"
 import { ProductDetailsMeasurements } from "./ProductDetailsMeasurements/ProductDetailsMeasurements"
@@ -35,6 +36,7 @@ import { OrderReturn } from "./OrderReturn/OrderReturn"
 import { ProductAdditionalAttributes } from "./ProductAdditionalAttributes/ProductAdditionalAttributes"
 import { StepProgressBar } from "./StepProgressBar/StepProgressBar"
 import { QuantityChanger } from "./QuantityChanger/QuantityChanger"
+import { CookieConsent } from "./CookieConsent/CookieConsent"
 // ProductGPSRDetails has been moved to molecules/ProductGPSR
 
 export {
@@ -50,6 +52,7 @@ export {
   ProductRatingFilter,
   ActiveFilterElement,
   MobileNavbar,
+  HierarchicalMobileMenu,
   ProductDetailsHeader,
   ProductPageDetails,
   ProductDetailsMeasurements,
@@ -75,4 +78,5 @@ export {
   ProductAdditionalAttributes,
   StepProgressBar,
   QuantityChanger,
+  CookieConsent,
 }

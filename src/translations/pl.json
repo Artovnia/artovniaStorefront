@@ -1,1 +1,100 @@
-{}
+{
+  "cookieConsent": {
+    "title": "Ustawienia plików cookie",
+    "description": "Używamy plików cookie, aby zapewnić najlepsze doświadczenia na naszej platformie Artovnia. Możesz zarządzać swoimi preferencjami dotyczącymi plików cookie poniżej.",
+    "acceptAll": "Zaakceptuj wszystkie",
+    "acceptSelected": "Zaakceptuj wybrane",
+    "rejectAll": "Odrzuć wszystkie",
+    "savePreferences": "Zapisz preferencje",
+    "manageSettings": "Zarządzaj ustawieniami",
+    "categories": {
+      "necessary": {
+        "title": "Niezbędne",
+        "description": "Te pliki cookie są niezbędne do funkcjonowania strony i nie można ich wyłączyć."
+      },
+      "functional": {
+        "title": "Funkcjonalne",
+        "description": "Te pliki cookie umożliwiają dodatkowe funkcje, takie jak zapamiętywanie preferencji."
+      },
+      "analytics": {
+        "title": "Analityczne",
+        "description": "Te pliki cookie pomagają nam zrozumieć, jak użytkownicy korzystają z naszej strony."
+      },
+      "marketing": {
+        "title": "Marketingowe",
+        "description": "Te pliki cookie są używane do wyświetlania spersonalizowanych reklam."
+      },
+      "performance": {
+        "title": "Optymalizacja wydajności",
+        "description": "Te pliki cookie pomagają optymalizować wydajność strony i poprawić szybkość ładowania."
+      }
+    },
+    "learnMore": "Dowiedz się więcej",
+    "privacyPolicy": "Polityka prywatności"
+  },
+  "privacy": {
+    "sections": {
+      "security": "§ 8. Bezpieczeństwo danych",
+      "recipients": "§ 5. Odbiorcy danych",
+      "cookies": "§ 7. Pliki cookie",
+      "general": "§ 1. Postanowienia ogólne",
+      "dataTypes": "§ 2. Rodzaje przetwarzanych danych",
+      "final": "§ 9. Postanowienia końcowe",
+      "userRights": "§ 6. Prawa użytkownika",
+      "legalBasis": "§ 3. Podstawy prawne przetwarzania",
+      "dataRetention": "§ 4. Okres przechowywania danych"
+    },
+    "lastUpdated": "Ostatnia aktualizacja",
+    "contactInfo": {
+      "regon": "REGON: 000000000",
+      "email": "kontakt@artovnia.com",
+      "company": "Artovnia sp. z o.o.",
+      "address": "ul. Przykładowa 1, 00-123 Warszawa",
+      "phone": "+48 000 000 000",
+      "taxId": "NIP: 0000000000"
+    },
+    "quickInfo": {
+      "title": "Na skróty:"
+    },
+    "meta": {
+      "title": "Polityka Prywatności - Artovnia",
+      "description": "Polityka Prywatności Artovnia - zasady przetwarzania i ochrony danych osobowych naszych użytkowników."
+    },
+    "effectiveDate": "Data wejścia w życie",
+    "header": "Polityka Prywatności",
+    "backToHome": "Powrót do strony głównej"
+  },
+  "terms": {
+    "header": "Regulamin",
+    "effectiveDate": "Data wejścia w życie",
+    "lastUpdated": "Ostatnia aktualizacja",
+    "quickInfo": {
+      "title": "Na skróty:"
+    },
+    "contactInfo": {
+      "company": "Artovnia sp. z o.o.",
+      "address": "ul. Przykładowa 1, 00-123 Warszawa",
+      "email": "kontakt@artovnia.com",
+      "phone": "+48 000 000 000",
+      "taxId": "NIP: 0000000000",
+      "regon": "REGON: 000000000"
+    },
+    "section": {
+      "general": "Postanowienia ogólne",
+      "definitions": "Definicje",
+      "usageRules": "Zasady korzystania ze Sklepu Internetowego",
+      "salesProcedure": "Procedura zawarcia umowy sprzedaży",
+      "deliveryPayment": "Dostawa i płatności",
+      "warranty": "Rękojmia",
+      "complaints": "Reklamacje",
+      "contractWithdrawal": "Odstąpienie od umowy",
+      "dataProtection": "Ochrona danych osobowych",
+      "finalProvisions": "Postanowienia końcowe"
+    },
+    "meta": {
+      "title": "Regulamin - Artovnia",
+      "description": "Regulamin sklepu internetowego Artovnia - zasady korzystania z serwisu oraz zakupów."
+    },
+    "backToHome": "Powrót do strony głównej"
+  }
+}

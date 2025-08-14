@@ -9,7 +9,7 @@ const links = {
   about: [
     { label: 'O nas', path: '#' },
     { label: 'Blog', path: '/blog' },
-    { label: 'Polityka prywatności', path: '#' },
+    { label: 'Polityka prywatności', path: '/privacy' },
     { label: 'Regulamin', path: '/terms' },
   ],
   connect: [

@@ -91,51 +91,48 @@ export const FullWidthDropdown = ({
       onMouseEnter={onMouseEnter}
       onMouseLeave={onMouseLeave}
     >
-      <div className="max-w-[768px] justify-start mx-auto p-6">
-        {/* Multi-column Grid Layout - Centered and Compact */}
-        <div className={cn(
-          "grid gap-6 justify-start",
-          children.length === 1 && "grid-cols-1 max-w-xs mx-auto",
-          children.length === 2 && "grid-cols-2 max-w-lg mx-auto", 
-          children.length === 3 && "grid-cols-3 max-w-3xl mx-auto",
-          children.length >= 4 && "grid-cols-4 max-w-4xl mx-auto"
-        )}>
-          {children.map((child: HttpTypes.StoreProductCategory) => (
-            <div key={child.id} className="space-y-3">
-              {/* Child Category Header (Semibold) */}
+     <div className="max-w-[1920px] mx-auto p-6">
+  <div className="grid gap-x-6 gap-y-6 grid-cols-[repeat(auto-fit,minmax(180px,max-content))] auto-rows-min w-full">
+    {children.map((child, idx) => (
+      <div 
+        key={child.id} 
+        className={cn(
+          "space-y-4 pr-4",
+          idx !== children.length - 1 && "border-r border-gray-200"
+        )}
+      >
+        <Link
+          href={`/categories/${child.handle}`}
+          onClick={handleCategoryClick}
+          className={cn(
+            "block text-lg font-semibold text-black hover:text-primary transition-colors hover:underline",
+            child.handle === currentCategoryHandle && "text-primary"
+          )}
+        >
+          {child.name}
+        </Link>
+
+        {child.category_children?.length > 0 && (
+          <div className="space-y-2">
+            {child.category_children.map((grandchild) => (
               <Link
-                href={`/categories/${child.handle}`}
+                key={grandchild.id}
+                href={`/categories/${grandchild.handle}`}
                 onClick={handleCategoryClick}
                 className={cn(
-                  "block text-lg font-semibold text-black hover:text-primary transition-colors hover:underline ",
-                  child.handle === currentCategoryHandle && "text-primary"
+                  "block text-sm text-gray-700 hover:text-primary hover:underline transition-colors capitalize",
+                  grandchild.handle === currentCategoryHandle && "text-primary font-medium"
                 )}
               >
-                {child.name}
+                {grandchild.name}
               </Link>
-              
-              {/* Grandchildren List */}
-              {child.category_children && child.category_children.length > 0 && (
-                <div className="space-y-2">
-                  {child.category_children.map((grandchild: HttpTypes.StoreProductCategory) => (
-                    <Link
-                      key={grandchild.id}
-                      href={`/categories/${grandchild.handle}`}
-                      onClick={handleCategoryClick}
-                      className={cn(
-                        "block text-sm font-normal text-black hover:text-gray-900 hover:underline transition-colors capitalize",
-                        grandchild.handle === currentCategoryHandle && "text-primary font-medium"
-                      )}
-                    >
-                      {grandchild.name}
-                    </Link>
-                  ))}
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </div>
+    ))}
+  </div>
+</div>
     </div>
   )
 }

@@ -1,0 +1,62 @@
+'use client';
+
+import { ArrowRightIcon } from '@/icons';
+import { SafeI18nLink as Link } from '@/components/atoms/SafeI18nLink';
+import { cn } from '@/lib/utils';
+import { MobileCategoryItemProps } from './types';
+
+export const MobileCategoryItem = ({
+  category,
+  onNavigate,
+  onClose,
+}: MobileCategoryItemProps) => {
+  const hasChildren = category.category_children && category.category_children.length > 0;
+
+  const handleClick = () => {
+    if (hasChildren) {
+      // Navigate to submenu
+      onNavigate(category);
+    } else {
+      // Navigate to category page and close menu
+      onClose();
+    }
+  };
+
+  const content = (
+    <div
+      className={cn(
+        "flex items-center justify-between w-full py-4 px-4",
+        "border-b border-gray-200 last:border-b-0",
+        "hover:bg-gray-50 active:bg-gray-100 transition-colors",
+        "text-left"
+      )}
+      onClick={hasChildren ? handleClick : undefined}
+    >
+      <span className="text-base font-instrument-sans font-medium text-gray-900 capitalize">
+        {category.name}
+      </span>
+      {hasChildren && (
+        <ArrowRightIcon 
+          size={20} 
+          className="text-gray-400 flex-shrink-0 ml-2" 
+        />
+      )}
+    </div>
+  );
+
+  // If it has children, render as button for navigation
+  if (hasChildren) {
+    return (
+      <button className="w-full text-left">
+        {content}
+      </button>
+    );
+  }
+
+  // If it's a leaf category, render as link
+  return (
+    <Link href={`/categories/${category.handle}`} className="block w-full">
+      {content}
+    </Link>
+  );
+};

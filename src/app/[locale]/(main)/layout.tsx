@@ -1,5 +1,6 @@
 import { Footer, Header } from '@/components/organisms';
 import { LuxuryLoadingProvider, LuxuryLoadingOverlay } from '@/components/providers/LuxuryLoadingProvider';
+import { CookieConsent } from '@/components/cells';
 
 export default async function RootLayout({
   children,
@@ -18,6 +19,8 @@ export default async function RootLayout({
         </div>
         <Footer />
       </div>
+      {/* Cookie Consent Component */}
+      <CookieConsent />
     </LuxuryLoadingProvider>
   );
 }
