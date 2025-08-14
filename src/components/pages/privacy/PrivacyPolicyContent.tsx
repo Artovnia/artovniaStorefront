@@ -65,7 +65,7 @@ const PrivacyPolicyContent = () => {
                   1. Niniejsza Polityka Prywatności określa zasady przetwarzania i ochrony danych osobowych przekazanych przez Użytkowników w związku z korzystaniem przez nich z usług oferowanych przez sklep internetowy Artovnia dostępny pod adresem artovnia.com.
                 </p>
                 <p>
-                  2. Administratorem danych osobowych jest Artovnia sp. z o.o. z siedzibą w Warszawie (00-123), ul. Przykładowa 1, wpisana do rejestru przedsiębiorców Krajowego Rejestru Sądowego prowadzonego przez Sąd Rejonowy dla m.st. Warszawy w Warszawie, XII Wydział Gospodarczy Krajowego Rejestru Sądowego pod numerem KRS 0000000000, NIP 0000000000, REGON 000000000, zwana dalej "Administratorem".
+                  2. Administratorem danych osobowych jest Artovnia sp. z o.o. z siedzibą w Warszawie (00-123), ul. Przykładowa 1, wpisana do rejestru przedsiębiorców Krajowego Rejestru Sądowego prowadzonego przez Sąd Rejonowy dla m.st. Warszawy w Warszawie, XII Wydział Gospodarczy Krajowego Rejestru Sądowego pod numerem KRS 0000000000, NIP 0000000000, REGON 000000000, zwana dalej &ldquo;Administratorem&rdquo;.
                 </p>
                 <p>
                   3. Kontakt z Administratorem odbywa się poprzez:

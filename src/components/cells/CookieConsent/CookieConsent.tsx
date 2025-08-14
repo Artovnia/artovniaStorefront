@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react'
 import { useTranslations } from 'next-intl'
+import Link from 'next/link'
 import { CloseIcon, SettingsIcon, InfoIcon, AlertIcon } from '@/icons'
 
 interface CookieCategory {
@@ -219,12 +220,12 @@ export const CookieConsent: React.FC<CookieConsentProps> = ({
 
           {/* Privacy Policy Link */}
           <div className="mt-4 text-center">
-            <a
+            <Link
               href="/privacy-policy"
               className="text-sm text-gray-500 hover:text-[#3B3634] transition-colors underline"
             >
               {t('privacyPolicy')}
-            </a>
+            </Link>
           </div>
         </div>
       </div>
