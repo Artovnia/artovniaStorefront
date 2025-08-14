@@ -356,26 +356,17 @@ export const ProductFilterBar = ({ className }: ProductFilterBarProps) => {
         {hasActiveFilters && (
           <button
             onClick={() => {
-              // Clear all Zustand store filters (this handles ColorFilter, ProductRatingFilter, and now PriceFilter)
-              const { clearAllFilters } = useFilterStore.getState()
-              clearAllFilters()
+              // Use the same logic as individual badge removal for consistency
+              // Get all active filters and call their onRemove functions
+              const activeFilters = getActiveFilters()
               
-              // Clear URL-based filters for components that still use URL params
-              updateSearchParams("size", "")
-              updateSearchParams("condition", "")
-              
-              // Clear dimension filters from URL as well
-              updateSearchParams("min_length", "")
-              updateSearchParams("max_length", "")
-              updateSearchParams("min_width", "")
-              updateSearchParams("max_width", "")
-              updateSearchParams("min_height", "")
-              updateSearchParams("max_height", "")
-              updateSearchParams("min_weight", "")
-              updateSearchParams("max_weight", "")
-              
-              // Dispatch custom event to clear dimension filters in CombinedDimensionFilter
-              window.dispatchEvent(new CustomEvent('clearAllDimensionFilters'))
+              // Call each filter's individual onRemove function
+              // This ensures we use the exact same logic that works for individual badges
+              activeFilters.forEach(filter => {
+                if (filter.onRemove) {
+                  filter.onRemove()
+                }
+              })
             }}
             style={{
               marginLeft: 'auto',
