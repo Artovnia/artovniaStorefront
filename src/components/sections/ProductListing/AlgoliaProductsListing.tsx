@@ -213,14 +213,14 @@ export const AlgoliaProductsListing = (props: AlgoliaProductsListingProps) => {
       // Check cache first
       const cached = cache.get(cacheKey);
       if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
-        console.log('🚀 Using cached Algolia result');
+    
         return Promise.resolve(cached.result);
       }
       
       // Check if same request is already pending (deduplication)
       const pendingRequest = pendingRequests.get(cacheKey);
       if (pendingRequest) {
-        console.log('⚡ Deduplicating concurrent Algolia request');
+    
         return pendingRequest;
       }
       
@@ -323,40 +323,7 @@ const ProductsListing = ({
     limit: 50,
   })
 
-  // Debug: Log color facet items to understand the data structure
-  useEffect(() => {
-    console.log('AlgoliaProductsListing - Color Facet Items:', {
-      attribute: 'variants.color',
-      count: colorFacetItems?.length || 0,
-      items: colorFacetItems?.slice(0, 5) || [],
-      sampleItem: colorFacetItems?.[0] || null
-    });
-    
-    // Also log the results to see if there are any products with color data
-    if (results?.hits && results.hits.length > 0) {
-      const sampleProduct = results.hits[0];
-      console.log('AlgoliaProductsListing - Sample Product Data:', {
-        totalHits: results.hits.length,
-        productKeys: Object.keys(sampleProduct),
-        sampleProduct: sampleProduct,
-        colorDataAnalysis: {
-          'variants.color': sampleProduct['variants.color'],
-          'color': sampleProduct['color'],
-          'colors': sampleProduct['colors'],
-          'variant_colors': sampleProduct['variant_colors'],
-          'variants': sampleProduct.variants?.slice(0, 2),
-          allVariantKeys: sampleProduct.variants?.[0] ? Object.keys(sampleProduct.variants[0]) : []
-        }
-      });
-      
-      // Also check available facets from Algolia
-      console.log('AlgoliaProductsListing - Available Facets:', {
-        facets: results.facets ? Object.keys(results.facets) : [],
-        disjunctiveFacets: results.disjunctiveFacets || [],
-        hierarchicalFacets: results.hierarchicalFacets || []
-      });
-    }
-  }, [colorFacetItems, results])
+  
   
   const { items: ratingFacetItems, refine: refineRating } = useRefinementList({
     attribute: 'average_rating',
@@ -410,33 +377,20 @@ const ProductsListing = ({
     updateSearchParams("sortBy", value);
   }
 
-  // Debug: Log color facet items to understand the data structure
-  useEffect(() => {
-    console.log('AlgoliaProductsListing - Color Facet Items (color_families):', {
-      attribute: 'color_families',
-      count: colorFacetItems?.length || 0,
-      items: colorFacetItems?.slice(0, 5) || [],
-      sampleItem: colorFacetItems?.[0] || null
-    });
-  }, [colorFacetItems]);
-
   if (!results?.processingTimeMS) return <ProductListingSkeleton />
 
   return (
     <>
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-8 w-full">
-        {/* Left Column: Results Count + Category Sidebar - Hidden below 768px (md breakpoint) */}
+        {/* Left Column: Category Sidebar with Results Count - Hidden below 768px (md breakpoint) */}
         <div className="hidden lg:block lg:col-span-1">
-          {/* Results Count - Above category sidebar */}
-          <div className="mb-4  ">
-            <div className="label-md sticky top-24">{`${results?.nbHits || 0} wyników`}</div>
-          </div>
-          
-          {/* Category Sidebar */}
+          {/* Category Sidebar - Now includes results count */}
           <CategorySidebar 
             parentCategoryHandle={category_id ? undefined : undefined} 
             className="bg-primary p-4"
             categories={categories}
+            currentCategory={currentCategory}
+            resultsCount={results?.nbHits || 0}
           />
         </div>
 

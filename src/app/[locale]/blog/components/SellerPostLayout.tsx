@@ -58,10 +58,10 @@ export async function SellerPostLayout({ post }: SellerPostLayoutProps) {
       {/* Hero Section with Artistic Layout */}
       <section className="relative min-h-[70vh] flex items-center justify-center overflow-hidden">
         {/* Background Pattern */}
-        <div className="absolute inset-0 opacity-5">
-          <div className="absolute top-10 left-10 w-32 h-32 border border-[#BFB7AD] rounded-full"></div>
-          <div className="absolute top-32 right-20 w-24 h-24 border border-[#BFB7AD] opacity-50 rounded-full"></div>
-          <div className="absolute bottom-20 left-32 w-40 h-40 border-2 border-[#3B3634] opacity-30 rotate-45"></div>
+        <div className="absolute inset-0 opacity-12">
+          <div className="absolute top-10 left-10 w-32 h-32 border border-[#BFB7AD] opacity-60 rounded-full"></div>
+          <div className="absolute top-32 right-20 w-24 h-24 border border-[#BFB7AD] opacity-70 rounded-full"></div>
+          <div className="absolute bottom-20 left-32 w-40 h-40 border-2 border-[#3B3634] opacity-5 rotate-45"></div>
         </div>
 
         <div className="relative z-10 max-w-7xl mx-auto px-4 lg:px-8">
@@ -69,7 +69,7 @@ export async function SellerPostLayout({ post }: SellerPostLayoutProps) {
             {/* Left Content */}
             <div className="space-y-8">
               <div className="space-y-4">
-                <p className="text-[#BFB7AD] text-lg font-light tracking-wide uppercase">
+                <p className="text-[#3B3634] text-lg font-light tracking-wide uppercase">
                   Projektant tygodnia
                 </p>
                 <h1 className="text-4xl lg:text-6xl font-instrument-serif italic text-[#3B3634] leading-tight">
@@ -147,7 +147,7 @@ export async function SellerPostLayout({ post }: SellerPostLayoutProps) {
           {/* Featured Products Section */}
           {post.linkedProducts && post.linkedProducts.length > 0 && (
             <div className="mt-16 pt-16 border-t border-[#BFB7AD]/30">
-              <h2 className="text-3xl font-light text-[#3B3634] mb-8 text-center">
+              <h2 className="text-3xl font-light text-[#3B3634] mb-8 text-center font-instrument-serif">
                 Wybrane <span className="italic">dzieła</span>
               </h2>
               
@@ -159,7 +159,7 @@ export async function SellerPostLayout({ post }: SellerPostLayoutProps) {
                       index % 2 === 0 ? 'rotate-1' : '-rotate-1'
                     } hover:rotate-0`}
                   >
-                    <div className="bg-white rounded-lg shadow-lg overflow-hidden border-4 border-white">
+                    <div className="bg-primary rounded-lg shadow-lg overflow-hidden border-2 border-[#BFB7AD]">
                       {product.productImage && (
                         <div className="relative h-64">
                           <Image

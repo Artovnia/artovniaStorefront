@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { getBlogCategories } from '../lib/data'
 import BlogSearch from './BlogSearch'
 import { Footer } from '@/components/organisms/Footer/Footer'
+import { Header } from '@/components/organisms/Header/Header'
 
 interface BlogLayoutProps {
   children: React.ReactNode
@@ -14,16 +15,19 @@ export default async function BlogLayout({ children, title, description }: BlogL
 
   return (
     <div className="min-h-screen bg-[#F4F0EB]">
-      {/* Header */}
-      <header className="bg-[#F4F0EB] shadow-sm border-b">
+      {/* Main Site Header */}
+      <Header />
+      
+      {/* Blog-specific Header */}
+      <div className="bg-[#F4F0EB] shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center space-x-4">
-              <Link href="/" className="text-gray-600 hover:text-gray-900">
-                ← Back to Store
+              <Link href="/" className="text-[#3B3634] hover:text-[#BFB7AD] font-instrument-sans">
+                ← Powrót do sklepu
               </Link>
-              <div className="h-6 border-l border-gray-300"></div>
-              <Link href="/blog" className="text-xl font-bold text-gray-900">
+              <div className="h-6 border-l border-[#BFB7AD]"></div>
+              <Link href="/blog" className="text-xl font-bold text-[#3B3634] font-instrument-serif">
                 Blog
               </Link>
             </div>
@@ -32,7 +36,7 @@ export default async function BlogLayout({ children, title, description }: BlogL
             </div>
           </div>
         </div>
-      </header>
+      </div>
 
       {/* Navigation */}
       <nav className="bg-[#F4F0EB] border-b">
@@ -42,7 +46,7 @@ export default async function BlogLayout({ children, title, description }: BlogL
               href="/blog"
               className="whitespace-nowrap text-sm font-medium text-gray-600 hover:text-gray-900 border-b-2 border-transparent hover:border-gray-300 pb-2"
             >
-              All Posts
+              Wszystkie posty
             </Link>
             {categories.map((category) => (
               <Link

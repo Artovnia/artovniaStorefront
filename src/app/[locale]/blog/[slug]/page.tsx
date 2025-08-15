@@ -105,7 +105,7 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
 
   return (
     <BlogLayout>
-      <article className="max-w-4xl mx-auto font-instrument-sans bg-[#F4F0EB]">
+      <article className="max-w-4xl mx-auto bg-[#F4F0EB]">
         {/* Header */}
         <header className="mb-8">
           {blogPostData.categories && blogPostData.categories.length > 0 && (
@@ -114,7 +114,7 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
                 <Link
                   key={category.slug.current}
                   href={`/blog/category/${category.slug.current}`}
-                  className="text-sm font-medium text-blue-600 hover:text-blue-800 bg-blue-50 px-3 py-1 rounded-full"
+                  className="text-sm font-medium text-[#3B3634] hover:text-[#BFB7AD] bg-[#F4F0EB] border border-[#BFB7AD] px-3 py-1 rounded-full font-instrument-sans transition-colors"
                 >
                   {category.title}
                 </Link>
@@ -122,17 +122,17 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
             </div>
           )}
           
-          <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4 leading-tight">
+          <h1 className="text-4xl md:text-5xl font-instrument-serif text-[#3B3634] mb-4 leading-tight">
             {blogPostData.title}
           </h1>
           
           {blogPostData.excerpt && (
-            <p className="text-xl text-gray-600 mb-6 leading-relaxed">
+            <p className="text-xl text-[#3B3634] mb-6 leading-relaxed font-instrument-sans">
               {blogPostData.excerpt}
             </p>
           )}
           
-          <div className="flex items-center justify-between text-gray-500 border-b border-gray-200 pb-6">
+          <div className="flex items-center justify-between text-[#3B3634] border-b border-[#BFB7AD]/30 pb-6">
             <div className="flex items-center space-x-4">
               {blogPostData.author?.image && (
                 <div className="relative w-12 h-12">
@@ -145,8 +145,8 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
                 </div>
               )}
               <div>
-                <p className="font-medium text-gray-900">{blogPostData.author?.name}</p>
-                <time dateTime={blogPostData.publishedAt} className="text-sm">
+                <p className="font-medium text-[#3B3634] font-instrument-serif">{blogPostData.author?.name}</p>
+                <time dateTime={blogPostData.publishedAt} className="text-sm font-instrument-sans text-[#3B3634]/80">
                   {format(new Date(blogPostData.publishedAt), 'MMMM dd, yyyy')}
                 </time>
               </div>
@@ -157,7 +157,7 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
                 {blogPostData.tags.map((tag: string) => (
                   <span
                     key={tag}
-                    className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded"
+                    className="text-xs text-[#3B3634] bg-[#BFB7AD]/20 px-2 py-1 rounded font-instrument-sans"
                   >
                     #{tag}
                   </span>
@@ -181,13 +181,13 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
         )}
 
         {/* Content */}
-        <div className="prose prose-lg max-w-none">
+        <div className="prose prose-lg max-w-none prose-headings:font-instrument-serif prose-p:font-instrument-sans prose-li:font-instrument-sans prose-headings:text-[#3B3634] prose-p:text-[#3B3634] prose-a:text-[#BFB7AD] hover:prose-a:text-[#3B3634]">
           <PortableText content={blogPostData.content} />
         </div>
 
         {/* Author Bio */}
         {blogPostData.author?.bio && (
-          <div className="mt-12 p-6 bg-gray-50 rounded-lg">
+          <div className="mt-12 p-6 bg-[#F4F0EB] border border-[#BFB7AD]/30 rounded-lg">
             <div className="flex items-start space-x-4">
               {blogPostData.author.image && (
                 <div className="relative w-16 h-16 flex-shrink-0">
@@ -200,10 +200,10 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
                 </div>
               )}
               <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                  About {blogPostData.author.name}
+                <h3 className="text-lg font-instrument-serif text-[#3B3634] mb-2">
+                  O autorze: {blogPostData.author.name}
                 </h3>
-                <div className="text-gray-600">
+                <div className="text-[#3B3634] font-instrument-sans">
                   <PortableText content={blogPostData.author.bio} />
                 </div>
               </div>
@@ -212,15 +212,15 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
         )}
 
         {/* Navigation */}
-        <div className="mt-12 pt-8 border-t border-gray-200">
+        <div className="mt-12 pt-8 border-t border-[#BFB7AD]/30">
           <Link
             href="/blog"
-            className="inline-flex items-center text-blue-600 hover:text-blue-800 font-medium"
+            className="inline-flex items-center text-[#BFB7AD] hover:text-[#3B3634] font-instrument-sans transition-colors"
           >
             <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
-            Back to Blog
+            Powrót do bloga
           </Link>
         </div>
       </article>

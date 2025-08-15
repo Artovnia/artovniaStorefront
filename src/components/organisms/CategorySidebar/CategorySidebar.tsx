@@ -11,13 +11,15 @@ interface CategorySidebarProps {
   className?: string
   categories: HttpTypes.StoreProductCategory[] // Required - no fallback fetching
   currentCategory?: HttpTypes.StoreProductCategory // Current category for header display
+  resultsCount?: number // Number of products found in search results
 }
 
 export const CategorySidebar = ({ 
   parentCategoryHandle,
   className,
   categories,
-  currentCategory
+  currentCategory,
+  resultsCount
 }: CategorySidebarProps) => {
   const params = useParams()
   const searchParams = useSearchParams()
@@ -116,8 +118,15 @@ export const CategorySidebar = ({
   return (
     <div className="w-full sticky top-24">
       <div className={cn("w-full", className)}>
+        {/* Results Count - Placed at the top of sidebar for stickiness */}
+        {resultsCount !== undefined && (
+          <div className="mb-4">
+            <div className="label-md">{`${resultsCount} wyników`}</div>
+          </div>
+        )}
+
         {/* Current Category Header */}
-        {resolvedCurrentCategory && (
+        {resolvedCurrentCategory ? (
           <div className="mb-6">
             <h1 className="heading-xl uppercase">{resolvedCurrentCategory.name}</h1>
             {resolvedCurrentCategory.description && (
@@ -126,6 +135,12 @@ export const CategorySidebar = ({
               </p>
             )}
           </div>
+        ) : (
+          !currentCategoryHandle && (
+            <div className="mb-6">
+              <h1 className="heading-xl uppercase">Wszystkie produkty</h1>
+            </div>
+          )
         )}
 
         {/* Navigation */}

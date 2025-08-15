@@ -21,7 +21,7 @@ const components = {
             blurDataURL="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAAIAAoDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAhEAACAQMDBQAAAAAAAAAAAAABAgMABAUGIWGRkqGx0f/EABUBAQEAAAAAAAAAAAAAAAAAAAMF/8QAGhEAAgIDAAAAAAAAAAAAAAAAAAECEgMRkf/aAAwDAQACEQMRAD8AltJagyeH0AthI5xdrLcNM91BF5pX2HaH9bcfaSXWGaRmknyJckliyjqTzSlT54b6bk+h0R//2Q=="
           />
           {value.caption && (
-            <p className="text-sm text-gray-600 mt-2 text-center italic">
+            <p className="text-sm text-gray-600 mt-2 text-center italic font-instrument-sans">
               {value.caption}
             </p>
           )}
@@ -40,47 +40,47 @@ const components = {
   },
   block: {
     h1: ({ children }: any) => (
-      <h1 className="text-4xl font-bold mt-8 mb-4 text-gray-900">{children}</h1>
+      <h1 className="text-4xl font-bold mt-8 mb-4 text-[#3B3634] font-instrument-serif">{children}</h1>
     ),
     h2: ({ children }: any) => (
-      <h2 className="text-3xl font-bold mt-6 mb-3 text-gray-900">{children}</h2>
+      <h2 className="text-3xl font-bold mt-6 mb-3 text-[#3B3634] font-instrument-serif">{children}</h2>
     ),
     h3: ({ children }: any) => (
-      <h3 className="text-2xl font-bold mt-6 mb-3 text-gray-900">{children}</h3>
+      <h3 className="text-2xl font-bold mt-6 mb-3 text-[#3B3634] font-instrument-serif">{children}</h3>
     ),
     h4: ({ children }: any) => (
-      <h4 className="text-xl font-bold mt-4 mb-2 text-gray-900">{children}</h4>
+      <h4 className="text-xl font-bold mt-4 mb-2 text-[#3B3634] font-instrument-serif">{children}</h4>
     ),
     blockquote: ({ children }: any) => (
-      <blockquote className="border-l-4 border-blue-500 pl-4 my-6 italic text-gray-700 bg-gray-50 py-2">
+      <blockquote className="border-l-4 border-blue-500 pl-4 my-6 italic text-gray-700 bg-gray-50 py-2 font-instrument-sans">
         {children}
       </blockquote>
     ),
     normal: ({ children }: any) => (
-      <p className="mb-4 text-gray-700 leading-relaxed">{children}</p>
+      <p className="mb-4 text-[#3B3634] leading-relaxed font-instrument-sans">{children}</p>
     ),
   },
   list: {
     bullet: ({ children }: any) => (
-      <ul className="list-disc list-inside mb-4 space-y-2 text-gray-700">
+      <ul className="list-disc list-inside mb-4 space-y-2 text-[#3B3634] font-instrument-sans">
         {children}
       </ul>
     ),
     number: ({ children }: any) => (
-      <ol className="list-decimal list-inside mb-4 space-y-2 text-gray-700">
+      <ol className="list-decimal list-inside mb-4 space-y-2 text-[#3B3634] font-instrument-sans">
         {children}
       </ol>
     ),
   },
   listItem: {
-    bullet: ({ children }: any) => <li className="ml-4">{children}</li>,
-    number: ({ children }: any) => <li className="ml-4">{children}</li>,
+    bullet: ({ children }: any) => <li className="ml-4 font-instrument-sans">{children}</li>,
+    number: ({ children }: any) => <li className="ml-4 font-instrument-sans">{children}</li>,
   },
   marks: {
     strong: ({ children }: any) => (
-      <strong className="font-bold">{children}</strong>
+      <strong className="font-bold font-instrument-sans">{children}</strong>
     ),
-    em: ({ children }: any) => <em className="italic">{children}</em>,
+    em: ({ children }: any) => <em className="italic font-instrument-sans">{children}</em>,
     code: ({ children }: any) => (
       <code className="bg-gray-100 px-1 py-0.5 rounded text-sm font-mono text-red-600">
         {children}
@@ -91,7 +91,7 @@ const components = {
         href={value.href}
         target={value.blank ? '_blank' : '_self'}
         rel={value.blank ? 'noopener noreferrer' : undefined}
-        className="text-blue-600 hover:text-blue-800 underline"
+        className="text-[#BFB7AD] hover:text-[#3B3634] underline font-instrument-sans"
       >
         {children}
       </a>

@@ -15,7 +15,7 @@ export default function BlogPostCard({ post, featured = false }: BlogPostCardPro
     : '/images/placeholder.svg'
 
   return (
-    <article className={`bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-300 ${featured ? 'md:col-span-2' : ''}`}>
+    <article className={`bg-primary rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-300 ${featured ? 'md:col-span-2' : ''}`}>
       <Link href={`/blog/${post.slug.current}`} className="block">
         <div className={`relative ${featured ? 'h-64' : 'h-48'}`}>
           <Image
@@ -27,8 +27,8 @@ export default function BlogPostCard({ post, featured = false }: BlogPostCardPro
           />
           {post.featured && (
             <div className="absolute top-4 left-4">
-              <span className="bg-blue-600 text-white px-3 py-1 rounded-full text-sm font-medium">
-                Featured
+              <span className="bg-blue-600 text-white px-3 py-1 rounded-full text-sm font-medium font-instrument-sans">
+                Wyróżnione
               </span>
             </div>
           )}
@@ -42,7 +42,7 @@ export default function BlogPostCard({ post, featured = false }: BlogPostCardPro
               <Link
                 key={category.slug.current}
                 href={`/blog/category/${category.slug.current}`}
-                className="text-xs font-medium text-blue-600 hover:text-blue-800 bg-blue-50 px-2 py-1 rounded"
+                className="text-xs font-medium text-blue-600 hover:text-blue-800 bg-blue-50 px-2 py-1 rounded font-instrument-sans"
               >
                 {category.title}
               </Link>
@@ -51,18 +51,18 @@ export default function BlogPostCard({ post, featured = false }: BlogPostCardPro
         )}
         
         <Link href={`/blog/${post.slug.current}`} className="block group">
-          <h3 className={`font-bold text-gray-900 group-hover:text-blue-600 transition-colors duration-200 mb-2 ${featured ? 'text-2xl' : 'text-xl'}`}>
+          <h3 className={`font-semibold text-[#3B3634] group-hover:text-blue-600 transition-colors duration-200 mb-2 font-instrument-serif ${featured ? 'text-2xl' : 'text-xl'}`}>
             {post.title}
           </h3>
         </Link>
         
         {post.excerpt && (
-          <p className="text-gray-600 mb-4 line-clamp-3">
+          <p className="text-gray-600 mb-4 line-clamp-3 font-instrument-sans">
             {post.excerpt}
           </p>
         )}
         
-        <div className="flex items-center justify-between text-sm text-gray-500">
+        <div className="flex items-center justify-between text-sm text-gray-500 font-instrument-sans">
           <div className="flex items-center space-x-2">
             {post.author?.image && (
               <div className="relative w-8 h-8">
@@ -86,13 +86,13 @@ export default function BlogPostCard({ post, featured = false }: BlogPostCardPro
             {post.tags.slice(0, 3).map((tag) => (
               <span
                 key={tag}
-                className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded"
+                className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded font-instrument-sans"
               >
                 #{tag}
               </span>
             ))}
             {post.tags.length > 3 && (
-              <span className="text-xs text-gray-500">
+              <span className="text-xs text-gray-500 font-instrument-sans">
                 +{post.tags.length - 3} more
               </span>
             )}

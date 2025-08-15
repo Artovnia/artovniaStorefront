@@ -16,7 +16,7 @@ export async function generateMetadata({ searchParams }: SearchPageProps): Promi
   
   return {
     title: query ? `Search results for &quot;${query}&quot; - Artovnia Blog` : 'Search - Artovnia Blog',
-    description: query ? `Search results for &quot;${query}&quot;` : 'Search blog posts',
+    description: query ? `Search results for &quot;${query}&quot;` : 'Wyszukaj post',
     robots: 'noindex', // Don't index search pages
   }
 }
@@ -43,8 +43,8 @@ async function SearchResults({ query }: { query: string }) {
   if (!query.trim()) {
     return (
       <div className="text-center py-12">
-        <h3 className="text-xl font-medium text-gray-900 mb-2">Enter a search term</h3>
-        <p className="text-gray-600">Use the search box above to find blog posts</p>
+        <h3 className="text-xl font-medium text-[#3B3634] mb-2 font-instrument-serif">Wprowadź wyszukiwaną frazę</h3>
+        <p className="text-[#3B3634] font-instrument-sans">Użyj pola wyszukiwania powyżej, aby znaleźć posty na blogu</p>
       </div>
     )
   }
@@ -54,9 +54,9 @@ async function SearchResults({ query }: { query: string }) {
   if (posts.length === 0) {
     return (
       <div className="text-center py-12">
-        <h3 className="text-xl font-medium text-gray-900 mb-2">No results found</h3>
-        <p className="text-gray-600">
-          No blog posts found for &quot;{query}&quot;. Try different keywords or browse our categories.
+        <h3 className="text-xl font-medium text-[#3B3634] mb-2 font-instrument-serif">Nie znaleziono wyników</h3>
+        <p className="text-[#3B3634] font-instrument-sans">
+          Nie znaleziono postów dla zapytania &quot;{query}&quot;. Spróbuj innych słów kluczowych lub przeglądaj nasze kategorie.
         </p>
       </div>
     )
@@ -65,8 +65,8 @@ async function SearchResults({ query }: { query: string }) {
   return (
     <>
       <div className="mb-6">
-        <p className="text-gray-600">
-          Found {posts.length} result{posts.length === 1 ? '' : 's'} for &quot;{query}&quot;
+        <p className="text-[#3B3634] font-instrument-sans">
+          Znaleziono {posts.length} {posts.length === 1 ? 'wynik' : posts.length < 5 ? 'wyniki' : 'wyników'} dla &quot;{query}&quot;
         </p>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

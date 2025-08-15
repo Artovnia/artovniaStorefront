@@ -41,7 +41,7 @@ async function FeaturedPosts() {
 
   return (
     <section className="mb-12 font-instrument-sans bg-[#F4F0EB]">
-      <h2 className="text-2xl font-bold text-gray-900 mb-6">Featured Posts</h2>
+      <h2 className="text-2xl font-semibold text-[#3B3634] mb-6 font-instrument-serif">Wyróżnione posty</h2>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {featuredPosts.map((post) => (
           <BlogPostCard key={post._id} post={post} featured />
@@ -57,15 +57,15 @@ async function AllPosts() {
   if (posts.length === 0) {
     return (
       <div className="text-center py-12 font-instrument-sans bg-[#F4F0EB]">
-        <h3 className="text-xl font-medium text-gray-900 mb-2">No blog posts yet</h3>
-        <p className="text-gray-600">Check back soon for new content!</p>
+        <h3 className="text-xl font-medium text-[#3B3634] mb-2">Nie ma jeszcze żadnych postów</h3>
+        <p className="text-[#3B3634]">Wróć za jakiś czas!</p>
       </div>
     )
   }
 
   return (
     <section className="font-instrument-sans bg-[#F4F0EB]">
-      <h2 className="text-2xl font-bold text-gray-900 mb-6">All Posts</h2>
+      <h2 className="text-2xl font-semibold text-[#3B3634] mb-6 font-instrument-serif">Wszystkie posty</h2>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {posts.map((post) => (
           <BlogPostCard key={post._id} post={post} />
@@ -78,8 +78,8 @@ async function AllPosts() {
 export default function BlogPage() {
   return (
     <BlogLayout
-      title="Welcome to our Blog"
-      description="Discover the latest news, tips, and insights from our team."
+      title="Witaj w naszym Blogu"
+      description="Odkryj najnowsze informacje, porady i wiedzę z naszego zespołu."
     >
       <Suspense fallback={<BlogPostsSkeleton />}>
         <FeaturedPosts />
