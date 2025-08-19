@@ -25,3 +25,43 @@ export const getSellerByHandle = async (handle: string): Promise<SellerProps | n
     return null;
   }
 }
+
+interface SellerListResponse {
+  sellers: SellerProps[]
+  count: number
+  limit: number
+  offset: number
+}
+
+export const getSellers = async (params?: {
+  limit?: number
+  offset?: number
+  letter?: string
+  sortBy?: string
+}): Promise<SellerListResponse> => {
+  try {
+    const queryParams = new URLSearchParams()
+    
+    if (params?.limit) queryParams.append('limit', params.limit.toString())
+    if (params?.offset) queryParams.append('offset', params.offset.toString())
+    if (params?.letter) queryParams.append('letter', params.letter)
+    if (params?.sortBy) queryParams.append('sortBy', params.sortBy)
+    
+    queryParams.append('fields', 'id,handle,name,description,logo_url,created_at')
+
+    const response = await sdk.client
+      .fetch<SellerListResponse>(`/store/sellers?${queryParams.toString()}`, {
+        cache: "no-store", // Don't cache seller listings as they may change frequently
+      });
+
+    return response;
+  } catch (error) {
+    console.error('Error fetching sellers:', error);
+    return {
+      sellers: [],
+      count: 0,
+      limit: params?.limit || 20,
+      offset: params?.offset || 0
+    };
+  }
+}

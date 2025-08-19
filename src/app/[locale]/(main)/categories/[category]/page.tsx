@@ -1,5 +1,5 @@
 import { ProductListingSkeleton } from "@/components/organisms/ProductListingSkeleton/ProductListingSkeleton"
-import { getCategoryByHandle, listCategoriesWithProducts } from "@/lib/data/categories"
+import { getCategoryByHandle, listCategoriesWithProducts, getAllDescendantCategoryIds } from "@/lib/data/categories"
 import { Suspense } from "react"
 
 import type { Metadata } from "next"
@@ -36,18 +36,6 @@ export async function generateMetadata({
   return generateCategoryMetadata(cat)
 }
 
-// Helper function to get all descendant category IDs recursively
-function getAllDescendantCategoryIds(category: HttpTypes.StoreProductCategory): string[] {
-  const categoryIds = [category.id]
-  
-  if (category.category_children && category.category_children.length > 0) {
-    for (const child of category.category_children) {
-      categoryIds.push(...getAllDescendantCategoryIds(child))
-    }
-  }
-  
-  return categoryIds
-}
 
 async function Category({
   params,
@@ -120,7 +108,7 @@ async function Category({
   }
 
   // Get all descendant category IDs for product aggregation
-  const categoryIds = getAllDescendantCategoryIds(category)
+  const categoryIds = await getAllDescendantCategoryIds(category.id)
 
   // Build breadcrumb path
   const breadcrumbs = []

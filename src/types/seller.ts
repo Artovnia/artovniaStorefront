@@ -13,6 +13,7 @@ export type SellerProps = SellerAddress & {
   handle: string
   description: string
   photo: string
+  logo_url?: string
   tax_id: string
   created_at: string
   reviews?: any[]

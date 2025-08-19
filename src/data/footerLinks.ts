@@ -11,6 +11,7 @@ const links = {
     { label: 'Blog', path: '/blog' },
     { label: 'Polityka prywatności', path: '/privacy' },
     { label: 'Regulamin', path: '/terms' },
+    { label: 'Sprzedawcy', path: '/sellers' },
   ],
   connect: [
     { label: 'Facebook', path: 'https://facebook.com' },
