@@ -381,7 +381,7 @@ const ProductsListing = ({
 
   return (
     <>
-      <div className="grid grid-cols-1 lg:grid-cols-5 gap-8 w-full">
+      <div className="grid grid-cols-1 lg:grid-cols-6 gap-8 w-full">
         {/* Left Column: Category Sidebar with Results Count - Hidden below 768px (md breakpoint) */}
         <div className="hidden lg:block lg:col-span-1">
           {/* Category Sidebar - Now includes results count */}
@@ -395,7 +395,7 @@ const ProductsListing = ({
         </div>
 
         {/* Right Column: Filter Bar + Products */}
-        <div className="lg:col-span-4">
+        <div className="lg:col-span-5">
           {/* Filter Bar - Above products */}
           <div className="mb-6">
             <ProductFilterBar 
@@ -417,7 +417,7 @@ const ProductsListing = ({
               </div>
             ) : (
               <div className="w-full flex justify-center xl:justify-start">
-                <ul className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4 w-fit mx-auto xl:mx-0">
+                <ul className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4 w-fit mx-auto xl:mx-0">
                   {items.map((hit: any) => (
                     <ProductCard 
                       key={hit.objectID} 

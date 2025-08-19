@@ -58,7 +58,7 @@ export function Input({
 
         <input
           className={cn(
-            "w-full px-[16px] py-[12px] border rounded-sm bg-white focus:border-primary focus:outline-none focus:ring-0",
+            "w-full px-[16px] py-[10px] border rounded-sm bg-white focus:border-primary focus:outline-none focus:ring-0",
             error && "border-negative focus:border-negative",
             props.disabled && "bg-disabled cursor-not-allowed",
             paddingY,

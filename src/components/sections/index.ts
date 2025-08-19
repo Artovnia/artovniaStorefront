@@ -8,6 +8,7 @@ import { ShopByStyleSection } from "./ShopByStyle/ShopByStyleSection"
 import { BlogSection } from "./BlogSection/BlogSection"
 import { DesignerOfTheWeekSection } from "./DesignerOfTheWeekSection/DesignerOfTheWeekSection"
 import { ProductListing } from "./ProductListing/ProductListing"
+import { PromotionListing } from "./PromotionListing"
 import { SellerPageHeader } from "./SellerPageHeader/SellerPageHeader"
 import { Cart } from "./Cart/Cart"
 import { WishlistPage } from "./WishlistPage/WishlistPage"
@@ -30,6 +31,7 @@ export {
   ShopByStyleSection,
   BlogSection,
   ProductListing,
+  PromotionListing,
   SellerPageHeader,
   Cart,
   WishlistPage,

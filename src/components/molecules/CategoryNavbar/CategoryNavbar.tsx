@@ -200,6 +200,19 @@ export const CategoryNavbar = ({ categories, onClose, onDropdownStateChange }: C
         />
       ))}
 
+      {/* Promotions Link - Always at the right */}
+      <Link
+        href="/promotions"
+        onClick={() => onClose?.()}
+        className={cn(
+          "uppercase my-3 md:my-0 flex items-center justify-between text-lg hover:bg-red-50 transition-colors ml-auto",
+          "px-4 py-2 font-medium text-red-600 hover:text-red-700",
+          "font-['Instrument_Sans']"
+        )}
+      >
+        Promocje
+      </Link>
+
       {/* Dropdown is now handled at the Navbar level */}
     </nav>
   )

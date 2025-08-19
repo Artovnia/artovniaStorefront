@@ -118,6 +118,7 @@ export const HomeProductsCarousel = async ({
         <Carousel
           align="start"
           items={productCards}
+          theme={theme}
         />
       </div>
     );

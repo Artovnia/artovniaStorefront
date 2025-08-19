@@ -9,10 +9,12 @@ export const CustomCarousel = ({
   variant = 'light',
   items,
   align = 'start', // Not used anymore but kept for backwards compatibility
+  theme = 'default', // Add theme prop for arrow styling
 }: {
   variant?: 'light' | 'dark';
   items: React.ReactNode[];
   align?: 'center' | 'start' | 'end';
+  theme?: 'default' | 'light' | 'dark';
 }) => {
   // Use refs for direct DOM manipulation instead of carousel library
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -78,60 +80,87 @@ export const CustomCarousel = ({
     }
   };
   
+  // Arrow styling based on theme prop
+  const getArrowStyles = () => {
+    if (theme === 'light') {
+      return {
+        buttonClass: ' hover:bg-white/20 text-white ',
+        iconColor: '#FFFFFF'
+      };
+    }
+    return {
+      buttonClass: ' hover:bg-[#BFB7AD] text-gray-800 ',
+      iconColor: tailwindConfig.theme.extend.colors.primary
+    };
+  };
+  
+  const arrowStyles = getArrowStyles();
+  
   const arrowColor = {
     light: tailwindConfig.theme.extend.colors.primary,
     dark: tailwindConfig.theme.extend.colors.tertiary,
   };
 
   return (
-    <div className='relative w-full max-w-[1920px] mx-auto px-5'>
-      {/* Navigation Arrows - Only show when screen width >= 868px */}
-      {showArrows && (
-        <div>
-          {/* Left Arrow */}
-          <button
-            className='absolute left-0  top-[175px] z-10 bg-white/80 hover:bg-white rounded-full p-2 shadow-md transition-all duration-200'
-            onClick={scrollPrev}
-            aria-label="Previous slide"
-          >
-            <ArrowLeftIcon color={arrowColor[variant]} size={20} />
-          </button>
-          
-          {/* Right Arrow */}
-          <button
-            className='absolute right-0 top-[175px] z-10 bg-white/80 hover:bg-white rounded-full p-2 shadow-md transition-all duration-200'
-            onClick={scrollNext}
-            aria-label="Next slide"
-          >
-            <ArrowRightIcon color={arrowColor[variant]} size={20} />
-          </button>
-        </div>
-      )}
-
-      {/* Responsive scrollable container with conditional spacing for arrows */}
-      <div 
-        className={`w-full overflow-x-auto scrollbar-hide ${showArrows ? 'pl-16 pr-16' : 'pl-2 pr-2'}`}
-        ref={scrollContainerRef}
-        onScroll={handleScroll}
-        style={{
-          scrollbarWidth: 'none', /* Firefox */
-          msOverflowStyle: 'none', /* IE/Edge */
-        }}
-      >
-        {/* Card container with proper spacing */}
-        <div className='flex gap-8 pb-4 mx-auto'>
-          {items.map((slide, index) => (
-            <div 
-              key={index} 
-              className='flex-none w-[280px]' 
+    <div className='w-full max-w-[1920px] mx-auto '>
+      {/* Desktop Layout: Three-column grid with arrows outside content area */}
+      <div className={`${showArrows ? 'grid grid-cols-[auto_1fr_auto] items-center gap-4' : 'block'}`}>
+        
+        {/* Left Arrow Column - Only visible on desktop */}
+        {/* Arrow positioned at center of product image: 315px height ÷ 2 = 157.5px, minus arrow button height ÷ 2 = ~78px */}
+        {showArrows && (
+          <div className='flex justify-center' style={{ marginTop: '-78px' }}>
+            <button
+              className={`${arrowStyles.buttonClass} rounded-full p-3 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed`}
+              onClick={scrollPrev}
+              disabled={scrollPosition <= 0}
+              aria-label="Previous slide"
             >
-              {slide}
-            </div>
-          ))}
+              <ArrowLeftIcon color={arrowStyles.iconColor} size={25} />
+            </button>
+          </div>
+        )}
+
+        {/* Content Column - Scrollable container */}
+        <div 
+          className='overflow-x-auto scrollbar-hide'
+          ref={scrollContainerRef}
+          onScroll={handleScroll}
+          style={{
+            scrollbarWidth: 'none', /* Firefox */
+            msOverflowStyle: 'none', /* IE/Edge */
+          }}
+        >
+          {/* Card container with proper spacing */}
+          <div className='flex gap-6 pb-4'>
+            {items.map((slide, index) => (
+              <div 
+                key={index} 
+                className='flex-none w-[252px]' 
+              >
+                {slide}
+              </div>
+            ))}
+          </div>
         </div>
+
+        {/* Right Arrow Column - Only visible on desktop */}
+        {/* Arrow positioned at center of product image: 315px height ÷ 2 = 157.5px, minus arrow button height ÷ 2 = ~78px */}
+        {showArrows && (
+          <div className='flex justify-center' style={{ marginTop: '-78px' }}>
+            <button
+              className={`${arrowStyles.buttonClass} rounded-full p-3 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed`}
+              onClick={scrollNext}
+              disabled={scrollPosition >= maxScroll}
+              aria-label="Next slide"
+            >
+              <ArrowRightIcon color={arrowStyles.iconColor} size={25} />
+            </button>
+          </div>
+        )}
       </div>
 
-      {/* Mobile Navigation */}
+      {/* Mobile Navigation - Only visible on mobile */}
       <div className='flex justify-between items-center mt-4 md:hidden'>
         <div className='flex-1'>
           <Indicator
@@ -141,7 +170,22 @@ export const CustomCarousel = ({
           />
         </div>
         <div className='flex gap-2'>
-        
+          <button
+            className=' hover:bg-[#BFB7AD] rounded-full p-2  transition-all duration-200 disabled:opacity-50'
+            onClick={scrollPrev}
+            disabled={scrollPosition <= 0}
+            aria-label="Previous slide"
+          >
+            <ArrowLeftIcon color={arrowColor[variant]} size={16} />
+          </button>
+          <button
+            className=' hover:bg-[#BFB7AD] rounded-full p-2  transition-all duration-200 disabled:opacity-50'
+            onClick={scrollNext}
+            disabled={scrollPosition >= maxScroll}
+            aria-label="Next slide"
+          >
+            <ArrowRightIcon color={arrowColor[variant]} size={16} />
+          </button>
         </div>
       </div>
     </div>

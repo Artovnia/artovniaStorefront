@@ -6,6 +6,7 @@ import { HttpTypes } from "@medusajs/types"
 import { Link } from "@/i18n/routing"
 import { getSellerProductPrice } from "@/lib/helpers/get-seller-product-price"
 import { getProductPrice } from "@/lib/helpers/get-product-price"
+import { getPromotionalPrice } from "@/lib/helpers/get-promotional-price"
 import { BaseHit, Hit } from "instantsearch.js"
 import clsx from "clsx"
 import { WishlistButton } from "@/components/cells/WishlistButton/WishlistButton"
@@ -58,12 +59,22 @@ export const ProductCard = ({
     product,
   })
 
+  // Check if this product has promotions and calculate promotional price
+  const promotionalPricing = getPromotionalPrice({
+    product: product as any,
+    regionId: undefined // Will use default region
+  })
+
+  // Use actual promotional pricing data
+  const finalPromotionalPricing = promotionalPricing
+
+
   
 
   return (
     <div
       className={clsx(
-        "relative group flex flex-col h-full w-[280px]",
+        "relative group flex flex-col h-full w-[252px]", // CARD SIZE ADJUSTMENT: Reduced from w-[280px] to w-[252px] (10% smaller). Change this value to adjust card width.
         {
           "p-2": sellerPage,
           "p-1": !sellerPage
@@ -72,8 +83,10 @@ export const ProductCard = ({
       {...prefetchOnHover(productUrl)}
       onMouseEnter={handleMouseEnter}
     >
-      {/* Product card size */}
-      <div className="relative bg-primary h-[350px] w-[280px] flex-shrink-0">
+      {/* CARD SIZE ADJUSTMENT: Product card dimensions reduced by 10% for better carousel spacing */}
+      {/* Original size: h-[350px] w-[280px] | New size: h-[315px] w-[252px] */}
+      {/* TO ADJUST CARD SIZE: Modify both width values above and height/width values below */}
+      <div className="relative bg-primary h-[315px] w-[252px] flex-shrink-0">
         <div className="absolute right-3 top-3 z-10 cursor-pointer">
           <WishlistButton 
             productId={product.id} 
@@ -125,22 +138,40 @@ export const ProductCard = ({
             )}
             
             <div className="flex items-center gap-2">
-              <p className={`font-instrument-sans font-semibold text-md ${themeMode === 'light' ? 'text-white' : ''}`}>
-                {(sellerCheapestPrice?.calculated_price || cheapestPrice?.calculated_price)?.replace(/PLN\s+([\d,.]+)/, '$1 zł')}
-              </p>
-              {sellerCheapestPrice?.calculated_price
-                ? sellerCheapestPrice?.calculated_price !==
-                    sellerCheapestPrice?.original_price && (
-                    <p className="text-xs text-gray-500 line-through">
-                      {sellerCheapestPrice?.original_price?.replace(/PLN\s+([\d,.]+)/, '$1 zł')}
-                    </p>
-                  )
-                : cheapestPrice?.calculated_price !==
-                    cheapestPrice?.original_price && (
-                    <p className="text-xs text-gray-500 line-through">
-                      {cheapestPrice?.original_price?.replace(/PLN\s+([\d,.]+)/, '$1 zł')}
-                    </p>
-                  )}
+              {finalPromotionalPricing.hasPromotion ? (
+                <>
+                  <p className={`font-instrument-sans font-semibold text-md text-red-600 ${themeMode === 'light' ? 'text-red-400' : ''}`}>
+                    {finalPromotionalPricing.promotionalPrice}
+                  </p>
+                  <p className="text-xs text-gray-500 line-through">
+                    {finalPromotionalPricing.originalPrice}
+                  </p>
+                  <span className="relative bg-gradient-to-br from-red-800 via-red-700 to-red-900 text-white text-xs font-bold px-3 py-1 rounded-lg shadow-2xl border border-red-400/20 overflow-hidden group">
+                     <span className="relative z-10 tracking-wide">-{finalPromotionalPricing.discountPercentage}%</span>
+                     <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent"></div>
+                     <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-red-300/50 to-transparent"></div>
+                  </span>
+                </>
+              ) : (
+                <>
+                  <p className={`font-instrument-sans font-semibold text-md ${themeMode === 'light' ? 'text-white' : ''}`}>
+                    {(sellerCheapestPrice?.calculated_price || cheapestPrice?.calculated_price)?.replace(/PLN\s+([\d,.]+)/, '$1 zł')}
+                  </p>
+                  {sellerCheapestPrice?.calculated_price
+                    ? sellerCheapestPrice?.calculated_price !==
+                        sellerCheapestPrice?.original_price && (
+                        <p className="text-xs text-gray-500 line-through">
+                          {sellerCheapestPrice?.original_price?.replace(/PLN\s+([\d,.]+)/, '$1 zł')}
+                        </p>
+                      )
+                    : cheapestPrice?.calculated_price !==
+                        cheapestPrice?.original_price && (
+                        <p className="text-xs text-gray-500 line-through">
+                          {cheapestPrice?.original_price?.replace(/PLN\s+([\d,.]+)/, '$1 zł')}
+                        </p>
+                      )}
+                </>
+              )}
             </div>
           </div>
         </div>

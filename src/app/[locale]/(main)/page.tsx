@@ -45,25 +45,11 @@ export default async function Home({
     <main className="flex flex-col text-primary">
       {/* Content with max-width container */}
       <div className="mx-auto max-w-[1920px] w-full">
-        <Hero
-          image="/images/hero/Image.jpg"
-          heading="Witaj w Artovni"
-          paragraph="Platformie sprzedażowej sztuki i rękodzieła."
-          buttons={[
-            { label: "Zobacz produkty", path: "/categories" },
-            {
-              label: "Sprzedaj produkty",
-              path:
-                process.env.NEXT_PUBLIC_ALGOLIA_ID
-                  ? "https://artovniapanel.netlify.app/login"
-                  : "https://artovniapanel.netlify.app/login",
-            },
-          ]}
-        />
+        <Hero />
       </div>
       
       {/* Smart Best Products Section */}
-      <div className="mx-auto max-w-[1920px] w-full px-4 lg:px-8 mb-8 min-h-[400px] py-8">
+      <div className="mx-auto max-w-[1920px] w-full  mb-8 min-h-[400px] py-8">
         <SmartBestProductsSection
          />
       </div>
@@ -71,10 +57,10 @@ export default async function Home({
       {/* Full width dark section */}
       <div className="w-full bg-[#3B3634]">
         {/* Content container inside full-width section */}
-        <div className="mx-auto max-w-[1920px] w-full px-4 lg:px-8 min-h-[400px] py-8 font-instrument-sans">
+        <div className="mx-auto max-w-[1920px] w-full min-h-[400px] py-8 font-instrument-sans">
           <HomeProductSection 
             heading="Nowości" 
-          
+            
             theme="light" 
             headingFont="font-instrument-serif italic" 
             headingSpacing="mb-12" 
@@ -89,7 +75,7 @@ export default async function Home({
       </div>
 
       {/* Content with max-width container */}
-      <div className="mx-auto max-w-[1920px] w-full px-4 lg:px-8 mt-8 ">
+      <div className="mx-auto max-w-[1920px] w-full  mt-8 ">
         {/*<BannerSection />*/}
         {/*<ShopByStyleSection />*/}
         <BlogSection />

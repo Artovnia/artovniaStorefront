@@ -172,3 +172,74 @@ export const listProductsWithSort = async ({
     queryParams,
   }
 }
+
+/**
+ * Fetch products that have active promotions using custom backend API
+ */
+export const listProductsWithPromotions = async ({
+  page = 1,
+  limit = 12,
+  countryCode = "PL",
+}: {
+  page?: number
+  limit?: number
+  countryCode?: string
+}): Promise<{
+  response: {
+    products: (HttpTypes.StoreProduct & { seller?: SellerProps })[]
+    count: number
+  }
+  nextPage: number | null
+}> => {
+  
+  try {
+    // Get region for price calculation
+    let region = await getRegion(countryCode.toLowerCase())
+    if (!region) {
+      region = await getRegion(countryCode.toUpperCase())
+    }
+    if (!region) {
+      region = await getRegion("pl")
+    }
+
+    const headers = { ...(await getAuthHeaders()) }
+    const offset = (page - 1) * limit
+
+    // Call our custom backend API
+    const response = await sdk.client.fetch<{
+      products: (HttpTypes.StoreProduct & { 
+        promotions?: any[]
+        has_promotions?: boolean
+        seller?: SellerProps 
+      })[]
+      count: number
+      promotions_found?: number
+      applicable_product_ids?: number
+    }>(`/store/products/promotions`, {
+      method: "GET",
+      query: {
+        limit,
+        offset,
+        region_id: region?.id,
+      },
+      headers,
+      cache: "no-cache"
+    })
+
+    const hasNextPage = response.count > offset + limit
+
+    return {
+      response: {
+        products: response.products,
+        count: response.count,
+      },
+      nextPage: hasNextPage ? page + 1 : null,
+    }
+  } catch (error) {
+    console.error('listProductsWithPromotions: Error calling backend API:', error)
+    return {
+      response: { products: [], count: 0 },
+      nextPage: null,
+    }
+  }
+}
