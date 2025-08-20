@@ -29,6 +29,7 @@ const ShippingAddress = ({
     "shipping_address.phone": cart?.shipping_address?.phone || "",
     email: cart?.email || "",
   })
+  const [hasUserInteracted, setHasUserInteracted] = useState(false)
 
   const countriesInRegion = useMemo(
     () => cart?.region?.countries?.map((c) => c.iso_2),
@@ -73,24 +74,40 @@ const ShippingAddress = ({
   )
 
   useEffect(() => {
-    // Ensure cart is not null and has a shipping_address before setting form data
-    if (cart && cart.shipping_address) {
-      setFormAddress(cart?.shipping_address, cart?.email)
-    }
+    // Only update form data from cart if user hasn't interacted with the form yet
+    if (!hasUserInteracted) {
+      // Ensure cart is not null and has a shipping_address before setting form data
+      if (cart && cart.shipping_address) {
+        setFormAddress(cart?.shipping_address, cart?.email)
+      }
 
-    if (cart && !cart.email && customer?.email) {
-      setFormAddress(undefined, customer.email)
+      if (cart && !cart.email && customer?.email) {
+        setFormAddress(undefined, customer.email)
+      }
     }
-  }, [cart, setFormAddress, customer]) // Added missing dependencies
+  }, [cart, setFormAddress, customer, hasUserInteracted])
 
   const handleChange = (
     e: React.ChangeEvent<
       HTMLInputElement | HTMLInputElement | HTMLSelectElement
     >
   ) => {
+    setHasUserInteracted(true)
     setFormData({
       ...formData,
       [e.target.name]: e.target.value,
+    })
+  }
+
+  // Handle autofill detection
+  const handleInput = (
+    e: React.FormEvent<HTMLInputElement>
+  ) => {
+    setHasUserInteracted(true)
+    const target = e.target as HTMLInputElement
+    setFormData({
+      ...formData,
+      [target.name]: target.value,
     })
   }
 
@@ -119,6 +136,7 @@ const ShippingAddress = ({
           autoComplete="given-name"
           value={formData["shipping_address.first_name"]}
           onChange={handleChange}
+          onInput={handleInput}
           required
           data-testid="shipping-first-name-input"
         />
@@ -128,6 +146,7 @@ const ShippingAddress = ({
           autoComplete="family-name"
           value={formData["shipping_address.last_name"]}
           onChange={handleChange}
+          onInput={handleInput}
           required
           data-testid="shipping-last-name-input"
         />
@@ -137,6 +156,7 @@ const ShippingAddress = ({
           autoComplete="address-line1"
           value={formData["shipping_address.address_1"]}
           onChange={handleChange}
+          onInput={handleInput}
           required
           data-testid="shipping-address-input"
         />
@@ -145,6 +165,7 @@ const ShippingAddress = ({
           name="shipping_address.company"
           value={formData["shipping_address.company"]}
           onChange={handleChange}
+          onInput={handleInput}
           autoComplete="organization"
           data-testid="shipping-company-input"
         />
@@ -154,6 +175,7 @@ const ShippingAddress = ({
           autoComplete="postal-code"
           value={formData["shipping_address.postal_code"]}
           onChange={handleChange}
+          onInput={handleInput}
           required
           data-testid="shipping-postal-code-input"
         />
@@ -163,6 +185,7 @@ const ShippingAddress = ({
           autoComplete="address-level2"
           value={formData["shipping_address.city"]}
           onChange={handleChange}
+          onInput={handleInput}
           required
           data-testid="shipping-city-input"
         />
@@ -181,6 +204,7 @@ const ShippingAddress = ({
           autoComplete="address-level1"
           value={formData["shipping_address.province"]}
           onChange={handleChange}
+          onInput={handleInput}
           data-testid="shipping-province-input"
         />
       </div>
@@ -193,6 +217,7 @@ const ShippingAddress = ({
           autoComplete="email"
           value={formData.email}
           onChange={handleChange}
+          onInput={handleInput}
           required
           data-testid="shipping-email-input"
         />
@@ -202,6 +227,7 @@ const ShippingAddress = ({
           autoComplete="tel"
           value={formData["shipping_address.phone"]}
           onChange={handleChange}
+          onInput={handleInput}
           data-testid="shipping-phone-input"
         />
       </div>

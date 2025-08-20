@@ -50,21 +50,6 @@ const CartPaymentSection = ({
     activeSession?.provider_id ?? ""
   )
 
-  // Debug logging for payment sessions
-  useEffect(() => {
-    console.log('CartPaymentSection - Payment Info:', {
-      cartId: cart?.id,
-      hasPaymentCollection: !!cart?.payment_collection,
-      paymentSessions: cart?.payment_collection?.payment_sessions?.map((s: any) => ({
-        id: s.id,
-        providerId: s.provider_id,
-        status: s.status
-      })) || [],
-      selectedPaymentMethod,
-      availablePaymentMethods: availablePaymentMethods?.map(m => m.id) || []
-    })
-  }, [cart, selectedPaymentMethod, availablePaymentMethods])
-
   const searchParams = useSearchParams()
   const router = useRouter()
   const pathname = usePathname()
@@ -78,7 +63,6 @@ const CartPaymentSection = ({
     // Request deduplication: prevent concurrent calls for the same method
     const requestKey = `payment-${method}-${cart.id}`
     if (pendingRequests.has(requestKey)) {
-      console.log(`Payment method selection already in progress for ${method}`)
       return
     }
     
@@ -88,7 +72,7 @@ const CartPaymentSection = ({
     setIsLoading(true)
     
     try {
-      console.log(`Setting payment method: ${method} for cart ${cart.id}`)
+      
       
       // Check if a payment session already exists for this provider
       const existingSession = cart?.payment_collection?.payment_sessions?.find(
@@ -96,14 +80,14 @@ const CartPaymentSection = ({
       )
       
       if (existingSession) {
-        console.log(`Payment session already exists for ${method}, reusing session:`, existingSession.id)
+        
         // Quick optimization: Set loading to false faster for existing sessions
         setIsLoading(false)
         return
       } else {
         // Only create a new payment session if one doesn't exist
         try {
-          console.log('Initializing payment session for cart:', cart.id)
+          
           // Enhanced payment session with detailed cart context
           await initiatePaymentSession(cart, { 
             provider_id: method,
@@ -118,9 +102,9 @@ const CartPaymentSection = ({
               customer_email: cart.email || ''
             }
           })
-          console.log('Payment session initialized successfully with enhanced context')
+        
         } catch (initError: any) {
-          console.log('Payment session initialization error (may be normal if session exists):', initError)
+
           
           // Check if the error is about a payment collection already existing
           // or if it's about a payment session already existing - these are expected errors
@@ -140,17 +124,13 @@ const CartPaymentSection = ({
       
       // Now select the payment session - this will also update cart metadata with payment_provider_id
       try {
-        console.log('Selecting payment session:', method)
         const updatedCart = await selectPaymentSession(cart.id, method)
-        console.log('Payment session selected successfully, cart updated:', updatedCart.id)
         
         // Store the selected payment provider in localStorage as a fallback mechanism
         try {
           localStorage.setItem('selected_payment_provider', method)
           localStorage.setItem('cart_payment_ready', 'true')
-          console.log('Stored payment selection in localStorage')
         } catch (storageError) {
-          console.warn('Could not store payment selection in localStorage:', storageError)
         }
         
       } catch (selectError: any) {
@@ -234,7 +214,7 @@ const CartPaymentSection = ({
   const handleSubmit = async () => {
     setIsLoading(true)
     try {
-      console.log('Handling payment submission for:', selectedPaymentMethod)
+      
       
       if (!selectedPaymentMethod) {
         throw new Error('Proszę wybrać metodę płatności')
@@ -244,12 +224,11 @@ const CartPaymentSection = ({
       // Payment sessions should ONLY be created in setPaymentMethod when user selects a payment method
       // This function should only handle navigation to the review step
       
-      console.log('Payment method already selected, proceeding to review step')
+      
 
       // For Stripe, if we need to collect card details, don't proceed to review
       const shouldInputCard = isStripeFunc(selectedPaymentMethod) && !cardComplete
       if (shouldInputCard) {
-        console.log('Need to collect card details for Stripe')
         setIsLoading(false)
         return
       }

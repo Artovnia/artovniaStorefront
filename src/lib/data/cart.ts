@@ -257,7 +257,6 @@ export async function retrieveCartForReview(cartId?: string) {
       
     // Check if cart is completed
     if (cart && (cart.completed_at || cart.status === "complete" || cart.completed === true)) {
-      console.log(`Cart ${cart.id} is completed. Removing cart ID.`);
       return null;
     }
     
@@ -898,7 +897,6 @@ export async function setAddresses(currentState: unknown, formData: FormData) {
                   }
                 })
                 
-                console.log(`Cart ${cartId} associated with customer ${customerData.customer.id}`)
               } catch (associationError) {
                 // Alternative method if the SDK call fails
                 try {
@@ -913,7 +911,7 @@ export async function setAddresses(currentState: unknown, formData: FormData) {
                       cart_id: cartId
                     }
                   })
-                  console.log(`Cart ${cartId} associated with customer using alternate method`)
+         
                 } catch (altError) {
                   console.warn("Failed to associate cart with customer using alternate method:", altError)
                   // Continue even if this fails
@@ -937,6 +935,7 @@ export async function setAddresses(currentState: unknown, formData: FormData) {
       await revalidatePath("/cart")
       return `Warning: Customer data may not be fully associated: ${fetchError?.message || 'Unknown error'}`
     }
+    return "success"
   } catch (e: any) {
     console.error("Error in setAddresses:", e)
     return e.message
@@ -1040,7 +1039,6 @@ export async function placeOrder(cartId?: string, skipRedirectCheck: boolean = f
     return result
     
   } catch (error: any) {
-    console.error(`[ERROR] Failed to place order:`, error)
     throw error
   }
 }
@@ -1149,7 +1147,6 @@ export async function placeOrderWithCapture(cartId?: string, skipRedirectCheck: 
     
     return result;
   } catch (error) {
-    console.error(`[ERROR] Enhanced place order failed:`, error);
     throw error;
   }
 }

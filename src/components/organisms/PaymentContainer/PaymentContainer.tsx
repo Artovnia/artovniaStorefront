@@ -163,17 +163,7 @@ export const PayUCardContainer = ({
   }
   
   const paymentMethodType = getPaymentMethodType()
-  
-  // Log the payment provider info for debugging
-  React.useEffect(() => {
-    console.log('PayU Container - Provider Info:', {
-      providerId: paymentProviderId,
-      selected: selectedPaymentOptionId === paymentProviderId,
-      type: paymentMethodType,
-      title: paymentInfo.title
-    })
-  }, [paymentProviderId, selectedPaymentOptionId, paymentMethodType, paymentInfo])
-  
+ 
   // When a PayU payment method is selected, we can immediately mark it as complete
   // as there's no card input needed on our side
   React.useEffect(() => {

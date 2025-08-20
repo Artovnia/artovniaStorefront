@@ -146,14 +146,39 @@ export async function getLatestBlogPosts(): Promise<BlogPost[]> {
 // Fetch single blog post by slug
 export async function getBlogPost(slug: string): Promise<BlogPost | null> {
   try {
-    const post = await client.fetch(BLOG_POST_QUERY, { slug }, {
-      cache: 'force-cache',
-      next: { revalidate: 300 },
-    })
-    return post || null
+    // Add a retry mechanism for production environments
+    let attempts = 0;
+    const maxAttempts = 3;
+    let post = null;
+    
+    while (attempts < maxAttempts) {
+      try {
+        post = await client.fetch(BLOG_POST_QUERY, { slug }, {
+          cache: 'force-cache',
+          next: { revalidate: 300 },
+        });
+        break; // If successful, exit the retry loop
+      } catch (retryError) {
+        attempts++;
+        console.error(`Error fetching blog post (attempt ${attempts}/${maxAttempts}):`, retryError);
+        if (attempts >= maxAttempts) throw retryError; // Re-throw if max attempts reached
+        await new Promise(resolve => setTimeout(resolve, 1000)); // Wait 1 second before retrying
+      }
+    }
+    
+    return post || null;
   } catch (error) {
-    console.error('Error fetching blog post:', error)
-    return null
+    console.error(`Fatal error fetching blog post (slug: ${slug}):`, error);
+    // Log additional diagnostic information in production
+    if (process.env.NODE_ENV === 'production') {
+      console.error('Sanity configuration:', {
+        projectId: process.env.NEXT_PUBLIC_SANITY_PROJECT_ID ? 'Set' : 'Missing',
+        dataset: process.env.NEXT_PUBLIC_SANITY_DATASET ? 'Set' : 'Missing',
+        apiToken: process.env.SANITY_API_TOKEN ? 'Set' : 'Missing',
+        useCdn: process.env.NODE_ENV === 'production'
+      });
+    }
+    return null;
   }
 }
 
@@ -257,14 +282,39 @@ export async function getFeaturedSellerPost(): Promise<SellerPost | null> {
 // Fetch single seller post by slug
 export async function getSellerPost(slug: string): Promise<SellerPost | null> {
   try {
-    const post = await client.fetch(SELLER_POST_QUERY, { slug }, {
-      cache: 'force-cache',
-      next: { revalidate: 300 },
-    })
-    return post || null
+    // Add a retry mechanism for production environments
+    let attempts = 0;
+    const maxAttempts = 3;
+    let post = null;
+    
+    while (attempts < maxAttempts) {
+      try {
+        post = await client.fetch(SELLER_POST_QUERY, { slug }, {
+          cache: 'force-cache',
+          next: { revalidate: 300 },
+        });
+        break; // If successful, exit the retry loop
+      } catch (retryError) {
+        attempts++;
+        console.error(`Error fetching seller post (attempt ${attempts}/${maxAttempts}):`, retryError);
+        if (attempts >= maxAttempts) throw retryError; // Re-throw if max attempts reached
+        await new Promise(resolve => setTimeout(resolve, 1000)); // Wait 1 second before retrying
+      }
+    }
+    
+    return post || null;
   } catch (error) {
-    console.error('Error fetching seller post:', error)
-    return null
+    console.error(`Fatal error fetching seller post (slug: ${slug}):`, error);
+    // Log additional diagnostic information in production
+    if (process.env.NODE_ENV === 'production') {
+      console.error('Sanity configuration:', {
+        projectId: process.env.NEXT_PUBLIC_SANITY_PROJECT_ID ? 'Set' : 'Missing',
+        dataset: process.env.NEXT_PUBLIC_SANITY_DATASET ? 'Set' : 'Missing',
+        apiToken: process.env.SANITY_API_TOKEN ? 'Set' : 'Missing',
+        useCdn: process.env.NODE_ENV === 'production'
+      });
+    }
+    return null;
   }
 }
 

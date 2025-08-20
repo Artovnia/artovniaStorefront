@@ -21,7 +21,7 @@ const calculateShippingTotal = (shippingMethods?: any[]): number => {
 }
 
 
-const Review = ({ cart }: { cart: any }) => {
+const Review = ({ cart, termsAccepted }: { cart: any; termsAccepted?: boolean }) => {
   const paidByGiftcard =
     cart?.gift_cards && cart?.gift_cards?.length > 0 && cart?.total === 0
 
@@ -65,13 +65,7 @@ const Review = ({ cart }: { cart: any }) => {
           <div className="mt-4 pt-4 border-t">
             <Text className="txt-medium-plus text-ui-fg-base mb-2">Metody dostawy:</Text>
             {cart.shipping_methods.map((method: any) => {
-              console.log('CartReview - Shipping method details:', {
-                id: method.id,
-                name: method.name,
-                amount: method.amount,
-                shipping_option_id: method.shipping_option_id,
-                data: method.data
-              })
+              
               return (
               <div key={method.id} className="mb-2">
                 <Text className="txt-small-plus text-ui-fg-base">{method.name}</Text>
@@ -93,6 +87,7 @@ const Review = ({ cart }: { cart: any }) => {
       {shouldRenderButton && (
         <PaymentButton 
           cart={cart} 
+          termsAccepted={termsAccepted || false}
           data-testid="submit-order-button" 
         />
       )}

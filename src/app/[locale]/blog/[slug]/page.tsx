@@ -16,92 +16,132 @@ interface BlogPostPageProps {
 }
 
 export async function generateStaticParams() {
-  const [blogPosts, sellerPosts] = await Promise.all([
-    getBlogPosts(),
-    getSellerPosts()
-  ])
-  
-  const blogPostParams = blogPosts.map((post) => ({
-    slug: post.slug.current,
-  }))
-  
-  const sellerPostParams = sellerPosts.map((post) => ({
-    slug: post.slug.current,
-  }))
-  
-  return [...blogPostParams, ...sellerPostParams]
+  try {
+    const [blogPosts, sellerPosts] = await Promise.all([
+      getBlogPosts().catch(error => {
+        console.error('Error fetching blog posts for static params:', error);
+        return [];
+      }),
+      getSellerPosts().catch(error => {
+        console.error('Error fetching seller posts for static params:', error);
+        return [];
+      })
+    ])
+    
+    const blogPostParams = blogPosts.map((post) => ({
+      slug: post.slug?.current || '',
+    })).filter(param => param.slug)
+    
+    const sellerPostParams = sellerPosts.map((post) => ({
+      slug: post.slug?.current || '',
+    })).filter(param => param.slug)
+    
+    return [...blogPostParams, ...sellerPostParams]
+  } catch (error) {
+    console.error('Fatal error generating static params:', error);
+    return [];
+  }
 }
 
 export async function generateMetadata({ params }: BlogPostPageProps): Promise<Metadata> {
-  const { slug } = await params
-  
-  // Try to fetch both blog post and seller post
-  const [blogPost, sellerPost] = await Promise.all([
-    getBlogPost(slug),
-    getSellerPost(slug)
-  ])
-  
-  const post = blogPost || sellerPost
+  try {
+    const { slug } = await params
+    
+    // Try to fetch both blog post and seller post
+    const [blogPost, sellerPost] = await Promise.all([
+      getBlogPost(slug),
+      getSellerPost(slug)
+    ])
+    
+    const post = blogPost || sellerPost
 
-  if (!post) {
-    return {
-      title: 'Post Not Found',
+    if (!post) {
+      return {
+        title: 'Post Not Found',
+      }
     }
-  }
 
-  // Handle metadata for both post types
-  const title = post.seo?.metaTitle || post.title
-  const description = post.seo?.metaDescription || 
-    ('excerpt' in post ? post.excerpt : 'shortDescription' in post ? post.shortDescription : '') || ''
-  const imageUrl = post.mainImage ? urlFor(post.mainImage).width(1200).height(630).url() : undefined
+    // Handle metadata for both post types
+    const title = post.seo?.metaTitle || post.title
+    const description = post.seo?.metaDescription || 
+      ('excerpt' in post ? post.excerpt : 'shortDescription' in post ? post.shortDescription : '') || ''
+    
+    let imageUrl;
+    try {
+      imageUrl = post.mainImage ? urlFor(post.mainImage).width(1200).height(630).url() : undefined
+    } catch (imageError) {
+      console.error('Failed to process image URL:', imageError);
+      imageUrl = undefined;
+    }
 
-  return {
-    title: `${title} - Artovnia Blog`,
-    description,
-    keywords: post.seo?.keywords?.join(', '),
-    openGraph: {
-      title,
+    return {
+      title: `${title} - Artovnia Blog`,
       description,
-      type: 'article',
-      publishedTime: post.publishedAt,
-      authors: 'author' in post && post.author?.name ? [post.author.name] : 
-               'sellerName' in post ? [post.sellerName] : undefined,
-      images: imageUrl ? [{ url: imageUrl, width: 1200, height: 630 }] : undefined,
-    },
-    twitter: {
-      card: 'summary_large_image',
-      title,
-      description,
-      images: imageUrl ? [imageUrl] : undefined,
-    },
+      keywords: post.seo?.keywords?.join(', '),
+      openGraph: {
+        title,
+        description,
+        type: 'article',
+        publishedTime: post.publishedAt,
+        authors: 'author' in post && post.author?.name ? [post.author.name] : 
+                'sellerName' in post ? [post.sellerName] : undefined,
+        images: imageUrl ? [{ url: imageUrl, width: 1200, height: 630 }] : undefined,
+      },
+      twitter: {
+        card: 'summary_large_image',
+        title,
+        description,
+        images: imageUrl ? [imageUrl] : undefined,
+      },
+    }
+  } catch (error) {
+    console.error('Error generating metadata:', error);
+    return {
+      title: 'Artovnia Blog',
+      description: 'Explore our blog posts and seller stories',
+    }
   }
 }
 
 export default async function BlogPostPage({ params }: BlogPostPageProps) {
-  const { slug } = await params
-  
-  // Try to fetch both blog post and seller post
-  const [blogPost, sellerPost] = await Promise.all([
-    getBlogPost(slug),
-    getSellerPost(slug)
-  ])
-  
-  const post = blogPost || sellerPost
+  try {
+    const { slug } = await params
+    
+    // Try to fetch both blog post and seller post
+    const [blogPost, sellerPost] = await Promise.all([
+      getBlogPost(slug).catch(error => {
+        console.error(`Error fetching blog post in page component: ${error.message}`);
+        return null;
+      }),
+      getSellerPost(slug).catch(error => {
+        console.error(`Error fetching seller post in page component: ${error.message}`);
+        return null;
+      })
+    ])
+    
+    const post = blogPost || sellerPost
 
-  if (!post) {
-    notFound()
-  }
+    if (!post) {
+      console.error(`No post found for slug: ${slug}`);
+      notFound()
+    }
 
-  // If it's a seller post, render with SellerPostLayout
-  if (sellerPost) {
-    return <SellerPostLayout post={sellerPost as any} />
-  }
+    // If it's a seller post, render with SellerPostLayout
+    if (sellerPost) {
+      return <SellerPostLayout post={sellerPost as any} />
+    }
 
-  // Otherwise, render as regular blog post (we know it's a BlogPost now)
-  const blogPostData = post as import('../lib/data').BlogPost
-  const imageUrl = blogPostData.mainImage 
-    ? urlFor(blogPostData.mainImage).width(1200).height(600).url()
-    : null
+    // Otherwise, render as regular blog post (we know it's a BlogPost now)
+    const blogPostData = post as import('../lib/data').BlogPost
+    let imageUrl = null;
+    try {
+      imageUrl = blogPostData.mainImage 
+        ? urlFor(blogPostData.mainImage).width(1200).height(600).url()
+        : null;
+    } catch (imageError) {
+      console.error('Error processing blog post image:', imageError);
+      // Continue without the image if there's an error
+    }
 
   return (
     <BlogLayout>
@@ -226,4 +266,8 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
       </article>
     </BlogLayout>
   )
+} catch (error) {
+  console.error('Error rendering blog post page:', error);
+  notFound();
+}
 }

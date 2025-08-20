@@ -1,8 +1,5 @@
-import { CartAddressSection } from "@/components/sections/CartAddressSection/CartAddressSection"
-import CartPaymentSection from "@/components/sections/CartPaymentSection/CartPaymentSection"
-import CartReview from "@/components/sections/CartReview/CartReview"
+import { CheckoutWrapper } from "@/components/sections"
 import { HttpTypes } from "@medusajs/types"
-import CartShippingMethodsSection from "@/components/sections/CartShippingMethodsSection/CartShippingMethodsSection"
 import { retrieveCart, retrieveCartForAddress, retrieveCartForShipping, retrieveCartForPayment } from "@/lib/data/cart"
 import { retrieveCustomer } from "@/lib/data/customer"
 import { listCartShippingMethods } from "@/lib/data/fulfillment"
@@ -45,9 +42,7 @@ async function CheckoutPageContent() {
       return notFound()
     }
     
-    if (process.env.NODE_ENV === 'development') {
-      console.log(`🛒 Loading checkout data for cart: ${cart.id}`);
-    }
+    
     
     // Load all required data in parallel with persistent caching for better performance
     const [shippingMethods, paymentMethods, customer] = await Promise.all([
@@ -81,33 +76,12 @@ async function CheckoutPageContent() {
 
     return (
       <main className="container">
-        <div className="grid lg:grid-cols-11 gap-8">
-          <div className="flex flex-col gap-4 lg:col-span-6">
-            <CartAddressSection 
-              cart={typeSafeCart} 
-              customer={customer}
-              // Pass a key to force re-render when cart changes
-              key={`address-${cart.id}-${cart.updated_at}`}
-            />
-            <CartShippingMethodsSection
-              cart={typeSafeCart}
-              availableShippingMethods={typeSafeShippingMethods}
-              key={`shipping-${cart.id}-${cart.updated_at}`}
-            />
-            <CartPaymentSection
-              cart={typeSafeCart}
-              availablePaymentMethods={paymentMethods}
-              key={`payment-${cart.id}-${cart.updated_at}`}
-            />
-          </div>
-
-          <div className="lg:col-span-5">
-            <CartReview 
-              cart={typeSafeCart} 
-              key={`review-${cart.id}-${cart.updated_at}`}
-            />
-          </div>
-        </div>
+        <CheckoutWrapper
+          cart={typeSafeCart}
+          customer={customer}
+          availableShippingMethods={typeSafeShippingMethods}
+          availablePaymentMethods={paymentMethods || []}
+        />
       </main>
     )
   } catch (error) {

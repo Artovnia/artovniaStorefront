@@ -60,13 +60,7 @@ export const Cart = () => {
       
       setCart(cartData)
       
-      console.log('🛒 Cart data fetched (always fresh):', {
-        itemCount: cartData?.items?.length || 0,
-        total: cartData?.total || 0,
-        currency: cartData?.currency_code || 'N/A',
-        hasShipping: Boolean(cartData?.shipping_total),
-        timestamp: new Date().toISOString()
-      })
+     
       
     } catch (err) {
       console.error('❌ Failed to fetch cart:', err)
@@ -84,20 +78,17 @@ export const Cart = () => {
   // Listen for URL changes and refresh cart (handles navigation to cart after adding items)
   useEffect(() => {
     const handleFocus = () => {
-      console.log('🔄 Window focused, refreshing cart data...')
       fetchCart() // Refresh when window gains focus
     }
 
     const handleVisibilityChange = () => {
       if (!document.hidden) {
-        console.log('🔄 Page visible, refreshing cart data...')
         fetchCart() // Refresh when page becomes visible
       }
     }
 
     // Listen for cart update events from child components
     const handleCartUpdated = (event: CustomEvent) => {
-      console.log('🔄 Cart updated event received:', event.detail)
       // Force immediate refresh when cart is updated
       fetchCart()
     }
@@ -115,7 +106,7 @@ export const Cart = () => {
 
   // Handle cart updates from child components (quantity changes, deletions, etc.)
   const handleCartUpdate = useCallback(async (updatedCart?: HttpTypes.StoreCart) => {
-    console.log('🔄 Cart update triggered from child component')
+    
     
     // If we have updated cart data, use it immediately for optimistic UI
     if (updatedCart) {

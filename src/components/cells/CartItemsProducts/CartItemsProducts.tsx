@@ -16,18 +16,20 @@ export const CartItemsProducts = ({
   products,
   currency_code,
   delete_item = true,
+  show_quantity_changer = true,
   cartId,
   onCartUpdate,
 }: {
   products: HttpTypes.StoreCartLineItem[]
   currency_code: string
   delete_item?: boolean
+  show_quantity_changer?: boolean
   cartId?: string
   onCartUpdate?: (updatedCart: HttpTypes.StoreCart) => void
 }) => {
 
   const handleQuantityChange = (itemId: string, newQuantity: number, newTotal: number) => {
-    console.log('🔄 Quantity updated via QuantityChanger:', { itemId, newQuantity, newTotal })
+    
     
     // Don't do additional API calls here - QuantityChanger already handles server sync
     // Just update the local UI state optimistically
@@ -37,10 +39,9 @@ export const CartItemsProducts = ({
       // Use setTimeout to make this non-blocking
       setTimeout(async () => {
         try {
-          console.log('🔄 Non-blocking cart state refresh...')
+         
           const updatedCart = await retrieveCart(cartId)
           if (updatedCart) {
-            console.log('📊 Propagating cart update to parent (non-blocking):', updatedCart)
             onCartUpdate(updatedCart)
           }
         } catch (error) {
@@ -66,9 +67,25 @@ export const CartItemsProducts = ({
           currency_code,
         })
         
-        // Ensure we have valid product title
-        const productTitle = product.title || product.variant?.product?.title || 'Product';
-        const productSubtitle = product.subtitle || '';
+        // Get raw data from product
+        let rawTitle = product.title || product.variant?.product?.title || 'Product';
+        let rawSubtitle = product.subtitle || '';
+        
+        // Clean up both fields to remove "Default variant"
+        const isDefaultVariant = (text: string) => text.toLowerCase().includes('default variant');
+        
+        // If either field contains "default variant", remove it
+        if (isDefaultVariant(rawTitle)) {
+          rawTitle = rawTitle.replace(/default variant/i, '').trim();
+        }
+        
+        if (isDefaultVariant(rawSubtitle)) {
+          rawSubtitle = '';
+        }
+        
+        // Final cleaned values
+        const productTitle = rawTitle;
+        const productSubtitle = rawSubtitle;
         const productHandle = product.product_handle || product.variant?.product?.handle || 'product';
         
         return (
@@ -100,7 +117,7 @@ export const CartItemsProducts = ({
                 <Link href={`/products/${productHandle}`}>
                   <div className="mb-6 pr-2">
                     <h3 className="heading-xs uppercase break-normal">
-                      {productSubtitle} {productTitle}
+                      {productSubtitle ? `${productTitle} ${productSubtitle}` : productTitle}
                     </h3>
                   </div>
                 </Link>
@@ -109,7 +126,6 @@ export const CartItemsProducts = ({
                     <DeleteCartItemButton 
                       id={product.id} 
                       onDeleted={async () => {
-                        console.log('🗑️ Item deleted, triggering cart refresh...')
                         if (onCartUpdate && cartId) {
                           try {
                             // Fetch updated cart data after deletion
@@ -137,14 +153,18 @@ export const CartItemsProducts = ({
                     ))}
                     <div className="flex items-center gap-2">
                       <span className="text-secondary">Ilość:</span>
-                      <QuantityChanger
-                        itemId={product.id}
-                        cartId={cartId || product.cart_id || ''}
-                        initialQuantity={product.quantity}
-                        maxQuantity={product.variant?.inventory_quantity || 999}
-                        unitPrice={product.unit_price}
-                        onQuantityChange={(newQuantity, newTotal) => handleQuantityChange(product.id, newQuantity, newTotal)}
-                      />
+                      {show_quantity_changer ? (
+                        <QuantityChanger
+                          itemId={product.id}
+                          cartId={cartId || product.cart_id || ''}
+                          initialQuantity={product.quantity}
+                          maxQuantity={product.variant?.inventory_quantity || 999}
+                          unitPrice={product.unit_price}
+                          onQuantityChange={(newQuantity, newTotal) => handleQuantityChange(product.id, newQuantity, newTotal)}
+                        />
+                      ) : (
+                        <span className="text-primary font-medium">{product.quantity}</span>
+                      )}
                     </div>
                   </div>
                   <div className="lg:text-right flex lg:block items-center gap-2 mt-4 lg:mt-0">

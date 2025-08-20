@@ -31,7 +31,7 @@ export default function CartPromotionCode({
     <div>
       <Heading
         level="h2"
-        className="flex flex-row text-3xl-regular gap-x-2 items-baseline items-center"
+        className="flex flex-row text-3xl-regular gap-x-2 items-baseline items-center font-instrument-sans"
       >
         Kody promocyjne
       </Heading>

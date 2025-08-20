@@ -11,19 +11,22 @@ import { CreditCard } from "@medusajs/icons"
 
 type PaymentButtonProps = {
   cart: HttpTypes.StoreCart
+  termsAccepted: boolean
   "data-testid": string
 }
 
 // Main PaymentButton component that determines which payment method to use
 const PaymentButton: React.FC<PaymentButtonProps> = ({
   cart,
+  termsAccepted,
   "data-testid": dataTestId,
 }): React.ReactElement => {
   // Check if cart is ready for checkout
   const notReady = !cart || 
     !cart.shipping_address || 
     !cart.email || 
-    (cart.shipping_methods?.length ?? 0) < 1
+    (cart.shipping_methods?.length ?? 0) < 1 ||
+    !termsAccepted
 
   // Get all possible payment sessions from the cart
   const paymentSessions = cart?.payment_collection?.payment_sessions || []
@@ -39,27 +42,6 @@ const PaymentButton: React.FC<PaymentButtonProps> = ({
   // Get payment provider ID from the active session or first available
   const paymentProviderId = activeSession?.provider_id || paymentSessions[0]?.provider_id
   
-  // Log detailed payment info for debugging
-  console.log('PaymentButton - Debug info:', {
-    id: cart?.id,
-    email: cart?.email,
-    hasShippingAddress: !!cart?.shipping_address,
-    hasShippingMethod: !!cart?.shipping_methods?.length,
-    paymentSessionsCount: paymentSessions.length,
-    paymentSessions: paymentSessions.map((s: any) => ({
-      id: s.id,
-      providerId: s.provider_id,
-      status: s.status
-    })),
-    activeSession: activeSession ? {
-      id: activeSession.id,
-      providerId: activeSession.provider_id,
-      status: activeSession.status
-    } : null,
-    hasValidPaymentSession,
-    finalPaymentProviderId: paymentProviderId,
-  })
-  
   // Determine which payment button to show based on the payment provider
   switch (true) {
     case isPayU(paymentProviderId):
@@ -67,6 +49,7 @@ const PaymentButton: React.FC<PaymentButtonProps> = ({
         <PayUPaymentButton
           cart={cart}
           isPaymentReady={!notReady && hasValidPaymentSession}
+          termsAccepted={termsAccepted}
           data-testid={dataTestId}
           activeSession={activeSession}
         />
@@ -75,6 +58,7 @@ const PaymentButton: React.FC<PaymentButtonProps> = ({
       return (
         <ManualTestPaymentButton 
           isPaymentReady={!notReady && hasValidPaymentSession}
+          termsAccepted={termsAccepted}
           data-testid={dataTestId}
           cart={cart}
         />
@@ -83,7 +67,7 @@ const PaymentButton: React.FC<PaymentButtonProps> = ({
       return (
         <div className="flex flex-col gap-y-2">
           <Button disabled>
-            {!hasValidPaymentSession ? 'Wybierz metodę płatności' : 'Ładowanie...'}
+            {!termsAccepted ? 'Zaakceptuj regulamin' : !hasValidPaymentSession ? 'Wybierz metodę płatności' : 'Ładowanie...'}
           </Button>
           {paymentSessions.length === 0 && (
             <p className="text-sm text-gray-500 text-center">
@@ -97,12 +81,14 @@ const PaymentButton: React.FC<PaymentButtonProps> = ({
 
 interface ManualTestPaymentButtonProps {
   isPaymentReady: boolean
+  termsAccepted: boolean
   "data-testid"?: string
   cart: HttpTypes.StoreCart
 }
 
 const ManualTestPaymentButton: React.FC<ManualTestPaymentButtonProps> = ({ 
   isPaymentReady, 
+  termsAccepted,
   "data-testid": dataTestId,
   cart
 }): React.ReactElement => {
@@ -122,7 +108,6 @@ const ManualTestPaymentButton: React.FC<ManualTestPaymentButtonProps> = ({
       const { placeOrder } = await import('@/lib/data/cart');
       const result = await placeOrder(cart.id);
       
-      console.log('Manual payment result:', result);
       
       if (result.redirectUrl) {
         window.location.href = result.redirectUrl;
@@ -153,7 +138,8 @@ const ManualTestPaymentButton: React.FC<ManualTestPaymentButtonProps> = ({
         data-testid={dataTestId}
         loading={submitting}
       >
-        <CreditCard className="mr-2" /> Pay with Manual Test
+        <CreditCard className="mr-2" /> 
+        {!termsAccepted ? 'Zaakceptuj regulamin' : 'Pay with Manual Test'}
       </Button>
       {errorMessage && (
         <ErrorMessage error={errorMessage} data-testid="manual-payment-error-message" />
@@ -165,6 +151,7 @@ const ManualTestPaymentButton: React.FC<ManualTestPaymentButtonProps> = ({
 interface PayUPaymentButtonProps {
   cart: HttpTypes.StoreCart
   isPaymentReady: boolean
+  termsAccepted: boolean
   "data-testid"?: string
   activeSession?: any
 }
@@ -172,6 +159,7 @@ interface PayUPaymentButtonProps {
 const PayUPaymentButton: React.FC<PayUPaymentButtonProps> = ({
   cart,
   isPaymentReady,
+  termsAccepted,
   "data-testid": dataTestId,
   activeSession
 }): React.ReactElement => {
@@ -193,18 +181,14 @@ const PayUPaymentButton: React.FC<PayUPaymentButtonProps> = ({
   // Check if we are in a redirect flow from PayU
   useEffect(() => {
     if (activeSession) {
-      console.log('Payment session data:', {
-        id: activeSession.id,
-        providerId: activeSession.provider_id,
-        status: activeSession.status
-      })
+      
     }
     
     const checkPaymentStatus = (): void => {
       const storedCartId = localStorage.getItem('payu_cart_id')
       
       if (storedCartId && storedCartId === cart.id) {
-        console.log('Detected returning from payment flow, checking status')
+        
         setErrorMessage('Checking payment status...')
       }
     }
@@ -218,13 +202,12 @@ const PayUPaymentButton: React.FC<PayUPaymentButtonProps> = ({
       const payuStatus = searchParams.get('PayUStatus')
       
       if (payuStatus) {
-        console.log('Detected PayU redirect with status:', payuStatus)
+        
         
         localStorage.setItem('payu_cart_id', '')
         
         if (payuStatus.toUpperCase() === 'SUCCESS') {
           const orderId = searchParams.get('orderId') || cart.id
-          console.log('Payment successful, redirecting to order confirmation', orderId)
           router.push(`/order/confirmed/${orderId}`)
         }
       }
@@ -235,12 +218,6 @@ const PayUPaymentButton: React.FC<PayUPaymentButtonProps> = ({
 
   const handlePayment = async (): Promise<void> => {
     if (submitting || hasRedirected || paymentInitiated || processingRef.current) {
-      console.log('Payment already in progress, skipping...', {
-        submitting,
-        hasRedirected,
-        paymentInitiated,
-        processing: processingRef.current
-      })
       return
     }
 
@@ -250,7 +227,7 @@ const PayUPaymentButton: React.FC<PayUPaymentButtonProps> = ({
     setErrorMessage(null)
     
     try {
-      console.log('Starting PayU payment process for cart:', cart.id)
+      
       
       // Get the current PayU session
       const currentSession = activeSession || cart?.payment_collection?.payment_sessions?.find(
@@ -261,7 +238,7 @@ const PayUPaymentButton: React.FC<PayUPaymentButtonProps> = ({
         throw new Error('Nie znaleziono sesji płatności PayU')
       }
       
-      console.log('Using PayU session:', currentSession.id)
+      
       
       // Store cart ID for PayU return page
       localStorage.setItem('payu_cart_id', cart.id)
@@ -269,7 +246,6 @@ const PayUPaymentButton: React.FC<PayUPaymentButtonProps> = ({
       // Place the order - this will trigger the payment flow
       const { placeOrder } = await import('@/lib/data/cart')
       const orderResult = await placeOrder(cart.id)
-      console.log('Order placement result:', orderResult)
       
       // Check for redirect URL in the order result
       if (orderResult && typeof orderResult === 'object') {
@@ -286,7 +262,6 @@ const PayUPaymentButton: React.FC<PayUPaymentButtonProps> = ({
           (orderResult.data?.next_action?.redirect_to_url?.url);
         
         if (orderRedirectUrl) {
-          console.log('Found redirect URL in order result:', orderRedirectUrl)
           setHasRedirected(true)
           
           setTimeout(() => {
@@ -299,7 +274,7 @@ const PayUPaymentButton: React.FC<PayUPaymentButtonProps> = ({
         // Check if order was completed successfully without redirect
         const orderId = orderResult.id || (orderResult.order && orderResult.order.id)
         if (orderId) {
-          console.log('Order completed successfully without redirect, going to confirmation:', orderId)
+      
           localStorage.setItem('payu_cart_id', '')
           router.push(`/order/confirmed/${orderId}`)
           return
@@ -366,7 +341,7 @@ const PayUPaymentButton: React.FC<PayUPaymentButtonProps> = ({
         className="w-full"
         data-testid={dataTestId}
       >
-        {hasRedirected ? 'Przekierowywanie...' : 'Złóż zamówienie'}
+        {hasRedirected ? 'Przekierowywanie...' : !termsAccepted ? 'Zaakceptuj regulamin' : 'Złóż zamówienie'}
       </Button>
       
       <ErrorMessage

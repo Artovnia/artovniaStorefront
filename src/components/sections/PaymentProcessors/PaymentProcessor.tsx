@@ -40,12 +40,12 @@ export const PaymentProcessor: React.FC<PaymentProcessorProps> = ({
         const paymentSession = cart.payment_session;
         const sessionData = paymentSession.data || {};
         
-        console.log('Processing payment session data:', sessionData);
+        
         
         // CRITICAL: Direct redirect for PayU is the most reliable method
         // Check for redirect_url first and redirect immediately if available
         if (sessionData.redirect_url && sessionData.redirect_url !== 'about:blank') {
-          console.log('Direct redirect to PayU URL:', sessionData.redirect_url);
+          
           // Force immediate redirect to PayU - this is the most important change
           window.location.href = sessionData.redirect_url;
           return;
@@ -58,7 +58,7 @@ export const PaymentProcessor: React.FC<PaymentProcessorProps> = ({
             const htmlContent = sessionData.html_content;
             const formMatch = htmlContent.match(/<form[^>]*action="([^"]+)"[^>]*>/i);
             if (formMatch && formMatch[1]) {
-              console.log('Extracted URL from HTML, redirecting:', formMatch[1]);
+              
               window.location.href = formMatch[1];
               return;
             }

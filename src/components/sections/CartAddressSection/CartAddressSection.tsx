@@ -44,13 +44,20 @@ export const CartAddressSection = ({
       : true
   )
 
-  const [message, formAction, isPending] = useActionState(setAddresses, sameAsBilling)
+  const [message, formAction, isPending] = useActionState(setAddresses, null)
+
+  // Handle successful form submission
+  useEffect(() => {
+    if (message === "success") {
+      router.replace(`/checkout`)
+    }
+  }, [message, router])
 
   useEffect(() => {
-    if (!isAddress) {
+    if (!isAddress && !isPending) {
       router.replace(pathname + "?step=address")
     }
-  }, [isAddress, router, pathname])
+  }, [isAddress, router, pathname, isPending])
 
   // Memoize handleEdit to prevent unnecessary re-renders
   const handleEdit = useCallback(() => {
@@ -75,10 +82,7 @@ export const CartAddressSection = ({
         )}
       </div>
       <form
-        action={async (data) => {
-          await formAction(data)
-          router.replace(`/checkout`)
-        }}
+        action={formAction}
       >
         {isOpen ? (
           <div className="pb-8">
