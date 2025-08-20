@@ -9,6 +9,10 @@ import BlogLayout from '../components/BlogLayout'
 import PortableText from '../components/PortableText'
 import { SellerPostLayout } from '../components/SellerPostLayout'
 
+// Fix for "Page changed from static to dynamic at runtime" error
+// This explicitly tells Next.js that this page is dynamic
+export const dynamic = 'force-dynamic'
+
 interface BlogPostPageProps {
   params: Promise<{
     slug: string
