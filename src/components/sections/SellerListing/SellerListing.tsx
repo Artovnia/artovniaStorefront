@@ -7,6 +7,7 @@ import { SellerFilterBar } from '@/components/organisms/SellerFilterBar/SellerFi
 import { useSearchParams } from 'next/navigation'
 import { getSellers } from '@/lib/data/seller'
 import { SellerProps } from '@/types/seller'
+import { Pagination } from '@/components/cells/Pagination/Pagination'
 
 interface SellerListingResponse {
   sellers: SellerProps[]
@@ -21,14 +22,50 @@ interface SellerListingProps {
 
 const SellerListingSkeleton = () => (
   <div className="w-full">
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6 justify-items-center">
       {Array.from({ length: 12 }).map((_, index) => (
-        <div key={index} className="bg-white border border-[#3B3634] rounded-lg overflow-hidden animate-pulse">
-          <div className="aspect-square bg-gray-200" />
-          <div className="p-4">
-            <div className="h-5 bg-gray-200 rounded mb-2" />
-            <div className="h-4 bg-gray-200 rounded mb-2" />
-            <div className="h-3 bg-gray-200 rounded w-1/2" />
+        <div 
+          key={index} 
+          className="bg-gradient-to-br from-[#F4F0EB] via-[#F4F0EB] to-[#F4F0EB]/95 rounded-3xl overflow-hidden w-[240px] h-[320px] border border-[#BFB7AD]/20 shadow-md animate-pulse relative"
+        >
+          {/* Gradient overlay */}
+          <div className="absolute inset-0 bg-gradient-to-br from-white/30 via-transparent to-[#BFB7AD]/5" />
+          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-[#BFB7AD]/20 to-transparent" />
+          
+          {/* Avatar Section */}
+          <div className="relative flex items-center justify-center pt-8 pb-6 h-[120px]">
+            {/* Container for ring and avatar placeholder */}
+            <div className="relative w-18 h-18">
+              {/* Decorative rings */}
+              <div className="absolute inset-0 w-18 h-18 rounded-md border border-[#BFB7AD]/10" />
+              {/* Avatar placeholder */}
+              <div className="w-18 h-18 rounded-md bg-[#BFB7AD]/20 shadow-xl ring-2 ring-white/50" />
+            </div>
+          </div>
+
+          {/* Content Section */}
+          <div className="px-6 pb-6 flex flex-col justify-between h-[200px]">
+            {/* Name placeholder */}
+            <div className="h-[60px] flex items-center justify-center">
+              <div className="h-6 bg-[#BFB7AD]/30 rounded-lg w-32" />
+            </div>
+            
+            {/* Description placeholder */}
+            <div className="h-[60px] flex items-center justify-center flex-col space-y-2">
+              <div className="h-4 bg-[#BFB7AD]/20 rounded w-40" />
+              <div className="h-4 bg-[#BFB7AD]/15 rounded w-32" />
+            </div>
+
+            {/* Badge placeholder */}
+            <div className="flex justify-center">
+              <div className="h-8 bg-[#BFB7AD]/25 rounded-full w-28" />
+            </div>
+
+            {/* Bottom accent */}
+            <div className="absolute bottom-3 left-1/2 transform -translate-x-1/2">
+              <div className="w-16 h-0.5 bg-[#BFB7AD]/30 rounded-full" />
+              <div className="w-8 h-0.5 bg-[#BFB7AD]/20 rounded-full mt-1 mx-auto" />
+            </div>
           </div>
         </div>
       ))}
@@ -120,7 +157,7 @@ export const SellerListing = ({ className }: SellerListingProps) => {
       <SellerFilterBar />
 
       {/* Results Info */}
-      <div className="px-4 sm:px-6 py-4 bg-primary border-b border-gray-200">
+      <div className="px-4 sm:px-6 py-4 bg-primary ">
         <div className="flex items-center justify-between">
           <p className="text-sm text-gray-600 font-instrument-sans">
             {loading ? (
@@ -141,7 +178,7 @@ export const SellerListing = ({ className }: SellerListingProps) => {
       </div>
 
       {/* Content Area */}
-      <div className="px-4 sm:px-6 py-6">
+      <div className="px-4 sm:px-6 py-8">
         {loading ? (
           <SellerListingSkeleton />
         ) : sellers.length === 0 ? (
@@ -159,7 +196,7 @@ export const SellerListing = ({ className }: SellerListingProps) => {
         ) : (
           <>
             {/* Sellers Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4 mb-8">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6 justify-items-center mb-8">
               {sellers.map((seller) => (
                 <SellerCard key={seller.id} seller={seller} />
               ))}
@@ -167,63 +204,12 @@ export const SellerListing = ({ className }: SellerListingProps) => {
 
             {/* Pagination */}
             {totalPages > 1 && (
-              <div className="flex items-center justify-center gap-2">
-                <button
-                  onClick={() => handlePageChange(currentPage - 1)}
-                  disabled={currentPage === 1}
-                  className={cn(
-                    "px-3 py-2 rounded-lg text-sm font-medium font-instrument-sans transition-colors",
-                    currentPage === 1
-                      ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-                      : "bg-primary text-black hover:bg-opacity-90"
-                  )}
-                >
-                  Poprzednia
-                </button>
-
-                {/* Page Numbers */}
-                <div className="flex items-center gap-1">
-                  {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                    let pageNum
-                    if (totalPages <= 5) {
-                      pageNum = i + 1
-                    } else if (currentPage <= 3) {
-                      pageNum = i + 1
-                    } else if (currentPage >= totalPages - 2) {
-                      pageNum = totalPages - 4 + i
-                    } else {
-                      pageNum = currentPage - 2 + i
-                    }
-
-                    return (
-                      <button
-                        key={pageNum}
-                        onClick={() => handlePageChange(pageNum)}
-                        className={cn(
-                          "w-10 h-10 rounded-lg text-sm font-medium font-instrument-sans transition-colors",
-                          currentPage === pageNum
-                            ? "bg-[#3B3634] text-white"
-                            : "bg-primary text-black hover:bg-opacity-90"
-                        )}
-                      >
-                        {pageNum}
-                      </button>
-                    )
-                  })}
-                </div>
-
-                <button
-                  onClick={() => handlePageChange(currentPage + 1)}
-                  disabled={currentPage === totalPages}
-                  className={cn(
-                    "px-3 py-2 rounded-lg text-sm font-medium font-instrument-sans transition-colors",
-                    currentPage === totalPages
-                      ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-                      : "bg-primary text-black hover:bg-opacity-90"
-                  )}
-                >
-                  Następna
-                </button>
+              <div className="flex justify-center mt-8">
+                <Pagination 
+                  pages={totalPages} 
+                  setPage={handlePageChange} 
+                  currentPage={currentPage} 
+                />
               </div>
             )}
           </>

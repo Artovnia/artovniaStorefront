@@ -8,16 +8,16 @@ export const metadata: Metadata = {
 
 export default function SellersPage() {
   return (
-    <div className="min-h-screen bg-primary">
+    <div className="min-h-screen bg-primary max-w-[1920px] w-full mx-auto">
       <div className="container mx-auto">
         {/* Page Header */}
-        <div className="bg-primary border-b border-gray-200 px-4 sm:px-6 py-8">
-          <div className="max-w-7xl mx-auto">
-            <h1 className="text-3xl font-bold text-black font-instrument-sans mb-2">
+        <div className="bg-primary border-b border-[#3B3634] px-4 sm:px-6 py-8">
+          <div className="mx-auto">
+            <h1 className="text-3xl font-bold text-black font-instrument-serif  mb-2 text-center">
               Sprzedawcy
             </h1>
-            <p className="text-gray-600 font-instrument-sans">
-              Odkryj talentowanych artystów i sprzedawców na naszej platformie
+            <p className="text-gray-600 font-instrument-sans text-center">
+              Odkryj utalentowanych artystów i sprzedawców na naszej platformie
             </p>
           </div>
         </div>

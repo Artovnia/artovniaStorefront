@@ -142,7 +142,7 @@ export const SellerFilterBar = ({ className }: SellerFilterBarProps) => {
   const activeFilters = getActiveFilters()
 
   return (
-    <div className={cn("w-full bg-primary border-b border-[#3B3634] py-4 px-4 sm:px-6", className)}>
+    <div className={cn("w-full bg-primary py-4 px-4 sm:px-6", className)}>
       {/* Filter Buttons Row */}
       <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-4 overflow-x-auto scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-gray-100 pb-2">
         {/* Sort Filter */}

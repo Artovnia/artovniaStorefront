@@ -39,6 +39,7 @@ import { ProductGPSR } from "./ProductGPSR/ProductGPSR"
 import { InpostParcelSelector } from "./InpostParcelSelector/InpostParcelSelector"
 import { InpostParcelInfo } from "./InpostParcelInfo/InpostParcelInfo"
 import { ImageZoomModal } from "./ImageZoomModal/ImageZoomModal"
+import { SellerProductListing } from "./SellerProductListing/SellerProductListing"
 
 export {
   PrimeCategoryNavbar,
@@ -81,6 +82,7 @@ export {
   InpostParcelSelector,
   InpostParcelInfo,
   ImageZoomModal,
+  SellerProductListing,
 }
 
 // Re-export LocalizedLink as a named export

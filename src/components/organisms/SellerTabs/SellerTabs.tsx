@@ -1,7 +1,7 @@
 import { Suspense } from "react"
 import { ProductListingSkeleton } from "../ProductListingSkeleton/ProductListingSkeleton"
-import { AlgoliaProductsListing, ProductListing } from "@/components/sections"
 import { TabsContent, TabsList } from "@/components/molecules"
+import { SellerProductListing } from "@/components/molecules/SellerProductListing/SellerProductListing"
 import { SellerReviewTab } from "@/components/cells"
 import { ServerAuthProvider } from "@/components/cells/SellerMessageTab/ServerAuthProvider"
 
@@ -61,7 +61,11 @@ export const SellerTabs = ({
     tab = "produkty";
   }
   
+
+  
+  
   // Safely construct links to prevent undefined interpolation
+  // Note: labels are in Polish but URLs match English directory structure
   const tabsList = [
     { label: "produkty", link: `/sellers/${seller_handle}/` },
     // {
@@ -69,26 +73,21 @@ export const SellerTabs = ({
     //   link: `/sellers/${seller_handle}/sold`,
     // },
     {
-      label: "recenzje",
+      label: "recenzje", 
       link: `/sellers/${seller_handle}/reviews`,
     },
     {
-      label: "wiadomości",
+      label: "wiadomości", 
       link: `/sellers/${seller_handle}/messages`,
     },
   ]
 
   return (
-    <div className="mt-8">
+    <div className="mt-8 w-full max-w-7xl mx-auto">
       <TabsList list={tabsList} activeTab={tab} />
-      <TabsContent value="products" activeTab={tab}>
+      <TabsContent value="produkty" activeTab={tab}>
         <Suspense fallback={<ProductListingSkeleton />}>
-          <ProductListing seller_id={seller_id} />
-          {/* {!ALGOLIA_ID || !ALGOLIA_SEARCH_KEY ? (
-            <ProductListing showSidebar seller_id={seller_id} />
-          ) : (
-            <AlgoliaProductsListing locale={locale} />
-          )} */}
+          <SellerProductListing seller_id={seller_id} />
         </Suspense>
       </TabsContent>
       {/* <TabsContent value="sold" activeTab={tab}>
@@ -96,7 +95,7 @@ export const SellerTabs = ({
           <ProductListing />
         </Suspense>
       </TabsContent> */}
-      <TabsContent value="reviews" activeTab={tab}>
+      <TabsContent value="recenzje" activeTab={tab}>
         <Suspense fallback={<div className="mt-8 p-4 border">Ładowanie recenzji...</div>}>
           {seller_handle && 
            seller_handle !== 'undefined' && 
@@ -111,8 +110,8 @@ export const SellerTabs = ({
           )}
         </Suspense>
       </TabsContent>
-      <TabsContent value="messages" activeTab={tab}>
-        <Suspense fallback={<div className="mt-8 p-4 border">Ładowanie wiadomości...</div>}>
+      <TabsContent value="wiadomości" activeTab={tab}>
+        <Suspense fallback={<div className="mt-8 p-4 ">Ładowanie wiadomości...</div>}>
           {seller_id && 
            seller_id !== 'undefined' && 
            seller_id !== 'null' && 
@@ -126,7 +125,7 @@ export const SellerTabs = ({
                          seller_name : seller_handle} 
             />
           ) : (
-            <div className="mt-8 border rounded-sm p-4">
+            <div className="mt-8  rounded-sm p-4">
               <p className="text-error">Nie można załadować wiadomości - brak ID sprzedawcy</p>
             </div>
           )}

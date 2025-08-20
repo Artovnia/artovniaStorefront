@@ -23,7 +23,7 @@ export function Indicator({
 
   const baseClasses = {
     light: 'rounded-md bg-tertiary/10 relative',
-    dark: 'rounded-md bg-primary/10 relative',
+    dark: 'rounded-md bg-white/20 relative',
   };
   const sizeClasses = {
     small: 'w-full h-1',
@@ -64,10 +64,10 @@ export function Indicator({
       <div
         className={cn(
           'h-full rounded-sm absolute transition-all duration-300',
-          variant === 'light' ? 'bg-tertiary' : 'bg-red-500'
+          variant === 'light' ? 'bg-tertiary' : 'bg-white'
         )}
         style={{
-          width: wrapperWidth / maxStep,
+          width: Math.max(wrapperWidth / maxStep * 4, 30), // Make indicator 3x wider with minimum 20px
           left: (wrapperWidth / maxStep) * (step - 1),
         }}
       />

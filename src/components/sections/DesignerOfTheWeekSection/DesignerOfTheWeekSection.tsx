@@ -6,8 +6,6 @@ import Link from "next/link"
 import type { SellerPost } from "@/app/[locale]/blog/lib/data"
 import { urlFor } from "@/app/[locale]/blog/lib/sanity"
 
-
-
 interface DesignerOfTheWeekSectionProps {
   className?: string
 }
@@ -61,13 +59,13 @@ export function DesignerOfTheWeekSection({ className = "" }: DesignerOfTheWeekSe
 
   return (
     <section className={`mx-auto max-w-[1920px] w-full px-4 lg:px-8 py-4 lg:py-8 font-instrument-sans ${className}`}>
-      <div className="flex flex-col lg:flex-row items-center gap-8 lg:gap-12 xl:gap-16">
+      <div className="flex flex-col lg:flex-row items-center gap-8 lg:gap-12 xl:gap-16 2xl:gap-20">
         
         {/* Images - First on mobile, Second on desktop */}
         <div className="w-full lg:w-1/2 order-1 lg:order-2">
-          <div className="flex items-start justify-center lg:justify-start gap-4 md:gap-8 lg:gap-12 xl:gap-20">
+          <div className="flex items-start justify-center lg:justify-start gap-4 md:gap-6 lg:gap-8 xl:gap-12 2xl:gap-16">
             {/* Main Image - Large (3x bigger) */}
-            <div className="flex-shrink-0 w-48 h-64 sm:w-56 sm:h-72 md:w-64 md:h-80 lg:w-80 lg:h-96 xl:w-[28rem] xl:h-[30rem]">
+            <div className="flex-shrink-0 w-48 h-64 sm:w-56 sm:h-72 md:w-64 md:h-80 lg:w-72 lg:h-88 xl:w-80 xl:h-96 2xl:w-[28rem] 2xl:h-[30rem]">
               <div className="relative w-full h-full overflow-hidden shadow-lg">
                 <Image
                   src={featuredPost.mainImage && featuredPost.mainImage.asset ? 
@@ -77,14 +75,14 @@ export function DesignerOfTheWeekSection({ className = "" }: DesignerOfTheWeekSe
                   alt={featuredPost.mainImage?.alt || "Featured seller image"}
                   fill
                   className="object-cover"
-                  sizes="(max-width: 640px) 192px, (max-width: 768px) 224px, (max-width: 1024px) 256px, (max-width: 1280px) 320px, 384px"
+                  sizes="(max-width: 640px) 192px, (max-width: 768px) 224px, (max-width: 1024px) 256px, (max-width: 1280px) 288px, (max-width: 1536px) 320px, 384px"
                   priority
                 />
               </div>
             </div>
             
             {/* Secondary Image - Smaller (hidden on mobile) */}
-            <div className="hidden md:block flex-shrink-0 w-32 h-40 lg:w-40 lg:h-48 xl:w-60 xl:h-72">
+            <div className="hidden md:block flex-shrink-0 w-32 h-40 lg:w-40 lg:h-48 xl:w-52 xl:h-60 2xl:w-60 2xl:h-72">
               <div className="relative w-full h-full overflow-hidden shadow-lg border-4 border-[#F4F0EB]">
                 <Image
                   src={featuredPost.secondaryImage && featuredPost.secondaryImage.asset ? 
@@ -94,7 +92,7 @@ export function DesignerOfTheWeekSection({ className = "" }: DesignerOfTheWeekSe
                   alt={featuredPost.secondaryImage?.alt || "Secondary seller image"}
                   fill
                   className="object-cover"
-                  sizes="(max-width: 1024px) 128px, (max-width: 1280px) 160px, 192px"
+                  sizes="(max-width: 768px) 128px, (max-width: 1024px) 144px, (max-width: 1280px) 160px, (max-width: 1536px) 160px, 192px"
                 />
               </div>
             </div>
@@ -102,7 +100,7 @@ export function DesignerOfTheWeekSection({ className = "" }: DesignerOfTheWeekSe
         </div>
 
         {/* Text Content - Second on mobile, First on desktop */}
-        <div className="w-full lg:w-1/2 order-2 lg:order-1 flex flex-col justify-center space-y-6 lg:space-y-12 items-center">
+        <div className="w-full lg:w-1/2 order-2 lg:order-1 flex flex-col justify-center space-y-6 lg:space-y-8 xl:space-y-10 2xl:space-y-12 items-center">
           {/* Header */}
           <h2 className="text-2xl lg:text-3xl xl:text-4xl font-instrument-serif text-[#3B3634] tracking-wide mb-6">
            <span className="font-instrument-serif">Projektant</span> <span className="font-instrument-serif italic">tygodnia</span>

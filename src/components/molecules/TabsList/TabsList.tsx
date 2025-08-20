@@ -9,16 +9,18 @@ export const TabsList = ({
   activeTab: string;
 }) => {
   return (
-    <div className='flex gap-4 w-full'>
-      {list.map(({ label, link }) => (
-        <Link key={label} href={link}>
-          <TabsTrigger
-            isActive={activeTab === label.toLowerCase()}
-          >
-            {label}
-          </TabsTrigger>
-        </Link>
-      ))}
+    <div className='flex gap-4 w-full border-b border-[#3B3634] font-instrument-sans'>
+      {list.map(({ label, link }) => {
+        const isActive = activeTab.trim() === label.toLowerCase().trim();
+        
+        return (
+          <Link key={label} href={link}>
+            <TabsTrigger isActive={isActive}>
+              {label}
+            </TabsTrigger>
+          </Link>
+        );
+      })}
     </div>
   );
 };

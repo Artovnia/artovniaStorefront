@@ -25,6 +25,12 @@ export const CustomCarousel = ({
   // Responsive scroll amount for each button click (in pixels)
   const scrollAmount = 350; // Approximately one product card width
   
+  // Calculate actual progress based on scroll position vs max scroll
+  const calculateProgress = () => {
+    if (maxScroll === 0) return 1; // If no scrolling needed, we're at 100%
+    return Math.min(Math.max(scrollPosition / maxScroll, 0), 1);
+  };
+  
   // Initialize scroll state and check window width on component mount
   useEffect(() => {
     if (scrollContainerRef.current) {
@@ -161,12 +167,12 @@ export const CustomCarousel = ({
       </div>
 
       {/* Mobile Navigation - Only visible on mobile */}
-      <div className='flex justify-between items-center mt-4 md:hidden'>
+      <div className='flex justify-between items-center mt-4 lg:hidden'>
         <div className='flex-1'>
           <Indicator
             variant={variant}
-            maxStep={items.length}
-            step={Math.ceil(scrollPosition / scrollAmount) + 1}
+            maxStep={100}
+            step={Math.ceil(calculateProgress() * 100)}
           />
         </div>
         <div className='flex gap-2'>
@@ -176,15 +182,7 @@ export const CustomCarousel = ({
             disabled={scrollPosition <= 0}
             aria-label="Previous slide"
           >
-            <ArrowLeftIcon color={arrowColor[variant]} size={16} />
-          </button>
-          <button
-            className=' hover:bg-[#BFB7AD] rounded-full p-2  transition-all duration-200 disabled:opacity-50'
-            onClick={scrollNext}
-            disabled={scrollPosition >= maxScroll}
-            aria-label="Next slide"
-          >
-            <ArrowRightIcon color={arrowColor[variant]} size={16} />
+           
           </button>
         </div>
       </div>

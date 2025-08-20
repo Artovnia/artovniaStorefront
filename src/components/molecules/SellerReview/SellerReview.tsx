@@ -74,10 +74,10 @@ export const SellerReview = ({ review }: { review: any }) => {
       <div className="mb-4 border-b pb-4">
         <div className="flex justify-between">
           <div className="flex items-center gap-3">
-            <div className="h-8 w-8 rounded-full bg-ui-button-neutral flex items-center justify-center text-white">
+            <div className="h-8 w-8 text-white bg-[#3B3634] rounded-full flex items-center justify-center">
               {customerInitials || "UK"}
             </div>
-            <span className="label-semibold">{customerName}</span>
+            <span className="label-semibold ">{customerName}</span>
           </div>
           <span className="text-secondary">{displayDate}</span>
         </div>

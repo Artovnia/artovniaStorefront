@@ -147,15 +147,17 @@ export const listProductsWithSort = async ({
       limit,
       // Add server-side sorting if supported by Medusa
       order: sortBy === 'created_at' ? '-created_at' : sortBy,
+      // Remove seller_id from server query as it's not supported
+      // ...(seller_id && { seller_id })
     },
     category_id,
     collection_id,
     countryCode,
   })
 
-  // Filter by seller if needed (consider moving this to server-side query)
-  const filteredProducts = seller_id
-    ? products.filter((product) => product.seller?.id === seller_id)
+  // Filter by seller_id client-side since server doesn't support it
+  const filteredProducts = seller_id 
+    ? products.filter(product => product.seller?.id === seller_id)
     : products
 
   // Only sort client-side if server-side sorting isn't available
@@ -166,7 +168,7 @@ export const listProductsWithSort = async ({
   return {
     response: {
       products: finalProducts,
-      count: seller_id ? filteredProducts.length : count,
+      count: filteredProducts.length, // Use filtered count since we're filtering client-side
     },
     nextPage,
     queryParams,

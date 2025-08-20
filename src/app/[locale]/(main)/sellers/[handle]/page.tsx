@@ -4,6 +4,8 @@ import { SellerPageHeader } from "../../../../../components/sections"
 import { retrieveCustomer } from "../../../../../lib/data/customer"
 import { getSellerByHandle } from "../../../../../lib/data/seller"
 import { getVendorAvailability, getVendorHolidayMode, getVendorSuspension } from "../../../../../lib/data/vendor-availability"
+import { getSellerReviews } from "../../../../../lib/data/reviews"
+import { SellerProps } from "../../../../../types/seller"
 
 export default async function SellerPage({
   params,
@@ -29,8 +31,18 @@ export default async function SellerPage({
     console.log(`Fetching seller with handle: ${handle} for main seller page`);
     const seller = await getSellerByHandle(handle)
     const user = await retrieveCustomer()
-
-    const tab = "products"
+    
+    // Fetch seller reviews
+    const { reviews = [] } = await getSellerReviews(handle)
+    
+    // Merge reviews data with seller object
+    const sellerWithReviews = seller ? {
+      ...seller,
+      reviews: reviews || []
+    } : null
+    
+    // Get the tab from URL or default to produkty
+    const tab = "produkty"
 
     if (!seller) {
       console.error(`Seller not found for handle: ${handle}`);
@@ -84,7 +96,7 @@ export default async function SellerPage({
   }
 
   return (
-    <main className="container">
+    <main className="container ">
       <VendorAvailabilityProvider
         vendorId={seller.id}
         vendorName={seller.name}
@@ -93,7 +105,7 @@ export default async function SellerPage({
         suspension={suspension}
         showModalOnLoad={!!availability?.onHoliday}
       >
-        <SellerPageHeader seller={seller} user={user} />
+        <SellerPageHeader seller={sellerWithReviews as SellerProps} user={user} />
         <SellerTabs
           tab={tab}
           seller_id={seller.id}

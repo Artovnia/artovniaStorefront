@@ -2,6 +2,8 @@ import { SellerTabs } from "@/components/organisms"
 import { SellerPageHeader } from "@/components/sections"
 import { retrieveCustomer } from "@/lib/data/customer"
 import { getSellerByHandle } from "@/lib/data/seller"
+import { getSellerReviews } from "@/lib/data/reviews"
+import { SellerProps } from "@/types/seller"
 import { notFound } from "next/navigation"
 import { Metadata } from "next"
 
@@ -62,12 +64,21 @@ export default async function SellerMessagesPage(props: PageProps) {
     }
 
     const user = await retrieveCustomer()
+    
+    // Fetch seller reviews
+    const { reviews = [] } = await getSellerReviews(handle)
+    
+    // Merge reviews data with seller object
+    const sellerWithReviews = seller ? {
+      ...seller,
+      reviews: reviews || []
+    } : null
 
-    const tab = "messages"
+    const tab = "wiadomości"
 
     return (
       <main className="container">
-        <SellerPageHeader seller={seller} user={user} />
+        <SellerPageHeader seller={sellerWithReviews as SellerProps} user={user} />
         <SellerTabs
           tab={tab}
           seller_id={seller.id}

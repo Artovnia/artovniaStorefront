@@ -25,7 +25,6 @@ export const SellerReviewTab = async ({
         filteredReviews.length
       : 0
 
-  console.log(`🔍 [SellerReviewTab] Seller: ${seller_handle}, Reviews: ${reviewCount}, Rating: ${rating}`)
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-4 mt-8">
