@@ -11,7 +11,7 @@ interface BlogSearchProps {
 
 export default function BlogSearch({ 
   onSearch, 
-  placeholder = "Search blog posts...", 
+  placeholder = "Wyszukaj posty...", 
   className = "" 
 }: BlogSearchProps) {
   const router = useRouter()

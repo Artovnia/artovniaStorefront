@@ -64,7 +64,7 @@ export const Header = async () => {
   }
 
   return (
-    <header>
+    <header className="sticky top-0 z-50 bg-primary shadow-sm">
       <div className="flex py-2 max-w-[1920px] mx-auto">
         <div className="flex items-center lg:w-1/3">
           <MobileNavbar
@@ -83,7 +83,7 @@ export const Header = async () => {
             />
           </Link>
         </div>
-        <div className="flex items-center justify-end gap-2 lg:gap-4 w-full lg:w-1/3 py-4 ">
+        <div className="flex items-center justify-end gap-2 lg:gap-4 w-full lg:w-1/3 py-4 mr-4">
           <a href="https://artovniapanel.netlify.app/login" className="text-lg mr-4  font-medium hover:text-action transition-colors hover:underline">ZAŁÓŻ SKLEP</a>
           <UserDropdown user={user} />
           {user && (

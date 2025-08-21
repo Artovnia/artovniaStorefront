@@ -9,9 +9,8 @@ import BlogLayout from '../components/BlogLayout'
 import PortableText from '../components/PortableText'
 import { SellerPostLayout } from '../components/SellerPostLayout'
 
-// Fix for "Page changed from static to dynamic at runtime" error
-// This explicitly tells Next.js that this page is dynamic
-export const dynamic = 'force-dynamic'
+// OPTIMIZED: Enable ISR for better performance instead of forcing dynamic
+export const revalidate = 1800 // 30 minutes ISR
 
 interface BlogPostPageProps {
   params: Promise<{
@@ -19,31 +18,27 @@ interface BlogPostPageProps {
   }>
 }
 
+// OPTIMIZED: Generate static params for most popular posts only
 export async function generateStaticParams() {
   try {
-    const [blogPosts, sellerPosts] = await Promise.all([
-      getBlogPosts().catch(error => {
-        console.error('Error fetching blog posts for static params:', error);
-        return [];
-      }),
-      getSellerPosts().catch(error => {
-        console.error('Error fetching seller posts for static params:', error);
-        return [];
-      })
+    // Only pre-generate the most recent 10 posts for faster builds
+    const [recentBlogPosts, recentSellerPosts] = await Promise.all([
+      getBlogPosts().then(posts => posts.slice(0, 10)).catch(() => []),
+      getSellerPosts().then(posts => posts.slice(0, 5)).catch(() => [])
     ])
     
-    const blogPostParams = blogPosts.map((post) => ({
-      slug: post.slug?.current || '',
-    })).filter(param => param.slug)
+    const blogParams = recentBlogPosts
+      .filter(post => post.slug?.current)
+      .map(post => ({ slug: post.slug.current }))
     
-    const sellerPostParams = sellerPosts.map((post) => ({
-      slug: post.slug?.current || '',
-    })).filter(param => param.slug)
+    const sellerParams = recentSellerPosts
+      .filter(post => post.slug?.current)
+      .map(post => ({ slug: post.slug.current }))
     
-    return [...blogPostParams, ...sellerPostParams]
+    return [...blogParams, ...sellerParams]
   } catch (error) {
-    console.error('Fatal error generating static params:', error);
-    return [];
+    console.error('Error generating static params:', error)
+    return []
   }
 }
 
@@ -111,31 +106,25 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
   try {
     const { slug } = await params
     
-    // Try to fetch both blog post and seller post
-    const [blogPost, sellerPost] = await Promise.all([
-      getBlogPost(slug).catch(error => {
-        console.error(`Error fetching blog post in page component: ${error.message}`);
-        return null;
-      }),
-      getSellerPost(slug).catch(error => {
-        console.error(`Error fetching seller post in page component: ${error.message}`);
-        return null;
-      })
-    ])
+    // OPTIMIZED: Try blog post first, then seller post (most common case first)
+    let post = await getBlogPost(slug)
+    let isSellerPost = false
     
-    const post = blogPost || sellerPost
+    if (!post) {
+      post = await getSellerPost(slug)
+      isSellerPost = true
+    }
 
     if (!post) {
-      console.error(`No post found for slug: ${slug}`);
       notFound()
     }
 
     // If it's a seller post, render with SellerPostLayout
-    if (sellerPost) {
-      return <SellerPostLayout post={sellerPost as any} />
+    if (isSellerPost) {
+      return <SellerPostLayout post={post as any} />
     }
 
-    // Otherwise, render as regular blog post (we know it's a BlogPost now)
+    // Otherwise, render as regular blog post
     const blogPostData = post as import('../lib/data').BlogPost
     let imageUrl = null;
     try {
@@ -148,7 +137,13 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
     }
 
   return (
-    <BlogLayout>
+    <BlogLayout 
+      breadcrumbs={[
+        { label: 'Strona główna', path: '/' },
+        { label: 'Blog', path: '/blog' },
+        { label: blogPostData.title, path: `/blog/${blogPostData.slug.current}` }
+      ]}
+    >
       <article className="max-w-4xl mx-auto bg-[#F4F0EB]">
         {/* Header */}
         <header className="mb-8">
@@ -158,7 +153,7 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
                 <Link
                   key={category.slug.current}
                   href={`/blog/category/${category.slug.current}`}
-                  className="text-sm font-medium text-[#3B3634] hover:text-[#BFB7AD] bg-[#F4F0EB] border border-[#BFB7AD] px-3 py-1 rounded-full font-instrument-sans transition-colors"
+                  className="text-xl font-medium text-[#3B3634] hover:text-[#BFB7AD] bg-[#F4F0EB] border border-[#BFB7AD] px-3 py-1 rounded-full font-instrument-sans transition-colors"
                 >
                   {category.title}
                 </Link>
@@ -255,18 +250,6 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
           </div>
         )}
 
-        {/* Navigation */}
-        <div className="mt-12 pt-8 border-t border-[#BFB7AD]/30">
-          <Link
-            href="/blog"
-            className="inline-flex items-center text-[#BFB7AD] hover:text-[#3B3634] font-instrument-sans transition-colors"
-          >
-            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-            </svg>
-            Powrót do bloga
-          </Link>
-        </div>
       </article>
     </BlogLayout>
   )

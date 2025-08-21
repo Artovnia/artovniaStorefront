@@ -12,9 +12,11 @@ if (!process.env.NEXT_PUBLIC_SANITY_DATASET) {
 export const client = createClient({
   projectId: process.env.NEXT_PUBLIC_SANITY_PROJECT_ID,
   dataset: process.env.NEXT_PUBLIC_SANITY_DATASET,
-  useCdn: process.env.NODE_ENV === 'production',
+  useCdn: true, // Always use CDN for better performance
   apiVersion: '2024-01-01',
   token: process.env.SANITY_API_TOKEN,
+  perspective: 'published', // Only fetch published content for better caching
+  stega: false, // Disable stega for production performance
 })
 
 const builder = imageUrlBuilder(client)
@@ -23,7 +25,7 @@ export function urlFor(source: any) {
   return builder.image(source)
 }
 
-// GROQ queries for blog posts
+// OPTIMIZED GROQ queries for blog posts - reduced references for better performance
 export const BLOG_POSTS_QUERY = `
   *[_type == "blogPost" && !(_id in path("drafts.**"))] | order(publishedAt desc) {
     _id,
@@ -31,15 +33,11 @@ export const BLOG_POSTS_QUERY = `
     slug,
     excerpt,
     publishedAt,
-    author->{
-      name,
-      image
-    },
+    "authorName": author->name,
+    "authorImage": author->image,
     mainImage,
-    categories[]->{
-      title,
-      slug
-    },
+    "categoryTitles": categories[]->title,
+    "categorySlugs": categories[]->slug.current,
     tags
   }
 `
@@ -52,16 +50,12 @@ export const BLOG_POST_QUERY = `
     excerpt,
     content,
     publishedAt,
-    author->{
-      name,
-      bio,
-      image
-    },
+    "authorName": author->name,
+    "authorBio": author->bio,
+    "authorImage": author->image,
     mainImage,
-    categories[]->{
-      title,
-      slug
-    },
+    "categoryTitles": categories[]->title,
+    "categorySlugs": categories[]->slug.current,
     tags,
     seo {
       metaTitle,
@@ -87,15 +81,11 @@ export const FEATURED_POSTS_QUERY = `
     slug,
     excerpt,
     publishedAt,
-    author->{
-      name,
-      image
-    },
+    "authorName": author->name,
+    "authorImage": author->image,
     mainImage,
-    categories[]->{
-      title,
-      slug
-    }
+    "categoryTitles": categories[]->title,
+    "categorySlugs": categories[]->slug.current
   }
 `
 

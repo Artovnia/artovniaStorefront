@@ -3,16 +3,46 @@
 import { HttpTypes } from "@medusajs/types"
 import { CategoryNavbar, NavbarSearch } from "@/components/molecules"
 import { FullWidthDropdown } from "@/components/molecules/CategoryNavbar/CategoryNavbar"
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { getTopLevelCategories } from "@/components/molecules/CategoryNavbar/mockCategoryData"
+
+// Set to true to force using mock data for development
+const USE_MOCK_DATA = false
 
 export const Navbar = ({
-  categories,
+  categories: propCategories,
 }: {
-  categories: HttpTypes.StoreProductCategory[]
+  categories?: HttpTypes.StoreProductCategory[]
 }) => {
   const [dropdownActiveCategory, setDropdownActiveCategory] = useState<HttpTypes.StoreProductCategory | null>(null)
   const [isDropdownVisible, setIsDropdownVisible] = useState(false)
   const [hoverTimeout, setHoverTimeout] = useState<NodeJS.Timeout | null>(null)
+  const [categories, setCategories] = useState<HttpTypes.StoreProductCategory[]>([])
+  
+  useEffect(() => {
+    if (USE_MOCK_DATA) {
+      // Always use mock data when USE_MOCK_DATA is true
+      const mockCategories = getTopLevelCategories();
+      console.log('Using mock categories:', mockCategories.length)
+      setCategories(mockCategories);
+      
+      // For testing - show first category dropdown automatically
+      if (mockCategories.length > 0) {
+        console.log('Setting initial active category:', mockCategories[0].name)
+        setTimeout(() => {
+          setDropdownActiveCategory(mockCategories[0])
+          setIsDropdownVisible(true)
+        }, 1000)
+      }
+    } else if (propCategories && propCategories.length > 0) {
+      // Use provided categories if available and not in mock mode
+      setCategories(propCategories);
+    } else {
+      // Fallback to mock data if no categories provided
+      const mockCategories = getTopLevelCategories();
+      setCategories(mockCategories);
+    }
+  }, [propCategories])
 
   const handleDropdownStateChange = (activeCategory: HttpTypes.StoreProductCategory | null, isVisible: boolean) => {
     setDropdownActiveCategory(activeCategory)
@@ -20,28 +50,32 @@ export const Navbar = ({
   }
 
   const handleDropdownMouseEnter = () => {
-   
+    // Clear any pending timeouts to prevent dropdown from closing
     if (hoverTimeout) {
       clearTimeout(hoverTimeout)
       setHoverTimeout(null)
-     
+    }
+    
+    // Ensure dropdown remains visible
+    if (!isDropdownVisible && dropdownActiveCategory) {
+      setIsDropdownVisible(true)
     }
   }
 
   const handleDropdownMouseLeave = () => {
-   
+    // Set a timeout before closing the dropdown to allow moving between items
     const timeout = setTimeout(() => {
-     
       setIsDropdownVisible(false)
       setDropdownActiveCategory(null)
-    }, 200) // Reduced timeout for quicker closing
+    }, 300) // Slightly increased timeout for better UX
     setHoverTimeout(timeout)
   }
 
   return (
     <div 
-      className="w-full border ring-1 ring-[#BFB7AD] relative"
+      className="w-full border ring-1 ring-[#BFB7AD] bg-primary relative"
       onMouseLeave={handleDropdownMouseLeave}
+      aria-label="Main navigation bar with categories"
     >
       <div className="flex py-4 justify-between max-w-[1920px] mx-auto">
         <div className="hidden md:flex w-full">
@@ -51,14 +85,18 @@ export const Navbar = ({
           />
         </div>
 
-        <div className="px-0">
+        <div className="px-0 mr-4">
           <NavbarSearch />
         </div>
       </div>
       
       {/* Full-Width Dropdown at Navbar level - Positioned absolutely to overlay */}
-      {isDropdownVisible && (
-        <div className="absolute left-0 right-0 top-full w-full z-50">
+      {isDropdownVisible && dropdownActiveCategory && (
+        <div 
+          className="absolute left-0 right-0 top-full w-full z-40 bg-primary shadow-lg"
+          onMouseEnter={handleDropdownMouseEnter}
+          onMouseLeave={handleDropdownMouseLeave}
+        >
           <FullWidthDropdown
             activeCategory={dropdownActiveCategory}
             isVisible={isDropdownVisible}
@@ -66,8 +104,8 @@ export const Navbar = ({
               setIsDropdownVisible(false)
               setDropdownActiveCategory(null)
             }}
-            onMouseEnter={() => {}} // Remove duplicate hover handlers
-            onMouseLeave={() => {}} // Remove duplicate hover handlers
+            onMouseEnter={handleDropdownMouseEnter}
+            onMouseLeave={handleDropdownMouseLeave}
           />
         </div>
       )}

@@ -5,6 +5,7 @@ import { urlFor } from "../lib/sanity"
 import { Header } from "@/components/organisms/Header/Header"
 import { Footer } from "@/components/organisms/Footer/Footer"
 import { ArrowRightIcon } from "@/icons"
+import { Breadcrumbs } from "@/components/atoms/Breadcrumbs/Breadcrumbs"
 
 interface LinkedProduct {
   productId: string
@@ -31,28 +32,17 @@ export async function SellerPostLayout({ post }: SellerPostLayoutProps) {
       <Header />
       
       {/* Breadcrumbs */}
-      <nav className="bg-[#F4F0EB] px-4 lg:px-8 py-4" aria-label="Breadcrumb">
-        <div className="max-w-7xl mx-auto">
-          <ol className="flex items-center space-x-2 text-sm">
-            <li>
-              <Link href="/" className="flex items-center text-[#3B3634] hover:text-[#BFB7AD] transition-colors">
-              
-                Strona główna
-              </Link>
-            </li>
-            <ArrowRightIcon className="w-4 h-4 text-[#BFB7AD]" size={16} />
-            <li>
-              <Link href="/blog" className="text-[#3B3634] hover:text-[#BFB7AD] transition-colors">
-                Blog
-              </Link>
-            </li>
-            <ArrowRightIcon className="w-4 h-4 text-[#BFB7AD]" size={16} />
-            <li className="text-[#BFB7AD] font-instrument-sans" aria-current="page">
-              {post.sellerName}
-            </li>
-          </ol>
+      <div className="bg-[#F4F0EB] px-4 lg:px-8 py-4">
+        <div className="max-w-7xl mx-auto mt-12 xl:mt-20">
+          <Breadcrumbs 
+            items={[
+              { label: 'Strona główna', path: '/' },
+              { label: 'Blog', path: '/blog' },
+              { label: post.sellerName, path: `/blog/${post.slug.current}` }
+            ]}
+          />
         </div>
-      </nav>
+      </div>
 
       <article className="min-h-screen bg-[#F4F0EB]">
       {/* Hero Section with Artistic Layout */}
@@ -62,6 +52,9 @@ export async function SellerPostLayout({ post }: SellerPostLayoutProps) {
           <div className="absolute top-10 left-10 w-32 h-32 border border-[#BFB7AD] opacity-60 rounded-full"></div>
           <div className="absolute top-32 right-20 w-24 h-24 border border-[#BFB7AD] opacity-70 rounded-full"></div>
           <div className="absolute bottom-20 left-32 w-40 h-40 border-2 border-[#3B3634] opacity-5 rotate-45"></div>
+          
+          <div className="absolute top-16 right-4 w-16 h-16 border-2 border-[#BFB7AD] rounded-full opacity-30"></div>
+          <div className="absolute bottom-32 left-0 w-8 h-8 bg-[#BFB7AD] rounded-full opacity-10"></div>
         </div>
 
         <div className="relative z-10 max-w-7xl mx-auto px-4 lg:px-8">
@@ -126,9 +119,7 @@ export async function SellerPostLayout({ post }: SellerPostLayoutProps) {
                 </div>
               </div>
 
-              {/* Decorative Elements */}
-              <div className="absolute top-16 right-4 w-16 h-16 border-2 border-[#BFB7AD] rounded-full opacity-60"></div>
-              <div className="absolute bottom-32 left-0 w-8 h-8 bg-[#BFB7AD] rounded-full opacity-10"></div>
+     
             </div>
           </div>
         </div>

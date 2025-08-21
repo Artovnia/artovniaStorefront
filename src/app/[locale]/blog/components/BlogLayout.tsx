@@ -3,34 +3,37 @@ import { getBlogCategories } from '../lib/data'
 import BlogSearch from './BlogSearch'
 import { Footer } from '@/components/organisms/Footer/Footer'
 import { Header } from '@/components/organisms/Header/Header'
+import { Breadcrumbs } from '@/components/atoms/Breadcrumbs/Breadcrumbs'
 
 interface BlogLayoutProps {
   children: React.ReactNode
   title?: string
   description?: string
+  breadcrumbs?: { label: string; path: string }[]
 }
 
-export default async function BlogLayout({ children, title, description }: BlogLayoutProps) {
+export default async function BlogLayout({ children, title, description, breadcrumbs }: BlogLayoutProps) {
   const categories = await getBlogCategories()
 
   return (
-    <div className="min-h-screen bg-[#F4F0EB]">
+    <div className="min-h-screen bg-[#F4F0EB] ">
       {/* Main Site Header */}
       <Header />
       
+      {/* Breadcrumbs */}
+      {breadcrumbs && (
+        <div className="bg-[#F4F0EB] px-4 lg:px-8 py-4">
+          <div className="max-w-7xl mx-auto mt-12 xl:mt-20">
+            <Breadcrumbs items={breadcrumbs} />
+          </div>
+        </div>
+      )}
+
       {/* Blog-specific Header */}
       <div className="bg-[#F4F0EB] shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
-            <div className="flex items-center space-x-4">
-              <Link href="/" className="text-[#3B3634] hover:text-[#BFB7AD] font-instrument-sans">
-                ← Powrót do sklepu
-              </Link>
-              <div className="h-6 border-l border-[#BFB7AD]"></div>
-              <Link href="/blog" className="text-xl font-bold text-[#3B3634] font-instrument-serif">
-                Blog
-              </Link>
-            </div>
+            
             <div className="flex-1 max-w-md mx-4">
               <BlogSearch />
             </div>

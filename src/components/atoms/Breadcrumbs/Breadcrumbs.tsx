@@ -33,9 +33,9 @@ export function Breadcrumbs({
               <Link
                 href={path}
                 className={cn(
-                  'inline-flex items-center  text-primary font-instrument-sans  text-lg',
+                  'inline-flex items-center text-[#3B3634] hover:text-[#BFB7AD] font-instrument-sans text-lg transition-colors',
                   index > 0 && 'ml-2',
-                  isActive && 'text-secondary'
+                  isActive && 'text-[#BFB7AD] pointer-events-none'
                 )}
               >
                 {label}

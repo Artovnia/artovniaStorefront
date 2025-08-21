@@ -1,4 +1,5 @@
 import { client, BLOG_POSTS_QUERY, BLOG_POST_QUERY, BLOG_CATEGORIES_QUERY, FEATURED_POSTS_QUERY, FEATURED_SELLER_POST_QUERY, SELLER_POST_QUERY, SELLER_POSTS_QUERY } from './sanity'
+import { RequestDeduplicator } from '@/lib/utils/performance'
 
 export interface BlogPost {
   _id: string
@@ -9,18 +10,13 @@ export interface BlogPost {
   excerpt?: string
   content?: any
   publishedAt: string
-  author?: {
-    name: string
-    bio?: any
-    image?: any
-  }
+  // Optimized flat structure instead of nested objects
+  authorName?: string
+  authorBio?: any
+  authorImage?: any
   mainImage?: any
-  categories?: Array<{
-    title: string
-    slug: {
-      current: string
-    }
-  }>
+  categoryTitles?: string[]
+  categorySlugs?: string[]
   tags?: string[]
   featured?: boolean
   seo?: {
@@ -28,6 +24,18 @@ export interface BlogPost {
     metaDescription?: string
     keywords?: string[]
   }
+  // Legacy support for existing components
+  author?: {
+    name: string
+    bio?: any
+    image?: any
+  }
+  categories?: Array<{
+    title: string
+    slug: {
+      current: string
+    }
+  }>
 }
 
 export interface BlogCategory {
@@ -82,104 +90,102 @@ export interface SellerPost {
   }
 }
 
-// Fetch all blog posts
+// Create blog-specific deduplicator
+const blogDeduplicator = new RequestDeduplicator()
+
+// Transform optimized data to legacy format for backward compatibility
+function transformBlogPost(post: any): BlogPost {
+  return {
+    ...post,
+    author: post.authorName ? {
+      name: post.authorName,
+      bio: post.authorBio,
+      image: post.authorImage
+    } : undefined,
+    categories: post.categoryTitles ? post.categoryTitles.map((title: string, index: number) => ({
+      title,
+      slug: { current: post.categorySlugs?.[index] || '' }
+    })) : undefined
+  }
+}
+
+// OPTIMIZED: Fetch all blog posts with deduplication and better caching
 export async function getBlogPosts(): Promise<BlogPost[]> {
-  try {
-    const posts = await client.fetch(BLOG_POSTS_QUERY, {}, {
-      cache: 'force-cache',
-      next: { revalidate: 300 }, // Revalidate every 5 minutes
-    })
-    return posts || []
-  } catch (error) {
-    console.error('Error fetching blog posts:', error)
-    return []
-  }
+  return blogDeduplicator.dedupe('blog-posts-all', async () => {
+    try {
+      const posts = await client.fetch(BLOG_POSTS_QUERY, {}, {
+        cache: 'force-cache',
+        next: { revalidate: 600 }, // Increased to 10 minutes for better performance
+      })
+      return (posts || []).map(transformBlogPost)
+    } catch (error) {
+      console.error('Error fetching blog posts:', error)
+      return []
+    }
+  })
 }
 
-// Fetch featured blog posts
+// OPTIMIZED: Fetch featured blog posts with deduplication
 export async function getFeaturedPosts(): Promise<BlogPost[]> {
-  try {
-    const posts = await client.fetch(FEATURED_POSTS_QUERY, {}, {
-      cache: 'force-cache',
-      next: { revalidate: 300 },
-    })
-    return posts || []
-  } catch (error) {
-    console.error('Error fetching featured posts:', error)
-    return []
-  }
+  return blogDeduplicator.dedupe('blog-posts-featured', async () => {
+    try {
+      const posts = await client.fetch(FEATURED_POSTS_QUERY, {}, {
+        cache: 'force-cache',
+        next: { revalidate: 600 }, // Increased cache duration
+      })
+      return (posts || []).map(transformBlogPost)
+    } catch (error) {
+      console.error('Error fetching featured posts:', error)
+      return []
+    }
+  })
 }
 
-// Fetch the 3 newest blog posts for home page
+// OPTIMIZED: Fetch latest blog posts using optimized query
 export async function getLatestBlogPosts(): Promise<BlogPost[]> {
-  try {
-    const query = `
-      *[_type == "blogPost" && !(_id in path("drafts.**"))] | order(publishedAt desc)[0...3] {
-        _id,
-        title,
-        slug,
-        excerpt,
-        publishedAt,
-        author->{
-          name,
-          image
-        },
-        mainImage,
-        categories[]->{
+  return blogDeduplicator.dedupe('blog-posts-latest', async () => {
+    try {
+      const query = `
+        *[_type == "blogPost" && !(_id in path("drafts.**"))] | order(publishedAt desc)[0...3] {
+          _id,
           title,
-          slug
-        },
-        tags
-      }
-    `
-    const posts = await client.fetch(query, {}, {
-      cache: 'force-cache',
-      next: { revalidate: 300 }, // Revalidate every 5 minutes
-    })
-    return posts || []
-  } catch (error) {
-    console.error('Error fetching latest blog posts:', error)
-    return []
-  }
+          slug,
+          excerpt,
+          publishedAt,
+          "authorName": author->name,
+          "authorImage": author->image,
+          mainImage,
+          "categoryTitles": categories[]->title,
+          "categorySlugs": categories[]->slug.current,
+          tags
+        }
+      `
+      const posts = await client.fetch(query, {}, {
+        cache: 'force-cache',
+        next: { revalidate: 600 }, // Increased cache duration
+      })
+      return (posts || []).map(transformBlogPost)
+    } catch (error) {
+      console.error('Error fetching latest blog posts:', error)
+      return []
+    }
+  })
 }
 
-// Fetch single blog post by slug
+// OPTIMIZED: Fetch single blog post with deduplication and no retry delays
 export async function getBlogPost(slug: string): Promise<BlogPost | null> {
-  try {
-    // Add a retry mechanism for production environments
-    let attempts = 0;
-    const maxAttempts = 3;
-    let post = null;
-    
-    while (attempts < maxAttempts) {
-      try {
-        post = await client.fetch(BLOG_POST_QUERY, { slug }, {
-          cache: 'force-cache',
-          next: { revalidate: 300 },
-        });
-        break; // If successful, exit the retry loop
-      } catch (retryError) {
-        attempts++;
-        console.error(`Error fetching blog post (attempt ${attempts}/${maxAttempts}):`, retryError);
-        if (attempts >= maxAttempts) throw retryError; // Re-throw if max attempts reached
-        await new Promise(resolve => setTimeout(resolve, 1000)); // Wait 1 second before retrying
-      }
+  return blogDeduplicator.dedupe(`blog-post-${slug}`, async () => {
+    try {
+      const post = await client.fetch(BLOG_POST_QUERY, { slug }, {
+        cache: 'force-cache',
+        next: { revalidate: 1800 }, // 30 minutes for individual posts
+      })
+      return post ? transformBlogPost(post) : null
+    } catch (error) {
+      console.error(`Error fetching blog post (slug: ${slug}):`, error)
+      return null
     }
-    
-    return post || null;
-  } catch (error) {
-    console.error(`Fatal error fetching blog post (slug: ${slug}):`, error);
-    // Log additional diagnostic information in production
-    if (process.env.NODE_ENV === 'production') {
-      console.error('Sanity configuration:', {
-        projectId: process.env.NEXT_PUBLIC_SANITY_PROJECT_ID ? 'Set' : 'Missing',
-        dataset: process.env.NEXT_PUBLIC_SANITY_DATASET ? 'Set' : 'Missing',
-        apiToken: process.env.SANITY_API_TOKEN ? 'Set' : 'Missing',
-        useCdn: process.env.NODE_ENV === 'production'
-      });
-    }
-    return null;
-  }
+  })
 }
 
 // Fetch all blog categories
@@ -279,43 +285,20 @@ export async function getFeaturedSellerPost(): Promise<SellerPost | null> {
   }
 }
 
-// Fetch single seller post by slug
+// OPTIMIZED: Fetch single seller post with deduplication and no retry delays
 export async function getSellerPost(slug: string): Promise<SellerPost | null> {
-  try {
-    // Add a retry mechanism for production environments
-    let attempts = 0;
-    const maxAttempts = 3;
-    let post = null;
-    
-    while (attempts < maxAttempts) {
-      try {
-        post = await client.fetch(SELLER_POST_QUERY, { slug }, {
-          cache: 'force-cache',
-          next: { revalidate: 300 },
-        });
-        break; // If successful, exit the retry loop
-      } catch (retryError) {
-        attempts++;
-        console.error(`Error fetching seller post (attempt ${attempts}/${maxAttempts}):`, retryError);
-        if (attempts >= maxAttempts) throw retryError; // Re-throw if max attempts reached
-        await new Promise(resolve => setTimeout(resolve, 1000)); // Wait 1 second before retrying
-      }
+  return blogDeduplicator.dedupe(`seller-post-${slug}`, async () => {
+    try {
+      const post = await client.fetch(SELLER_POST_QUERY, { slug }, {
+        cache: 'force-cache',
+        next: { revalidate: 1800 }, // 30 minutes for individual posts
+      })
+      return post || null
+    } catch (error) {
+      console.error(`Error fetching seller post (slug: ${slug}):`, error)
+      return null
     }
-    
-    return post || null;
-  } catch (error) {
-    console.error(`Fatal error fetching seller post (slug: ${slug}):`, error);
-    // Log additional diagnostic information in production
-    if (process.env.NODE_ENV === 'production') {
-      console.error('Sanity configuration:', {
-        projectId: process.env.NEXT_PUBLIC_SANITY_PROJECT_ID ? 'Set' : 'Missing',
-        dataset: process.env.NEXT_PUBLIC_SANITY_DATASET ? 'Set' : 'Missing',
-        apiToken: process.env.SANITY_API_TOKEN ? 'Set' : 'Missing',
-        useCdn: process.env.NODE_ENV === 'production'
-      });
-    }
-    return null;
-  }
+  })
 }
 
 // Fetch all seller posts
