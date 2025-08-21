@@ -9,8 +9,9 @@ import BlogLayout from '../components/BlogLayout'
 import PortableText from '../components/PortableText'
 import { SellerPostLayout } from '../components/SellerPostLayout'
 
-// OPTIMIZED: Enable ISR for better performance instead of forcing dynamic
-export const revalidate = 1800 // 30 minutes ISR
+export const dynamic = 'force-dynamic'
+
+
 
 interface BlogPostPageProps {
   params: Promise<{

@@ -116,7 +116,7 @@ export const CategorySidebar = ({
   }, [categories, currentCategoryHandle])
 
   return (
-    <div className="w-full sticky top-24">
+    <div className="w-full sticky top-24 py-12">
       <div className={cn("w-full", className)}>
         {/* Results Count - Placed at the top of sidebar for stickiness */}
         {resultsCount !== undefined && (

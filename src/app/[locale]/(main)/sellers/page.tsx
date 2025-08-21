@@ -13,7 +13,7 @@ export default function SellersPage() {
         {/* Page Header */}
         <div className="bg-primary border-b border-[#3B3634] px-4 sm:px-6 py-8">
           <div className="mx-auto">
-            <h1 className="text-3xl font-bold text-black font-instrument-serif  mb-2 text-center">
+            <h1 className="text-3xl  text-black font-instrument-serif italic  mb-2 text-center">
               Sprzedawcy
             </h1>
             <p className="text-gray-600 font-instrument-sans text-center">
