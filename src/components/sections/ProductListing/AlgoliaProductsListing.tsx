@@ -417,7 +417,7 @@ const ProductsListing = ({
               </div>
             ) : (
               <div className="w-full flex justify-center xl:justify-start">
-                <ul className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4 w-fit mx-auto xl:mx-0">
+                <ul className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-12 w-fit mx-auto xl:mx-0">
                   {items.map((hit: any) => (
                     <ProductCard 
                       key={hit.objectID} 
