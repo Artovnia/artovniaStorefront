@@ -7,6 +7,7 @@ import useGetAllSearchParams from "../../../hooks/useGetAllSearchParams"
 import { getProductPrice } from "../../../lib/helpers/get-product-price"
 import { useState, useEffect, useMemo } from "react"
 import { addToCart } from "../../../lib/data/cart"
+import { useCart } from "../../../lib/context/CartContext"
 import { SellerProps } from "../../../types/seller"
 import { WishlistButton } from "../WishlistButton/WishlistButton"
 import { Wishlist, SerializableWishlist } from "../../../types/wishlist"
@@ -98,17 +99,16 @@ export const ProductDetailsHeader = ({
     variantId: currentVariantId,
   })
 
+  const { addItem } = useCart()
+
   // add the selected variant to the cart
   const handleAddToCart = async () => {
     if (!selectedVariantId) return null
 
     setIsAdding(true)
 
-    await addToCart({
-      variantId: selectedVariantId,
-      quantity: 1,
-      countryCode: locale,
-    })
+    // Use CartContext addItem method for immediate UI updates
+    await addItem(selectedVariantId, 1)
 
     setIsAdding(false)
   }

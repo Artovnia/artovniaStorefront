@@ -3,8 +3,8 @@ import { Metadata } from 'next';
 import { Suspense } from 'react';
 
 export const metadata: Metadata = {
-  title: 'Cart',
-  description: 'My cart page',
+  title: 'Koszyk - Artovnia',
+  description: 'Twój koszyk zakupowy',
 };
 
 export default function CartPage({}) {

@@ -6,9 +6,11 @@ import { DeleteCartItemButton } from "@/components/molecules"
 export const CartDropdownItem = ({
   item,
   currency_code,
+  onDeleted,
 }: {
   item: HttpTypes.StoreCartLineItem
   currency_code: string
+  onDeleted?: () => void
 }) => {
   const original_total = convertToLocale({
     amount: item.original_total,
@@ -46,7 +48,9 @@ export const CartDropdownItem = ({
       <div className="py-2 flex-1">
         <div className="flex justify-between items-start">
           <h4 className="heading-xs pr-2">{item.product_title}</h4>
-          <DeleteCartItemButton id={item.id} />
+          <DeleteCartItemButton 
+            id={item.id} 
+          />
         </div>
         <div className="label-md text-secondary">
           {item.variant?.options?.map(({ option, id, value }) => (

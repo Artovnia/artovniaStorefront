@@ -58,7 +58,7 @@ export const CartShippingMethodRow = ({
       // This is critical for ensuring the UI updates correctly
       if (onMethodRemoved) {
         console.log(`Notifying parent about deletion: method=${method.id}, seller=${sellerId || 'unknown'}`);
-        onMethodRemoved(method.id, sellerId);
+        await onMethodRemoved(method.id, sellerId);
       }
       
       // Success - cart will be revalidated by removeShippingMethod function

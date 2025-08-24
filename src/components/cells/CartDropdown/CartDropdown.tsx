@@ -8,25 +8,42 @@ import { CartIcon } from "@/icons"
 import { convertToLocale } from "@/lib/helpers/money"
 import { HttpTypes } from "@medusajs/types"
 import { useEffect, useState } from "react"
+import { useCart } from "@/lib/context/CartContext"
 
-const getItemCount = (cart: HttpTypes.StoreCart | null) => {
+const getItemCount = (cart: HttpTypes.StoreCart | null | undefined) => {
   return cart?.items?.reduce((acc, item) => acc + item.quantity, 0) || 0
 }
 
-export const CartDropdown = ({
-  cart,
-}: {
-  cart: HttpTypes.StoreCart | null
-}) => {
-  const [open, setOpen] = useState(false)
+interface CartDropdownProps {
+  cart?: HttpTypes.StoreCart | null
+}
 
-  const previousItemCount = usePrevious(getItemCount(cart))
-  const cartItemsCount = (cart && getItemCount(cart)) || 0
+export const CartDropdown = ({
+  cart: propCart,
+}: CartDropdownProps) => {
+  const [open, setOpen] = useState(false)
+  const { cart: contextCart, refreshCart, removeItem, lastUpdated } = useCart()
+  
+  // Always use context cart for real-time updates - ignore prop cart completely
+  const cart = contextCart
+
+  // Force recalculation on every render to avoid stale closures
+  const cartItemsCount = cart?.items?.reduce((acc, item) => acc + item.quantity, 0) || 0
+  const previousItemCount = usePrevious(cartItemsCount)
 
   const total = convertToLocale({
     amount: cart?.item_total || 0,
     currency_code: cart?.currency_code || "eur",
   })
+
+  // Auto-refresh cart on mount to ensure we have cart data
+  useEffect(() => {
+    if (!contextCart) {
+      refreshCart()
+    }
+  }, [contextCart, refreshCart])
+
+
 
   useEffect(() => {
     if (open) {
@@ -70,6 +87,10 @@ export const CartDropdown = ({
                       key={item.id}
                       item={item}
                       currency_code={cart.currency_code}
+                      onDeleted={() => {
+                        // The removeItem is already called by DeleteCartItemButton
+                        // This callback is just for additional UI updates if needed
+                      }}
                     />
                   ))}
                 </div>

@@ -25,7 +25,7 @@ export const ProductAdditionalAttributes = ({
       const response = await getVariantAttributes(productId, variantId)
       
       // Format the response to match our AdditionalAttributeProps type
-      if (response.attribute_values?.length > 0) {
+      if (response && response.attribute_values && response.attribute_values.length > 0) {
         const formattedAttributes = response.attribute_values.map(attr => ({
           id: attr.id,
           value: attr.value,

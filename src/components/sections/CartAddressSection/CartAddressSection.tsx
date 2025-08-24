@@ -1,12 +1,12 @@
 "use client"
 
 import { Heading, Text, useToggleState } from "@medusajs/ui"
-import { setAddresses, retrieveCartForAddress } from "@/lib/data/cart"
+import { useCart } from "@/lib/context/CartContext"
 import compareAddresses from "@/lib/helpers/compare-addresses"
 import { HttpTypes } from "@medusajs/types"
 import { usePathname, useRouter } from '@/i18n/routing'
 import { useSearchParams } from 'next/navigation'
-import { useActionState, useEffect, useCallback, useMemo, useState } from "react"
+import { useEffect, useCallback, useMemo, useState } from "react"
 import { Button } from "@/components/atoms"
 import ErrorMessage from "@/components/molecules/ErrorMessage/ErrorMessage"
 import Spinner from "@/icons/spinner"
@@ -16,15 +16,22 @@ import { CheckCircleSolid } from "@medusajs/icons"
 import { Link } from "@/i18n/routing"
 
 export const CartAddressSection = ({
-  cart,
+  cart: propCart,
   customer,
 }: {
   cart: HttpTypes.StoreCart | null
   customer: HttpTypes.StoreCustomer | null
 }) => {
+  const { cart: contextCart, setAddress, refreshCart } = useCart()
   const searchParams = useSearchParams()
   const router = useRouter()
   const pathname = usePathname()
+  
+  // Use context cart if available, fallback to prop cart
+  const cart = contextCart || propCart
+  
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   // Memoize address validation to prevent unnecessary recalculations
   const isAddress = useMemo(() => Boolean(
@@ -44,20 +51,55 @@ export const CartAddressSection = ({
       : true
   )
 
-  const [message, formAction, isPending] = useActionState(setAddresses, null)
-
-  // Handle successful form submission
-  useEffect(() => {
-    if (message === "success") {
-      router.replace(`/checkout`)
+  // Handle address form submission
+  const handleAddressSubmit = useCallback(async (formData: FormData) => {
+    if (!cart?.id) return
+    
+    setIsSubmitting(true)
+    setError(null)
+    
+    try {
+      // Extract address data from form
+      const addressData = {
+        shipping_address: {
+          first_name: formData.get('shipping_address.first_name') as string,
+          last_name: formData.get('shipping_address.last_name') as string,
+          address_1: formData.get('shipping_address.address_1') as string,
+          address_2: formData.get('shipping_address.address_2') as string || '',
+          city: formData.get('shipping_address.city') as string,
+          postal_code: formData.get('shipping_address.postal_code') as string,
+          country_code: formData.get('shipping_address.country_code') as string,
+          phone: formData.get('shipping_address.phone') as string || '',
+        },
+        billing_address: sameAsBilling ? undefined : {
+          first_name: formData.get('billing_address.first_name') as string,
+          last_name: formData.get('billing_address.last_name') as string,
+          address_1: formData.get('billing_address.address_1') as string,
+          address_2: formData.get('billing_address.address_2') as string || '',
+          city: formData.get('billing_address.city') as string,
+          postal_code: formData.get('billing_address.postal_code') as string,
+          country_code: formData.get('billing_address.country_code') as string,
+          phone: formData.get('billing_address.phone') as string || '',
+        }
+      }
+      
+      await setAddress(addressData)
+      // Refresh cart with address context for optimized data loading
+      await refreshCart('address')
+      router.replace(`/checkout?step=delivery`)
+    } catch (error: any) {
+      console.error('Error setting address:', error)
+      setError(error.message || 'Failed to save address')
+    } finally {
+      setIsSubmitting(false)
     }
-  }, [message, router])
+  }, [cart?.id, sameAsBilling, setAddress, refreshCart, router])
 
   useEffect(() => {
-    if (!isAddress && !isPending) {
+    if (!isAddress && !isSubmitting) {
       router.replace(pathname + "?step=address")
     }
-  }, [isAddress, router, pathname, isPending])
+  }, [isAddress, router, pathname, isSubmitting])
 
   // Memoize handleEdit to prevent unnecessary re-renders
   const handleEdit = useCallback(() => {
@@ -69,7 +111,7 @@ export const CartAddressSection = ({
       <div className="flex flex-row items-center justify-between mb-6">
         <Heading
           level="h2"
-          className="flex flex-row text-3xl-regular gap-x-2 items-baseline items-center"
+          className="flex flex-row text-3xl-regular gap-x-2 items-center"
         >
           {!isOpen && <CheckCircleSolidFixed />} Adres dostawy
         </Heading>
@@ -82,7 +124,7 @@ export const CartAddressSection = ({
         )}
       </div>
       <form
-        action={formAction}
+        action={handleAddressSubmit}
       >
         {isOpen ? (
           <div className="pb-8">
@@ -96,13 +138,13 @@ export const CartAddressSection = ({
               className="mt-6"
               data-testid="submit-address-button"
               variant="tonal"
-              loading={isPending}
-              disabled={isPending}
+              loading={isSubmitting}
+              disabled={isSubmitting}
             >
-              {isPending ? "Zapisywanie..." : "Zapisz"}
+              {isSubmitting ? "Zapisywanie..." : "Zapisz"}
             </Button>
             <ErrorMessage
-              error={message !== "success" && message}
+              error={error}
               data-testid="address-error-message"
             />
           </div>

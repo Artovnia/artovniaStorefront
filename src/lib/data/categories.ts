@@ -206,15 +206,14 @@ export const listCategoriesWithProducts = async (): Promise<{
   try {
     
     
-    // Get categories that have products from Algolia first (lightweight check)
-    const categoriesWithProducts = await getCategoriesWithProducts()
+    // Skip Algolia check - directly fetch from database to avoid blocked API errors
+    // const categoriesWithProducts = await getCategoriesWithProducts()
     
-    if (categoriesWithProducts.size === 0) {
-    
-      // Return essential top-level categories when no product data available
-      const essentialCategories = await getEssentialCategories()
-      return essentialCategories
-    }
+    // Always fetch from database instead of relying on Algolia
+    // if (categoriesWithProducts.size === 0) {
+    //   const essentialCategories = await getEssentialCategories()
+    //   return essentialCategories
+    // }
     
     // Fetch all categories from database (single request)
     const response = await sdk.client.fetch<HttpTypes.StoreProductCategoryListResponse>(
@@ -231,42 +230,9 @@ export const listCategoriesWithProducts = async (): Promise<{
     
     const allCategories = response?.product_categories || []
     
-    // OPTIMIZED: Build inclusion set efficiently
-    const categoriesToInclude = new Set<string>()
-    
-    // Step 1: Include categories with products
-    categoriesWithProducts.forEach(categoryId => {
-      categoriesToInclude.add(categoryId)
-    })
-    
-    // Step 2: Include complete parent chains using mpath (more efficient than walking)
-    allCategories.forEach(category => {
-      if (categoriesWithProducts.has(category.id) && (category as any).mpath) {
-        // Parse mpath to get all ancestors at once
-        const ancestorIds = (category as any).mpath.split('.').filter((id: string) => id && id.trim() !== '')
-        ancestorIds.forEach((ancestorId: string) => {
-          categoriesToInclude.add(ancestorId)
-        })
-      }
-    })
-    
-    // Step 3: Include essential top-level categories ONLY if they have products in their tree
-    const essentialTopLevel = ['Ona', 'On', 'Dom', 'Dziecko', 'Zwierzęta', 'Akcesoria']
-    allCategories.forEach(category => {
-      if (essentialTopLevel.includes(category.name || '') && !category.parent_category_id) {
-        // Only include if this category or its descendants have products
-        const hasProductsInTree = hasProductsInCategoryTree(category, allCategories, categoriesWithProducts)
-        if (hasProductsInTree) {
-          categoriesToInclude.add(category.id)
-        }
-      }
-    })
-    
-    // Filter to only included categories
-    const filteredCategories = allCategories.filter(cat => categoriesToInclude.has(cat.id))
-    
-    // Build clean tree
-    const filteredTree = buildCategoryTree(filteredCategories)
+    // Since Algolia is disabled, return all categories without filtering
+    // This avoids the blocked API errors while maintaining functionality
+    const filteredTree = buildCategoryTree(allCategories)
     const filteredParents = filteredTree.filter(cat => !cat.parent_category_id)
     
     

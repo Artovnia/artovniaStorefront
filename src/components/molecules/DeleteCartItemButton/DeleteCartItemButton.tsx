@@ -2,7 +2,7 @@
 
 import { Button } from "@/components/atoms"
 import { BinIcon } from "@/icons"
-import { deleteLineItem } from "@/lib/data/cart"
+import { useCart } from "@/lib/context/CartContext"
 import { useState } from "react"
 
 export const DeleteCartItemButton = ({ 
@@ -13,13 +13,12 @@ export const DeleteCartItemButton = ({
   onDeleted?: () => void 
 }) => {
   const [isDeleting, setIsDeleting] = useState(false)
+  const { removeItem } = useCart()
 
   const handleDelete = async (id: string) => {
     try {
       setIsDeleting(true)
-      await deleteLineItem(id)
-      
-      console.log('🗑️ Item deleted successfully:', id)
+      await removeItem(id)
       
       // Notify parent component that deletion succeeded
       if (onDeleted) {

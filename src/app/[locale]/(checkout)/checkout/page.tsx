@@ -1,20 +1,15 @@
-import { CheckoutWrapper } from "@/components/sections"
-import { HttpTypes } from "@medusajs/types"
-import { retrieveCart, retrieveCartForAddress, retrieveCartForShipping, retrieveCartForPayment } from "@/lib/data/cart"
-import { retrieveCustomer } from "@/lib/data/customer"
+import CheckoutWrapper from "@/components/sections/CheckoutWrapper/CheckoutWrapper"
+import { CartProvider } from "@/lib/context/CartContext"
+import { retrieveCart } from "@/lib/data/cart"
 import { listCartShippingMethods } from "@/lib/data/fulfillment"
 import { listCartPaymentMethods } from "@/lib/data/payment"
-import { getCachedCheckoutData } from "@/lib/utils/persistent-cache"
-import { Metadata } from "next"
-import Link from "next/link"
+import { retrieveCustomer } from "@/lib/data/cookies"
+import { getCacheOptions } from "@/lib/data/cookies"
 import { notFound } from "next/navigation"
 import { Suspense } from "react"
+import { Metadata } from "next"
+import Link from "next/link"
 import { headers } from "next/headers"
-
-export const metadata: Metadata = {
-  title: "Checkout",
-  description: "My cart page - Checkout",
-}
 
 export default async function CheckoutPage() {
   return (
@@ -32,38 +27,25 @@ export default async function CheckoutPage() {
 
 async function CheckoutPageContent() {
   try {
-    // Load comprehensive cart data with persistent caching
-    const cart = await getCachedCheckoutData(
-      'cart',
-      () => retrieveCart()
-    )
+    // Load only basic cart data - components will use specialized functions as needed
+    const cart = await retrieveCart()
 
     if (!cart) {
       return notFound()
     }
     
-    
-    
-    // Load all required data in parallel with persistent caching for better performance
+    // Load only essential data that all components need
+    // Individual components will fetch their specific data through CartContext
     const [shippingMethods, paymentMethods, customer] = await Promise.all([
-      getCachedCheckoutData(
-        `shipping-methods-${cart.id}`,
-        () => listCartShippingMethods(cart.id)
-      ).catch(error => {
+      listCartShippingMethods(cart.id).catch(error => {
         console.warn('Failed to load shipping methods:', error)
         return []
       }),
-      getCachedCheckoutData(
-        `payment-methods-${cart.region?.id ?? 'no-region'}`,
-        () => listCartPaymentMethods(cart.region?.id ?? "")
-      ).catch(error => {
+      listCartPaymentMethods(cart.region?.id ?? "").catch(error => {
         console.warn('Failed to load payment methods:', error)
         return []
       }),
-      getCachedCheckoutData(
-        'customer',
-        () => retrieveCustomer()
-      ).catch(error => {
+      retrieveCustomer().catch(error => {
         console.warn('Failed to load customer:', error)
         return null
       })
@@ -75,14 +57,19 @@ async function CheckoutPageContent() {
     const typeSafeShippingMethods = shippingMethods as any
 
     return (
-      <main className="container">
-        <CheckoutWrapper
-          cart={typeSafeCart}
-          customer={customer}
-          availableShippingMethods={typeSafeShippingMethods}
-          availablePaymentMethods={paymentMethods || []}
-        />
-      </main>
+      <div className="container">
+        
+          <CartProvider initialCart={cart as any}>
+            <Suspense fallback={<div className="animate-pulse">Loading checkout...</div>}>
+              <CheckoutWrapper
+                customer={customer}
+                availableShippingMethods={shippingMethods}
+                availablePaymentMethods={paymentMethods}
+              />
+            </Suspense>
+          </CartProvider>
+        
+      </div>
     )
   } catch (error) {
     console.error("Error loading checkout page:", error)

@@ -21,6 +21,21 @@ const getServerCookies = async () => {
   }
 };
 
+// Batch cookie operations for better performance
+const getBatchBrowserCookies = (names: string[]): Record<string, string | null> => {
+  if (!isBrowser) return names.reduce((acc, name) => ({ ...acc, [name]: null }), {});
+  
+  const cookies = document.cookie.split('; ');
+  const result: Record<string, string | null> = {};
+  
+  names.forEach(name => {
+    const cookie = cookies.find(row => row.startsWith(`${name}=`));
+    result[name] = cookie ? cookie.split('=')[1] : null;
+  });
+  
+  return result;
+};
+
 // Function to get a cookie value in the browser
 const getBrowserCookie = (name: string): string | null => {
   if (!isBrowser) return null;
@@ -62,11 +77,11 @@ const removeBrowserCookie = (name: string) => {
   document.cookie = `${name}=; Max-Age=-1; Path=/`;
 };
 
-// Ultra-fast cache for auth headers to prevent navigation blocking
+// Optimized single-layer cache for auth headers
 let authHeadersCache: { headers: any; timestamp: number; token?: string } | null = null;
-const CACHE_DURATION = 5000; // Reduced to 5 seconds for production stability
+const CACHE_DURATION = 30000; // Single 30-second cache layer
 const PUBLISHABLE_KEY_CACHE = { key: '', timestamp: 0 };
-const PUBLISHABLE_KEY_CACHE_DURATION = 30000; // Reduced to 30 seconds
+const PUBLISHABLE_KEY_CACHE_DURATION = 30000; // Aligned with auth cache
 
 export const getAuthHeaders = async (): Promise<
   { authorization: string; 'x-publishable-api-key': string } | { 'x-publishable-api-key': string }
@@ -112,17 +127,10 @@ export const getAuthHeaders = async (): Promise<
     // Client-side: Direct cookie access (fastest, non-blocking)
     token = getBrowserCookie('_medusa_jwt');
   } else {
-    // Server-side: Ultra-fast timeout to prevent navigation blocking
+    // Server-side: Immediate fallback without timeout delays
     try {
-      const timeoutPromise = new Promise<null>((_, reject) => 
-        setTimeout(() => reject(new Error('Timeout')), 25) // Ultra-short timeout for production
-      );
-      
-      const cookiePromise = getServerCookies().then(cookies => 
-        cookies?.get('_medusa_jwt')?.value || null
-      );
-      
-      token = await Promise.race([cookiePromise, timeoutPromise]);
+      const cookies = await getServerCookies();
+      token = cookies?.get('_medusa_jwt')?.value || null;
     } catch {
       // Immediate fallback - never block navigation
       token = null;
@@ -262,48 +270,59 @@ export const getCacheOptions = async (
   }
 };
 
-export const setAuthToken = async (token: string) => {
+// Batch cookie operations for better performance
+export const setBatchCookies = async (cookieData: Array<{name: string, value: string, options?: any}>) => {
   try {
-    // Try to set the token in server cookies first
     const serverCookies = await getServerCookies();
+    
+    // Batch server cookie operations
     if (serverCookies) {
-      serverCookies.set('_medusa_jwt', token, {
-        maxAge: 60 * 60 * 24 * 7,
-        httpOnly: true,
-        sameSite: 'strict',
-        secure: process.env.NODE_ENV === 'production',
+      cookieData.forEach(({name, value, options = {}}) => {
+        serverCookies.set(name, value, {
+          maxAge: 60 * 60 * 24 * 7,
+          httpOnly: true,
+          sameSite: 'strict',
+          secure: process.env.NODE_ENV === 'production',
+          ...options
+        });
       });
     }
-    // Always set in browser cookies as well for client-side access
+    
+    // Batch browser cookie operations
     if (isBrowser) {
-      setBrowserCookie('_medusa_jwt', token, {
-        maxAge: 60 * 60 * 24 * 7,
-        sameSite: 'strict',
-        secure: process.env.NODE_ENV === 'production',
+      cookieData.forEach(({name, value, options = {}}) => {
+        setBrowserCookie(name, value, {
+          maxAge: 60 * 60 * 24 * 7,
+          sameSite: 'strict',
+          secure: process.env.NODE_ENV === 'production',
+          ...options
+        });
       });
     }
   } catch (error) {
-    console.warn('Error setting auth token:', error);
+    console.warn('Error setting batch cookies:', error);
   }
 };
 
+export const setAuthToken = async (token: string) => {
+  // Clear cache immediately when setting new token
+  authHeadersCache = null;
+  
+  await setBatchCookies([{
+    name: '_medusa_jwt',
+    value: token
+  }]);
+};
+
 export const removeAuthToken = async () => {
-  try {
-    // Clear auth headers cache immediately
-    authHeadersCache = null;
-    
-    // Try to remove the token from server cookies first
-    const serverCookies = await getServerCookies();
-    if (serverCookies) {
-      serverCookies.set('_medusa_jwt', '', { maxAge: -1 });
-    }
-    // Always remove from browser cookies as well
-    if (isBrowser) {
-      removeBrowserCookie('_medusa_jwt');
-    }
-  } catch (error) {
-    console.warn('Error removing auth token:', error);
-  }
+  // Clear auth headers cache immediately
+  authHeadersCache = null;
+  
+  await setBatchCookies([{
+    name: '_medusa_jwt',
+    value: '',
+    options: { maxAge: -1 }
+  }]);
 };
 
 // Ultra-fast cart ID cache to prevent navigation blocking

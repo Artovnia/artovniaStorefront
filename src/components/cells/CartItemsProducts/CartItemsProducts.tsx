@@ -125,19 +125,6 @@ export const CartItemsProducts = ({
                   <div className="lg:flex">
                     <DeleteCartItemButton 
                       id={product.id} 
-                      onDeleted={async () => {
-                        if (onCartUpdate && cartId) {
-                          try {
-                            // Fetch updated cart data after deletion
-                            const updatedCart = await retrieveCart(cartId)
-                            if (updatedCart) {
-                              onCartUpdate(updatedCart) // Pass the updated cart data
-                            }
-                          } catch (error) {
-                            console.warn('⚠️ Failed to refresh cart after deletion:', error)
-                          }
-                        }
-                      }}
                     />
                   </div>
                 )}

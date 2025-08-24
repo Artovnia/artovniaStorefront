@@ -12,7 +12,7 @@ import { HeartIcon } from "@/icons"
 import { listCategories, listCategoriesWithProducts } from "@/lib/data/categories"
 import { sdk } from "@/lib/config"
 // Removed hardcoded PARENT_CATEGORIES import - now using dynamic detection
-import { retrieveCart } from "@/lib/data/cart"
+// import { retrieveCart } from "@/lib/data/cart" // Removed to use CartContext instead
 import { UserDropdown } from "@/components/cells/UserDropdown/UserDropdown"
 import { retrieveCustomer } from "@/lib/data/customer"
 import { getUserWishlists } from "@/lib/data/wishlist"
@@ -20,8 +20,8 @@ import { SerializableWishlist } from "@/types/wishlist"
 import { Badge } from "@/components/atoms"
 
 export const Header = async () => {
-  // Use try-catch for each data-fetching operation to handle errors gracefully
-  const cart = await retrieveCart().catch(() => null)
+  // Cart data will be managed by CartContext instead of fetching here
+  // const cart = await retrieveCart().catch(() => null)
   
   // Fetch user data with error handling
   let user = null;
@@ -97,7 +97,7 @@ export const Header = async () => {
             </Link>
           )}
 
-          <CartDropdown cart={cart} />
+          <CartDropdown />
         </div>
       </div>
       <Navbar categories={allCategoriesWithTree} />

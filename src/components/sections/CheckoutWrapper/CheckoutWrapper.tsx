@@ -2,26 +2,43 @@
 
 import React, { useState } from "react"
 import { CartAddressSection } from "@/components/sections/CartAddressSection/CartAddressSection"
-import CartPaymentSection from "@/components/sections/CartPaymentSection/CartPaymentSection"
-import CartReview from "@/components/sections/CartReview/CartReview"
-import CartShippingMethodsSection from "@/components/sections/CartShippingMethodsSection/CartShippingMethodsSection"
-import { TermsAcceptance } from "@/components/cells/TermsAcceptance"
+import CartShippingMethodsSection from "../CartShippingMethodsSection/CartShippingMethodsSection"
+import CartPaymentSection from "../CartPaymentSection/CartPaymentSection"
+import CartReview from "../CartReview/CartReview"
+import TermsAcceptance from "@/components/cells/TermsAcceptance/TermsAcceptance"
+import { useCart } from "@/lib/context/CartContext"
 import { HttpTypes } from "@medusajs/types"
 
-interface CheckoutWrapperProps {
-  cart: any
-  customer: HttpTypes.StoreCustomer | null
-  availableShippingMethods: any[]
-  availablePaymentMethods: any[]
+type CheckoutWrapperProps = {
+  customer?: HttpTypes.StoreCustomer | null | undefined
+  availableShippingMethods?: any[] | null | undefined
+  availablePaymentMethods?: any[] | null | undefined
 }
 
 const CheckoutWrapper: React.FC<CheckoutWrapperProps> = ({
-  cart,
   customer,
   availableShippingMethods,
-  availablePaymentMethods
+  availablePaymentMethods,
 }) => {
+  const { cart, isLoading, error } = useCart()
   const [termsAccepted, setTermsAccepted] = useState(false)
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center p-8">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+        <span className="ml-2">Loading checkout...</span>
+      </div>
+    )
+  }
+
+  if (error || !cart) {
+    return (
+      <div className="p-4 text-center">
+        <p className="text-red-500">{error || 'Cart not found'}</p>
+      </div>
+    )
+  }
 
   const handleTermsAcceptanceChange = (accepted: boolean) => {
     setTermsAccepted(accepted)
@@ -30,31 +47,23 @@ const CheckoutWrapper: React.FC<CheckoutWrapperProps> = ({
   return (
     <div className="grid lg:grid-cols-11 gap-8">
       <div className="flex flex-col gap-4 lg:col-span-6">
-        <CartAddressSection 
-          cart={cart} 
-          customer={customer}
-          key={`address-${cart.id}-${cart.updated_at}`}
-        />
+        <CartAddressSection cart={cart as any} customer={customer || null} />
         <CartShippingMethodsSection
-          cart={cart}
-          availableShippingMethods={availableShippingMethods}
-          key={`shipping-${cart.id}-${cart.updated_at}`}
+          cart={cart as any}
+          availableShippingMethods={availableShippingMethods || null}
         />
         <CartPaymentSection
-          cart={cart}
-          availablePaymentMethods={availablePaymentMethods}
-          key={`payment-${cart.id}-${cart.updated_at}`}
+          cart={cart as any}
+          availablePaymentMethods={availablePaymentMethods || null}
         />
         <TermsAcceptance
           onAcceptanceChange={handleTermsAcceptanceChange}
-          className="mt-4"
         />
       </div>
-
-      <div className="lg:col-span-5">
-        <CartReview 
-          cart={cart} 
-          termsAccepted={termsAccepted}
+      <div className="lg:col-span-1"></div>
+      <div className="lg:col-span-4">
+        <CartReview
+          cart={cart as any} 
           key={`review-${cart.id}-${cart.updated_at}`}
         />
       </div>

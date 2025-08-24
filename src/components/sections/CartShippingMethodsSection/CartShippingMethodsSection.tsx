@@ -1,7 +1,7 @@
 "use client"
 
 import ErrorMessage from "@/components/molecules/ErrorMessage/ErrorMessage"
-import { setShippingMethod } from "@/lib/data/cart"
+// Removed direct import - using CartContext setShipping instead
 import { calculatePriceForShippingOption, listCartShippingMethods } from "@/lib/data/fulfillment"
 import { convertToLocale } from "@/lib/helpers/money"
 import { isInpostShippingOption } from "@/lib/helpers/inpost-helpers"
@@ -17,6 +17,7 @@ import { CartShippingMethodRow } from "./CartShippingMethodRow"
 import { Listbox, Transition } from "@headlessui/react"
 import clsx from "clsx"
 import { InpostShippingMethodWrapper } from "@/components/molecules/InpostShippingMethodWrapper/InpostShippingMethodWrapper"
+import { useCart } from "@/lib/context/CartContext"
 // Import cache invalidation function
 import { invalidateCheckoutCache } from "@/lib/utils/persistent-cache"
 
@@ -54,9 +55,14 @@ type ShippingProps = {
 }
 
 const CartShippingMethodsSection: React.FC<ShippingProps> = ({
-  cart,
+  cart: propCart,
   availableShippingMethods,
 }) => {
+  const { cart: contextCart, refreshCart, setShipping } = useCart()
+  
+  // Use context cart if available, fallback to prop cart
+  const cart = contextCart || propCart
+  
   const [isLoadingPrices, setIsLoadingPrices] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [calculatedPricesMap, setCalculatedPricesMap] = useState<Record<string, number>>({})
@@ -75,26 +81,14 @@ const CartShippingMethodsSection: React.FC<ShippingProps> = ({
 
   const isOpen = searchParams.get("step") === "delivery"
 
-  // Fetch fresh shipping methods data directly, bypassing all caching
+  // Use shipping methods from props instead of fetching again
+  // This eliminates redundant API calls since data is already loaded by checkout page
   useEffect(() => {
-    const fetchFreshShippingMethods = async () => {
-      if (!cart?.id) return
-      
-      setIsLoadingFreshMethods(true)
-      
-      try {
-        const freshMethods = await listCartShippingMethods(cart.id)
-        setFreshShippingMethods(freshMethods || [])
-      } catch (error) {
-        console.error('❌ Error fetching fresh shipping methods:', error)
-        setFreshShippingMethods([])
-      } finally {
-        setIsLoadingFreshMethods(false)
-      }
+    if (availableShippingMethods) {
+      setFreshShippingMethods(availableShippingMethods)
+      setIsLoadingFreshMethods(false)
     }
-
-    fetchFreshShippingMethods()
-  }, [cart?.id])
+  }, [availableShippingMethods])
 
   // Use fresh shipping methods if available, otherwise fall back to props
   const _shippingMethods = (freshShippingMethods || availableShippingMethods)?.filter(
@@ -214,28 +208,9 @@ const CartShippingMethodsSection: React.FC<ShippingProps> = ({
       setSettingShippingMethod(shippingMethodId)
 
       try {
-        const response = await setShippingMethod({
-          cartId: cart.id,
-          shippingMethodId,
-        })
-
-        if (response) {
-          
-          
-          // Invalidate the cache to ensure fresh data on next request
-          invalidateCheckoutCache(cart.id)
-          
-          // Immediately fetch fresh shipping methods data
-          try {
-            const freshMethods = await listCartShippingMethods(cart.id)
-            setFreshShippingMethods(freshMethods || [])
-          } catch (error) {
-            console.error('❌ Error refreshing shipping methods:', error)
-          }
-          
-          // Force page refresh to update all components with fresh data
-          router.refresh()
-        }
+        // Use CartContext setShipping method instead of direct API call
+        await setShipping(shippingMethodId)
+        // No need for manual refreshes - CartContext handles state updates
       } catch (error: any) {
         console.error("❌ Error setting shipping method:", error)
         setError(error.message || "Failed to set shipping method")
@@ -243,26 +218,17 @@ const CartShippingMethodsSection: React.FC<ShippingProps> = ({
         setSettingShippingMethod(null)
       }
     },
-    [cart.id, router, settingShippingMethod]
+    [cart.id, settingShippingMethod, setShipping]
   )
 
   const handleMethodRemoved = useCallback(async (methodId: string, sellerId?: string) => {
-    
-    
-    // Invalidate the cache to ensure fresh data
-    invalidateCheckoutCache(cart.id)
-    
-    // Immediately fetch fresh shipping methods data
+    // Refresh cart with shipping context for optimized data loading
     try {
-      const freshMethods = await listCartShippingMethods(cart.id)
-      setFreshShippingMethods(freshMethods || [])
+      await refreshCart('shipping')
     } catch (error) {
-      console.error('❌ Error refreshing shipping methods after removal:', error)
+      console.error('❌ Error refreshing cart after method removal:', error)
     }
-    
-    // Force page refresh to ensure all components show updated state
-    router.refresh()
-  }, [router, cart.id])
+  }, [refreshCart])
 
   useEffect(() => {
     setError(null)
@@ -285,9 +251,10 @@ const CartShippingMethodsSection: React.FC<ShippingProps> = ({
 
   const missingSellers = cart.items
     ?.filter((item) =>
-      missingShippingSellers.includes(item.product?.seller?.id!)
+      missingShippingSellers.includes((item.product as any)?.seller?.id || '')
     )
-    .map((item) => item.product?.seller?.name)
+    .map((item) => (item.product as any)?.seller?.name)
+    .filter(Boolean)
 
   return (
     <div className="border p-4 rounded-sm bg-ui-bg-interactive">
@@ -480,15 +447,8 @@ const CartShippingMethodsSection: React.FC<ShippingProps> = ({
                                 sellerId={sellerId}
                                 cartId={cart.id}
                                 onComplete={async () => {
-                                  invalidateCheckoutCache(cart.id);
-                                  
-                                  try {
-                                    const freshMethods = await listCartShippingMethods(cart.id)
-                                    setFreshShippingMethods(freshMethods || [])
-                                  } catch (error) {
-                                    console.error('❌ Error refreshing shipping methods after InPost:', error)
-                                  }
-                                  
+                                  // Only refresh cart context - no additional API calls needed
+                                  await refreshCart();
                                   router.refresh();
                                 }}
                                 onError={(error) => {
@@ -526,20 +486,27 @@ const CartShippingMethodsSection: React.FC<ShippingProps> = ({
           <div className="text-small-regular">
             {cart && (cart.shipping_methods?.length ?? 0) > 0 && (
               <div className="flex flex-col">
-                {cart.shipping_methods?.map((method: any) => (
-                  <div key={method.id} className="mb-4 border rounded-md p-4">
-                    <Text className="txt-medium-plus text-ui-fg-base mb-1">
-                      Metoda
-                    </Text>
-                    <Text className="txt-medium text-ui-fg-subtle">
-                      {method.name}{" "}
-                      {convertToLocale({
-                        amount: method.amount!,
-                        currency_code: cart?.currency_code,
-                      })}
-                    </Text>
-                  </div>
-                ))}
+                {cart.shipping_methods?.map((method: any) => {
+                  // Find the corresponding available method to get the name and seller info
+                  const availableMethod = _shippingMethods?.find(am => am.id === method.shipping_option_id)
+                  const methodName = method.name || availableMethod?.name || 'Metoda dostawy'
+                  const sellerName = availableMethod?.seller_name || ''
+                  
+                  return (
+                    <div key={method.id} className="mb-4 border rounded-md p-4">
+                      <Text className="txt-medium-plus text-ui-fg-base mb-1">
+                        {sellerName && `${sellerName} - `}Metoda dostawy
+                      </Text>
+                      <Text className="txt-medium text-ui-fg-subtle">
+                        {methodName}{" "}
+                        {convertToLocale({
+                          amount: method.amount!,
+                          currency_code: cart?.currency_code,
+                        })}
+                      </Text>
+                    </div>
+                  )
+                })}
               </div>
             )}
           </div>

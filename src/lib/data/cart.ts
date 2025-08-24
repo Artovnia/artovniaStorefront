@@ -65,7 +65,7 @@ export async function retrieveCart(cartId?: string) {
             "*payment_collection,*payment_collection.payment_sessions",
         },
         headers,
-        cache: "no-cache",
+        cache: "no-store", // Don't cache cart data for immediate updates
       });
       
     const cart = result.cart;
@@ -359,10 +359,7 @@ export async function addToCart({
         headers
       )
       .then(async () => {
-        const cartCacheTag = await getCacheTag("carts")
-        revalidateTag(cartCacheTag)
-        
-        // Invalidate persistent cache to ensure fresh data
+        // Only invalidate persistent cache - avoid revalidateTag that triggers page refresh
         const { invalidateCheckoutCache } = await import('../utils/persistent-cache')
         invalidateCheckoutCache(cart.id)
       })
@@ -379,15 +376,15 @@ export async function addToCart({
         headers
       )
       .then(async () => {
-        const cartCacheTag = await getCacheTag("carts")
-        revalidateTag(cartCacheTag)
-        
-        // Invalidate persistent cache to ensure fresh data
+        // Only invalidate persistent cache - avoid revalidateTag that triggers page refresh
         const { invalidateCheckoutCache } = await import('../utils/persistent-cache')
         invalidateCheckoutCache(cart.id)
       })
       .catch(medusaError)
   }
+
+  // Return updated cart
+  return await retrieveCart()
 }
 
 export async function updateLineItem({
@@ -414,10 +411,14 @@ export async function updateLineItem({
   await sdk.store.cart
     .updateLineItem(cartId, lineId, { quantity }, {}, headers)
     .then(async () => {
-      const cartCacheTag = await getCacheTag("carts")
-      await revalidateTag(cartCacheTag)
+      // Only invalidate persistent cache - avoid revalidateTag that triggers page refresh
+      const { invalidateCheckoutCache } = await import('../utils/persistent-cache')
+      invalidateCheckoutCache(cartId)
     })
     .catch(medusaError)
+
+  // Return updated cart
+  return await retrieveCart()
 }
 
 export async function deleteLineItem(lineId: string) {
@@ -438,10 +439,14 @@ export async function deleteLineItem(lineId: string) {
   await sdk.store.cart
     .deleteLineItem(cartId, lineId, headers)
     .then(async () => {
-      const cartCacheTag = await getCacheTag("carts")
-      await revalidateTag(cartCacheTag)
+      // Only invalidate persistent cache - avoid revalidateTag that triggers page refresh
+      const { invalidateCheckoutCache } = await import('../utils/persistent-cache')
+      invalidateCheckoutCache(cartId)
     })
     .catch(medusaError)
+
+  // Return updated cart
+  return await retrieveCart()
 }
 
 export async function setShippingMethod({

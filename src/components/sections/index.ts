@@ -10,7 +10,7 @@ import { DesignerOfTheWeekSection } from "./DesignerOfTheWeekSection/DesignerOfT
 import { ProductListing } from "./ProductListing/ProductListing"
 import { PromotionListing } from "./PromotionListing"
 import { SellerPageHeader } from "./SellerPageHeader/SellerPageHeader"
-import { Cart } from "./Cart/Cart"
+import Cart from "./Cart/Cart"
 import { WishlistPage } from "./WishlistPage/WishlistPage"
 import { ProductDetailsPage } from "./ProductDetailsPage/ProductDetailsPage"
 import { AlgoliaProductsListing } from "./ProductListing/AlgoliaProductsListing"

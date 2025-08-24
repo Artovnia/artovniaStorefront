@@ -2,6 +2,7 @@
 
 import React, { useState, useCallback, useRef } from "react"
 import { HttpTypes } from "@medusajs/types"
+import { useCart } from "@/lib/context/CartContext"
 
 interface QuantityChangerProps {
   itemId: string
@@ -28,71 +29,30 @@ export const QuantityChanger = ({
   const [isUpdating, setIsUpdating] = useState(false)
   const [lastSyncedQuantity, setLastSyncedQuantity] = useState(initialQuantity)
   const syncTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const { updateItem } = useCart()
 
-  // Debounced server sync to minimize API calls
+  // Use CartContext for server sync to ensure state consistency
   const syncToServer = useCallback(async (newQuantity: number) => {
     try {
       setIsUpdating(true)
       
-      // Get auth token from browser cookies
-      const authToken = document.cookie
-        .split('; ')
-        .find(row => row.startsWith('_medusa_jwt='))
-        ?.split('=')[1]
-      
-      // Get publishable key from environment variables
-      const publishableKey = process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY
-      
-      if (!publishableKey) {
-        throw new Error('NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY environment variable is not set')
-      }
-      
-      const headers: Record<string, string> = {
-        'accept': 'application/json',
-        'content-type': 'application/json',
-        'x-publishable-api-key': publishableKey,
-      }
-      
-      if (authToken) {
-        headers['authorization'] = `Bearer ${authToken}`
-      }
-      
-      // Get backend URL from environment variables
-      const backendUrl = process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL
-      
-      if (!backendUrl) {
-        throw new Error('NEXT_PUBLIC_MEDUSA_BACKEND_URL environment variable is not set')
-      }
-      
-      console.log('🔄 Syncing quantity to server:', { 
-        cartId, 
+      console.log('🔄 Syncing quantity via CartContext:', { 
         itemId, 
         quantity: newQuantity,
-        previouslySynced: lastSyncedQuantity,
-        backendUrl
+        previouslySynced: lastSyncedQuantity
       })
       
-      const response = await fetch(`${backendUrl}/store/carts/${cartId}/line-items/${itemId}`, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({ quantity: newQuantity })
-      })
-      
-      if (response.ok) {
-        setLastSyncedQuantity(newQuantity)
-        console.log('✅ Quantity synced successfully:', { itemId, quantity: newQuantity })
-      } else {
-        console.warn('⚠️ Server sync failed:', response.status, response.statusText)
-        // Keep UI state - don't revert on server errors
-      }
+      await updateItem(itemId, newQuantity)
+      setLastSyncedQuantity(newQuantity)
+      console.log('✅ Quantity synced successfully via CartContext:', { itemId, quantity: newQuantity })
       
     } catch (error) {
-      console.warn('⚠️ Server sync error:', error)
+      console.warn('⚠️ CartContext sync error:', error)
       // Keep UI state - don't revert on network errors
     } finally {
       setIsUpdating(false)
     }
-  }, [cartId, itemId, lastSyncedQuantity])
+  }, [itemId, lastSyncedQuantity, updateItem])
 
   // Handle quantity changes with debouncing
   const handleQuantityChange = useCallback((newQuantity: number) => {
