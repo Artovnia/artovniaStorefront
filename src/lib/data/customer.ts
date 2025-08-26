@@ -28,19 +28,20 @@ export const retrieveCustomer =
     }
 
     if (useCache) {
-      const next = {
-        ...(await getCacheOptions()),
+      const cacheOptions = await getCacheOptions("customers")
+      
+      // Only include next property if cacheOptions has tags property and is not an empty object
+      const requestOptions = {
+        ...headers,
+        ...(Object.keys(cacheOptions).length > 0 ? { next: { tags: (cacheOptions as any).tags } } : {})
       }
-
+      
       return sdk.store.customer
         .retrieve(
           {
             fields: "*addresses",
           },
-          {
-            ...headers,
-            ...next,
-          }
+          requestOptions
         )
         .then(({ customer }) => customer)
         .catch(() => null)
