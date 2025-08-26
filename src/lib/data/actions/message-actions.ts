@@ -141,37 +141,27 @@ export async function listMessageThreads(options: {
             // Calculate unread status for each thread
             let unreadCount = 0;
             
-            // A thread is unread if user_read_at is null or older than last_message_at
-            if (!thread.user_read_at && thread.last_message_at) {
-              unreadCount = 1; // At least one unread message
-            } else if (thread.user_read_at && thread.last_message_at && 
-                       new Date(thread.user_read_at) < new Date(thread.last_message_at)) {
-              unreadCount = 1; // At least one unread message since last read
-            }
-            
-            // If we have messages array, we can count more precisely
+            // If we have messages array, count precisely
             if (thread.messages && Array.isArray(thread.messages) && thread.messages.length > 0) {
-              // Sort messages by date (newest first)
-              const sortedMessages = [...thread.messages].sort((a, b) => 
-                new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-              );
-              
-              // Count messages newer than user_read_at
+              // Count messages from seller/admin that are newer than user_read_at
               if (thread.user_read_at) {
                 const userReadAt = new Date(thread.user_read_at);
-                unreadCount = sortedMessages.filter(msg => 
+                unreadCount = thread.messages.filter(msg => 
                   new Date(msg.created_at) > userReadAt && 
-                  msg.sender_type !== MessageSender.USER // Only count messages not from the user
+                  (msg.sender_type === MessageSender.SELLER || msg.sender_type === MessageSender.ADMIN)
                 ).length;
               } else {
-                // If never read, count all messages not from the user
-                unreadCount = sortedMessages.filter(msg => msg.sender_type !== MessageSender.USER).length;
+                // If never read, count all messages from seller/admin
+                unreadCount = thread.messages.filter(msg => 
+                  msg.sender_type === MessageSender.SELLER || msg.sender_type === MessageSender.ADMIN
+                ).length;
               }
-              
-              // Force unread count to be at least 1 if there are any seller messages
-              // This is a temporary fix to ensure unread messages are shown
-              const hasSellerMessages = sortedMessages.some(msg => msg.sender_type === MessageSender.SELLER);
-              if (hasSellerMessages && unreadCount === 0) {
+            } else {
+              // Fallback: use last_message_at comparison if no messages array
+              if (!thread.user_read_at && thread.last_message_at) {
+                unreadCount = 1;
+              } else if (thread.user_read_at && thread.last_message_at && 
+                         new Date(thread.user_read_at) < new Date(thread.last_message_at)) {
                 unreadCount = 1;
               }
             }

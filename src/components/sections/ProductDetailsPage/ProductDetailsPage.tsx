@@ -43,6 +43,33 @@ export const ProductDetailsPage = async ({
 
   if (!prod) return null
   
+  // Fetch seller's products with full data structure for proper pricing
+  let sellerProducts: any[] = []
+  if (prod.seller?.products && prod.seller.products.length > 0) {
+    try {
+      // Fetch each seller product individually to get full pricing data
+      const productPromises = prod.seller.products.slice(0, 8).map(async (sellerProduct: any) => {
+        if (!sellerProduct.handle) return null
+        try {
+          const { response } = await listProducts({
+            countryCode: locale,
+            queryParams: { handle: sellerProduct.handle },
+          })
+          return response.products[0] || null
+        } catch (error) {
+          console.error(`Error fetching product ${sellerProduct.handle}:`, error)
+          return null
+        }
+      })
+      
+      const fetchedProducts = await Promise.all(productPromises)
+      sellerProducts = fetchedProducts.filter(Boolean)
+    } catch (error) {
+      console.error('Error fetching seller products:', error)
+      sellerProducts = []
+    }
+  }
+  
   // Fetch customer, auth status, and reviews data for product reviews component
   const [user, authenticated, reviewsData] = await Promise.allSettled([
     globalDeduplicator.dedupe(`customer-${prod.id}`, retrieveCustomer),
@@ -191,12 +218,12 @@ export const ProductDetailsPage = async ({
             </h2>
           </div>
           
-          {/* HomeProductSection with empty heading */}
+          {/* HomeProductSection with properly fetched seller products */}
           <HomeProductSection
             heading="" 
             headingSpacing="mb-0" 
             theme="dark"
-            products={prod.seller?.products}
+            products={sellerProducts}
             isSellerSection={true}
           />
         </div>

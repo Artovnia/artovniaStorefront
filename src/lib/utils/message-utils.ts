@@ -8,26 +8,29 @@ import { MessageThread, MessageSender } from "@/lib/data/messages"
 export function hasUnreadMessages(thread: MessageThread): boolean {
   if (!thread) return false;
   
-  // If there's no user_read_at timestamp, all messages are unread
-  if (!thread.user_read_at) return true;
-  
-  // If there's a last_message_at timestamp and it's newer than user_read_at,
-  // then there are unread messages
-  if (thread.last_message_at && 
-      new Date(thread.last_message_at).getTime() > new Date(thread.user_read_at).getTime()) {
-    return true;
+  // Use unread_count if available and reliable
+  if (typeof thread.unread_count === 'number') {
+    return thread.unread_count > 0;
   }
   
-  // If we have messages array, check each message's timestamp against user_read_at
-  if (thread.messages && thread.messages.length > 0) {
-    // Only count messages from seller or admin as potentially unread
+  // If no messages exist, there can't be unread messages
+  if (!thread.messages || thread.messages.length === 0) {
+    return false;
+  }
+  
+  // If user_read_at is null, check if there are any non-user messages
+  if (!thread.user_read_at) {
     return thread.messages.some(message => 
-      (message.sender_type === MessageSender.SELLER || message.sender_type === MessageSender.ADMIN) &&
-      new Date(message.created_at).getTime() > new Date(thread.user_read_at as string).getTime()
+      message.sender_type === MessageSender.SELLER || message.sender_type === MessageSender.ADMIN
     );
   }
   
-  return false;
+  // Check if there are messages from seller/admin newer than user_read_at
+  const userReadAt = new Date(thread.user_read_at).getTime();
+  return thread.messages.some(message => 
+    (message.sender_type === MessageSender.SELLER || message.sender_type === MessageSender.ADMIN) &&
+    new Date(message.created_at).getTime() > userReadAt
+  );
 }
 
 /**

@@ -17,7 +17,7 @@ import {
 import { unifiedLogout, unifiedLogin, setAuthToken as unifiedSetAuthToken } from "../auth/unified-auth"
 
 export const retrieveCustomer =
-  async (): Promise<HttpTypes.StoreCustomer | null> => {
+  async (useCache: boolean = true): Promise<HttpTypes.StoreCustomer | null> => {
     const authHeaders = await getAuthHeaders()
 
     // FIX: Check if authorization header exists, not if authHeaders is truthy
@@ -27,22 +27,38 @@ export const retrieveCustomer =
       ...authHeaders,
     }
 
-    const next = {
-      ...(await getCacheOptions("customers")),
-    }
+    if (useCache) {
+      const next = {
+        ...(await getCacheOptions()),
+      }
 
-    return await sdk.client
-      .fetch<{ customer: HttpTypes.StoreCustomer }>(`/store/customers/me`, {
-        method: "GET",
-        query: {
-          fields: "*orders",
-        },
-        headers,
-        next,
-        cache: "force-cache",
-      })
-      .then(({ customer }) => customer)
-      .catch(() => null)
+      return sdk.store.customer
+        .retrieve(
+          {
+            fields: "*addresses",
+          },
+          {
+            ...headers,
+            ...next,
+          }
+        )
+        .then(({ customer }) => customer)
+        .catch(() => null)
+    } else {
+      // No cache version for addresses page
+      return sdk.store.customer
+        .retrieve(
+          {
+            fields: "*addresses",
+          },
+          {
+            ...headers,
+            cache: "no-cache",
+          }
+        )
+        .then(({ customer }) => customer)
+        .catch(() => null)
+    }
   }
 
 // ADD: Helper function to check if user is authenticated
@@ -422,8 +438,14 @@ export const addCustomerAddress = async (formData: FormData): Promise<any> => {
   return sdk.store.customer
     .createAddress(address, {}, headers)
     .then(async ({ customer }) => {
+      // Aggressive cache invalidation
       const customerCacheTag = await getCacheTag("customers")
       revalidateTag(customerCacheTag)
+      
+      // Also invalidate any related cache tags
+      revalidateTag("customer")
+      revalidateTag("addresses")
+      
       return { success: true, error: null }
     })
     .catch((err) => {
@@ -433,21 +455,27 @@ export const addCustomerAddress = async (formData: FormData): Promise<any> => {
 
 export const deleteCustomerAddress = async (
   addressId: string
-): Promise<void> => {
+): Promise<{ success: boolean; error: string | null }> => {
   const headers = {
     ...(await getAuthHeaders()),
   }
 
-  await sdk.store.customer
-    .deleteAddress(addressId, headers)
-    .then(async () => {
-      const customerCacheTag = await getCacheTag("customers")
-      revalidateTag(customerCacheTag)
-      return { success: true, error: null }
-    })
-    .catch((err) => {
-      return { success: false, error: err.toString() }
-    })
+  try {
+    await sdk.store.customer.deleteAddress(addressId, headers)
+    
+    // Aggressive cache invalidation
+    const customerCacheTag = await getCacheTag("customers")
+    revalidateTag(customerCacheTag)
+    
+    // Also invalidate any related cache tags
+    revalidateTag("customer")
+    revalidateTag("addresses")
+    
+    return { success: true, error: null }
+  } catch (err: any) {
+    console.error("Error deleting customer address:", err)
+    return { success: false, error: err.message || err.toString() }
+  }
 }
 
 export const updateCustomerAddress = async (
@@ -485,8 +513,14 @@ export const updateCustomerAddress = async (
   return sdk.store.customer
     .updateAddress(addressId, address, {}, headers)
     .then(async () => {
+      // Aggressive cache invalidation
       const customerCacheTag = await getCacheTag("customers")
       revalidateTag(customerCacheTag)
+      
+      // Also invalidate any related cache tags
+      revalidateTag("customer")
+      revalidateTag("addresses")
+      
       return { success: true, error: null }
     })
     .catch((err) => {

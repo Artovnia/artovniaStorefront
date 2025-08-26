@@ -46,7 +46,16 @@ export const Addresses = ({
   }
 
   const handleDelete = async (addressId: string) => {
-    await deleteCustomerAddress(addressId)
+    const result = await deleteCustomerAddress(addressId)
+    
+    if (result.success) {
+      // Force hard refresh with cache clear to ensure UI updates
+      window.location.href = window.location.href
+    } else {
+      console.error("Failed to delete address:", result.error)
+      alert(`Failed to delete address: ${result.error}`)
+    }
+    
     setDeleteAddress(null)
   }
 

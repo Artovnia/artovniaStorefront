@@ -9,6 +9,7 @@ import { format } from "date-fns"
 import { isEmpty } from "lodash"
 import { MessagePagination } from "./message-pagination"
 import { hasUnreadMessages } from "@/lib/utils/message-utils"
+import { markThreadAsRead } from "@/lib/data/actions/message-read-actions"
 
 // Simple Bell Icon component
 const BellIcon = ({ className = "" }: { className?: string }) => (

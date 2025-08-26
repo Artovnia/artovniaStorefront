@@ -1,8 +1,8 @@
 "use server"
 
 import { sdk } from "@/lib/config"
-import { getAuthHeaders } from "./auth-actions"
-import { MessageThread } from "@/lib/data/messages"
+import { getAuthHeaders } from "@/lib/data/cookies"
+import { MessageThread } from "@/types/messages"
 import { countUnreadMessages, updateUnreadCountLocally } from "@/lib/utils/message-utils"
 
 /**

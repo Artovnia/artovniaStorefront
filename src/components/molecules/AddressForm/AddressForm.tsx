@@ -87,6 +87,9 @@ const Form: React.FC<Props> = ({ regions, handleClose }) => {
 
     setError("")
     handleClose && handleClose()
+    
+    // Force hard refresh with cache clear to ensure UI updates
+    window.location.href = window.location.href
   }
 
   return (
@@ -94,51 +97,51 @@ const Form: React.FC<Props> = ({ regions, handleClose }) => {
       <div className="px-4 space-y-4">
         <div className="max-w-full grid grid-cols-2 items-top gap-4 mb-4">
           <LabeledInput
-            label="Address name"
-            placeholder="Type address name"
+            label="Nazwa adresu"
+            placeholder="Wprowadź nazwę adresu"
             className="col-span-2"
-            error={errors.firstName as FieldError}
+            error={errors.addressName as FieldError}
             {...register("addressName")}
           />
           <LabeledInput
-            label="First name"
-            placeholder="Type first name"
+            label="Imię"
+            placeholder="Wprowadź imię"
             error={errors.firstName as FieldError}
             {...register("firstName")}
           />
           <LabeledInput
-            label="Last name"
-            placeholder="Type last name"
-            error={errors.firstName as FieldError}
+            label="Nazwisko"
+            placeholder="Wprowadź nazwisko"
+            error={errors.lastName as FieldError}
             {...register("lastName")}
           />
           <LabeledInput
-            label="Company (optional)"
-            placeholder="Type company"
+            label="Firma (opcjonalnie)"
+            placeholder="Wprowadź nazwę firmy"
             error={errors.company as FieldError}
             {...register("company")}
           />
           <LabeledInput
-            label="Address"
-            placeholder="Type address"
+            label="Adres"
+            placeholder="Wprowadź adres"
             error={errors.address as FieldError}
             {...register("address")}
           />
           <LabeledInput
-            label="City"
-            placeholder="Type city"
+            label="Miasto"
+            placeholder="Wprowadź miasto"
             error={errors.city as FieldError}
             {...register("city")}
           />
           <LabeledInput
-            label="Postal code"
-            placeholder="Type postal code"
+            label="Kod pocztowy"
+            placeholder="Wprowadź kod pocztowy"
             error={errors.postalCode as FieldError}
             {...register("postalCode")}
           />
           <LabeledInput
-            label="State / Province"
-            placeholder="Type state / province"
+            label="Województwo"
+            placeholder="Wprowadź województwo"
             error={errors.province as FieldError}
             {...register("province")}
           />
@@ -156,14 +159,14 @@ const Form: React.FC<Props> = ({ regions, handleClose }) => {
           </div>
 
           <LabeledInput
-            label="Phone"
-            placeholder="Type phone number"
+            label="Telefon"
+            placeholder="Wprowadź telefon"
             error={errors.phone as FieldError}
             {...register("phone")}
           />
         </div>
         {error && <p className="label-md text-negative">{error}</p>}
-        <Button className="w-full ">Save address</Button>
+        <Button className="w-full ">Zapisz adres</Button>
       </div>
     </form>
   )

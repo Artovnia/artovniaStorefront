@@ -115,10 +115,10 @@ export const ProductCarousel = ({
                 <button
                   key={slide.id}
                   onClick={() => handleThumbnailClick(index)}
-                  className={`relative w-20 h-20 rounded-sm overflow-hidden border-2 transition-all duration-300 ${
+                  className={`relative w-20 h-20 rounded-xs overflow-hidden border-2 transition-all duration-300 ${
                     selectedImageIndex === index
-                      ? "border-amber-500 ring-2 ring-amber-200 shadow-md"
-                      : "border-gray-200 hover:border-amber-300 hover:shadow-sm"
+                      ? "border-[#3B3634] ring-[#3B3634] shadow-md"
+                      : ""
                   }`}
                 >
                   <Image
