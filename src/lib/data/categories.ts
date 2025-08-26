@@ -1,6 +1,5 @@
 import { sdk } from "@/lib/config"
 import { HttpTypes } from "@medusajs/types"
-import { client as algoliaClient } from "@/lib/client"
 // Note: Removed persistent-cache import as it may not exist
 // Using simple caching approach instead
 
@@ -13,70 +12,58 @@ interface CategoriesProps {
 }
 
 /**
- * Get categories that have products from Algolia index
+ * Get categories that have products from Medusa database
  * This is used to filter categories to only show those with actual products
  */
-export const getCategoriesWithProducts = async (): Promise<Set<string>> => {
+export const getCategoriesWithProductsFromDatabase = async (): Promise<Set<string>> => {
   try {
-    const algoliaIndexName = process.env.NEXT_PUBLIC_ALGOLIA_PRODUCTS_INDEX || "products"
+    console.log("🔍 Database: Fetching categories with products from Medusa backend...")
     
-    
-    // Search all products in Algolia to get category information
-    // Use empty query to get all products, with high limit to capture all categories
-    const searchResponse = await algoliaClient.search([
-      {
-        indexName: algoliaIndexName,
-        params: {
-          query: '',
-          hitsPerPage: 1000, // Get many products to ensure we capture all categories
-          attributesToRetrieve: ['categories'], // Only get category data for efficiency
-          facets: ['categories.id'], // Get facet data for categories
-        }
-      }
-    ])
+    // Fetch all products from Medusa backend to get category information
+    const response = await sdk.client.fetch<{
+      products: Array<{
+        id: string
+        categories?: Array<{
+          id: string
+          name?: string
+        }>
+      }>
+    }>("/store/products", {
+      query: {
+        fields: "id,categories.id,categories.name", // Only get category data for efficiency
+        limit: 1000, // Get many products to ensure we capture all categories
+      },
+      cache: "force-cache",
+      next: { revalidate: 300 }
+    })
 
     // Extract unique category IDs that have products
     const categoryIds = new Set<string>()
     
-    // Get the first (and only) search result - use any to avoid TypeScript issues
-    const firstResult = (searchResponse as any).results[0]
-    
-    if (firstResult) {
+    if (response?.products && Array.isArray(response.products)) {
+      console.log(`📊 Database: Processing ${response.products.length} products for category extraction`)
       
-      // Method 1: Extract from individual product hits
-      if (firstResult.hits && Array.isArray(firstResult.hits)) {
-        firstResult.hits.forEach((product: any, index: number) => {
-          if (product.categories && Array.isArray(product.categories)) {
-            product.categories.forEach((category: any) => {
-              if (category.id) {
-                categoryIds.add(category.id)
-                if (index < 3) { // Log first few for debugging
-                 
-                }
+      response.products.forEach((product, index) => {
+        if (product.categories && Array.isArray(product.categories)) {
+          product.categories.forEach((category) => {
+            if (category.id) {
+              categoryIds.add(category.id)
+              if (index < 3) { // Log first few for debugging
+                console.log(`🔍 Database: Product ${product.id} has category ${category.id} (${category.name})`)
               }
-            })
-          } else if (index < 3) {
-           
-          }
-        })
-      }
-      
-      // Method 2: Also extract from facets if available (more comprehensive)
-      if (firstResult.facets && firstResult.facets['categories.id']) {
-        const facetKeys = Object.keys(firstResult.facets['categories.id'])
-        facetKeys.forEach(categoryId => {
-          if (categoryId && categoryId !== 'undefined' && categoryId !== 'null') {
-            categoryIds.add(categoryId)
-          }
-        })
-      } 
-
-    } 
+            }
+          })
+        } else if (index < 3) {
+          console.log(`⚠️ Database: Product ${product.id} has no categories`)
+        }
+      })
+    }
     
+    console.log(`📊 Database: Found ${categoryIds.size} unique categories with products`)
     return categoryIds
   } catch (error) {
-    console.error("🔍 Algolia: Error fetching categories with products:", error)
-    console.error("🔍 Algolia: Error details:", error instanceof Error ? error.message : String(error))
+    console.error("🔍 Database: Error fetching categories with products:", error)
+    console.error("🔍 Database: Error details:", error instanceof Error ? error.message : String(error))
     // Return empty set on error - will show all categories as fallback
     return new Set()
   }
@@ -204,16 +191,18 @@ export const listCategoriesWithProducts = async (): Promise<{
   categories: HttpTypes.StoreProductCategory[]
 }> => {
   try {
+    console.log("🔍 Fetching categories with products using database filtering...")
     
+    // Get categories that have products from database
+    const categoriesWithProducts = await getCategoriesWithProductsFromDatabase()
     
-    // Skip Algolia check - directly fetch from database to avoid blocked API errors
-    // const categoriesWithProducts = await getCategoriesWithProducts()
+    if (categoriesWithProducts.size === 0) {
+      console.log("⚠️ No categories with products found in database, falling back to essential categories")
+      const essentialCategories = await getEssentialCategories()
+      return essentialCategories
+    }
     
-    // Always fetch from database instead of relying on Algolia
-    // if (categoriesWithProducts.size === 0) {
-    //   const essentialCategories = await getEssentialCategories()
-    //   return essentialCategories
-    // }
+    console.log(`📊 Found ${categoriesWithProducts.size} categories with products in database`)
     
     // Fetch all categories from database (single request)
     const response = await sdk.client.fetch<HttpTypes.StoreProductCategoryListResponse>(
@@ -230,12 +219,18 @@ export const listCategoriesWithProducts = async (): Promise<{
     
     const allCategories = response?.product_categories || []
     
-    // Since Algolia is disabled, return all categories without filtering
-    // This avoids the blocked API errors while maintaining functionality
-    const filteredTree = buildCategoryTree(allCategories)
+    // Filter categories to only include those with products OR their ancestors
+    const filteredCategories = allCategories.filter(category => {
+      return hasProductsInCategoryTree(category, allCategories, categoriesWithProducts)
+    })
+    
+    console.log(`📊 Filtered from ${allCategories.length} total categories to ${filteredCategories.length} categories with products`)
+    
+    // Build tree from filtered categories
+    const filteredTree = buildCategoryTree(filteredCategories)
     const filteredParents = filteredTree.filter(cat => !cat.parent_category_id)
     
-    
+    console.log(`📊 Final result: ${filteredParents.length} parent categories, ${filteredTree.length} total categories`)
     
     return {
       parentCategories: filteredParents,
