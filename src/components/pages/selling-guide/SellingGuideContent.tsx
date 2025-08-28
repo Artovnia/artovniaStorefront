@@ -55,7 +55,7 @@ const SellingGuideContent = () => {
                 <div>
                   <h3 className="font-medium text-lg mb-2">1. Załóż konto sprzedawcy</h3>
                   <p>
-                    Kliknij w przycisk „Załóż sklep" i wypełnij krótki formularz rejestracyjny. 
+                    Kliknij w przycisk &ldquo;Załóż sklep&rdquo; i wypełnij krótki formularz rejestracyjny. 
                     Zgłoszenie zostanie zatwierdzone przez administratora platformy.
                   </p>
                 </div>
@@ -205,7 +205,7 @@ const SellingGuideContent = () => {
                 
                 <ul className="list-disc ml-5 space-y-1">
                   <li>opisać sposób bezpiecznego użytkowania produktu (np. ograniczenia wiekowe)</li>
-                  <li>wskazać kraj pochodzenia (np. „Produkt wykonany w Polsce")</li>
+                  <li>wskazać kraj pochodzenia (np. &ldquo;Produkt wykonany w Polsce&rdquo;)</li>
                   <li>zamieścić dane kontaktowe (imię i nazwisko lub nazwę firmy, adres e-mail)</li>
                   <li>informować o potencjalnych zagrożeniach</li>
                   <li>na żądanie organów nadzoru lub platformy przedstawić informacje potwierdzające bezpieczeństwo produktów</li>
@@ -249,7 +249,7 @@ const SellingGuideContent = () => {
         <div className="bg-primary/5 border border-primary/20 rounded-md p-6 text-center">
           <h2 className="text-xl font-medium mb-3">Zacznij sprzedawać już dziś</h2>
           <p className="text-gray-700 mb-4">
-            Kliknij w przycisk „Załóż sklep", wypełnij formularz rejestracyjny i dołącz do społeczności twórców Artovni.
+            Kliknij w przycisk &ldquo;Załóż sklep&rdquo;, wypełnij formularz rejestracyjny i dołącz do społeczności twórców Artovni.
           </p>
           <p className="text-sm text-gray-600">
             Jeśli masz pytania, zajrzyj do sekcji FAQ dla sprzedawców lub skontaktuj się z nami – chętnie pomożemy.

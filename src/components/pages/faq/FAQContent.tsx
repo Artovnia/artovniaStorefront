@@ -247,7 +247,7 @@ const FAQContent = () => {
                   Czas realizacji zależy od sprzedawcy oraz rodzaju produktu:
                 </p>
                 <ul className="list-disc ml-5 space-y-1">
-                  <li>produkty „od ręki" są zazwyczaj wysyłane w ciągu 1–3 dni roboczych</li>
+                  <li>produkty &ldquo;od ręki&rdquo; są zazwyczaj wysyłane w ciągu 1–3 dni roboczych</li>
                   <li>produkty personalizowane lub tworzone na zamówienie mogą mieć dłuższy czas realizacji (nawet do 14 dni)</li>
                 </ul>
                 <p>
