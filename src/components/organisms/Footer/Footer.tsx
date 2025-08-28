@@ -1,5 +1,5 @@
 import { Link } from "@/i18n/routing"
-import footerLinks from "@/data/footerLinks"
+import { footerLinks } from "@/data/footerLinks"
 import { FacebookIcon, InstagramIcon, LinkedInIcon, YouTubeIcon } from "@/icons/social"
 import { HttpTypes } from "@medusajs/types"
 import { listCategories } from "@/lib/data/categories"
@@ -41,7 +41,7 @@ export async function Footer() {
             <h2 className="text-white font-instrument-sans font-bold text-lg mb-6 uppercase">
               Sklep
             </h2>
-            <nav className="space-y-3 font-instrument-sans uppercase" aria-label="Categories navigation">
+            <nav className="space-y-3 font-instrument-sans uppercase" aria-label="Kategorie produktów">
               <Link href="/categories" className="block text-white hover:text-primary transition-colors duration-200 text-sm">
                 Wszystkie produkty
               </Link>
@@ -62,14 +62,14 @@ export async function Footer() {
             <h2 className="text-white font-instrument-sans font-bold text-lg mb-6 uppercase">
               O nas
             </h2>
-            <nav className="space-y-3 font-instrument-sans uppercase" aria-label="About navigation">
-              {footerLinks.about.map(({ label, path }) => (
+            <nav className="space-y-3 font-instrument-sans uppercase" aria-label="O nas">
+              {footerLinks.about.map(({ name, href }) => (
                 <Link 
-                  key={label} 
-                  href={path} 
+                  key={name} 
+                  href={href} 
                   className="block text-white hover:text-primary transition-colors duration-200 text-sm"
                 >
-                  {label}
+                  {name}
                 </Link>
               ))}
             </nav>
@@ -80,22 +80,16 @@ export async function Footer() {
             <h2 className="text-white font-instrument-sans font-bold text-lg mb-6 uppercase">
               Dla kupujących
             </h2>
-            <nav className="space-y-3 font-instrument-sans uppercase" aria-label="Customer services navigation">
-              <Link href="#" className="block text-white hover:text-primary transition-colors duration-200 text-sm">
-                Jak kupować?
-              </Link>
-              <Link href="#" className="block text-white hover:text-primary transition-colors duration-200 text-sm">
-                Formy dostawy
-              </Link>
-              <Link href="#" className="block text-white hover:text-primary transition-colors duration-200 text-sm">
-                Formy płatności
-              </Link>
-              <Link href="#" className="block text-white hover:text-primary transition-colors duration-200 text-sm">
-                Zwroty i reklamacje
-              </Link>
-              <Link href="#" className="block text-white hover:text-primary transition-colors duration-200 text-sm">
-                FAQ
-              </Link>
+            <nav className="space-y-3 font-instrument-sans uppercase" aria-label="Dla kupujących">
+              {footerLinks.customerServices.map(({ name, href }) => (
+                <Link 
+                  key={name} 
+                  href={href} 
+                  className="block text-white hover:text-primary transition-colors duration-200 text-sm"
+                >
+                  {name}
+                </Link>
+              ))}
             </nav>
           </div>
 
@@ -104,8 +98,8 @@ export async function Footer() {
             <h2 className="text-white font-instrument-sans font-bold text-lg mb-6 uppercase">
               Dla sprzedających
             </h2>
-            <nav className="space-y-3 font-instrument-sans uppercase" aria-label="Sellers navigation">
-              <Link href="#" className="block text-white hover:text-primary transition-colors duration-200 text-sm">
+            <nav className="space-y-3 font-instrument-sans uppercase" aria-label="Dla sprzedających">
+              <Link href="/poradnik-sprzedawcy" className="block text-white hover:text-primary transition-colors duration-200 text-sm">
                 Zacznij z nami sprzedawać
               </Link>
               <Link href="#" className="block text-white hover:text-primary transition-colors duration-200 text-sm">
@@ -114,7 +108,7 @@ export async function Footer() {
               <Link href="#" className="block text-white hover:text-primary transition-colors duration-200 text-sm">
                 Poradnik
               </Link>
-              <Link href="#" className="block text-white hover:text-primary transition-colors duration-200 text-sm">
+              <Link href="/sellers-faq" className="block text-white hover:text-primary transition-colors duration-200 text-sm">
                 FAQ
               </Link>
             </nav>
@@ -131,26 +125,41 @@ export async function Footer() {
               ARTOVNIA
             </h2>
           </div>
-          <div className="flex justify-center space-x-6" aria-label="Social media navigation">
-            {footerLinks.connect.map(({ label, path }) => (
-              <Link
-                key={label}
-                href={path}
-                className="text-white hover:text-primary transition-all duration-200 p-2 rounded-full hover:bg-white/10"
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label={label}
-              >
-                {getIcon(label)}
-              </Link>
-            ))}
-            {/* Add YouTube icon */}
+          <div className="flex justify-center space-x-6" aria-label="Media społecznościowe">
+            {/* Social media icons - hardcoded for now */}
+            <Link
+              href="https://facebook.com"
+              className="text-white hover:text-primary transition-all duration-200 p-2 rounded-full hover:bg-white/10"
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="Facebook - Media społecznościowe"
+            >
+              {getIcon('Facebook')}
+            </Link>
+            <Link
+              href="https://instagram.com"
+              className="text-white hover:text-primary transition-all duration-200 p-2 rounded-full hover:bg-white/10"
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="Instagram - Media społecznościowe"
+            >
+              {getIcon('Instagram')}
+            </Link>
+            <Link
+              href="https://linkedin.com"
+              className="text-white hover:text-primary transition-all duration-200 p-2 rounded-full hover:bg-white/10"
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="LinkedIn - Media społecznościowe"
+            >
+              {getIcon('LinkedIn')}
+            </Link>
             <Link
               href="https://youtube.com"
               className="text-white hover:text-primary transition-all duration-200 p-2 rounded-full hover:bg-white/10"
               target="_blank"
               rel="noopener noreferrer"
-              aria-label="YouTube"
+              aria-label="YouTube - Media społecznościowe"
             >
               {getIcon('YouTube')}
             </Link>

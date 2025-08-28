@@ -49,7 +49,7 @@ export function Input({
   return (
     <label className="label-md">
       {label}
-      <div className="relative mt-2">
+      <div className="relative">
         {icon && (
           <span className="absolute top-0 left-[16px] h-full flex items-center">
             {icon}

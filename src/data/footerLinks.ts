@@ -1,23 +1,19 @@
-const links = {
-  customerServices: [
-    { label: 'FAQs', path: '#' },
-    { label: 'Track Order', path: '#' },
-    { label: 'Returns', path: '#' },
-    { label: 'Delivery', path: '#' },
-    { label: 'Payment', path: '#' },
-  ],
+export const footerLinks = {
   about: [
-    { label: 'O nas', path: '#' },
-    { label: 'Blog', path: '/blog' },
-    { label: 'Polityka prywatności', path: '/privacy' },
-    { label: 'Regulamin', path: '/terms' },
-    { label: 'Sprzedawcy', path: '/sellers' },
+    { name: "O nas", href: "/about" },
+    { name: "Regulamin", href: "/terms" },
+    { name: "Polityka prywatności", href: "/privacy" },
+    { name: "Zacznij z nami sprzedawać", href: "/selling-guide" },
   ],
-  connect: [
-    { label: 'Facebook', path: 'https://facebook.com' },
-    { label: 'Instagram', path: 'https://instagram.com' },
-    { label: 'LinkedIn', path: 'https://linkedin.com' },
+  support: [
+    { name: "Centrum pomocy", href: "#" },
+    { name: "Kontakt", href: "#" },
   ],
-};
-
-export default links;
+  customerServices: [
+    { name: "Jak kupować?", href: "/how-to-buy" },
+    { name: "Formy dostawy", href: "/delivery" },
+    { name: "Formy płatności", href: "/payment" },
+    { name: "Zwroty i reklamacje", href: "/returns" },
+    { name: "FAQ", href: "/faq" },
+  ],
+}
