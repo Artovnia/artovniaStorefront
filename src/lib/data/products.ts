@@ -271,8 +271,7 @@ export const getProductShippingOptions = async (
       ...next
     }
 
-    console.log(`getProductShippingOptions: Fetching for product ${productId} in region ${regionId}`)
-
+ 
     const response = await sdk.client.fetch<{
       shipping_options: any[]
     }>(`/store/product-shipping-options`, {
@@ -285,7 +284,6 @@ export const getProductShippingOptions = async (
       }
     })
 
-    console.log(`getProductShippingOptions: Response:`, response)
     return response.shipping_options || []
   } catch (error) {
     console.error(`getProductShippingOptions: Error fetching shipping options for product ${productId}:`, error)

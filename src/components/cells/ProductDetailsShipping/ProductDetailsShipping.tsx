@@ -11,7 +11,7 @@ import { LoaderWrapper } from "@/components/atoms/icons/IconWrappers"
 
 type ProductDetailsShippingProps = {
   product: HttpTypes.StoreProduct
-  region: HttpTypes.StoreRegion
+  region: HttpTypes.StoreRegion | null | undefined
 }
 
 export const ProductDetailsShipping = ({
@@ -28,6 +28,7 @@ export const ProductDetailsShipping = ({
     const fetchShippingMethods = async () => {
       if (!product?.id || !region?.id) {
         setLoading(false)
+        setShippingMethods([])
         return
       }
 

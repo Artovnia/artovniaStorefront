@@ -98,7 +98,7 @@ export const ProductDetails = async ({
         />
       </ProductDetailsClient>
       <ProductGPSR product={product} />
-      <ProductDetailsShipping product={product} region={regionData} />
+      <ProductDetailsShipping product={product} region={regionData as HttpTypes.StoreRegion} />
       <ProductDetailsFooter
         tags={product?.tags || []}
         posted={product?.created_at || null}
