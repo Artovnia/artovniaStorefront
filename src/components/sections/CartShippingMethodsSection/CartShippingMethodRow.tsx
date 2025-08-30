@@ -48,7 +48,6 @@ export const CartShippingMethodRow = ({
       
       // Attempt to delete the shipping method
       const response = await removeShippingMethod(method.id);
-      console.log('Shipping method deletion response:', response);
       
       // After successful removal, invalidate the cache
       invalidateCheckoutCache(cartId);
@@ -57,7 +56,6 @@ export const CartShippingMethodRow = ({
       // Call the callback if provided to update parent state immediately
       // This is critical for ensuring the UI updates correctly
       if (onMethodRemoved) {
-        console.log(`Notifying parent about deletion: method=${method.id}, seller=${sellerId || 'unknown'}`);
         await onMethodRemoved(method.id, sellerId);
       }
       

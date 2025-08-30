@@ -99,7 +99,7 @@ export async function Footer() {
               Dla sprzedających
             </h2>
             <nav className="space-y-3 font-instrument-sans uppercase" aria-label="Dla sprzedających">
-              <Link href="/poradnik-sprzedawcy" className="block text-white hover:text-primary transition-colors duration-200 text-sm">
+              <Link href="/przewodnik-sprzedawcy" className="block text-white hover:text-primary transition-colors duration-200 text-sm">
                 Zacznij z nami sprzedawać
               </Link>
               <Link href="#" className="block text-white hover:text-primary transition-colors duration-200 text-sm">
@@ -108,7 +108,7 @@ export async function Footer() {
               <Link href="#" className="block text-white hover:text-primary transition-colors duration-200 text-sm">
                 Poradnik
               </Link>
-              <Link href="/sellers-faq" className="block text-white hover:text-primary transition-colors duration-200 text-sm">
+              <Link href="/faq-sprzedawcy" className="block text-white hover:text-primary transition-colors duration-200 text-sm">
                 FAQ
               </Link>
             </nav>

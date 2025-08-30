@@ -1,19 +1,19 @@
 export const footerLinks = {
   about: [
-    { name: "O nas", href: "/about" },
-    { name: "Regulamin", href: "/terms" },
-    { name: "Polityka prywatności", href: "/privacy" },
-    { name: "Zacznij z nami sprzedawać", href: "/selling-guide" },
+    { name: "O nas", href: "/o-nas" },
+    { name: "Regulamin", href: "/regulamin" },
+    { name: "Polityka prywatności", href: "/polityka-prywatnosci" },
+    { name: "Zacznij z nami sprzedawać", href: "/przewodnik-sprzedawcy" },
   ],
   support: [
     { name: "Centrum pomocy", href: "#" },
     { name: "Kontakt", href: "#" },
   ],
   customerServices: [
-    { name: "Jak kupować?", href: "/how-to-buy" },
-    { name: "Formy dostawy", href: "/delivery" },
-    { name: "Formy płatności", href: "/payment" },
-    { name: "Zwroty i reklamacje", href: "/returns" },
+    { name: "Jak kupować?", href: "/jak-kupowac" },
+    { name: "Formy dostawy", href: "/dostawa" },
+    { name: "Formy płatności", href: "/platnosc" },
+    { name: "Zwroty i reklamacje", href: "/zwroty" },
     { name: "FAQ", href: "/faq" },
   ],
 }

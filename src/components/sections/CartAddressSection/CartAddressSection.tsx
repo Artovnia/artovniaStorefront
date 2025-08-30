@@ -61,6 +61,7 @@ export const CartAddressSection = ({
     try {
       // Extract address data from form
       const addressData = {
+        email: formData.get('email') as string,
         shipping_address: {
           first_name: formData.get('shipping_address.first_name') as string,
           last_name: formData.get('shipping_address.last_name') as string,

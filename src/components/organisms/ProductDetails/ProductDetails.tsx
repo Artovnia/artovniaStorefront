@@ -10,6 +10,7 @@ import {
 import { getProductMeasurements } from "@/lib/data/measurements"
 import { retrieveCustomer, isAuthenticated } from "@/lib/data/customer"
 import { getUserWishlists } from "@/lib/data/wishlist"
+import { getRegion } from "@/lib/data/regions"
 import { globalDeduplicator, measurementDeduplicator } from "@/lib/utils/performance"
 import { SellerProps } from "@/types/seller"
 import { Wishlist, SerializableWishlist } from "@/types/wishlist"
@@ -39,19 +40,21 @@ export const ProductDetails = async ({
   const currentLocale = supportedLocales.includes(locale) ? locale : 'en'
   
   // Optimized parallel data fetching with better cache keys
-  const [user, authenticated, measurements] = await Promise.allSettled([
+  const [user, authenticated, measurements, region] = await Promise.allSettled([
     globalDeduplicator.dedupe(`customer-${product.id}`, retrieveCustomer),
     globalDeduplicator.dedupe(`auth-${product.id}`, isAuthenticated),
     measurementDeduplicator.dedupe(
       `measurements-${product.id}-${selectedVariantId || 'default'}-${currentLocale}`,
       () => getProductMeasurements(product.id, selectedVariantId, currentLocale)
-    )
+    ),
+    globalDeduplicator.dedupe(`region-pl`, () => getRegion("pl"))
   ])
 
   // Extract results with fallbacks
   const customer = user.status === 'fulfilled' ? user.value : null
   const isUserAuthenticated = authenticated.status === 'fulfilled' ? authenticated.value : false
   const productMeasurements = measurements.status === 'fulfilled' ? measurements.value : null
+  const regionData = region.status === 'fulfilled' ? region.value : null
 
   let wishlist: SerializableWishlist[] = []
   if (customer) {
@@ -95,7 +98,7 @@ export const ProductDetails = async ({
         />
       </ProductDetailsClient>
       <ProductGPSR product={product} />
-      <ProductDetailsShipping />
+      <ProductDetailsShipping product={product} region={regionData} />
       <ProductDetailsFooter
         tags={product?.tags || []}
         posted={product?.created_at || null}

@@ -20,11 +20,12 @@ export const ProductPageAccordion = ({
   const accordionRef = useRef(null);
 
   useEffect(() => {
-    if (accordionRef.current)
+    if (accordionRef.current && open) {
       setContentHeight(
         accordionRef.current['scrollHeight'] || 0
       );
-  }, []);
+    }
+  }, [open, children]);
 
   const openHandler = () => {
     setOpen(!open);
@@ -51,7 +52,7 @@ export const ProductPageAccordion = ({
         className={cn(
           'transition-all duration-300 h-full overflow-hidden px-4'
         )}
-        style={{ maxHeight: open ? contentHeight : 0 }}
+        style={{ maxHeight: open ? 'none' : 0 }}
       >
         <div className='pb-4'>{children}</div>
       </div>

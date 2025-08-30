@@ -130,6 +130,47 @@ const nextConfig: NextConfig = {
     ]
   },
 
+  // Redirects from Polish URLs to English page directories
+  async redirects() {
+    return [
+      {
+        source: '/o-nas',
+        destination: '/about',
+        permanent: true,
+      },
+      {
+        source: '/jak-kupowac',
+        destination: '/how-to-buy',
+        permanent: true,
+      },
+      {
+        source: '/dostawa',
+        destination: '/delivery',
+        permanent: true,
+      },
+      {
+        source: '/platnosc',
+        destination: '/payment',
+        permanent: true,
+      },
+      {
+        source: '/zwroty',
+        destination: '/returns',
+        permanent: true,
+      },
+      {
+        source: '/przewodnik-sprzedawcy',
+        destination: '/selling-guide',
+        permanent: true,
+      },
+      {
+        source: '/faq-sprzedawcy',
+        destination: '/sellers-faq',
+        permanent: true,
+      },
+    ]
+  },
+
   images: {
     // CRITICAL: Enhanced image optimization for faster loading
     formats: ['image/avif', 'image/webp'],

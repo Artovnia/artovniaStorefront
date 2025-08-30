@@ -17,7 +17,6 @@ interface CategoriesProps {
  */
 export const getCategoriesWithProductsFromDatabase = async (): Promise<Set<string>> => {
   try {
-    console.log("🔍 Database: Fetching categories with products from Medusa backend...")
     
     // Fetch all products from Medusa backend to get category information
     const response = await sdk.client.fetch<{
@@ -41,25 +40,18 @@ export const getCategoriesWithProductsFromDatabase = async (): Promise<Set<strin
     const categoryIds = new Set<string>()
     
     if (response?.products && Array.isArray(response.products)) {
-      console.log(`📊 Database: Processing ${response.products.length} products for category extraction`)
       
       response.products.forEach((product, index) => {
         if (product.categories && Array.isArray(product.categories)) {
           product.categories.forEach((category) => {
             if (category.id) {
               categoryIds.add(category.id)
-              if (index < 3) { // Log first few for debugging
-                console.log(`🔍 Database: Product ${product.id} has category ${category.id} (${category.name})`)
-              }
             }
           })
-        } else if (index < 3) {
-          console.log(`⚠️ Database: Product ${product.id} has no categories`)
-        }
+        } 
       })
     }
     
-    console.log(`📊 Database: Found ${categoryIds.size} unique categories with products`)
     return categoryIds
   } catch (error) {
     console.error("🔍 Database: Error fetching categories with products:", error)
@@ -191,18 +183,17 @@ export const listCategoriesWithProducts = async (): Promise<{
   categories: HttpTypes.StoreProductCategory[]
 }> => {
   try {
-    console.log("🔍 Fetching categories with products using database filtering...")
+    
     
     // Get categories that have products from database
     const categoriesWithProducts = await getCategoriesWithProductsFromDatabase()
     
     if (categoriesWithProducts.size === 0) {
-      console.log("⚠️ No categories with products found in database, falling back to essential categories")
       const essentialCategories = await getEssentialCategories()
       return essentialCategories
     }
     
-    console.log(`📊 Found ${categoriesWithProducts.size} categories with products in database`)
+    
     
     // Fetch all categories from database (single request)
     const response = await sdk.client.fetch<HttpTypes.StoreProductCategoryListResponse>(
@@ -224,13 +215,9 @@ export const listCategoriesWithProducts = async (): Promise<{
       return hasProductsInCategoryTree(category, allCategories, categoriesWithProducts)
     })
     
-    console.log(`📊 Filtered from ${allCategories.length} total categories to ${filteredCategories.length} categories with products`)
-    
     // Build tree from filtered categories
     const filteredTree = buildCategoryTree(filteredCategories)
     const filteredParents = filteredTree.filter(cat => !cat.parent_category_id)
-    
-    console.log(`📊 Final result: ${filteredParents.length} parent categories, ${filteredTree.length} total categories`)
     
     return {
       parentCategories: filteredParents,

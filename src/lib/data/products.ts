@@ -4,7 +4,7 @@ import { sdk } from "../config"
 import { sortProducts } from "@/lib/helpers/sort-products"
 import { HttpTypes } from "@medusajs/types"
 import { SortOptions } from "@/types/product"
-import { getAuthHeaders } from "./cookies"
+import { getAuthHeaders, getCacheOptions } from "./cookies"
 import { getRegion, retrieveRegion } from "./regions"
 import { SellerProps } from "@/types/seller"
 import { ProductGPSRData } from "@/types/gpsr"
@@ -243,5 +243,52 @@ export const listProductsWithPromotions = async ({
       response: { products: [], count: 0 },
       nextPage: null,
     }
+  }
+}
+
+/**
+ * Retrieves shipping options for a specific product
+ * @param productId - The ID of the product
+ * @param regionId - The ID of the region
+ * @param headers - Optional headers
+ * @param next - Optional Next.js cache options
+ * @returns Promise with shipping options
+ */
+export const getProductShippingOptions = async (
+  productId: string,
+  regionId: string,
+  headers: { [key: string]: string } = {},
+  next?: any
+) => {
+  try {
+    const authHeaders = {
+      ...(await getAuthHeaders()),
+      ...headers
+    }
+
+    const cacheOptions = {
+      ...(await getCacheOptions("fulfillment")),
+      ...next
+    }
+
+    console.log(`getProductShippingOptions: Fetching for product ${productId} in region ${regionId}`)
+
+    const response = await sdk.client.fetch<{
+      shipping_options: any[]
+    }>(`/store/product-shipping-options`, {
+      method: "GET",
+      headers: authHeaders,
+      next: cacheOptions,
+      query: {
+        product_id: productId,
+        region_id: regionId
+      }
+    })
+
+    console.log(`getProductShippingOptions: Response:`, response)
+    return response.shipping_options || []
+  } catch (error) {
+    console.error(`getProductShippingOptions: Error fetching shipping options for product ${productId}:`, error)
+    return []
   }
 }

@@ -285,27 +285,38 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children, initialCar
     dispatch({ type: 'SET_ERROR', payload: null })
     
     try {
+   
+      
       // Use setAddresses function which exists in cart.ts
       const formData = new FormData()
-      formData.append('shipping_address.first_name', address.first_name || '')
-      formData.append('shipping_address.last_name', address.last_name || '')
-      formData.append('shipping_address.address_1', address.address_1 || '')
-      formData.append('shipping_address.company', address.company || '')
-      formData.append('shipping_address.postal_code', address.postal_code || '')
-      formData.append('shipping_address.city', address.city || '')
-      formData.append('shipping_address.country_code', address.country_code || '')
-      formData.append('shipping_address.province', address.province || '')
-      formData.append('shipping_address.phone', address.phone || '')
-      formData.append('email', address.email || '')
+      
+      // Handle nested address structure correctly
+      const shippingAddress = address.shipping_address || address
+      const email = address.email || state.cart.email || ''
+      
+      formData.append('shipping_address.first_name', shippingAddress.first_name || '')
+      formData.append('shipping_address.last_name', shippingAddress.last_name || '')
+      formData.append('shipping_address.address_1', shippingAddress.address_1 || '')
+      formData.append('shipping_address.address_2', shippingAddress.address_2 || '')
+      formData.append('shipping_address.company', shippingAddress.company || '')
+      formData.append('shipping_address.postal_code', shippingAddress.postal_code || '')
+      formData.append('shipping_address.city', shippingAddress.city || '')
+      formData.append('shipping_address.country_code', shippingAddress.country_code || '')
+      formData.append('shipping_address.province', shippingAddress.province || '')
+      formData.append('shipping_address.phone', shippingAddress.phone || '')
+      formData.append('email', email)
       
       const result = await setAddresses(null, formData)
       
       if (result === 'success') {
-        // Refresh cart to get updated data
-        await refreshCart()
+        // Refresh cart with address context for optimized data loading
+        await refreshCart('address')
+      } else {
+        console.error('🔍 CartContext.setAddress - setAddresses failed with result:', result)
+        dispatch({ type: 'SET_ERROR', payload: result || 'Failed to set address' })
       }
     } catch (error) {
-      console.error('Error setting address:', error)
+      console.error('🔍 CartContext.setAddress - Error setting address:', error)
       dispatch({ type: 'SET_ERROR', payload: error instanceof Error ? error.message : 'Failed to set address' })
     }
   }, [state.cart, refreshCart])

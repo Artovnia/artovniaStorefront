@@ -27,32 +27,20 @@ export default async function CheckoutPage() {
 
 async function CheckoutPageContent() {
   try {
-    // Load only basic cart data - components will use specialized functions as needed
-    const cart = await retrieveCart()
-
+    // First get the cart, then use its ID for other calls
+    const cart = await retrieveCart().catch(() => null);
+    
     if (!cart) {
       return notFound()
     }
-    
-    // Load only essential data that all components need
-    // Individual components will fetch their specific data through CartContext
+
     const [shippingMethods, paymentMethods, customer] = await Promise.all([
-      listCartShippingMethods(cart.id).catch(error => {
-        console.warn('Failed to load shipping methods:', error)
-        return []
-      }),
-      listCartPaymentMethods(cart.region?.id ?? "").catch(error => {
-        console.warn('Failed to load payment methods:', error)
-        return []
-      }),
-      retrieveCustomer().catch(error => {
-        console.warn('Failed to load customer:', error)
-        return null
-      })
-    ])
+      listCartShippingMethods(cart.id).catch(() => []),
+      listCartPaymentMethods(cart.region?.id || '').catch(() => []),
+      retrieveCustomer().catch(() => null)
+    ]);
 
     // Provide comprehensive cart data to all components
-    // This eliminates the need for individual components to load their own data
     const typeSafeCart = cart as any;
     const typeSafeShippingMethods = shippingMethods as any
 

@@ -79,7 +79,7 @@ const removeBrowserCookie = (name: string) => {
 
 // Optimized single-layer cache for auth headers
 let authHeadersCache: { headers: any; timestamp: number; token?: string } | null = null;
-const CACHE_DURATION = 30000; // Single 30-second cache layer
+const CACHE_DURATION = 30000; // Back to 30 seconds for normal operation
 const PUBLISHABLE_KEY_CACHE = { key: '', timestamp: 0 };
 const PUBLISHABLE_KEY_CACHE_DURATION = 30000; // Aligned with auth cache
 
@@ -120,25 +120,44 @@ export const getAuthHeaders = async (): Promise<
     return headers;
   }
   
-  // Optimized non-blocking token retrieval
+  // Optimized non-blocking token retrieval with concurrent access protection
   let token: string | null = null;
   
   if (isBrowser) {
     // Client-side: Direct cookie access (fastest, non-blocking)
     token = getBrowserCookie('_medusa_jwt');
+    console.log('🔍 Token Debug - Browser token:', token ? `present (${token.length} chars)` : 'not found');
   } else {
-    // Server-side: Immediate fallback without timeout delays
+    // Server-side: Protected cookie access with timeout for concurrent requests
     try {
-      const cookies = await getServerCookies();
-      token = cookies?.get('_medusa_jwt')?.value || null;
-    } catch {
-      // Immediate fallback - never block navigation
+      const timeoutPromise = new Promise<null>((_, reject) => 
+        setTimeout(() => reject(new Error('Cookie access timeout')), 100)
+      );
+      
+      const cookiePromise = getServerCookies().then(cookies => 
+        cookies?.get('_medusa_jwt')?.value || null
+      );
+      
+      token = await Promise.race([cookiePromise, timeoutPromise]);
+    } catch (error) {
+      // Gracefully handle server cookie access issues
       token = null;
     }
   }
 
-  const headers = token ? {
-    authorization: `Bearer ${token}`,
+  // Simple token validation - only use if it looks like a valid JWT
+  let validToken = null;
+  if (token) {
+    // Basic JWT format validation (should have 3 parts separated by dots)
+    const tokenParts = token.split('.');
+    if (tokenParts.length === 3 && token.length > 50) {
+      validToken = token;
+    }
+    // If token format is invalid, just ignore it (don't use it)
+  }
+
+  const headers = validToken ? {
+    authorization: `Bearer ${validToken}`,
     'x-publishable-api-key': publishableKey
   } : {
     'x-publishable-api-key': publishableKey
@@ -149,7 +168,10 @@ export const getAuthHeaders = async (): Promise<
   return headers;
 };
 
-// Add the missing retrieveCustomer function with proper typing
+// Request deduplication for retrieveCustomer
+let customerRequestPromise: Promise<HttpTypes.StoreCustomer | null> | null = null;
+
+// Add the missing retrieveCustomer function with proper typing and request deduplication
 export const retrieveCustomer = async (): Promise<HttpTypes.StoreCustomer | null> => {
   // Skip during static generation
   if (process.env.NEXT_PHASE === 'phase-production-build' || 
@@ -157,24 +179,46 @@ export const retrieveCustomer = async (): Promise<HttpTypes.StoreCustomer | null
     return null;
   }
 
-  try {
-    const headers = await getAuthHeaders();
-    
-    // Check if we have authorization header
-    if (!('authorization' in headers)) {
-      return null;
-    }
-
-    const response = await sdk.client.fetch('/store/customers/me', {
-      headers,
-      method: 'GET',
-    }) as { customer: HttpTypes.StoreCustomer }; // Fix: Properly type the response
-
-    return response.customer || null;
-  } catch (error) {
-    console.error('Error retrieving customer:', error);
-    return null;
+  // CRITICAL FIX: Deduplicate concurrent requests to prevent auth conflicts
+  if (customerRequestPromise) {
+    return customerRequestPromise;
   }
+
+  customerRequestPromise = (async () => {
+    try {
+      const requestHeaders = await getAuthHeaders();
+      
+      // Return null for guest users (no auth token)
+      if (!('authorization' in requestHeaders)) {
+        return null;
+      }
+
+      // Validate auth header format
+      const authHeader = requestHeaders.authorization;
+      if (!authHeader || !authHeader.startsWith('Bearer ') || authHeader.length < 20) {
+        return null;
+      }
+
+      const response = await sdk.client.fetch('/store/customers/me', {
+        headers: requestHeaders,
+        method: 'GET'
+      }) as { customer: HttpTypes.StoreCustomer };
+      
+      return response.customer || null;
+    } catch (error) {
+      // Clear auth cache on unauthorized errors to prevent reuse
+      if (error instanceof Error && error.message.includes('Unauthorized')) {
+        authHeadersCache = null;
+      }
+      
+      return null;
+    } finally {
+      // Clear the promise after completion to allow future requests
+      customerRequestPromise = null;
+    }
+  })();
+
+  return customerRequestPromise;
 };
 
 // Add helper function to check if user is authenticated
