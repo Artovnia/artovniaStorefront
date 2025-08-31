@@ -75,7 +75,7 @@ export default async function Home({
       </div>
 
       {/* Content with max-width container */}
-      <div className="mx-auto max-w-[1920px] w-full  mt-8 ">
+      <div className="mx-auto max-w-[1920px] w-full  mt-8 bg-white ">
         {/*<BannerSection />*/}
         {/*<ShopByStyleSection />*/}
         <BlogSection />

@@ -314,9 +314,14 @@ const CartShippingMethodsSection: React.FC<ShippingProps> = ({
                                     "Ustawianie..."
                                   ) : selectedMethod ? (
                                     `${selectedMethod.name} - ${
-                                      selectedMethod.price_type === "flat" 
+                                      selectedMethod.price_type === "flat" && selectedMethod.prices?.[0]?.amount
                                         ? convertToLocale({
-                                            amount: selectedMethod.amount!,
+                                            amount: selectedMethod.prices[0].amount,
+                                            currency_code: selectedMethod.prices[0].currency_code || cart?.currency_code,
+                                          })
+                                        : selectedMethod.price_type === "flat" && selectedMethod.amount
+                                        ? convertToLocale({
+                                            amount: selectedMethod.amount,
                                             currency_code: cart?.currency_code,
                                           })
                                         : calculatedPricesMap[selectedMethod.id] 
@@ -377,9 +382,14 @@ const CartShippingMethodsSection: React.FC<ShippingProps> = ({
                                       <span>
                                         {option.name}
                                         {" - "}
-                                        {option.price_type === "flat" ? (
+                                        {option.price_type === "flat" && option.prices?.[0]?.amount ? (
                                           convertToLocale({
-                                            amount: option.amount!,
+                                            amount: option.prices[0].amount,
+                                            currency_code: option.prices[0].currency_code || cart?.currency_code,
+                                          })
+                                        ) : option.price_type === "flat" && option.amount ? (
+                                          convertToLocale({
+                                            amount: option.amount,
                                             currency_code: cart?.currency_code,
                                           })
                                         ) : calculatedPricesMap[option.id] ? (

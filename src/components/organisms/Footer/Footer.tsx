@@ -174,7 +174,7 @@ export async function Footer() {
             © ARTOVNIA 2025
           </p>
           <p className="font-instrument-sans text-black text-xs">
-            Korzystanie z serwisu oznacza akceptację Regulaminu.
+            Korzystanie z serwisu oznacza akceptację <Link href="/regulamin" className="text-black hover:text-primary transition-colors underline">Regulaminu</Link>.
           </p>
         </div>
       </div>
