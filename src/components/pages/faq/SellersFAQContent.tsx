@@ -7,7 +7,7 @@ import { format } from "date-fns"
 import { pl } from "date-fns/locale"
 
 const SellersFAQContent = () => {
-  const [lastUpdated] = useState(new Date(2024, 11, 13)) // December 13, 2024
+  const [lastUpdated] = useState(new Date(2025, 8, 26)) // August 26, 2025
 
   return (
     <div className="sellers-faq-content">

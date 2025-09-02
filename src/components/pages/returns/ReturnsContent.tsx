@@ -5,7 +5,7 @@ import { format } from "date-fns"
 import { pl } from "date-fns/locale"
 
 const ReturnsContent = () => {
-  const [lastUpdated] = useState(new Date(2024, 11, 13)) // December 13, 2024
+  const [lastUpdated] = useState(new Date(2025, 8, 26)) // August 26, 2025
 
   return (
     <div className="returns-content">
@@ -44,8 +44,28 @@ const ReturnsContent = () => {
                   14 dni na zwrot bez podania przyczyny
                 </h3>
                 <p className="text-green-700">
-                  Zgodnie z prawem konsumenckim masz 14 dni kalendarzowych od dnia otrzymania produktu 
-                  na jego zwrot bez podawania przyczyny.
+                Zgodnie z obowiązującym prawem, każdy sprzedawca ma obowiązek umożliwić klientowi zwrot towaru w terminie 14 dni od otrzymania przesyłki, z wyjątkiem produktów wykonywanych na zamówienie lub personalizowanych.
+                </p>
+              </div>
+
+              <div className="bg-blue-50 border border-blue-200 rounded-md p-6">
+                <h4 className="font-medium text-lg mb-3 text-blue-800">Obowiązki sprzedawcy:</h4>
+                <ul className="space-y-2 text-blue-700">
+                  <li className="flex items-start">
+                    <span className="text-blue-600 mr-3 mt-1">•</span>
+                    <span>udostępnić adres do zwrotów (może się różnić od adresu kontaktowego),</span>
+                  </li>
+                  <li className="flex items-start">
+                    <span className="text-blue-600 mr-3 mt-1">•</span>
+                    <span>obsługiwać zwroty i reklamacje zgodnie z ustawą o prawach konsumenta,</span>
+                  </li>
+                  <li className="flex items-start">
+                    <span className="text-blue-600 mr-3 mt-1">•</span>
+                    <span>udostępnić klientowi formularz zwrotu (lub przyjąć go przez panel klienta).</span>
+                  </li>
+                </ul>
+                <p className="text-blue-700 mt-4 font-medium">
+                  Reklamacje są rozpatrywane bezpośrednio między klientem a sprzedawcą.
                 </p>
               </div>
 
@@ -81,7 +101,7 @@ const ReturnsContent = () => {
             
             <div className="space-y-6">
               <div className="flex items-start space-x-4">
-                <div className="flex-shrink-0 w-8 h-8 bg-primary text-white rounded-full flex items-center justify-center font-medium text-sm">
+                <div className="flex-shrink-0 w-8 h-8 bg-[#3B3634] text-white rounded-full flex items-center justify-center font-medium text-sm">
                   1
                 </div>
                 <div>
@@ -94,7 +114,7 @@ const ReturnsContent = () => {
               </div>
 
               <div className="flex items-start space-x-4">
-                <div className="flex-shrink-0 w-8 h-8 bg-primary text-white rounded-full flex items-center justify-center font-medium text-sm">
+                <div className="flex-shrink-0 w-8 h-8 bg-[#3B3634] text-white rounded-full flex items-center justify-center font-medium text-sm">
                   2
                 </div>
                 <div>
@@ -107,7 +127,7 @@ const ReturnsContent = () => {
               </div>
 
               <div className="flex items-start space-x-4">
-                <div className="flex-shrink-0 w-8 h-8 bg-primary text-white rounded-full flex items-center justify-center font-medium text-sm">
+                <div className="flex-shrink-0 w-8 h-8 bg-[#3B3634] text-white rounded-full flex items-center justify-center font-medium text-sm">
                   3
                 </div>
                 <div>
@@ -120,7 +140,7 @@ const ReturnsContent = () => {
               </div>
 
               <div className="flex items-start space-x-4">
-                <div className="flex-shrink-0 w-8 h-8 bg-primary text-white rounded-full flex items-center justify-center font-medium text-sm">
+                <div className="flex-shrink-0 w-8 h-8 bg-[#3B3634] text-white rounded-full flex items-center justify-center font-medium text-sm">
                   4
                 </div>
                 <div>
@@ -162,37 +182,7 @@ const ReturnsContent = () => {
             </div>
           </div>
 
-          {/* Return Costs */}
-          <div className="bg-white rounded-md p-8 shadow-sm border border-gray-100">
-            <h2 className="font-instrument-serif text-2xl font-medium mb-6 text-gray-800">
-              Koszty zwrotu
-            </h2>
-            
-            <div className="grid md:grid-cols-2 gap-6">
-              <div className="bg-red-50 border border-red-200 rounded-md p-6">
-                <h3 className="font-medium text-lg mb-3 text-red-800">
-                  Koszt ponosi kupujący
-                </h3>
-                <ul className="space-y-2 text-red-700 text-sm">
-                  <li>• Zwrot bez podania przyczyny</li>
-                  <li>• Zmiana zdania</li>
-                  <li>• Produkt nie pasuje</li>
-                </ul>
-              </div>
-              
-              <div className="bg-green-50 border border-green-200 rounded-md p-6">
-                <h3 className="font-medium text-lg mb-3 text-green-800">
-                  Koszt ponosi sprzedawca
-                </h3>
-                <ul className="space-y-2 text-green-700 text-sm">
-                  <li>• Produkt wadliwy</li>
-                  <li>• Niezgodny z opisem</li>
-                  <li>• Uszkodzony w transporcie</li>
-                </ul>
-              </div>
-            </div>
-          </div>
-
+         
           {/* Contact Information */}
           <div className="bg-primary/5 border border-primary/20 rounded-md p-8">
             <h2 className="font-instrument-serif text-2xl font-medium mb-6 text-gray-800">
@@ -206,7 +196,7 @@ const ReturnsContent = () => {
               <ul className="space-y-2">
                 <li className="flex items-center">
                   <span className="text-primary mr-3">📧</span>
-                  <span>pomoc@artovnia.pl</span>
+                  <span>sayuri.platform@gmail.com</span>
                 </li>
                 <li className="flex items-center">
                   <span className="text-primary mr-3">💬</span>

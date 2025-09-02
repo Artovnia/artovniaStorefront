@@ -3,7 +3,7 @@ export const footerLinks = {
     { name: "O nas", href: "/o-nas" },
     { name: "Regulamin", href: "/regulamin" },
     { name: "Polityka prywatności", href: "/polityka-prywatnosci" },
-    { name: "Zacznij z nami sprzedawać", href: "/przewodnik-sprzedawcy" },
+   
   ],
   support: [
     { name: "Centrum pomocy", href: "#" },

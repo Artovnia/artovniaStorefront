@@ -5,7 +5,7 @@ import { format } from "date-fns"
 import { pl } from "date-fns/locale"
 
 const DeliveryContent = () => {
-  const [lastUpdated] = useState(new Date(2024, 11, 13)) // December 13, 2024
+  const [lastUpdated] = useState(new Date(2025, 8, 26)) // August 26, 2025
 
   return (
     <div className="delivery-content">
@@ -112,19 +112,42 @@ const DeliveryContent = () => {
               Jak wybrać metodę dostawy?
             </h2>
             
-            <div className="space-y-4 text-gray-700">
-              <p>
-                <strong>1. W koszyku</strong> – po dodaniu produktów do koszyka zobaczysz dostępne opcje dostawy 
-                dla każdego sprzedawcy osobno.
-              </p>
-              <p>
-                <strong>2. W opisie produktu</strong> – informacje o dostępnych metodach wysyłki i ich kosztach 
-                znajdziesz również na stronie produktu.
-              </p>
-              <p>
-                <strong>3. Kontakt ze sprzedawcą</strong> – jeśli masz pytania dotyczące dostawy, możesz skontaktować 
-                się bezpośrednio z twórcą przez system wiadomości.
-              </p>
+            <div className="space-y-6">
+              <div className="flex items-start space-x-4">
+                <div className="flex-shrink-0 w-8 h-8 bg-[#3B3634] text-white rounded-full flex items-center justify-center font-medium text-sm">
+                  1
+                </div>
+                <div>
+                  <h3 className="font-medium text-lg mb-2">W koszyku</h3>
+                  <p className="text-gray-600">
+                    Po dodaniu produktów do koszyka zobaczysz dostępne opcje dostawy dla każdego sprzedawcy osobno.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-start space-x-4">
+                <div className="flex-shrink-0 w-8 h-8 bg-[#3B3634] text-white rounded-full flex items-center justify-center font-medium text-sm">
+                  2
+                </div>
+                <div>
+                  <h3 className="font-medium text-lg mb-2">W opisie produktu</h3>
+                  <p className="text-gray-600">
+                    Informacje o dostępnych metodach wysyłki i ich kosztach znajdziesz również na stronie produktu.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-start space-x-4">
+                <div className="flex-shrink-0 w-8 h-8 bg-[#3B3634] text-white rounded-full flex items-center justify-center font-medium text-sm">
+                  3
+                </div>
+                <div>
+                  <h3 className="font-medium text-lg mb-2">Kontakt ze sprzedawcą</h3>
+                  <p className="text-gray-600">
+                    Jeśli masz pytania dotyczące dostawy, możesz skontaktować się bezpośrednio z twórcą przez system wiadomości.
+                  </p>
+                </div>
+              </div>
             </div>
           </div>
 

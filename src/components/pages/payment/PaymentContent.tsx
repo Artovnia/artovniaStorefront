@@ -5,7 +5,7 @@ import { format } from "date-fns"
 import { pl } from "date-fns/locale"
 
 const PaymentContent = () => {
-  const [lastUpdated] = useState(new Date(2024, 11, 13)) // December 13, 2024
+  const [lastUpdated] = useState(new Date(2025, 8, 26)) // August 26, 2025
 
   return (
     <div className="payment-content">
@@ -136,7 +136,7 @@ const PaymentContent = () => {
             
             <div className="space-y-6">
               <div className="flex items-start space-x-4">
-                <div className="flex-shrink-0 w-8 h-8 bg-primary text-white rounded-full flex items-center justify-center font-medium text-sm">
+                <div className="flex-shrink-0 w-8 h-8 bg-[#3B3634] text-white rounded-full flex items-center justify-center font-medium text-sm">
                   1
                 </div>
                 <div>
@@ -148,7 +148,7 @@ const PaymentContent = () => {
               </div>
 
               <div className="flex items-start space-x-4">
-                <div className="flex-shrink-0 w-8 h-8 bg-primary text-white rounded-full flex items-center justify-center font-medium text-sm">
+                <div className="flex-shrink-0 w-8 h-8 bg-[#3B3634] text-white rounded-full flex items-center justify-center font-medium text-sm">
                   2
                 </div>
                 <div>
@@ -160,7 +160,7 @@ const PaymentContent = () => {
               </div>
 
               <div className="flex items-start space-x-4">
-                <div className="flex-shrink-0 w-8 h-8 bg-primary text-white rounded-full flex items-center justify-center font-medium text-sm">
+                <div className="flex-shrink-0 w-8 h-8 bg-[#3B3634] text-white rounded-full flex items-center justify-center font-medium text-sm">
                   3
                 </div>
                 <div>
@@ -173,31 +173,7 @@ const PaymentContent = () => {
             </div>
           </div>
 
-          {/* Important Notes */}
-          <div className="bg-amber-50 border border-amber-200 rounded-md p-8">
-            <h2 className="font-instrument-serif text-2xl font-medium mb-6 text-amber-800">
-              Ważne informacje
-            </h2>
-            
-            <div className="space-y-4 text-amber-700">
-              <div className="flex items-start">
-                <span className="text-amber-600 mr-3 mt-1">•</span>
-                <span>Płatności są dostępne wyłącznie w złotych polskich (PLN)</span>
-              </div>
-              <div className="flex items-start">
-                <span className="text-amber-600 mr-3 mt-1">•</span>
-                <span>Nie pobieramy dodatkowych opłat za płatność</span>
-              </div>
-              <div className="flex items-start">
-                <span className="text-amber-600 mr-3 mt-1">•</span>
-                <span>Faktura VAT jest wystawiana automatycznie po zakupie</span>
-              </div>
-              <div className="flex items-start">
-                <span className="text-amber-600 mr-3 mt-1">•</span>
-                <span>W przypadku zwrotu środki są przekazywane na pierwotną metodę płatności</span>
-              </div>
-            </div>
-          </div>
+          
         </div>
       </div>
     </div>

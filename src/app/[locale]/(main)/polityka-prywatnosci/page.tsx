@@ -1,9 +1,8 @@
 import { Metadata } from "next"
 import { getTranslations } from "next-intl/server"
 import React, { Suspense } from "react"
-import TermsOfUseContent from "@/components/pages/terms/TermsOfUseContent"
+import PrivacyPolicyContent from "@/components/pages/privacy/PrivacyPolicyContent"
 import { Footer } from "@/components/organisms/Footer/Footer"
-import { Header } from '@/components/organisms/Header/Header'
 import { Link } from "@/i18n/routing"
 import { ArrowLeftIcon } from "@/icons"
 
@@ -13,19 +12,18 @@ export async function generateMetadata({
   params: Promise<{ locale: string }>
 }) {
   const { locale } = await params
-  const t = await getTranslations({ locale, namespace: "terms" })
+  const t = await getTranslations({ locale, namespace: "privacy" })
 
   return {
-    title: t("meta.title"),
-    description: t("meta.description"),
+    title: t("meta.title") || "Polityka Prywatności | Artovnia",
+    description: t("meta.description") || "Polityka Prywatności sklepu internetowego Artovnia",
   } as Metadata
 }
 
-export default async function TermsPage() {
-
+export default async function PrivacyPage() {
   return (
     <div className="min-h-screen bg-[#F4F0EB]">
-      <Header />
+ 
       
       <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <Suspense fallback={
@@ -44,7 +42,7 @@ export default async function TermsPage() {
                   Powrót do strony głównej
                 </Link>
               </div>
-              <TermsOfUseContent />
+              <PrivacyPolicyContent />
             </div>
           </div>
         </Suspense>
@@ -52,6 +50,5 @@ export default async function TermsPage() {
       
       <Footer />
     </div>
-    
   )
 }

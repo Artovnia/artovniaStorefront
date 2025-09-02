@@ -5,7 +5,7 @@ import { format } from "date-fns"
 import { pl } from "date-fns/locale"
 
 const HowToBuyContent = () => {
-  const [lastUpdated] = useState(new Date(2024, 11, 13)) // December 13, 2024
+  const [lastUpdated] = useState(new Date(2025, 8, 26)) // August 26, 2025
 
   return (
     <div className="how-to-buy-content">
@@ -41,7 +41,7 @@ const HowToBuyContent = () => {
             
             <div className="space-y-6">
               <div className="flex items-start space-x-4">
-                <div className="flex-shrink-0 w-8 h-8 bg-primary text-white rounded-full flex items-center justify-center font-medium text-sm">
+                <div className="flex-shrink-0 w-8 h-8 bg-[#3B3634] text-white rounded-full flex items-center justify-center font-medium text-sm">
                   1
                 </div>
                 <div>
@@ -54,7 +54,7 @@ const HowToBuyContent = () => {
               </div>
 
               <div className="flex items-start space-x-4">
-                <div className="flex-shrink-0 w-8 h-8 bg-primary text-white rounded-full flex items-center justify-center font-medium text-sm">
+                <div className="flex-shrink-0 w-8 h-8 bg-[#3B3634] text-white rounded-full flex items-center justify-center font-medium text-sm">
                   2
                 </div>
                 <div>
@@ -67,7 +67,7 @@ const HowToBuyContent = () => {
               </div>
 
               <div className="flex items-start space-x-4">
-                <div className="flex-shrink-0 w-8 h-8 bg-primary text-white rounded-full flex items-center justify-center font-medium text-sm">
+                <div className="flex-shrink-0 w-8 h-8 bg-[#3B3634] text-white rounded-full flex items-center justify-center font-medium text-sm">
                   3
                 </div>
                 <div>
@@ -80,7 +80,7 @@ const HowToBuyContent = () => {
               </div>
 
               <div className="flex items-start space-x-4">
-                <div className="flex-shrink-0 w-8 h-8 bg-primary text-white rounded-full flex items-center justify-center font-medium text-sm">
+                <div className="flex-shrink-0 w-8 h-8 bg-[#3B3634] text-white rounded-full flex items-center justify-center font-medium text-sm">
                   4
                 </div>
                 <div>
