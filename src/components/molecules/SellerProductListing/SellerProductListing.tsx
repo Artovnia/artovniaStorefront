@@ -74,9 +74,6 @@ export const SellerProductListing = ({
       const DEFAULT_REGION = process.env.NEXT_PUBLIC_DEFAULT_REGION || "pl"
       const offset = (page - 1) * PRODUCT_LIMIT
 
-      console.log(`SellerProductListing: Fetching products for seller: ${seller_id}, page: ${page}, offset: ${offset}`)
-      console.log(`Using URL parameters: limit=${PRODUCT_LIMIT}, seller_id=${seller_id}`)
-
       const { response } = await listProductsWithSort({
         seller_id,
         countryCode: DEFAULT_REGION,
@@ -86,8 +83,6 @@ export const SellerProductListing = ({
           offset
         },
       })
-
-      console.log(`Products response: Found ${response.products.length} products, total count: ${response.count}`)
       
       setProducts(response.products)
       setCount(response.count || 0)

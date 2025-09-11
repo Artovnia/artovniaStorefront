@@ -133,10 +133,6 @@ export class ProductErrorBoundary extends Component<Props, State> {
   private handleRetry = () => {
     if (this.retryCount < this.maxRetries) {
       this.retryCount++
-      console.log(`🔄 Retrying ProductErrorBoundary (attempt ${this.retryCount}/${this.maxRetries})`)
-      this.setState({ hasError: false, error: undefined, errorInfo: undefined })
-    } else {
-      console.log('❌ Max retries reached, showing permanent error state')
     }
   }
 

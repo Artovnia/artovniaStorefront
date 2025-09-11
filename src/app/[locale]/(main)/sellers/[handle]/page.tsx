@@ -6,6 +6,8 @@ import { getSellerByHandle } from "../../../../../lib/data/seller"
 import { getVendorAvailability, getVendorHolidayMode, getVendorSuspension } from "../../../../../lib/data/vendor-availability"
 import { getSellerReviews } from "../../../../../lib/data/reviews"
 import { SellerProps } from "../../../../../types/seller"
+import { PromotionDataProvider } from "../../../../../components/context/PromotionDataProvider"
+import { BatchPriceProvider } from "../../../../../components/context/BatchPriceProvider"
 
 export default async function SellerPage({
   params,
@@ -28,7 +30,6 @@ export default async function SellerPage({
       )
     }
     
-    console.log(`Fetching seller with handle: ${handle} for main seller page`);
     const seller = await getSellerByHandle(handle)
     const user = await retrieveCustomer()
     
@@ -96,25 +97,29 @@ export default async function SellerPage({
   }
 
   return (
-    <main className="container ">
-      <VendorAvailabilityProvider
-        vendorId={seller.id}
-        vendorName={seller.name}
-        availability={availability}
-        holidayMode={holidayMode}
-        suspension={suspension}
-        showModalOnLoad={!!availability?.onHoliday}
-      >
-        <SellerPageHeader seller={sellerWithReviews as SellerProps} user={user} />
-        <SellerTabs
-          tab={tab}
-          seller_id={seller.id}
-          seller_handle={seller.handle}
-          seller_name={seller.name}
-          locale={locale}
-        />
-      </VendorAvailabilityProvider>
-    </main>
+    <PromotionDataProvider countryCode="PL">
+      <BatchPriceProvider currencyCode="PLN">
+        <main className="container ">
+          <VendorAvailabilityProvider
+            vendorId={seller.id}
+            vendorName={seller.name}
+            availability={availability}
+            holidayMode={holidayMode}
+            suspension={suspension}
+            showModalOnLoad={!!availability?.onHoliday}
+          >
+            <SellerPageHeader seller={sellerWithReviews as SellerProps} user={user} />
+            <SellerTabs
+              tab={tab}
+              seller_id={seller.id}
+              seller_handle={seller.handle}
+              seller_name={seller.name}
+              locale={locale}
+            />
+          </VendorAvailabilityProvider>
+        </main>
+      </BatchPriceProvider>
+    </PromotionDataProvider>
   )
   } catch (error) {
     console.error(`Error in SellerPage: ${error instanceof Error ? error.message : 'Unknown error'}`);

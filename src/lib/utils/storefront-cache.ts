@@ -71,21 +71,15 @@ if (typeof window === 'undefined' && redis.on) {
     })
   })
   
-  redis.on('connect', () => {
-    console.log('Storefront Redis connected successfully')
-  })
+  redis.on('connect', () => {})
   
-  redis.on('ready', () => {
-    console.log('Storefront Redis ready for operations')
-  })
+  redis.on('ready', () => {})
   
   redis.on('close', () => {
     console.warn('Storefront Redis connection closed')
   })
   
-  redis.on('reconnecting', (delay: number) => {
-    console.log(`Storefront Redis reconnecting in ${delay}ms`)
-  })
+  redis.on('reconnecting', (delay: number) => {})
 }
 
 export const CACHE_TTL = {

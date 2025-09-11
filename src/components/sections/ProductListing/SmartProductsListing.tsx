@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { HttpTypes } from "@medusajs/types"
-import { detectBot } from "@/lib/utils/bot-detection"
+// Removed detectBot import - using only server-side detection
 import { ProductListing } from "./ProductListing"
 import { ProductListingSkeleton } from "@/components/organisms/ProductListingSkeleton/ProductListingSkeleton"
 import dynamic from "next/dynamic"
@@ -63,17 +63,7 @@ export const SmartProductsListing = (props: SmartProductsListingProps) => {
     // Only use Algolia for confirmed human users with valid config
     setShouldUseAlgolia(hasAlgoliaConfig && !finalIsBot)
 
-    // Simplified debug logging
-    console.log('🤖 Bot Detection Debug:', {
-      serverSideIsBot,
-      finalIsBot,
-      hasAlgoliaConfig,
-      shouldUseAlgolia: hasAlgoliaConfig && !finalIsBot,
-      userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : 'N/A',
-      nodeEnv: process.env.NODE_ENV,
-      algoliaId: ALGOLIA_ID ? 'SET' : 'MISSING',
-      algoliaKey: ALGOLIA_SEARCH_KEY ? 'SET' : 'MISSING'
-    })
+    // Bot detection logic complete
   }, [serverSideIsBot, hasAlgoliaConfig])
 
   // Show loading skeleton during hydration
@@ -97,7 +87,7 @@ export const SmartProductsListing = (props: SmartProductsListingProps) => {
 
   // Bot detected - use database listing
   if (isBot) {
-    console.log('🤖 Using ProductListing (Database) - Bot detected')
+    // Using database listing for bot
     return (
       <ProductListing
         category_id={category_id}
@@ -112,7 +102,7 @@ export const SmartProductsListing = (props: SmartProductsListingProps) => {
 
   // Human user with Algolia config - use Algolia
   if (shouldUseAlgolia) {
-    console.log('🔍 Using AlgoliaProductsListing - Human user detected')
+    // Using Algolia for human user
     return (
       <AlgoliaProductsListing
         category_id={category_id}
@@ -127,7 +117,7 @@ export const SmartProductsListing = (props: SmartProductsListingProps) => {
   }
 
   // Fallback to database listing
-  console.log('📊 Using ProductListing (Database) - Fallback mode')
+  // Fallback to database listing
   return (
     <ProductListing
       category_id={category_id}
