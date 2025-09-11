@@ -161,23 +161,24 @@ export async function isServerSideBot(): Promise<boolean> {
       return true
     }
     
-    // CRITICAL: Check for AWS/Cloud server IPs
+    // RELAXED: Only check for obvious bot IPs, not all cloud IPs
     const clientIP = headersList.get('x-forwarded-for')?.split(',')[0]?.trim() || 
                     headersList.get('x-real-ip') || 
                     headersList.get('cf-connecting-ip') || // Cloudflare
                     headersList.get('x-client-ip') ||
                     ''
     
+    // Only flag obvious bot farms, not legitimate cloud users
     if (clientIP) {
-      // Check AWS IP ranges (major source of bot traffic)
-      const isAWSIP = AWS_IP_RANGES.some(pattern => pattern.test(clientIP))
-      if (isAWSIP) {
-        return true
-      }
+      // Only check for known bot farm IP ranges, not general cloud IPs
+      const knownBotIPs = [
+        /^184\.72\./,  // Specific AWS bot range from analysis
+        /^54\.36\./,   // OVH bot hosting
+        /^51\.15\./,   // Scaleway bot hosting
+      ]
       
-      // Check other cloud provider IPs
-      const isCloudIP = CLOUD_IP_PATTERNS.some(pattern => pattern.test(clientIP))
-      if (isCloudIP) {
+      const isBotFarmIP = knownBotIPs.some(pattern => pattern.test(clientIP))
+      if (isBotFarmIP) {
         return true
       }
     }
@@ -190,12 +191,12 @@ export async function isServerSideBot(): Promise<boolean> {
       return true
     }
     
-    // 2. Check for X-Forwarded-For patterns indicating bot farms
+    // 2. Check for excessive proxy chains (legitimate users can have 2-3 proxies)
     const xForwardedFor = headersList.get('x-forwarded-for')
     if (xForwardedFor) {
-      // Multiple IPs often indicate proxy/bot usage
+      // Only flag excessive proxy chains (5+ IPs)
       const ips = xForwardedFor.split(',').length
-      if (ips > 3) {
+      if (ips > 5) {
         return true
       }
     }
@@ -215,31 +216,32 @@ export async function isServerSideBot(): Promise<boolean> {
       return true
     }
     
-    // 4. Check for missing Accept header (common for simple bots)
+    // 4. Check for missing Accept header (but allow */* for some legitimate clients)
     const acceptHeader = headersList.get('accept')
-    if (!acceptHeader || acceptHeader === '*/*') {
-      return true
+    if (!acceptHeader) {
+      return true // Only flag completely missing Accept header
     }
     
-    // 5. Check for missing Accept-Language (humans usually have this)
+    // 5. Check for missing Accept-Language (but be more lenient)
     const acceptLanguage = headersList.get('accept-language')
-    if (!acceptLanguage) {
+    // Only flag if completely missing AND user agent looks like a bot
+    if (!acceptLanguage && (userAgent.includes('bot') || userAgent.includes('crawler'))) {
       return true
     }
     
-    // 6. Check for suspicious Accept-Encoding patterns
+    // 6. Check for suspicious Accept-Encoding patterns (be more lenient)
     const acceptEncoding = headersList.get('accept-encoding')
-    if (!acceptEncoding || acceptEncoding === 'identity') {
-      return true
+    if (!acceptEncoding && userAgent.length < 20) {
+      return true // Only flag if missing AND very short user agent
     }
     
-    // 7. Check for missing DNT or Sec- headers (modern browsers include these)
+    // 7. Check for missing Sec- headers (but be more lenient)
     const secFetchSite = headersList.get('sec-fetch-site')
     const secFetchMode = headersList.get('sec-fetch-mode')
     
-    // If no sec-fetch headers and modern user agent, likely a bot
-    if (!secFetchSite && !secFetchMode && userAgent.includes('chrome')) {
-      return true
+    // Only flag if missing sec-fetch headers AND other bot indicators
+    if (!secFetchSite && !secFetchMode && userAgent.includes('chrome') && userAgent.length < 50) {
+      return true // Only flag short Chrome user agents without sec-fetch
     }
     
     // 8. Check for suspicious hosting/cloud indicators in headers

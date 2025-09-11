@@ -97,6 +97,12 @@ export const CACHE_TTL = {
 class StorefrontCache {
   async get<T>(key: string): Promise<T | null> {
     try {
+      // Check connection state before attempting operation
+      if (redis.status !== 'ready' && redis.status !== 'connecting') {
+        console.warn(`Redis not ready (status: ${redis.status}), skipping get operation`)
+        return null
+      }
+      
       const data = await redis.get(key)
       return data ? JSON.parse(data) : null
     } catch (error) {
@@ -105,8 +111,10 @@ class StorefrontCache {
         const errorMessage = error.message
         if (errorMessage.includes('ENOTFOUND') ||
             errorMessage.includes('ECONNREFUSED') ||
-            errorMessage.includes('Connection is closed')) {
-          console.warn(`Redis cache unavailable for get operation, returning null`)
+            errorMessage.includes('Connection is closed') ||
+            errorMessage.includes('Stream isn\'t writeable') ||
+            errorMessage.includes('enableOfflineQueue')) {
+          console.warn(`Redis cache unavailable for get operation: ${errorMessage.split(':')[0]}`)
           return null
         }
       }
@@ -117,6 +125,12 @@ class StorefrontCache {
 
   async set(key: string, data: any, ttlSeconds: number): Promise<void> {
     try {
+      // Check connection state before attempting operation
+      if (redis.status !== 'ready') {
+        console.warn(`Redis not ready (status: ${redis.status}), skipping set operation`)
+        return
+      }
+      
       await redis.setex(key, ttlSeconds, JSON.stringify(data))
     } catch (error) {
       // Enhanced error handling for production Redis issues
@@ -128,7 +142,8 @@ class StorefrontCache {
             errorMessage.includes('Stream isn\'t writeable') ||
             errorMessage.includes('ENOTFOUND') ||
             errorMessage.includes('ECONNREFUSED') ||
-            errorMessage.includes('Connection is closed')) {
+            errorMessage.includes('Connection is closed') ||
+            errorMessage.includes('Redis connection')) {
           // Log warning but don't throw - app should continue without cache
           console.warn(`Redis cache unavailable (${errorMessage.split(':')[0]}), continuing without cache`)
           return
@@ -140,8 +155,23 @@ class StorefrontCache {
 
   async del(key: string): Promise<void> {
     try {
+      // Check connection state before attempting operation
+      if (redis.status !== 'ready') {
+        console.warn(`Redis not ready (status: ${redis.status}), skipping delete operation`)
+        return
+      }
+      
       await redis.del(key)
     } catch (error) {
+      if (error instanceof Error) {
+        const errorMessage = error.message
+        if (errorMessage.includes('Stream isn\'t writeable') ||
+            errorMessage.includes('Connection is closed') ||
+            errorMessage.includes('ENOTFOUND')) {
+          console.warn(`Redis cache unavailable for delete operation: ${errorMessage.split(':')[0]}`)
+          return
+        }
+      }
       console.error('Cache delete error:', error)
     }
   }
