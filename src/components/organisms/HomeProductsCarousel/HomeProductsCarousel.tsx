@@ -1,5 +1,6 @@
 import { Carousel } from "@/components/cells"
 import { ProductCard } from "../ProductCard/ProductCard"
+// import { BatchPriceProvider } from "@/components/context/BatchPriceProvider" // Disabled to prevent infinite loops
 import { listProducts } from "@/lib/data/products"
 import { Product } from "@/types/product"
 import { HttpTypes } from "@medusajs/types"

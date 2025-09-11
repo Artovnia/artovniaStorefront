@@ -1,6 +1,7 @@
 "use client";
 
 import { ProductCard } from '../ProductCard/ProductCard';
+// import { BatchPriceProvider } from "@/components/context/BatchPriceProvider" // Disabled to prevent infinite loops';
 import { HttpTypes } from '@medusajs/types';
 import { useState, useEffect } from 'react';
 import { SerializableWishlist } from '@/types/wishlist';
@@ -54,7 +55,7 @@ export const ProductsList = ({
   }, []);
   
   return (
-    <>
+    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
       {products.map((product) => (
         <ProductCard 
           key={product.id} 
@@ -64,6 +65,6 @@ export const ProductsList = ({
           onWishlistChange={refreshWishlist}
         />
       ))}
-    </>
+    </div>
   );
 };

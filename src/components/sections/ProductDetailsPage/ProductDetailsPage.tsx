@@ -2,10 +2,12 @@ import { ProductGallery } from "../../../components/organisms"
 import { ProductDetails } from "../../../components/organisms"
 import { ProductReviews } from "@/components/organisms/ProductReviews/ProductReviews"
 import { VendorAvailabilityProvider } from "../../../components/organisms/VendorAvailabilityProvider/vendor-availability-provider"
+import { BatchPriceProvider } from "@/components/context/BatchPriceProvider"
+import { PromotionDataProvider } from "@/components/context/PromotionDataProvider"
 import { listProducts } from "../../../lib/data/products"
 import { getVendorAvailability, getVendorHolidayMode, getVendorSuspension } from "../../../lib/data/vendor-availability"
 import { HomeProductSection } from "../HomeProductSection/HomeProductSection"
-import { getCachedProduct } from "../../../lib/utils/persistent-cache"
+import { getCachedProduct } from "@/lib/utils/storefront-cache"
 import ProductErrorBoundary from "@/components/molecules/ProductErrorBoundary/ProductErrorBoundary"
 import { preloadProductImages } from "@/lib/utils/preload-resources"
 import { Breadcrumbs } from "@/components/atoms/Breadcrumbs/Breadcrumbs"
@@ -166,14 +168,16 @@ export const ProductDetailsPage = async ({
       <div className="max-w-[1920px] mx-auto px-4 lg:px-12 py-6 mb-4 text-xl">
         <Breadcrumbs items={breadcrumbs} />
       </div>
-      <VendorAvailabilityProvider
-        vendorId={vendorId}
-        vendorName={prod.seller?.name}
-        availability={availability}
-        holidayMode={holidayMode}
-        suspension={suspension}
-        showModalOnLoad={!!availability?.onHoliday}
-      >
+      <PromotionDataProvider countryCode="PL">
+        <BatchPriceProvider currencyCode="PLN" days={30}>
+        <VendorAvailabilityProvider
+          vendorId={vendorId}
+          vendorName={prod.seller?.name}
+          availability={availability}
+          holidayMode={holidayMode}
+          suspension={suspension}
+          showModalOnLoad={!!availability?.onHoliday}
+        >
         {/* Mobile Layout: Stacked vertically */}
         <div className="flex flex-col md:hidden">
           <div className="w-full">
@@ -237,7 +241,9 @@ export const ProductDetailsPage = async ({
             prefetchedReviews={reviews}
           />
         </div>
-      </VendorAvailabilityProvider>
+        </VendorAvailabilityProvider>
+        </BatchPriceProvider>
+      </PromotionDataProvider>
       </ProductErrorBoundary>
     </>
   )

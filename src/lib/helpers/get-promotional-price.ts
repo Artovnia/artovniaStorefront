@@ -54,7 +54,44 @@ export function getPromotionalPrice({
 
   const basePrice = cheapestVariant.prices?.find(p => !regionId || p.region_id === regionId)
   
-  if (!basePrice || !product.has_promotions || !product.promotions?.length) {
+  // Check for price-list discounts using same logic as ProductCard
+  const hasCalculatedPrice = cheapestVariant.calculated_price && 
+    cheapestVariant.calculated_price.calculated_amount !== cheapestVariant.calculated_price.original_amount &&
+    cheapestVariant.calculated_price.calculated_amount < cheapestVariant.calculated_price.original_amount
+
+  // Check for promotion module discounts
+  const hasPromotionDiscount = product.has_promotions && product.promotions && product.promotions.length > 0
+  
+  if (!basePrice || (!hasPromotionDiscount && !hasCalculatedPrice)) {
+    const formattedPrice = formatPrice(basePrice?.amount || 0)
+    return {
+      originalPrice: formattedPrice,
+      promotionalPrice: formattedPrice,
+      discountPercentage: 0,
+      hasPromotion: false
+    }
+  }
+
+  // If we have calculated_price (price-list discount), use that first
+  if (hasCalculatedPrice && cheapestVariant.calculated_price) {
+    const originalAmount = cheapestVariant.calculated_price.original_amount || 0
+    const calculatedAmount = cheapestVariant.calculated_price.calculated_amount || 0
+    
+    if (calculatedAmount < originalAmount) {
+      const discountAmount = originalAmount - calculatedAmount
+      const discountPercentage = (discountAmount / originalAmount) * 100
+      
+      return {
+        originalPrice: formatPrice(originalAmount),
+        promotionalPrice: formatPrice(calculatedAmount),
+        discountPercentage: Math.round(discountPercentage),
+        hasPromotion: true
+      }
+    }
+  }
+
+  // Fall back to promotion module logic if no price-list discount
+  if (!hasPromotionDiscount) {
     const formattedPrice = formatPrice(basePrice?.amount || 0)
     return {
       originalPrice: formattedPrice,
@@ -68,18 +105,16 @@ export function getPromotionalPrice({
   let bestDiscountPercentage = 0
   let bestDiscountAmount = 0
   
-  for (const promotion of product.promotions) {
-    
+  
+  for (const promotion of product.promotions || []) {
     
     // Handle Medusa promotion structure - application_method contains the discount details
     if (promotion.application_method) {
       const appMethod = promotion.application_method
       
-      
       // Handle percentage discount
       if (appMethod.type === 'percentage' && typeof appMethod.value === 'number') {
         const discountPercentage = appMethod.value
-        
         
         if (discountPercentage > bestDiscountPercentage) {
           bestDiscountPercentage = discountPercentage
@@ -129,14 +164,14 @@ export function getPromotionalPrice({
   const originalAmount = basePrice.amount || 0
   const promotionalAmount = Math.max(0, originalAmount - bestDiscountAmount)
 
- 
-
-  return {
+  const result = {
     originalPrice: formatPrice(originalAmount),
     promotionalPrice: formatPrice(promotionalAmount),
     discountPercentage: Math.round(bestDiscountPercentage),
     hasPromotion: true
   }
+
+  return result
 }
 
 function formatPrice(amount: number): string {

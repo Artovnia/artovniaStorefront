@@ -12,7 +12,7 @@ interface CachedCategoriesData {
 
 class CategoriesCache {
   private cache = new Map<string, CachedCategoriesData>()
-  private readonly defaultTTL = 10 * 60 * 1000 // 10 minutes
+  private readonly defaultTTL = 60 * 60 * 1000 // 1 hour - categories rarely change
 
   set(key: string, data: { categories: any[], parentCategories: any[] }, ttl: number = this.defaultTTL): void {
     this.cache.set(key, {
@@ -93,7 +93,7 @@ export const categoriesCache = new CategoriesCache()
 export const getCachedCategories = async (
   fetchFn: () => Promise<{ categories: any[], parentCategories: any[] }>,
   cacheKey: string,
-  ttl: number = 10 * 60 * 1000 // 10 minutes default
+  ttl: number = 60 * 60 * 1000 // 1 hour default - categories rarely change
 ): Promise<{ categories: any[], parentCategories: any[] }> => {
   // Check cache first
   const cached = categoriesCache.get(cacheKey)

@@ -5,6 +5,7 @@ import { client } from "@/lib/client"
 import { Configure, useHits } from "react-instantsearch"
 import { InstantSearchNext } from "react-instantsearch-nextjs"
 import { ProductCard } from "../ProductCard/ProductCard"
+import { BatchPriceProvider } from "@/components/context/BatchPriceProvider"
 
 export const AlgoliaProductsCarousel = ({
   locale,

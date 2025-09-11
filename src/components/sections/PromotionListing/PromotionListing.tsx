@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react"
 import { HttpTypes } from "@medusajs/types"
 import { ProductCard } from "@/components/organisms"
+import { BatchPriceProvider } from "@/components/context/BatchPriceProvider"
 import { listProductsWithPromotions } from "@/lib/data/products"
 import { retrieveCustomer } from "@/lib/data/customer"
 import { getUserWishlists } from "@/lib/data/wishlist"
@@ -127,17 +128,26 @@ export const PromotionListing = ({
           </div>
         ) : (
           <>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 justify-items-center w-full max-w-[1200px] mb-24 mx-auto">
-              {products.map((product) => (
-                <ProductCard
-                  key={product.id}
-                  product={product}
-                  user={user}
-                  wishlist={wishlist}
-                  onWishlistChange={refreshWishlist}
-                />
-              ))}
-            </div>
+            <BatchPriceProvider currencyCode="PLN" days={30}>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 justify-items-center w-full max-w-[1200px] mb-24 mx-auto">
+                {products.map((product) => (
+                  <div key={product.id} className="relative">
+                    <ProductCard
+                      product={product}
+                      user={user}
+                      wishlist={wishlist}
+                      onWishlistChange={refreshWishlist}
+                    />
+                    {/* Promo Code Required Badge */}
+                    {(product as any).promotions?.some((promo: any) => promo.requires_code) && (
+                      <div className="absolute top-2 left-2 bg-yellow-500 text-white text-xs font-bold px-2 py-1 rounded-md shadow-lg z-10">
+                        Kod promocyjny
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </BatchPriceProvider>
 
             {/* Load More Button */}
             {hasNextPage && (

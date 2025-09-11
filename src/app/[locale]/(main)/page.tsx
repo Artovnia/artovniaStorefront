@@ -8,7 +8,10 @@ import {
   HomeNewestProductsSection,
   SmartBestProductsSection,
   DesignerOfTheWeekSection,
+  NewsletterSection,
 } from "@/components/sections"
+import { BatchPriceProvider } from "@/components/context/BatchPriceProvider"
+import { PromotionDataProvider } from "@/components/context/PromotionDataProvider"
 
 import type { Metadata } from "next"
 
@@ -42,44 +45,51 @@ export default async function Home({
   const { locale } = await params
 
   return (
-    <main className="flex flex-col text-primary">
-      {/* Content with max-width container */}
-      <div className="mx-auto max-w-[1920px] w-full">
-        <Hero />
-      </div>
-      
-      {/* Smart Best Products Section */}
-      <div className="mx-auto max-w-[1920px] w-full  mb-8 min-h-[400px] py-8">
-        <SmartBestProductsSection
-         />
-      </div>
-     
-      {/* Full width dark section */}
-      <div className="w-full bg-[#3B3634]">
-        {/* Content container inside full-width section */}
-        <div className="mx-auto max-w-[1920px] w-full min-h-[400px] py-8 font-instrument-sans">
-          <HomeProductSection 
-            heading="Nowości" 
-            
-            theme="light" 
-            headingFont="font-instrument-serif italic" 
-            headingSpacing="mb-12" 
-            textTransform="normal-case" 
-          />
-        </div>
-      </div>
-      
-      {/* Designer of the Week Section */}
-      <div className="w-full bg-[#F4F0EB] min-h-[400px] py-8">
-        <DesignerOfTheWeekSection />
-      </div>
+    <PromotionDataProvider countryCode="PL">
+      <BatchPriceProvider currencyCode="PLN">
+        <main className="flex flex-col text-primary">
+          {/* Content with max-width container */}
+          <div className="mx-auto max-w-[1920px] w-full">
+            <Hero />
+          </div>
+          
+          {/* Smart Best Products Section */}
+          <div className="mx-auto max-w-[1920px] w-full  mb-8 min-h-[400px] py-8">
+            <SmartBestProductsSection />
+          </div>
+         
+          {/* Full width dark section */}
+          <div className="w-full bg-[#3B3634]">
+            {/* Content container inside full-width section */}
+            <div className="mx-auto max-w-[1920px] w-full min-h-[400px] py-8 font-instrument-sans">
+              <HomeProductSection 
+                heading="Nowości" 
+                theme="light" 
+                headingFont="font-instrument-serif italic" 
+                headingSpacing="mb-12" 
+                textTransform="normal-case" 
+              />
+            </div>
+          </div>
+          
+          {/* Designer of the Week Section */}
+          <div className="w-full bg-[#F4F0EB] min-h-[400px] py-8">
+            <DesignerOfTheWeekSection />
+          </div>
 
-      {/* Content with max-width container */}
-      <div className="mx-auto max-w-[1920px] w-full  mt-8 bg-white ">
-        {/*<BannerSection />*/}
-        {/*<ShopByStyleSection />*/}
-        <BlogSection />
-      </div>
-    </main>
+          {/* Content with max-width container */}
+          <div className="w-full bg-white py-8">
+            <div className="mx-auto max-w-[1920px] w-full  bg-white ">
+              {/*<BannerSection />*/}
+              {/*<ShopByStyleSection />*/}
+              <BlogSection />
+            </div>
+          </div>
+
+          {/* Newsletter Section */}
+          <NewsletterSection />
+        </main>
+      </BatchPriceProvider>
+    </PromotionDataProvider>
   )
 }

@@ -360,7 +360,7 @@ export async function addToCart({
       )
       .then(async () => {
         // Only invalidate persistent cache - avoid revalidateTag that triggers page refresh
-        const { invalidateCheckoutCache } = await import('../utils/persistent-cache')
+        const { invalidateCheckoutCache } = await import('../utils/storefront-cache')
         invalidateCheckoutCache(cart.id)
       })
       .catch(medusaError)
@@ -377,7 +377,7 @@ export async function addToCart({
       )
       .then(async () => {
         // Only invalidate persistent cache - avoid revalidateTag that triggers page refresh
-        const { invalidateCheckoutCache } = await import('../utils/persistent-cache')
+        const { invalidateCheckoutCache } = await import('../utils/storefront-cache')
         invalidateCheckoutCache(cart.id)
       })
       .catch(medusaError)
@@ -412,7 +412,7 @@ export async function updateLineItem({
     .updateLineItem(cartId, lineId, { quantity }, {}, headers)
     .then(async () => {
       // Only invalidate persistent cache - avoid revalidateTag that triggers page refresh
-      const { invalidateCheckoutCache } = await import('../utils/persistent-cache')
+      const { invalidateCheckoutCache } = await import('../utils/storefront-cache')
       invalidateCheckoutCache(cartId)
     })
     .catch(medusaError)
@@ -440,7 +440,7 @@ export async function deleteLineItem(lineId: string) {
     .deleteLineItem(cartId, lineId, headers)
     .then(async () => {
       // Only invalidate persistent cache - avoid revalidateTag that triggers page refresh
-      const { invalidateCheckoutCache } = await import('../utils/persistent-cache')
+      const { invalidateCheckoutCache } = await import('../utils/storefront-cache')
       invalidateCheckoutCache(cartId)
     })
     .catch(medusaError)
@@ -478,7 +478,7 @@ export async function setShippingMethod({
       revalidateTag(cartCacheTag)
       
       // Invalidate persistent cache to ensure fresh data on next request
-      const { invalidateCheckoutCache } = await import('../utils/persistent-cache')
+      const { invalidateCheckoutCache } = await import('../utils/storefront-cache')
       invalidateCheckoutCache(cartId)
       
       // Return the response data so callers can access the updated cart
@@ -760,7 +760,7 @@ export async function removeShippingMethod(shippingMethodId: string, sellerId?: 
     revalidateTag(fulfillmentTag);
     
     // Invalidate persistent cache to ensure fresh data on next request
-    const { invalidateCheckoutCache } = await import('../utils/persistent-cache')
+    const { getCachedCheckoutData, invalidateCheckoutCache } = await import('@/lib/utils/storefront-cache')
     invalidateCheckoutCache(cartId)
     
     return {

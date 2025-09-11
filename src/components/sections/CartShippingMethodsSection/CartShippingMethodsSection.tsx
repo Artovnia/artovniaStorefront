@@ -19,7 +19,7 @@ import clsx from "clsx"
 import { InpostShippingMethodWrapper } from "@/components/molecules/InpostShippingMethodWrapper/InpostShippingMethodWrapper"
 import { useCart } from "@/lib/context/CartContext"
 // Import cache invalidation function
-import { invalidateCheckoutCache } from "@/lib/utils/persistent-cache"
+import { invalidateCheckoutCache } from "@/lib/utils/storefront-cache"
 
 // Extended cart item product type to include seller
 type ExtendedStoreProduct = HttpTypes.StoreProduct & {

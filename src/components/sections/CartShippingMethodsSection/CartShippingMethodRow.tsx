@@ -8,7 +8,7 @@ import { HttpTypes } from "@medusajs/types"
 import { Text } from "@medusajs/ui"
 import { InpostParcelInfo } from "@/components/molecules"
 import { InpostParcelData } from "@/lib/services/inpost-api"
-import { invalidateCheckoutCache } from "@/lib/utils/persistent-cache"
+import { invalidateCheckoutCache } from "@/lib/utils/storefront-cache"
 import { useState } from "react"
 
 export const CartShippingMethodRow = ({

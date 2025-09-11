@@ -8,6 +8,7 @@ import {
   CategorySidebar,
   ProductFilterBar,
 } from "@/components/organisms"
+import { BatchPriceProvider } from "@/components/context/BatchPriceProvider"
 import { SelectField } from "@/components/molecules/SelectField/SelectField"
 import { Configure, useHits, useRefinementList } from "react-instantsearch"
 import React, { useEffect, useState } from "react"
@@ -417,17 +418,19 @@ const ProductsListing = ({
               </div>
             ) : (
               <div className="w-full flex justify-center xl:justify-start">
-                <ul className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-12 w-fit mx-auto xl:mx-0">
-                  {items.map((hit: any) => (
-                    <ProductCard 
-                      key={hit.objectID} 
-                      product={hit} 
-                      user={user}
-                      wishlist={wishlist}
-                      onWishlistChange={refreshWishlist}
-                    />
-                  ))}
-                </ul>
+                <BatchPriceProvider currencyCode="PLN" days={30}>
+                  <ul className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-12 w-fit mx-auto xl:mx-0">
+                    {items.map((hit: any) => (
+                      <ProductCard 
+                        key={hit.objectID} 
+                        product={hit} 
+                        user={user}
+                        wishlist={wishlist}
+                        onWishlistChange={refreshWishlist}
+                      />
+                    ))}
+                  </ul>
+                </BatchPriceProvider>
               </div>
             )}
           </div>

@@ -16,4 +16,17 @@ export default defineConfig({
   schema: {
     types: schemaTypes,
   },
+
+  // Webhook configuration for automated blog post newsletters
+  webhooks: [
+    {
+      name: 'blog-post-newsletter',
+      url: 'https://artovniapanel.netlify.app/store/blog/webhook',
+      events: ['create', 'update'],
+      filter: '_type == "blogPost" && defined(publishedAt)',
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    }
+  ]
 })

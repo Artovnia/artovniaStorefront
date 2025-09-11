@@ -3,7 +3,7 @@
 import React, { createContext, useContext, useReducer, useCallback, useEffect, useMemo } from 'react'
 import { HttpTypes } from '@medusajs/types'
 import { retrieveCart, retrieveCartForAddress, retrieveCartForShipping, retrieveCartForPayment, addToCart, updateLineItem, deleteLineItem, setAddresses, setShippingMethod, selectPaymentSession, initiatePaymentSession } from '@/lib/data/cart'
-import { invalidateCheckoutCache } from '@/lib/utils/persistent-cache'
+import { invalidateCheckoutCache } from "@/lib/utils/storefront-cache"
 
 // Extended cart type to include PayU metadata and additional properties
 interface ExtendedCart extends HttpTypes.StoreCart {

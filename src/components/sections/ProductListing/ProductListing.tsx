@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react"
 import { HttpTypes } from "@medusajs/types"
 import { ProductCard } from "@/components/organisms"
+import { BatchPriceProvider } from "@/components/context/BatchPriceProvider"
 import { CategorySidebar } from "@/components/organisms"
 import { ProductFilterBar } from "@/components/organisms"
 // Simple loading component since skeleton import has issues
@@ -205,17 +206,19 @@ export const ProductListing = ({
                 </p>
               </div>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                {products.map((product) => (
-                  <ProductCard
-                    key={product.id}
-                    product={product}
-                    user={user}
-                    wishlist={wishlist}
-                    onWishlistChange={refreshWishlist}
-                  />
-                ))}
-              </div>
+              <BatchPriceProvider currencyCode="PLN" days={30}>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                  {products.map((product) => (
+                    <ProductCard
+                      key={product.id}
+                      product={product}
+                      user={user}
+                      wishlist={wishlist}
+                      onWishlistChange={refreshWishlist}
+                    />
+                  ))}
+                </div>
+              </BatchPriceProvider>
             )}
           </div>
 

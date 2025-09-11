@@ -1,4 +1,4 @@
-import { clearAllCaches, getCacheStats } from '@/lib/utils/persistent-cache'
+import { clearAllCaches, getCacheStats } from "@/lib/utils/storefront-cache"
 import { NextRequest, NextResponse } from 'next/server'
 
 /**

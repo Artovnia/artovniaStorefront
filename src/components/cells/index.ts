@@ -37,6 +37,7 @@ import { ProductAdditionalAttributes } from "./ProductAdditionalAttributes/Produ
 import { StepProgressBar } from "./StepProgressBar/StepProgressBar"
 import { QuantityChanger } from "./QuantityChanger/QuantityChanger"
 import { CookieConsent } from "./CookieConsent/CookieConsent"
+import NewsletterSubscription from "./NewsletterSubscription/NewsletterSubscription"
 // ProductGPSRDetails has been moved to molecules/ProductGPSR
 
 export {
@@ -79,4 +80,5 @@ export {
   StepProgressBar,
   QuantityChanger,
   CookieConsent,
+  NewsletterSubscription,
 }

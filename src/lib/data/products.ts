@@ -176,7 +176,8 @@ export const listProductsWithSort = async ({
 }
 
 /**
- * Fetch products that have active promotions using custom backend API
+ * Fetch products that have active promotions or price-list discounts
+ * Uses hybrid approach: backend for promotions + frontend filtering for price-list discounts
  */
 export const listProductsWithPromotions = async ({
   page = 1,
@@ -205,42 +206,100 @@ export const listProductsWithPromotions = async ({
     }
 
     const headers = { ...(await getAuthHeaders()) }
-    const offset = (page - 1) * limit
 
-    // Call our custom backend API
-    const response = await sdk.client.fetch<{
-      products: (HttpTypes.StoreProduct & { 
-        promotions?: any[]
-        has_promotions?: boolean
-        seller?: SellerProps 
-      })[]
-      count: number
-      promotions_found?: number
-      applicable_product_ids?: number
-    }>(`/store/products/promotions`, {
-      method: "GET",
-      query: {
-        limit,
-        offset,
-        region_id: region?.id,
-      },
-      headers,
-      cache: "no-cache"
-    })
+    // Step 1: Get products with promotion module discounts
+    let promotionProducts: any[] = []
+    try {
+      const promotionResponse = await sdk.client.fetch<{
+        products: (HttpTypes.StoreProduct & { 
+          promotions?: any[]
+          has_promotions?: boolean
+          seller?: SellerProps 
+        })[]
+        count: number
+        promotions_found?: number
+        applicable_product_ids?: number
+      }>(`/store/products/promotions`, {
+        method: "GET",
+        query: {
+          limit: 50, // Get more to have enough after filtering
+          offset: 0,
+          region_id: region?.id,
+        },
+        headers,
+        cache: "no-cache"
+      })
+      
+      promotionProducts = promotionResponse.products || []
+    } catch (error) {
+      console.warn('Failed to fetch promotion products, continuing with price-list only:', error)
+    }
 
-    const hasNextPage = response.count > offset + limit
+    // Step 2: Get products with price-list discounts using dedicated API
+    let priceListProducts: any[] = []
+    try {
+      const priceListResponse = await sdk.client.fetch<{
+        products: (HttpTypes.StoreProduct & { seller?: SellerProps })[]
+        count: number
+        price_lists_found?: number
+        discounted_variants_found?: number
+        total_products_with_discounts?: number
+      }>(`/store/products/price-list-discounts`, {
+        method: "GET",
+        query: {
+          limit: 100,
+          offset: 0,
+          region_id: region?.id,
+        },
+        headers,
+        cache: "no-cache"
+      })
+      
+      // Filter out products already in promotion products
+      priceListProducts = priceListResponse.products.filter((product: any) => 
+        !promotionProducts.some(p => p.id === product.id)
+      )
+    } catch (error) {
+      console.warn('Failed to fetch price-list products:', error)
+    }
+
+    // Debug logging
+    console.log('🔍 Debug - Promotion products found:', promotionProducts.length)
+    console.log('🔍 Debug - Price-list products found:', priceListProducts.length)
+    
+    // Step 4: Combine and paginate
+    const allDiscountedProducts = [
+      ...promotionProducts.map(p => ({ ...p, discount_type: 'promotion' })),
+      ...priceListProducts.map(p => ({ ...p, discount_type: 'price_list', has_promotions: true }))
+    ]
+
+    console.log('🔍 Debug - Total discounted products:', allDiscountedProducts.length)
+
+    // Apply pagination
+    const startIndex = (page - 1) * limit
+    const endIndex = startIndex + limit
+    const paginatedProducts = allDiscountedProducts.slice(startIndex, endIndex)
+
+    const nextPage = endIndex < allDiscountedProducts.length ? page + 1 : null
+
+    console.log('🔍 Debug - Paginated products for page', page, ':', paginatedProducts.length)
 
     return {
       response: {
-        products: response.products,
-        count: response.count,
+        products: paginatedProducts,
+        count: allDiscountedProducts.length,
       },
-      nextPage: hasNextPage ? page + 1 : null,
+      nextPage,
     }
   } catch (error) {
-    console.error('listProductsWithPromotions: Error calling backend API:', error)
+    console.error('Error in listProductsWithPromotions:', error)
+    
+    // Fallback: return empty results
     return {
-      response: { products: [], count: 0 },
+      response: {
+        products: [],
+        count: 0,
+      },
       nextPage: null,
     }
   }

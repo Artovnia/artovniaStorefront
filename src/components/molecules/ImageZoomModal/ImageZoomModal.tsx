@@ -203,9 +203,9 @@ export const ImageZoomModal = ({
       {/* Instructions */}
       <div className="absolute bottom-4 left-1/2 -translate-x-1/2 text-white/70 text-sm text-center bg-black/30 px-4 py-2 rounded-full backdrop-blur-sm">
         <div className="flex items-center gap-4 text-xs">
-          <span>Click to zoom</span>
-          {images.length > 1 && <span>← → Navigate</span>}
-          <span>ESC Close</span>
+          <span>Kliknij aby powiększyć</span>
+          {images.length > 1 && <span>← → Nawiguj</span>}
+          <span>ESC Zamknij</span>
         </div>
       </div>
 

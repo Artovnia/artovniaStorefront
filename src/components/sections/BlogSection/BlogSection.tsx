@@ -10,7 +10,7 @@ export async function BlogSection() {
   }
 
   return (
-    <section className='bg-primary container'>
+    <section className='bg-white w-full'>
       <div className='flex items-center justify-between mb-12'>
         <h2 className='heading-lg text-black font-instrument-serif italic'>
           Bądź na czasie

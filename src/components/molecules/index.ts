@@ -28,6 +28,7 @@ import { CartDropdownItem } from "./CartDropdownItem/CartDropdownItem"
 import { LoginForm } from "./LoginForm/LoginForm"
 import { RegisterForm } from "./RegisterForm/RegisterForm"
 import { UserNavigation } from "./UserNavigation/UserNavigation"
+import NewsletterForm from "./NewsletterForm/NewsletterForm"
 import { ParcelAccordion } from "./ParcelAccordion/ParcelAccordion"
 import { AddressForm } from "./AddressForm/AddressForm"
 import { ReviewForm } from "./ReviewForm/ReviewForm"
@@ -83,6 +84,7 @@ export {
   InpostParcelInfo,
   ImageZoomModal,
   SellerProductListing,
+  NewsletterForm,
 }
 
 // Re-export LocalizedLink as a named export

@@ -1,5 +1,6 @@
 import { HomeProductsCarousel } from "@/components/organisms"
 import { Product } from "@/types/product"
+import { BatchPriceProvider } from "@/components/context/BatchPriceProvider"
 
 export const HomeProductSection = async ({
   heading,
@@ -25,37 +26,39 @@ export const HomeProductSection = async ({
 }) => {
   // Create a centered container that works within parent constraints
   return (
-    <section className={`w-full h-full flex flex-col justify-center items-center ${fullWidth ? 'relative' : ''}`}>
-      {/* If fullWidth is true, add a background div that extends beyond parent container */}
-      {fullWidth && (
-        <div 
-          className="absolute top-0 bottom-0 bg-inherit" 
-          style={{ 
-            width: '100vw', 
-            left: '50%',
-            right: '50%',
-            marginLeft: '-50vw',
-            marginRight: '-50vw',
-            zIndex: -1
-          }}
-        />
-      )}
-      
-      <div className="w-full mx-auto flex flex-col justify-center items-center py-8">
-        <h2 className={`${headingSpacing} heading-lg font-bold tracking-tight ${theme === 'dark' ? 'text-black' : 'text-white'} ${headingFont}  text-center`}>
-          {heading}
-        </h2>
-
-        <div className="w-full flex justify-center">
-          <HomeProductsCarousel
-            locale={locale}
-            sellerProducts={products.slice(0, 4)}
-            home={home}
-            theme={theme}
-            isSellerSection={isSellerSection}
+    <BatchPriceProvider currencyCode="PLN" days={30}>
+      <section className={`w-full h-full flex flex-col justify-center items-center ${fullWidth ? 'relative' : ''}`}>
+        {/* If fullWidth is true, add a background div that extends beyond parent container */}
+        {fullWidth && (
+          <div 
+            className="absolute top-0 bottom-0 bg-inherit" 
+            style={{ 
+              width: '100vw', 
+              left: '50%',
+              right: '50%',
+              marginLeft: '-50vw',
+              marginRight: '-50vw',
+              zIndex: -1
+            }}
           />
+        )}
+        
+        <div className="w-full mx-auto flex flex-col justify-center items-center py-8">
+          <h2 className={`${headingSpacing} heading-lg font-bold tracking-tight ${theme === 'dark' ? 'text-black' : 'text-white'} ${headingFont}  text-center`}>
+            {heading}
+          </h2>
+
+          <div className="w-full flex justify-center">
+            <HomeProductsCarousel
+              locale={locale}
+              sellerProducts={products.slice(0, 4)}
+              home={home}
+              theme={theme}
+              isSellerSection={isSellerSection}
+            />
+          </div>
         </div>
-      </div>
-    </section>
+      </section>
+    </BatchPriceProvider>
   )
 }

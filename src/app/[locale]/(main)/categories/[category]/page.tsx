@@ -4,12 +4,12 @@ import { Suspense } from "react"
 
 import type { Metadata } from "next"
 import { generateCategoryMetadata } from "@/lib/helpers/seo"
-import { AlgoliaProductsListing, ProductListing } from "@/components/sections"
 import { notFound } from "next/navigation"
 import { HttpTypes } from "@medusajs/types"
-
-const ALGOLIA_ID = process.env.NEXT_PUBLIC_ALGOLIA_ID
-const ALGOLIA_SEARCH_KEY = process.env.NEXT_PUBLIC_ALGOLIA_SEARCH_KEY
+import { isServerSideBot } from "@/lib/utils/server-bot-detection"
+import { SmartProductsListing } from "@/components/sections/ProductListing/SmartProductsListing"
+import { PromotionDataProvider } from "@/components/context/PromotionDataProvider"
+import { BatchPriceProvider } from "@/components/context/BatchPriceProvider"
 
 type Props = {
   params: Promise<{ category: string; locale: string }>
@@ -46,6 +46,9 @@ async function Category({
   }>
 }) {
   const { category: handle, locale } = await params
+  
+  // Server-side bot detection to prevent Algolia queries for bots
+  const serverSideIsBot = await isServerSideBot()
   
   // Decode the URL-encoded handle
   const decodedHandle = decodeURIComponent(handle)
@@ -145,16 +148,13 @@ async function Category({
       )}
 
       <Suspense fallback={<ProductListingSkeleton />}>
-        {!ALGOLIA_ID || !ALGOLIA_SEARCH_KEY ? (
-          <ProductListing category_id={category.id} showSidebar />
-        ) : (
-          <AlgoliaProductsListing 
-            category_ids={categoryIds}
-            locale={locale}
-            categories={allCategoriesWithTree}
-            currentCategory={category}
-          />
-        )}
+        <SmartProductsListing 
+          category_ids={categoryIds}
+          locale={locale}
+          categories={allCategoriesWithTree}
+          currentCategory={category}
+          serverSideIsBot={serverSideIsBot}
+        />
       </Suspense>
     </main>
   )

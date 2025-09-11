@@ -1,11 +1,12 @@
 "use client"
 import { cn } from "@/lib/utils"
 import { MinusHeavyIcon, TickThinIcon } from "@/icons"
+import { ReactNode } from "react"
 
 interface CheckboxProps extends React.InputHTMLAttributes<HTMLInputElement> {
   indeterminate?: boolean
   error?: boolean
-  label?: string
+  label?: ReactNode
 }
 
 export function Checkbox({
@@ -17,9 +18,6 @@ export function Checkbox({
   onChange,
   ...props
 }: CheckboxProps) {
-  // We're not handling onChange here to avoid double triggering events
-  // The parent component should handle the click events
-  
   return (
     <label className="flex items-center gap-2 cursor-pointer">
       <span
@@ -44,7 +42,7 @@ export function Checkbox({
             props.disabled && "cursor-default"
           )}
           checked={checked}
-          readOnly // Make the checkbox controlled but not directly interactive
+          onChange={onChange} // Properly handle onChange
           {...props}
         />
       </span>

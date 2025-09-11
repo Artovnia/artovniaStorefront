@@ -1,6 +1,7 @@
 import { HomeProductsCarousel } from "@/components/organisms"
 import { listProducts } from "@/lib/data/products"
 import { Product } from "@/types/product"
+import { BatchPriceProvider } from "@/components/context/BatchPriceProvider"
 
 interface SmartBestProductsSectionProps {
   heading?: string
@@ -103,17 +104,19 @@ export const SmartBestProductsSection = async ({
     
     
     return (
-      <section className="py-8 w-full">
-        <h2 className="mb-12 heading-lg font-bold tracking-tight font-instrument-serif italic ml-[68px]">
-          {heading}
-        </h2>
+      <BatchPriceProvider currencyCode="PLN" days={30}>
+        <section className="py-8 w-full">
+          <h2 className="mb-12 heading-lg font-bold tracking-tight font-instrument-serif italic ml-[68px]">
+            {heading}
+          </h2>
 
-        <HomeProductsCarousel
-          locale={locale}
-          sellerProducts={bestProducts as unknown as Product[]}
-          home={home}
-        />
-      </section>
+          <HomeProductsCarousel
+            locale={locale}
+            sellerProducts={bestProducts as unknown as Product[]}
+            home={home}
+          />
+        </section>
+      </BatchPriceProvider>
     )
   } catch (error) {
     console.error("Error in SmartBestProductsSection:", error)

@@ -14,6 +14,7 @@ import { Wishlist, SerializableWishlist } from "../../../types/wishlist"
 import { useVendorAvailability } from "../../organisms/VendorAvailabilityProvider/vendor-availability-provider"
 import { InformationCircleSolid } from "@medusajs/icons"
 import { useVariantSelection } from "../../context/VariantSelectionContext"
+import { OptimizedLowestPriceDisplay } from "../LowestPriceDisplay/OptimizedLowestPriceDisplay"
 
 // Define extended types for product and variants
 type ExtendedStoreProduct = HttpTypes.StoreProduct & {
@@ -147,6 +148,19 @@ export const ProductDetailsHeader = ({
               </span>
             )}
           </div>
+          
+          {/* Lowest Price Display - only show if there are price list discounts */}
+          {currentVariantId && (
+            variantPrice?.calculated_price_number !== variantPrice?.original_price_number
+          ) && (
+            <div className="mt-3">
+              <OptimizedLowestPriceDisplay
+                variantId={currentVariantId}
+                currencyCode="PLN"
+                className="text-sm"
+              />
+            </div>
+          )}
         </div>
         <div>
           {/* Add to Wishlist */}

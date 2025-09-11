@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react"
 import { client } from "@/lib/client"
 import { ProductCard } from "@/components/organisms"
+import { BatchPriceProvider } from "@/components/context/BatchPriceProvider"
 import { Hit } from "instantsearch.js"
 import { HttpTypes } from "@medusajs/types"
 
@@ -137,14 +138,16 @@ export const AlgoliaTrendingListings = () => {
       <h2 className="mb-6 heading-lg font-bold tracking-tight uppercase font-instrument-serif">
         Najlepsze produkty
       </h2>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        {products.map((product) => (
-          <ProductCard
-            key={product.objectID}
-            product={product}
-          />
-        ))}
-      </div>
+      <BatchPriceProvider currencyCode="PLN" days={30}>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          {products.map((product) => (
+            <ProductCard
+              key={product.objectID}
+              product={product}
+            />
+          ))}
+        </div>
+      </BatchPriceProvider>
     </section>
   )
 }
