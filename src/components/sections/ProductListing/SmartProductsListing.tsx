@@ -54,9 +54,8 @@ export const SmartProductsListing = (props: SmartProductsListingProps) => {
   const hasAlgoliaConfig = !!(ALGOLIA_ID && ALGOLIA_SEARCH_KEY)
 
   useEffect(() => {
-    // Client-side bot detection after hydration
-    const clientIsBot = detectBot()
-    const finalIsBot = serverSideIsBot || clientIsBot
+    // Use only server-side bot detection - more reliable and comprehensive
+    const finalIsBot = serverSideIsBot
     
     setIsBot(finalIsBot)
     setIsHydrated(true)
@@ -64,10 +63,9 @@ export const SmartProductsListing = (props: SmartProductsListingProps) => {
     // Only use Algolia for confirmed human users with valid config
     setShouldUseAlgolia(hasAlgoliaConfig && !finalIsBot)
 
-    // Enhanced debug logging - always log in production for debugging
+    // Simplified debug logging
     console.log('🤖 Bot Detection Debug:', {
       serverSideIsBot,
-      clientIsBot,
       finalIsBot,
       hasAlgoliaConfig,
       shouldUseAlgolia: hasAlgoliaConfig && !finalIsBot,

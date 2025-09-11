@@ -138,44 +138,46 @@ export function isBotRequest(userAgent?: string): boolean {
   try {
     const ua = (userAgent || (typeof navigator !== 'undefined' ? navigator.userAgent : '')).toLowerCase()
     
+    // Debug logging for troubleshooting
+    const debugLog = (reason: string, pattern?: string) => {
+      console.log(`🔍 Bot Detection Rule Triggered: ${reason}`, {
+        userAgent: ua,
+        pattern: pattern || 'N/A',
+        originalUA: userAgent || (typeof navigator !== 'undefined' ? navigator.userAgent : '')
+      })
+    }
+    
     // Check for empty or missing user agent (common for bots)
     if (!ua || ua.trim() === '') {
+      debugLog('Empty user agent')
       return true
     }
     
     // Check against known bot user agents
-    const isBotUserAgent = BOT_USER_AGENTS.some(botAgent => 
-      ua.includes(botAgent)
-    )
-    
-    if (isBotUserAgent) {
+    const matchedBotAgent = BOT_USER_AGENTS.find(botAgent => ua.includes(botAgent))
+    if (matchedBotAgent) {
+      debugLog('Known bot user agent', matchedBotAgent)
       return true
     }
     
     // Check for headless browser patterns
-    const isHeadless = HEADLESS_PATTERNS.some(pattern => 
-      ua.includes(pattern)
-    )
-    
-    if (isHeadless) {
+    const matchedHeadless = HEADLESS_PATTERNS.find(pattern => ua.includes(pattern))
+    if (matchedHeadless) {
+      debugLog('Headless browser pattern', matchedHeadless)
       return true
     }
     
     // Check for cloud server patterns
-    const isCloudServer = CLOUD_PATTERNS.some(pattern => 
-      ua.includes(pattern)
-    )
-    
-    if (isCloudServer) {
+    const matchedCloud = CLOUD_PATTERNS.find(pattern => ua.includes(pattern))
+    if (matchedCloud) {
+      debugLog('Cloud server pattern', matchedCloud)
       return true
     }
     
     // Check suspicious patterns with regex
-    const isSuspicious = SUSPICIOUS_PATTERNS.some(pattern => 
-      pattern.test(ua)
-    )
-    
-    if (isSuspicious) {
+    const matchedSuspicious = SUSPICIOUS_PATTERNS.find(pattern => pattern.test(ua))
+    if (matchedSuspicious) {
+      debugLog('Suspicious regex pattern', matchedSuspicious.toString())
       return true
     }
     
@@ -183,16 +185,19 @@ export function isBotRequest(userAgent?: string): boolean {
     
     // 1. User agents that are too simple (missing common browser info)
     if (!ua.includes('mozilla') && !ua.includes('webkit') && !ua.includes('gecko')) {
+      debugLog('Missing browser engine info (mozilla/webkit/gecko)')
       return true
     }
     
-    // 2. User agents with suspicious version patterns (but allow Opera)
-    if (ua.includes('chrome') && !ua.includes('safari') && !ua.includes('opr')) {
-      return true // Real Chrome always includes Safari in UA, Opera includes OPR
+    // 2. User agents with suspicious version patterns (but allow Opera and Edge)
+    if (ua.includes('chrome') && !ua.includes('safari') && !ua.includes('opr') && !ua.includes('edg')) {
+      debugLog('Chrome without Safari (and not Opera/Edge)')
+      return true // Real Chrome always includes Safari in UA, Opera includes OPR, Edge includes Edg
     }
     
     // 3. Missing common browser components
     if (ua.includes('mozilla') && !ua.includes('(') && !ua.includes(')')) {
+      debugLog('Mozilla without parentheses')
       return true // Real browsers have parentheses with system info
     }
     
@@ -218,28 +223,43 @@ export function isClientSideBot(): boolean {
   try {
     const userAgent = navigator.userAgent?.toLowerCase() || ''
     
-    // Quick client-side checks
-    const isBotUserAgent = BOT_USER_AGENTS.some(botAgent => 
-      userAgent.includes(botAgent)
-    )
+    // Debug logging for client-side detection
+    const debugLog = (reason: string, detail?: any) => {
+      console.log(`🔍 Client-Side Bot Detection Rule Triggered: ${reason}`, {
+        userAgent,
+        detail,
+        originalUA: navigator.userAgent
+      })
+    }
     
-    if (isBotUserAgent) {
+    // Quick client-side checks
+    const matchedBotAgent = BOT_USER_AGENTS.find(botAgent => userAgent.includes(botAgent))
+    if (matchedBotAgent) {
+      debugLog('Known bot user agent', matchedBotAgent)
       return true
     }
     
     // Check for missing browser features that bots often lack
-    if (!window.requestAnimationFrame || 
-        !window.localStorage || 
-        !window.sessionStorage ||
-        !document.cookie) {
+    const missingFeatures = []
+    if (!window.requestAnimationFrame) missingFeatures.push('requestAnimationFrame')
+    if (!window.localStorage) missingFeatures.push('localStorage')
+    if (!window.sessionStorage) missingFeatures.push('sessionStorage')
+    if (!document.cookie) missingFeatures.push('document.cookie')
+    
+    if (missingFeatures.length > 0) {
+      debugLog('Missing browser features', missingFeatures)
       return true
     }
     
     // Check for automation indicators
-    if ((window as any).webdriver || 
-        (window as any).__nightmare || 
-        (window as any).phantom ||
-        (window as any).callPhantom) {
+    const automationIndicators = []
+    if ((window as any).webdriver) automationIndicators.push('webdriver')
+    if ((window as any).__nightmare) automationIndicators.push('__nightmare')
+    if ((window as any).phantom) automationIndicators.push('phantom')
+    if ((window as any).callPhantom) automationIndicators.push('callPhantom')
+    
+    if (automationIndicators.length > 0) {
+      debugLog('Automation indicators found', automationIndicators)
       return true
     }
     
