@@ -1,10 +1,9 @@
 "use client"
 
 import { HttpTypes } from "@medusajs/types"
-import { useCallback, useMemo, useEffect } from "react"
+import { useCallback, useMemo } from "react"
 
 import { Chip } from "@/components/atoms"
-import { hydrationLogger } from "@/lib/utils/hydration-logger"
 import { useVariantSelection } from "@/components/context/VariantSelectionContext"
 
 // Define proper types for product options and values

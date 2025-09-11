@@ -10,16 +10,32 @@ if (typeof window === 'undefined') {
 }
 import { cache } from 'react'
 
-// Simple Redis configuration - standalone instance, no shared concerns
+// Enhanced Redis configuration with production-ready settings
 let redis: any
 if (typeof window === 'undefined' && Redis) {
   redis = new Redis(process.env.STOREFRONT_REDIS_URL!, {
     maxRetriesPerRequest: 3,
     lazyConnect: true,
-    enableOfflineQueue: process.env.NODE_ENV === 'development', // Enable queue in dev for hot reload
-    retryDelayOnFailover: 100,
-    connectTimeout: 10000,
-    commandTimeout: 5000
+    enableOfflineQueue: false, // Disable queue to fail fast and use fallbacks
+    retryDelayOnFailover: 200,
+    connectTimeout: 15000, // Increased for cross-platform connections
+    commandTimeout: 8000,   // Increased for network latency
+    // Enhanced retry strategy for production
+    retryStrategy: (times: number) => {
+      const delay = Math.min(times * 50, 2000)
+      return delay
+    },
+    // Graceful connection handling
+    enableReadyCheck: true,
+    maxLoadingTimeout: 10000,
+    // Keep connection alive for better performance
+    keepAlive: 30000,
+    family: 4, // Force IPv4 for better Railway compatibility
+    // Handle connection errors gracefully
+    reconnectOnError: (err: Error) => {
+      const targetError = 'READONLY'
+      return err.message.includes(targetError)
+    }
   })
 } else {
   // Client-side fallback - complete mock Redis client
@@ -44,7 +60,30 @@ if (typeof window === 'undefined' && Redis) {
 
 if (typeof window === 'undefined' && redis.on) {
   redis.on('error', (error: any) => {
-    console.error('Storefront Redis error:', error)
+    // Enhanced Redis error logging with connection state
+    const errorType = error.code || error.message?.split(':')[0] || 'UNKNOWN'
+    console.warn(`Storefront Redis connection issue [${errorType}]:`, {
+      message: error.message,
+      code: error.code,
+      errno: error.errno,
+      timestamp: new Date().toISOString()
+    })
+  })
+  
+  redis.on('connect', () => {
+    console.log('Storefront Redis connected successfully')
+  })
+  
+  redis.on('ready', () => {
+    console.log('Storefront Redis ready for operations')
+  })
+  
+  redis.on('close', () => {
+    console.warn('Storefront Redis connection closed')
+  })
+  
+  redis.on('reconnecting', (delay: number) => {
+    console.log(`Storefront Redis reconnecting in ${delay}ms`)
   })
 }
 
@@ -61,6 +100,16 @@ class StorefrontCache {
       const data = await redis.get(key)
       return data ? JSON.parse(data) : null
     } catch (error) {
+      // Enhanced error handling for Redis connection issues
+      if (error instanceof Error) {
+        const errorMessage = error.message
+        if (errorMessage.includes('ENOTFOUND') ||
+            errorMessage.includes('ECONNREFUSED') ||
+            errorMessage.includes('Connection is closed')) {
+          console.warn(`Redis cache unavailable for get operation, returning null`)
+          return null
+        }
+      }
       console.error('Cache get error:', error)
       return null
     }
@@ -70,13 +119,20 @@ class StorefrontCache {
     try {
       await redis.setex(key, ttlSeconds, JSON.stringify(data))
     } catch (error) {
-      // Suppress hot reload connection errors in development
-      if (process.env.NODE_ENV === 'development' && 
-          (error instanceof Error && 
-           (error.message?.includes('enableOfflineQueue') || 
-            error.message?.includes('Stream isn\'t writeable')))) {
-        // Silent fail during hot reload - this is expected
-        return
+      // Enhanced error handling for production Redis issues
+      if (error instanceof Error) {
+        const errorMessage = error.message
+        
+        // Handle common Redis connection errors gracefully
+        if (errorMessage.includes('enableOfflineQueue') || 
+            errorMessage.includes('Stream isn\'t writeable') ||
+            errorMessage.includes('ENOTFOUND') ||
+            errorMessage.includes('ECONNREFUSED') ||
+            errorMessage.includes('Connection is closed')) {
+          // Log warning but don't throw - app should continue without cache
+          console.warn(`Redis cache unavailable (${errorMessage.split(':')[0]}), continuing without cache`)
+          return
+        }
       }
       console.error('Cache set error:', error)
     }
