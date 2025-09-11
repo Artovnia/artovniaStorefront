@@ -10,32 +10,33 @@ if (typeof window === 'undefined') {
 }
 import { cache } from 'react'
 
-// Optimized Redis configuration for Vercel-Railway connection
+// Stable Redis configuration with connection pooling for rapid requests
 let redis: any
 if (typeof window === 'undefined' && Redis) {
   redis = new Redis(process.env.STOREFRONT_REDIS_URL!, {
-    maxRetriesPerRequest: 2, // Reduced for faster failover
-    lazyConnect: false, // Connect immediately to avoid 'wait' status
-    enableOfflineQueue: false, // Disable queue to fail fast
-    retryDelayOnFailover: 100, // Faster retry
-    connectTimeout: 5000, // Reduced timeout to prevent 'wait' status
-    commandTimeout: 3000,   // Reduced for faster operations
-    // Aggressive retry strategy to avoid 'wait' status
+    maxRetriesPerRequest: 1, // Fast failover for rapid requests
+    lazyConnect: false, // Connect immediately
+    enableOfflineQueue: false, // Fail fast
+    retryDelayOnFailover: 50, // Very fast retry
+    connectTimeout: 3000, // Quick connection timeout
+    commandTimeout: 2000, // Quick command timeout
+    // Simple retry strategy for stability
     retryStrategy: (times: number) => {
-      if (times > 3) return null // Give up after 3 attempts
-      return Math.min(times * 100, 1000)
+      if (times > 2) return null // Give up quickly
+      return 100 // Fixed 100ms delay
     },
-    // Disable ready check to avoid 'wait' status
+    // Connection pool settings for rapid requests
     enableReadyCheck: false,
-    maxLoadingTimeout: 3000, // Reduced loading timeout
-    // Shorter keepalive for better connection management
-    keepAlive: 10000,
-    family: 4, // Force IPv4 for Railway compatibility
-    // More aggressive reconnection
+    maxLoadingTimeout: 2000,
+    keepAlive: 5000, // Shorter keepalive
+    family: 4,
+    // Don't reconnect on every error to avoid connection churn
     reconnectOnError: (err: Error) => {
-      // Reconnect on any connection error
-      return true
-    }
+      return err.message.includes('READONLY')
+    },
+    // Additional stability settings
+    maxMemoryPolicy: 'noeviction',
+    showFriendlyErrorStack: process.env.NODE_ENV === 'development'
   })
 } else {
   // Client-side fallback - complete mock Redis client
@@ -97,10 +98,18 @@ export const CACHE_TTL = {
 class StorefrontCache {
   async get<T>(key: string): Promise<T | null> {
     try {
-      // More aggressive connection state check - only allow 'ready' status
-      if (redis.status !== 'ready') {
+      // Allow both ready and connecting for rapid requests
+      if (redis.status !== 'ready' && redis.status !== 'connecting') {
         console.warn(`Redis not ready (status: ${redis.status}), skipping get operation`)
         return null
+      }
+      
+      // For connecting status, add small timeout to allow connection to complete
+      if (redis.status === 'connecting') {
+        await new Promise(resolve => setTimeout(resolve, 50))
+        if (redis.status !== 'ready') {
+          return null // Still not ready after brief wait
+        }
       }
       
       const data = await redis.get(key)
@@ -125,13 +134,17 @@ class StorefrontCache {
 
   async set(key: string, data: any, ttlSeconds: number): Promise<void> {
     try {
-      // Only proceed if Redis is fully ready
-      if (redis.status !== 'ready') {
-        // Don't log every skip to reduce noise
-        if (redis.status !== 'wait') {
-          console.warn(`Redis not ready (status: ${redis.status}), skipping set operation`)
+      // Allow connecting status with brief wait for rapid requests
+      if (redis.status !== 'ready' && redis.status !== 'connecting') {
+        return // Skip silently for non-ready/non-connecting states
+      }
+      
+      // For connecting status, add small timeout
+      if (redis.status === 'connecting') {
+        await new Promise(resolve => setTimeout(resolve, 50))
+        if (redis.status !== 'ready') {
+          return // Still not ready after brief wait
         }
-        return
       }
       
       await redis.setex(key, ttlSeconds, JSON.stringify(data))

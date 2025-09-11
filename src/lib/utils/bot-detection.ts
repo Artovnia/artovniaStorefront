@@ -186,9 +186,9 @@ export function isBotRequest(userAgent?: string): boolean {
       return true
     }
     
-    // 2. User agents with suspicious version patterns
-    if (ua.includes('chrome') && !ua.includes('safari')) {
-      return true // Real Chrome always includes Safari in UA
+    // 2. User agents with suspicious version patterns (but allow Opera)
+    if (ua.includes('chrome') && !ua.includes('safari') && !ua.includes('opr')) {
+      return true // Real Chrome always includes Safari in UA, Opera includes OPR
     }
     
     // 3. Missing common browser components
