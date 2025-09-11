@@ -64,17 +64,18 @@ export const SmartProductsListing = (props: SmartProductsListingProps) => {
     // Only use Algolia for confirmed human users with valid config
     setShouldUseAlgolia(hasAlgoliaConfig && !finalIsBot)
 
-    // Debug logging for testing
-    if (process.env.NODE_ENV === 'development') {
-      console.log('🤖 Bot Detection Debug:', {
-        serverSideIsBot,
-        clientIsBot,
-        finalIsBot,
-        hasAlgoliaConfig,
-        shouldUseAlgolia: hasAlgoliaConfig && !finalIsBot,
-        userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : 'N/A'
-      })
-    }
+    // Enhanced debug logging - always log in production for debugging
+    console.log('🤖 Bot Detection Debug:', {
+      serverSideIsBot,
+      clientIsBot,
+      finalIsBot,
+      hasAlgoliaConfig,
+      shouldUseAlgolia: hasAlgoliaConfig && !finalIsBot,
+      userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : 'N/A',
+      nodeEnv: process.env.NODE_ENV,
+      algoliaId: ALGOLIA_ID ? 'SET' : 'MISSING',
+      algoliaKey: ALGOLIA_SEARCH_KEY ? 'SET' : 'MISSING'
+    })
   }, [serverSideIsBot, hasAlgoliaConfig])
 
   // Show loading skeleton during hydration
@@ -98,9 +99,7 @@ export const SmartProductsListing = (props: SmartProductsListingProps) => {
 
   // Bot detected - use database listing
   if (isBot) {
-    if (process.env.NODE_ENV === 'development') {
-      console.log('🤖 Using ProductListing (Database) - Bot detected')
-    }
+    console.log('🤖 Using ProductListing (Database) - Bot detected')
     return (
       <ProductListing
         category_id={category_id}
@@ -115,9 +114,7 @@ export const SmartProductsListing = (props: SmartProductsListingProps) => {
 
   // Human user with Algolia config - use Algolia
   if (shouldUseAlgolia) {
-    if (process.env.NODE_ENV === 'development') {
-      console.log('🔍 Using AlgoliaProductsListing - Human user detected')
-    }
+    console.log('🔍 Using AlgoliaProductsListing - Human user detected')
     return (
       <AlgoliaProductsListing
         category_id={category_id}
@@ -132,9 +129,7 @@ export const SmartProductsListing = (props: SmartProductsListingProps) => {
   }
 
   // Fallback to database listing
-  if (process.env.NODE_ENV === 'development') {
-    console.log('📊 Using ProductListing (Database) - Fallback mode')
-  }
+  console.log('📊 Using ProductListing (Database) - Fallback mode')
   return (
     <ProductListing
       category_id={category_id}

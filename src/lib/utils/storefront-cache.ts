@@ -10,31 +10,31 @@ if (typeof window === 'undefined') {
 }
 import { cache } from 'react'
 
-// Enhanced Redis configuration with production-ready settings
+// Optimized Redis configuration for Vercel-Railway connection
 let redis: any
 if (typeof window === 'undefined' && Redis) {
   redis = new Redis(process.env.STOREFRONT_REDIS_URL!, {
-    maxRetriesPerRequest: 3,
-    lazyConnect: true,
-    enableOfflineQueue: false, // Disable queue to fail fast and use fallbacks
-    retryDelayOnFailover: 200,
-    connectTimeout: 15000, // Increased for cross-platform connections
-    commandTimeout: 8000,   // Increased for network latency
-    // Enhanced retry strategy for production
+    maxRetriesPerRequest: 2, // Reduced for faster failover
+    lazyConnect: false, // Connect immediately to avoid 'wait' status
+    enableOfflineQueue: false, // Disable queue to fail fast
+    retryDelayOnFailover: 100, // Faster retry
+    connectTimeout: 5000, // Reduced timeout to prevent 'wait' status
+    commandTimeout: 3000,   // Reduced for faster operations
+    // Aggressive retry strategy to avoid 'wait' status
     retryStrategy: (times: number) => {
-      const delay = Math.min(times * 50, 2000)
-      return delay
+      if (times > 3) return null // Give up after 3 attempts
+      return Math.min(times * 100, 1000)
     },
-    // Graceful connection handling
-    enableReadyCheck: true,
-    maxLoadingTimeout: 10000,
-    // Keep connection alive for better performance
-    keepAlive: 30000,
-    family: 4, // Force IPv4 for better Railway compatibility
-    // Handle connection errors gracefully
+    // Disable ready check to avoid 'wait' status
+    enableReadyCheck: false,
+    maxLoadingTimeout: 3000, // Reduced loading timeout
+    // Shorter keepalive for better connection management
+    keepAlive: 10000,
+    family: 4, // Force IPv4 for Railway compatibility
+    // More aggressive reconnection
     reconnectOnError: (err: Error) => {
-      const targetError = 'READONLY'
-      return err.message.includes(targetError)
+      // Reconnect on any connection error
+      return true
     }
   })
 } else {
@@ -97,8 +97,8 @@ export const CACHE_TTL = {
 class StorefrontCache {
   async get<T>(key: string): Promise<T | null> {
     try {
-      // Check connection state before attempting operation
-      if (redis.status !== 'ready' && redis.status !== 'connecting') {
+      // More aggressive connection state check - only allow 'ready' status
+      if (redis.status !== 'ready') {
         console.warn(`Redis not ready (status: ${redis.status}), skipping get operation`)
         return null
       }
@@ -125,9 +125,12 @@ class StorefrontCache {
 
   async set(key: string, data: any, ttlSeconds: number): Promise<void> {
     try {
-      // Check connection state before attempting operation
+      // Only proceed if Redis is fully ready
       if (redis.status !== 'ready') {
-        console.warn(`Redis not ready (status: ${redis.status}), skipping set operation`)
+        // Don't log every skip to reduce noise
+        if (redis.status !== 'wait') {
+          console.warn(`Redis not ready (status: ${redis.status}), skipping set operation`)
+        }
         return
       }
       
@@ -155,7 +158,7 @@ class StorefrontCache {
 
   async del(key: string): Promise<void> {
     try {
-      // Check connection state before attempting operation
+      // Only proceed if Redis is fully ready
       if (redis.status !== 'ready') {
         console.warn(`Redis not ready (status: ${redis.status}), skipping delete operation`)
         return
