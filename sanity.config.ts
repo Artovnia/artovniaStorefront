@@ -21,7 +21,7 @@ export default defineConfig({
   webhooks: [
     {
       name: 'blog-post-newsletter',
-      url: 'https://artovniapanel.netlify.app/store/blog/webhook',
+      url: 'https://artovnia-production.up.railway.app/store/blog/webhook',
       events: ['create', 'update'],
       filter: '_type == "blogPost" && defined(publishedAt)',
       headers: {
