@@ -190,7 +190,7 @@ export default defineType({
       return {
         title: title,
         subtitle: `${subject} • ${status}${publishedAt ? ` • ${new Date(publishedAt).toLocaleDateString()}` : ''}`,
-        media: '📧'
+        media: () => '📧'
       }
     }
   }
