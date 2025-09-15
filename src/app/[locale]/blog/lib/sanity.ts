@@ -141,3 +141,53 @@ export const SELLER_POSTS_QUERY = `
     publishedAt
   }
 `
+
+// Newsletter queries for CMS newsletter functionality
+export const NEWSLETTERS_QUERY = `
+  *[_type == "newsletter" && !(_id in path("drafts.**"))] | order(_createdAt desc) {
+    _id,
+    title,
+    subject,
+    previewText,
+    templateType,
+    content,
+    scheduledSendDate,
+    targetAudience,
+    status,
+    publishedAt,
+    _createdAt,
+    _updatedAt
+  }
+`
+
+export const NEWSLETTER_QUERY = `
+  *[_type == "newsletter" && _id == $id && !(_id in path("drafts.**"))][0] {
+    _id,
+    title,
+    subject,
+    previewText,
+    templateType,
+    content,
+    scheduledSendDate,
+    targetAudience,
+    status,
+    publishedAt,
+    _createdAt,
+    _updatedAt
+  }
+`
+
+export const READY_NEWSLETTERS_QUERY = `
+  *[_type == "newsletter" && status == "ready" && defined(publishedAt) && !(_id in path("drafts.**"))] | order(publishedAt desc) {
+    _id,
+    title,
+    subject,
+    previewText,
+    templateType,
+    content,
+    scheduledSendDate,
+    targetAudience,
+    status,
+    publishedAt
+  }
+`

@@ -21,7 +21,7 @@ export default defineConfig({
   webhooks: [
     {
       name: 'blog-post-newsletter',
-      url: 'https://artovnia-production.up.railway.app/store/blog/webhook',
+      url: 'https://artovnia-production.up.railway.app/admin/blog/webhook',
       events: ['create', 'update'],
       filter: '_type == "blogPost" && defined(publishedAt)',
       headers: {
@@ -30,7 +30,7 @@ export default defineConfig({
     },
     {
       name: 'newsletter-campaign',
-      url: 'https://artovnia-production.up.railway.app/store/newsletter/webhook',
+      url: 'https://artovnia-production.up.railway.app/admin/newsletter/webhook',
       events: ['create', 'update'],
       filter: '_type == "newsletter" && status == "ready" && defined(publishedAt)',
       headers: {

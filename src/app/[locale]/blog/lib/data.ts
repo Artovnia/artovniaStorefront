@@ -1,4 +1,4 @@
-import { client, BLOG_POSTS_QUERY, BLOG_POST_QUERY, BLOG_CATEGORIES_QUERY, FEATURED_POSTS_QUERY, FEATURED_SELLER_POST_QUERY, SELLER_POST_QUERY, SELLER_POSTS_QUERY } from './sanity'
+import { client, BLOG_POSTS_QUERY, BLOG_POST_QUERY, BLOG_CATEGORIES_QUERY, FEATURED_POSTS_QUERY, FEATURED_SELLER_POST_QUERY, SELLER_POST_QUERY, SELLER_POSTS_QUERY, NEWSLETTERS_QUERY, NEWSLETTER_QUERY, READY_NEWSLETTERS_QUERY } from './sanity'
 import { RequestDeduplicator } from '@/lib/utils/performance'
 
 export interface BlogPost {
@@ -311,6 +311,60 @@ export async function getSellerPosts(): Promise<SellerPost[]> {
     return posts || []
   } catch (error) {
     console.error('Error fetching seller posts:', error)
+    return []
+  }
+}
+
+export interface Newsletter {
+  _id: string
+  title: string
+  subject: string
+  previewText?: string
+  templateType: string
+  content: any[]
+  scheduledSendDate?: string
+  targetAudience: string
+  status: 'draft' | 'ready' | 'scheduled' | 'sent'
+  publishedAt?: string
+  _createdAt: string
+  _updatedAt: string
+}
+
+// Newsletter data fetching functions
+export async function getNewsletters(): Promise<Newsletter[]> {
+  try {
+    const newsletters = await client.fetch(NEWSLETTERS_QUERY, {}, {
+      cache: 'force-cache',
+      next: { revalidate: 300 }, // 5 minutes cache
+    })
+    return newsletters || []
+  } catch (error) {
+    console.error('Error fetching newsletters:', error)
+    return []
+  }
+}
+
+export async function getNewsletter(id: string): Promise<Newsletter | null> {
+  try {
+    const newsletter = await client.fetch(NEWSLETTER_QUERY, { id }, {
+      cache: 'force-cache',
+      next: { revalidate: 300 },
+    })
+    return newsletter || null
+  } catch (error) {
+    console.error(`Error fetching newsletter (id: ${id}):`, error)
+    return null
+  }
+}
+
+export async function getReadyNewsletters(): Promise<Newsletter[]> {
+  try {
+    const newsletters = await client.fetch(READY_NEWSLETTERS_QUERY, {}, {
+      cache: 'no-store', // Don't cache ready newsletters as they change status quickly
+    })
+    return newsletters || []
+  } catch (error) {
+    console.error('Error fetching ready newsletters:', error)
     return []
   }
 }
