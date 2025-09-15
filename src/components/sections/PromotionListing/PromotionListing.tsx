@@ -138,12 +138,7 @@ export const PromotionListing = ({
                       wishlist={wishlist}
                       onWishlistChange={refreshWishlist}
                     />
-                    {/* Promo Code Required Badge */}
-                    {(product as any).promotions?.some((promo: any) => promo.requires_code) && (
-                      <div className="absolute top-2 left-2 bg-yellow-500 text-white text-xs font-bold px-2 py-1 rounded-md shadow-lg z-10">
-                        Kod promocyjny
-                      </div>
-                    )}
+                   
                   </div>
                 ))}
               </div>

@@ -17,13 +17,22 @@ export default defineConfig({
     types: schemaTypes,
   },
 
-  // Webhook configuration for automated blog post newsletters
+  // Webhook configuration for automated blog post newsletters and newsletter campaigns
   webhooks: [
     {
       name: 'blog-post-newsletter',
       url: 'https://artovnia-production.up.railway.app/store/blog/webhook',
       events: ['create', 'update'],
       filter: '_type == "blogPost" && defined(publishedAt)',
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    },
+    {
+      name: 'newsletter-campaign',
+      url: 'https://artovnia-production.up.railway.app/store/newsletter/webhook',
+      events: ['create', 'update'],
+      filter: '_type == "newsletter" && status == "ready" && defined(publishedAt)',
       headers: {
         'Content-Type': 'application/json'
       }

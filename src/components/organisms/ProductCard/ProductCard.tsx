@@ -104,21 +104,12 @@ export const ProductCard = ({
         </div>
         {/* Promotion Badge - Triangle Corner */}
         {hasAnyDiscount && (
-          <div className="absolute top-0 left-0 z-10">
-            <div className="relative">
-              <div 
-                className="w-[50px] h-[50px]"
-                style={{
-                  background: 'linear-gradient(135deg, #3B3634 0%, #6B3A3A 50%, #8B4A4A 100%)',
-                  clipPath: 'polygon(0 0, 100% 0, 0 100%)'
-                }}
-              ></div>
-              <span className="absolute top-2 left-2 text-[#F4F0EB] text-xs font-bold transform ">
-                %
-              </span>
-            </div>
-          </div>
-        )}
+  <div className="absolute top-3 left-3 z-10 flex flex-col gap-1">
+    <div className="bg-[#F4F0EB]/90 text-[#3B3634] px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider shadow-lg border border-black/10 ring-1 ring-[#3B3634]">
+      PROMOCJA
+    </div>
+  </div>
+)}
         <Link href={productUrl} prefetch={true}>
           <div className="overflow-hidden w-full h-full flex justify-center items-center">
             {product.thumbnail ? (
@@ -175,10 +166,8 @@ export const ProductCard = ({
                       </p>
                       {/* Only show percentage badge for actual promotions, not price-list discounts */}
                       {(product as any).has_promotions && (product as any).promotions?.length > 0 && (
-                        <span className="relative bg-gradient-to-br from-red-800 via-red-700 to-red-900 text-white text-xs font-bold px-3 py-1 rounded-lg shadow-2xl border border-red-400/20 overflow-hidden group">
+                        <span className="relative bg-primary text-[#3B3634] text-xs font-bold px-3 py-1 rounded-lg shadow-2xl border border-[#3B3634]/90 overflow-hidden group">
                            <span className="relative z-10 tracking-wide">-{promotionalPricing.discountPercentage}%</span>
-                           <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent"></div>
-                           <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-red-300/50 to-transparent"></div>
                         </span>
                       )}
                     </>

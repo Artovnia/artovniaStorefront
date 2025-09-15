@@ -2,6 +2,7 @@ import { Metadata } from "next"
 import { HttpTypes } from "@medusajs/types"
 import { listProductsWithPromotions } from "@/lib/data/products"
 import { PromotionListing } from "@/components/sections"
+import { PromotionDataProvider } from "@/components/context/PromotionDataProvider"
 
 const REGION = "PL" // Default region for promotions
 
@@ -62,12 +63,14 @@ export default async function PromotionsPage({ searchParams }: PromotionsPagePro
         </div>
 
         {/* Products Listing */}
-        <PromotionListing
-          initialProducts={products}
-          initialCount={count}
-          initialPage={page}
-          countryCode={REGION}
-        />
+        <PromotionDataProvider countryCode={REGION}>
+          <PromotionListing
+            initialProducts={products}
+            initialCount={count}
+            initialPage={page}
+            countryCode={REGION}
+          />
+        </PromotionDataProvider>
       </div>
     )
   } catch (error) {
