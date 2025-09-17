@@ -1,5 +1,6 @@
 "use client"
 import Image from "next/image"
+import { useEffect, useState, useMemo } from "react"
 
 import { Button } from "@/components/atoms"
 import { HttpTypes } from "@medusajs/types"
@@ -33,33 +34,39 @@ export const ProductCard = ({
 }) => {
   const { prefetchOnHover } = useHoverPrefetch()
   const router = useRouter()
-  const { getProductWithPromotions } = usePromotionData()
+  const { getProductWithPromotions, isLoading } = usePromotionData()
+  const [isMounted, setIsMounted] = useState(false)
   const productUrl = `/products/${product.handle}`
+  
+  // Ensure component is mounted on client-side to prevent hydration mismatch
+  useEffect(() => {
+    setIsMounted(true)
+  }, [])
   
   // Try to get promotional product data from context first
   const promotionalProduct = getProductWithPromotions(product.id)
   const productToUse = promotionalProduct || product
 
-  // Calculate promotional pricing using helper function
-  const promotionalPricing = getPromotionalPrice({
-    product: productToUse as any,
-    regionId: productToUse.variants?.[0]?.calculated_price?.region_id
-  })
+  // Calculate promotional pricing using helper function for the first variant
+  const promotionalPricing = useMemo(() => {
+    const firstVariant = productToUse.variants?.[0]
+    return getPromotionalPrice({
+      product: productToUse as any,
+      regionId: firstVariant?.calculated_price?.region_id,
+      variantId: firstVariant?.id // Use specific variant ID for accurate pricing
+    })
+  }, [productToUse]) // Recalculate when product data changes
 
-
-  // Calculate promotional pricing using helper function
-  // const promotionalPricing = getPromotionalPrice({
-  //   product: product as any,
-  //   regionId: undefined
-  // })
-  
   // Check if product has any discount (promotion or price-list)
-  const hasAnyDiscount = promotionalPricing.discountPercentage > 0 || 
+  // Only show after mounting and when promotional data has loaded to prevent hydration mismatch
+  const hasAnyDiscount = isMounted && !isLoading && (
+    promotionalPricing.discountPercentage > 0 || 
     product.variants?.some((variant: any) => 
       variant.calculated_price && 
       variant.calculated_price.calculated_amount !== variant.calculated_price.original_amount &&
       variant.calculated_price.calculated_amount < variant.calculated_price.original_amount
     )
+  )
   
   // Fallback prefetch method that works even if hook fails
   const handleMouseEnter = () => {
@@ -102,10 +109,10 @@ export const ProductCard = ({
             onWishlistChange={onWishlistChange} 
           />
         </div>
-        {/* Promotion Badge - Triangle Corner */}
+        {/* Promotion Badge - Consistent styling to prevent hydration mismatch */}
         {hasAnyDiscount && (
-  <div className="absolute top-3 left-3 z-10 flex flex-col gap-1">
-    <div className="bg-[#F4F0EB]/90 text-[#3B3634] px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider shadow-lg border border-black/10 ring-1 ring-[#3B3634]">
+  <div className="absolute top-2 left-2 z-10 flex flex-col gap-1">
+    <div className="bg-[#F4F0EB]/90 text-[#3B3634] px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider shadow-lg border border-[#3B3634]">
       PROMOCJA
     </div>
   </div>

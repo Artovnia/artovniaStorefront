@@ -33,15 +33,22 @@ export const PromotionDataProvider: React.FC<PromotionDataProviderProps> = ({
         setError(null)
 
         // Fetch all promotional products
-        const { response } = await listProductsWithPromotions({
+        const result = await listProductsWithPromotions({
           page: 1,
           limit: 100, // Get more products to cover all possible promotional items
           countryCode,
         })
 
+        // Handle case where result is undefined or doesn't have expected structure
+        if (!result || !result.response || !result.response.products) {
+          console.warn('listProductsWithPromotions returned invalid data:', result)
+          setPromotionalProducts(new Map())
+          return
+        }
+
         // Create a map for quick lookup by product ID
         const productMap = new Map<string, HttpTypes.StoreProduct>()
-        response.products.forEach(product => {
+        result.response.products.forEach(product => {
           productMap.set(product.id, product)
         })
 

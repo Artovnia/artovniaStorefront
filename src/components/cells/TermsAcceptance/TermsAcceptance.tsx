@@ -28,6 +28,7 @@ const TermsAcceptance: React.FC<TermsAcceptanceProps> = ({
           <Checkbox
             id="terms-acceptance"
             checked={isAccepted}
+            onChange={handleAcceptanceChange}
             className="mt-1"
           />
         </div>

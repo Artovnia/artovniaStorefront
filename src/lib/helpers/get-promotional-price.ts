@@ -26,24 +26,28 @@ interface PromotionalPriceResult {
 export function getPromotionalPrice({
   product,
   regionId,
+  variantId,
 }: {
   product: PromotionalProduct
   regionId?: string
+  variantId?: string
 }): PromotionalPriceResult {
  
   
-  // Get the cheapest variant price as base
-  const cheapestVariant = product.variants?.reduce((prev, current) => {
-    const prevPrice = prev.prices?.find(p => !regionId || p.region_id === regionId)
-    const currentPrice = current.prices?.find(p => !regionId || p.region_id === regionId)
-    
-    if (!prevPrice) return current
-    if (!currentPrice) return prev
-    
-    return (currentPrice.amount || 0) < (prevPrice.amount || 0) ? current : prev
-  })
+  // Get the specific variant if variantId is provided, otherwise get cheapest variant
+  const targetVariant = variantId 
+    ? product.variants?.find(v => v.id === variantId)
+    : product.variants?.reduce((prev, current) => {
+        const prevPrice = prev.prices?.find(p => !regionId || p.region_id === regionId)
+        const currentPrice = current.prices?.find(p => !regionId || p.region_id === regionId)
+        
+        if (!prevPrice) return current
+        if (!currentPrice) return prev
+        
+        return (currentPrice.amount || 0) < (prevPrice.amount || 0) ? current : prev
+      })
 
-  if (!cheapestVariant) {
+  if (!targetVariant) {
     return {
       originalPrice: "0 zł",
       promotionalPrice: "0 zł", 
@@ -52,12 +56,12 @@ export function getPromotionalPrice({
     }
   }
 
-  const basePrice = cheapestVariant.prices?.find(p => !regionId || p.region_id === regionId)
+  const basePrice = targetVariant.prices?.find((p: any) => !regionId || p.region_id === regionId)
   
   // Check for price-list discounts using same logic as ProductCard
-  const hasCalculatedPrice = cheapestVariant.calculated_price && 
-    cheapestVariant.calculated_price.calculated_amount !== cheapestVariant.calculated_price.original_amount &&
-    cheapestVariant.calculated_price.calculated_amount < cheapestVariant.calculated_price.original_amount
+  const hasCalculatedPrice = targetVariant.calculated_price && 
+    targetVariant.calculated_price.calculated_amount !== targetVariant.calculated_price.original_amount &&
+    targetVariant.calculated_price.calculated_amount < targetVariant.calculated_price.original_amount
 
   // Check for promotion module discounts
   const hasPromotionDiscount = product.has_promotions && product.promotions && product.promotions.length > 0
@@ -73,9 +77,9 @@ export function getPromotionalPrice({
   }
 
   // If we have calculated_price (price-list discount), use that first
-  if (hasCalculatedPrice && cheapestVariant.calculated_price) {
-    const originalAmount = cheapestVariant.calculated_price.original_amount || 0
-    const calculatedAmount = cheapestVariant.calculated_price.calculated_amount || 0
+  if (hasCalculatedPrice && targetVariant.calculated_price) {
+    const originalAmount = targetVariant.calculated_price.original_amount || 0
+    const calculatedAmount = targetVariant.calculated_price.calculated_amount || 0
     
     if (calculatedAmount < originalAmount) {
       const discountAmount = originalAmount - calculatedAmount

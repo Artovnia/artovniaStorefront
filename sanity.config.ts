@@ -21,20 +21,22 @@ export default defineConfig({
   webhooks: [
     {
       name: 'blog-post-newsletter',
-      url: 'https://artovnia-production.up.railway.app/admin/blog/webhook',
+      url: 'https://artovnia-production.up.railway.app/store/blog/webhook',
       events: ['create', 'update'],
       filter: '_type == "blogPost" && defined(publishedAt)',
       headers: {
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        'x-publishable-api-key': 'pk_01JVWG4XRHFKCCEV9JWZFXS4GJ'
       }
     },
     {
       name: 'newsletter-campaign',
-      url: 'https://artovnia-production.up.railway.app/admin/newsletter/webhook',
+      url: 'https://artovnia-production.up.railway.app/store/newsletter/webhook',
       events: ['create', 'update'],
       filter: '_type == "newsletter" && status == "ready" && defined(publishedAt)',
       headers: {
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        'x-publishable-api-key': 'pk_01JVWG4XRHFKCCEV9JWZFXS4GJ'
       }
     }
   ]

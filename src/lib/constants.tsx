@@ -38,12 +38,24 @@ const SizedGoogle: React.FC<IconProps> = ({ width = ICON_SIZE.width, height = IC
   </div>
 )
 
-const BlikIcon: React.FC<IconProps> = ({ width = ICON_SIZE.width, height = ICON_SIZE.height }) => (
+const BlikIcon: React.FC<IconProps> = ({ width = ICON_SIZE.width, height = ICON_SIZE_40.height }) => (
   <div style={{ width, height, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
     <Image 
-      src="https://cdn.brandfetch.io/idtcy388S0/theme/dark/logo.svg" 
+      src="/BLIK LOGO RGB.png" 
       alt="BLIK" 
-      style={{ maxWidth: '100%', maxHeight: '100%', width: 'auto', height: 'auto' }} 
+      style={{ maxWidth: '100%', maxHeight: '100%', width: 'auto', height: 'auto', objectFit: 'contain' }} 
+      width={34}
+      height={34}
+    />
+  </div>
+)
+
+const Przelewy24Icon: React.FC<IconProps> = ({ width = ICON_SIZE.width, height = ICON_SIZE_40.height }) => (
+  <div style={{ width, height, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+    <Image 
+      src="/Przelewy24_logo.svg" 
+      alt="Przelewy24" 
+      style={{ maxWidth: '100%', maxHeight: '100%', width: 'auto', height: 'auto', objectFit: 'contain' }} 
       width={34}
       height={34}
     />
@@ -91,24 +103,24 @@ export const paymentInfoMap: Record<
   { title: string; icon: React.JSX.Element }
 > = {
   pp_stripe_stripe_connect: {
-    title: "Credit card",
-    icon: <SizedCreditCard width={ICON_SIZE.width} height={ICON_SIZE.height} />,
+    title: "Karta płatnicza",
+    icon: <SizedCreditCard width={ICON_SIZE_40.width} height={ICON_SIZE_40.height} />,
   },
   "pp_card_stripe-connect": {
-    title: "Credit card",
-    icon: <SizedCreditCard width={ICON_SIZE.width} height={ICON_SIZE.height} />,
+    title: "Karta płatnicza",
+    icon: <SizedCreditCard width={ICON_SIZE_40.width} height={ICON_SIZE_40.height} />,
   },
   "pp_stripe-blik_stripe-connect": {
     title: "BLIK",
-    icon: <SizedCreditCard width={ICON_SIZE.width} height={ICON_SIZE.height} />,
+    icon: <BlikIcon width={ICON_SIZE_40.width} height={ICON_SIZE_40.height} />,
   },
   "pp_stripe-przelewy24_stripe-connect": {
     title: "Przelewy24",
-    icon: <SizedCreditCard width={ICON_SIZE.width} height={ICON_SIZE.height} />,
+    icon: <Przelewy24Icon width={ICON_SIZE_40.width} height={ICON_SIZE_40.height} />,
   },
   pp_paypal_paypal: {
     title: "PayPal",
-    icon: <SizedCreditCard width={ICON_SIZE.width} height={ICON_SIZE.height} />,
+    icon: <SizedCreditCard width={ICON_SIZE_40.width} height={ICON_SIZE_40.height} />,
   },
   pp_system_default: {
     title: "Manual Payment",

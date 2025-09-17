@@ -321,18 +321,24 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children, initialCar
     }
   }, [state.cart, refreshCart])
 
-  const completeOrder = useCallback(async () => {
+  const completeOrder = useCallback(async (skipRedirectCheck: boolean = false) => {
     if (!state.cart) throw new Error('No cart available')
     
     dispatch({ type: 'SET_ERROR', payload: null })
     
     try {
-      // TODO: Implement order completion logic
-      const result = null // Placeholder until order completion is implemented
+      // Import the placeOrder function from cart.ts
+      const { placeOrder } = await import('@/lib/data/cart')
+      
+      // Use the existing placeOrder implementation
+      const result = await placeOrder(state.cart.id, skipRedirectCheck)
       
       if (result) {
-        dispatch({ type: 'CLEAR_CART' })
-        invalidateCheckoutCache(state.cart.id)
+        // Check if order was successfully completed
+        if (result.type === 'order_set' || result.order_set || result.type === 'order' || result.order) {
+          dispatch({ type: 'CLEAR_CART' })
+          invalidateCheckoutCache(state.cart.id)
+        }
       }
       
       return result

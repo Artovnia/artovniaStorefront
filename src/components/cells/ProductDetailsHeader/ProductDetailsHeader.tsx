@@ -5,6 +5,7 @@ import { HttpTypes } from "@medusajs/types"
 import { ProductVariants } from "../../../components/molecules"
 import useGetAllSearchParams from "../../../hooks/useGetAllSearchParams"
 import { getProductPrice } from "../../../lib/helpers/get-product-price"
+import { getPromotionalPrice } from "../../../lib/helpers/get-promotional-price"
 import { useState, useEffect, useMemo } from "react"
 import { addToCart } from "../../../lib/data/cart"
 import { useCart } from "../../../lib/context/CartContext"
@@ -15,6 +16,7 @@ import { useVendorAvailability } from "../../organisms/VendorAvailabilityProvide
 import { InformationCircleSolid } from "@medusajs/icons"
 import { useVariantSelection } from "../../context/VariantSelectionContext"
 import { OptimizedLowestPriceDisplay } from "../LowestPriceDisplay/OptimizedLowestPriceDisplay"
+import { usePromotionData } from "../../context/PromotionDataProvider"
 
 // Define extended types for product and variants
 type ExtendedStoreProduct = HttpTypes.StoreProduct & {
@@ -69,8 +71,15 @@ export const ProductDetailsHeader = ({
   // Get vendor availability status if the product has a seller
   const { isAvailable, availability, holidayMode, openHolidayModal } = useVendorAvailability();
   const [isAdding, setIsAdding] = useState(false)
+  const [isMounted, setIsMounted] = useState(false)
   const { allSearchParams } = useGetAllSearchParams()
   const { selectedVariantId, setSelectedVariantId } = useVariantSelection() // Removed updateUrlWithVariant to prevent direct usage
+  const { getProductWithPromotions, isLoading } = usePromotionData()
+
+  // Ensure component is mounted on client-side to prevent hydration mismatch
+  useEffect(() => {
+    setIsMounted(true)
+  }, [])
 
   // CRITICAL FIX: Calculate selectedVariantOptions based on current variant from context
   const selectedVariantOptions = useMemo(() => {
@@ -94,11 +103,32 @@ export const ProductDetailsHeader = ({
   // CRITICAL FIX: Use selectedVariantId directly from context
   const currentVariantId = selectedVariantId || (product.variants?.[0]?.id || "")
 
+  // Try to get promotional product data from context first
+  const promotionalProduct = getProductWithPromotions(product.id)
+  const productToUse = promotionalProduct || product
+
   // get variant price using current variant ID
   const { variantPrice } = getProductPrice({
     product,
     variantId: currentVariantId,
   })
+
+  // Calculate promotional pricing using helper function for the specific variant
+  const promotionalPricing = useMemo(() => {
+    return getPromotionalPrice({
+      product: productToUse as any,
+      regionId: productToUse.variants?.find(v => v.id === currentVariantId)?.calculated_price?.region_id,
+      variantId: currentVariantId // Pass the specific variant ID for accurate pricing
+    })
+  }, [productToUse, currentVariantId]) // Recalculate when variant changes
+
+  // Check if product has any discount (promotion or price-list)
+  // Only show after mounting and when promotional data has loaded to prevent hydration mismatch
+  const hasAnyDiscount = isMounted && !isLoading && (
+    promotionalPricing.discountPercentage > 0 || 
+    (variantPrice?.calculated_price_number !== variantPrice?.original_price_number &&
+     variantPrice?.calculated_price_number < variantPrice?.original_price_number)
+  )
 
   const { addItem } = useCart()
 
@@ -138,14 +168,46 @@ export const ProductDetailsHeader = ({
           </h2>
           <h1 className="heading-lg text-primary font-instrument-serif">{product.title}</h1>
           <div className="mt-2 flex gap-2 items-center">
-            <span className="heading-md text-primary">
-              {variantPrice?.calculated_price}
-            </span>
-            {variantPrice?.calculated_price_number !==
-              variantPrice?.original_price_number && (
-              <span className="label-md text-secondary line-through">
-                {variantPrice?.original_price}
-              </span>
+            {hasAnyDiscount ? (
+              <>
+                {/* Show promotional pricing when any discount is detected */}
+                {promotionalPricing.discountPercentage > 0 ? (
+                  <>
+                    <span className="heading-md text-primary">
+                      {promotionalPricing.promotionalPrice}
+                    </span>
+                    <span className="label-md text-secondary line-through">
+                      {promotionalPricing.originalPrice}
+                    </span>
+                    {/* Show percentage badge for actual promotions */}
+                    {(productToUse as any).has_promotions && (productToUse as any).promotions?.length > 0 && (
+                      <span className="bg-primary text-[#3B3634] text-sm font-bold px-3 py-1 rounded-lg shadow-lg border border-[#3B3634]/90">
+                        -{promotionalPricing.discountPercentage}%
+                      </span>
+                    )}
+                  </>
+                ) : (
+                  <>
+                    {/* Fallback: Show price list discount pricing */}
+                    <span className="heading-md text-primary">
+                      {variantPrice?.calculated_price}
+                    </span>
+                    {variantPrice?.calculated_price_number !==
+                      variantPrice?.original_price_number && (
+                      <span className="label-md text-secondary line-through">
+                        {variantPrice?.original_price}
+                      </span>
+                    )}
+                  </>
+                )}
+              </>
+            ) : (
+              <>
+                {/* Regular price display when no discounts */}
+                <span className="heading-md text-primary">
+                  {variantPrice?.calculated_price}
+                </span>
+              </>
             )}
           </div>
           
