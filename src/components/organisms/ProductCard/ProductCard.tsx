@@ -101,7 +101,7 @@ export const ProductCard = ({
       {/* Original size: h-[350px] w-[280px] | New size: h-[315px] w-[252px] */}
       {/* TO ADJUST CARD SIZE: Modify both width values above and height/width values below */}
       <div className="relative bg-primary h-[315px] w-[252px] flex-shrink-0">
-        <div className="absolute right-3 top-3 z-10 cursor-pointer">
+        <div className="absolute right-2 top-2 z-10 cursor-pointer">
           <WishlistButton 
             productId={product.id} 
             user={user} 

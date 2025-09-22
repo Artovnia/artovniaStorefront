@@ -135,28 +135,28 @@ async function Category({
   }
 
   return (
-    <main className="container">
-    
+    <PromotionDataProvider countryCode="PL">
+      <BatchPriceProvider currencyCode="PLN">
+        <main className="container">
+          {/* Category Children Navigation (if any) */}
+          {category.category_children && category.category_children.length > 0 && (
+            <div className="flex flex-col gap-4 mb-8">
+              
+            </div>
+          )}
 
-
-
-      {/* Category Children Navigation (if any) */}
-      {category.category_children && category.category_children.length > 0 && (
-        <div className="flex flex-col gap-4 mb-8">
-          
-        </div>
-      )}
-
-      <Suspense fallback={<ProductListingSkeleton />}>
-        <SmartProductsListing 
-          category_ids={categoryIds}
-          locale={locale}
-          categories={allCategoriesWithTree}
-          currentCategory={category}
-          serverSideIsBot={serverSideIsBot}
-        />
-      </Suspense>
-    </main>
+          <Suspense fallback={<ProductListingSkeleton />}>
+            <SmartProductsListing 
+              category_ids={categoryIds}
+              locale={locale}
+              categories={allCategoriesWithTree}
+              currentCategory={category}
+              serverSideIsBot={serverSideIsBot}
+            />
+          </Suspense>
+        </main>
+      </BatchPriceProvider>
+    </PromotionDataProvider>
   )
 }
 

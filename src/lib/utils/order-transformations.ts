@@ -110,17 +110,11 @@ export interface Order {
  * For empty order sets, we create placeholder data to prevent UI rendering issues
  */
 export function transformOrderSetToOrder(orderSet: OrderSet): Order & { orders?: any[] } {
-  console.log('Transforming order set to order:', {
-    id: orderSet.id,
-    display_id: orderSet.display_id,
-    orders_count: orderSet.orders?.length || 0,
-    has_detailed_orders: orderSet.orders && orderSet.orders.length > 0 && orderSet.orders[0]?.items
-  })
   
   const orders = orderSet.orders || []
   
   if (orders.length === 0) {
-    console.log(`Order set ${orderSet.id} has no orders - creating placeholder`)
+    
     return {
       id: orderSet.id,
       display_id: orderSet.display_id,
@@ -163,7 +157,7 @@ export function transformOrderSetToOrder(orderSet: OrderSet): Order & { orders?:
     status: firstOrder?.status || 'pending',
     payment_status: firstOrder?.payment_status || orderSet.payment_collection?.status || 'pending',
     fulfillment_status: firstOrder?.fulfillment_status || 'pending',
-    total: orders.reduce((sum, order) => sum + (order.total || 0), 0),
+    total: orderSet.payment_collection?.amount || orders.reduce((sum, order) => sum + (order.total || 0), 0),
     currency_code: firstOrder?.currency_code || orderSet.payment_collection?.currency_code || 'PLN',
     created_at: typeof orderSet.created_at === 'string' ? 
       orderSet.created_at : 
@@ -199,15 +193,7 @@ export function transformOrderSetToOrder(orderSet: OrderSet): Order & { orders?:
       status: firstOrder?.payment_status || 'pending'
     }
   }
-  
-  console.log('Created composite order from order set:', {
-    id: compositeOrder.id,
-    display_id: compositeOrder.display_id,
-    payment_status: compositeOrder.payment_status,
-    items_count: compositeOrder.items?.length || 0,
-    orders_count: compositeOrder.orders?.length || 0,
-    total: compositeOrder.total
-  })
+ 
   
   return compositeOrder
 }

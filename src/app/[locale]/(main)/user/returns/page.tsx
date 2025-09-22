@@ -2,7 +2,7 @@
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
 
-import { UserNavigation } from "@/components/molecules/UserNavigation/UserNavigation"
+import { UserPageLayout } from "@/components/molecules"
 import { OrderReturnRequests } from "@/components/sections/OrderReturnRequests/OrderReturnRequests"
 import { retrieveCustomer } from "@/lib/data/customer"
 import { getReturns } from "@/lib/data/orders"
@@ -16,11 +16,7 @@ export default async function ReturnsPage(
   { params, searchParams }: PageProps
 ) {
   try {
-  // Get returns data with error handling
   const { order_return_requests = [] } = await getReturns()
-
-  // Log for debugging - check if we actually get multiple return requests
-  console.log(`Retrieved ${order_return_requests?.length || 0} return requests`)
   
   const user = await retrieveCustomer()
 
@@ -64,34 +60,22 @@ export default async function ReturnsPage(
   }
 
   return (
-    <main className="container">
-      <div className="grid grid-cols-1 md:grid-cols-4 mt-6 gap-5 md:gap-8">
-        <UserNavigation />
-        <div className="md:col-span-3">
-          <h1 className="heading-md uppercase">Zwroty</h1>
-          <OrderReturnRequests
-            returns={sortedReturns}
-            user={user || null}
-            page={page || ""}
-            currentReturn={returnId || ""}
-          />
-        </div>
-      </div>
-    </main>
+    <UserPageLayout title="Zwroty">
+      <OrderReturnRequests
+        returns={sortedReturns}
+        user={user || null}
+        page={page || ""}
+        currentReturn={returnId || ""}
+      />
+    </UserPageLayout>
   )
   } catch (error) {
     console.error("Error rendering returns page:", error)
     // Add error fallback UI
     return (
-      <main className="container">
-        <div className="grid grid-cols-1 md:grid-cols-4 mt-6 gap-5 md:gap-8">
-          <UserNavigation />
-          <div className="md:col-span-3">
-            <h1 className="heading-md uppercase">Zwroty</h1>
-            <p>Wystąpił problem podczas ładowania zwrotów. Spróbuj ponownie później.</p>
-          </div>
-        </div>
-      </main>
+      <UserPageLayout title="Zwroty">
+        <p>Wystąpił problem podczas ładowania zwrotów. Spróbuj ponownie później.</p>
+      </UserPageLayout>
     )
   }
 }

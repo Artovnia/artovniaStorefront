@@ -1,5 +1,4 @@
-import { LoginForm } from "@/components/molecules"
-import { UserNavigation } from "@/components/molecules"
+import { LoginForm, UserPageLayout } from "@/components/molecules"
 import { retrieveCustomer } from "@/lib/data/customer"
 import { listMessageThreads } from "@/lib/data/actions/message-actions"
 import { MessageThread, MessageSender } from "@/types/messages"
@@ -111,13 +110,8 @@ export default async function MessagesPage({ searchParams }: PageProps) {
   )
 
   return (
-    <main className="container">
-      <div className="grid grid-cols-1 md:grid-cols-4 mt-6 gap-5 md:gap-8">
-        <UserNavigation />
-        <div className="md:col-span-3 space-y-8">
-          <div className="flex justify-between items-center">
-            <h1 className="heading-md uppercase">Wiadomości</h1>
-          </div>
+    <UserPageLayout title="Wiadomości">
+      <div className="space-y-8">
           
           {hasUnauthorizedError || isEmpty(paginatedThreads) ? (
             <div className="text-center">
@@ -191,7 +185,7 @@ export default async function MessagesPage({ searchParams }: PageProps) {
                             {thread.updated_at ? formatDate(thread.updated_at) : 'Nieznana data'}
                           </p>
                           {hasUnreadMessages(thread) && (
-                            <span className="inline-block bg-primary text-white text-xs px-2 py-1 rounded-full mt-2">
+                            <span className="inline-block bg-primary text-[#3B3634] text-xs px-2 py-1 rounded-full mt-2">
                               {/* Show either the actual count or a default of 1 if we can't determine the exact count */}
                               {thread.unread_count && thread.unread_count > 0 ? `${thread.unread_count} nowych` : 'Nowa wiadomość'}
                             </span>
@@ -212,8 +206,7 @@ export default async function MessagesPage({ searchParams }: PageProps) {
               )}
             </>
           )}
-        </div>
       </div>
-    </main>
+    </UserPageLayout>
   )
 }

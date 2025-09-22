@@ -8,7 +8,7 @@ import { CartIcon } from "@/icons"
 import { convertToLocale } from "@/lib/helpers/money"
 import { HttpTypes } from "@medusajs/types"
 import { useEffect, useState } from "react"
-import { useCart } from "@/lib/context/CartContext"
+import { useCart } from "@/components/context/CartContext"
 
 const getItemCount = (cart: HttpTypes.StoreCart | null | undefined) => {
   return cart?.items?.reduce((acc, item) => acc + item.quantity, 0) || 0

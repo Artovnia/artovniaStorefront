@@ -3,6 +3,8 @@ import { Breadcrumbs } from "@/components/atoms"
 import { ProductListingSkeleton } from "@/components/organisms/ProductListingSkeleton/ProductListingSkeleton"
 import { AlgoliaProductsListing, ProductListing } from "@/components/sections"
 import { getCollectionByHandle } from "@/lib/data/collections"
+import { PromotionDataProvider } from "@/components/context/PromotionDataProvider"
+import { BatchPriceProvider } from "@/components/context/BatchPriceProvider"
 import { Suspense } from "react"
 
 const ALGOLIA_ID = process.env.NEXT_PUBLIC_ALGOLIA_ID
@@ -27,24 +29,28 @@ const SingleCollectionsPage = async ({
   ]
 
   return (
-    <main className="container">
-      <div className="hidden md:block mb-2">
-        <Breadcrumbs items={breadcrumbsItems} />
-      </div>
+    <PromotionDataProvider countryCode="PL">
+      <BatchPriceProvider currencyCode="PLN">
+        <main className="container">
+          <div className="hidden md:block mb-2">
+            <Breadcrumbs items={breadcrumbsItems} />
+          </div>
 
-      <h1 className="heading-xl uppercase">{collection.title}</h1>
+          <h1 className="heading-xl uppercase">{collection.title}</h1>
 
-      <Suspense fallback={<ProductListingSkeleton />}>
-        {!ALGOLIA_ID || !ALGOLIA_SEARCH_KEY ? (
-          <ProductListing collection_id={collection.id} showSidebar />
-        ) : (
-          <AlgoliaProductsListing
-            collection_id={collection.id}
-            locale={locale}
-          />
-        )}
-      </Suspense>
-    </main>
+          <Suspense fallback={<ProductListingSkeleton />}>
+            {!ALGOLIA_ID || !ALGOLIA_SEARCH_KEY ? (
+              <ProductListing collection_id={collection.id} showSidebar />
+            ) : (
+              <AlgoliaProductsListing
+                collection_id={collection.id}
+                locale={locale}
+              />
+            )}
+          </Suspense>
+        </main>
+      </BatchPriceProvider>
+    </PromotionDataProvider>
   )
 }
 

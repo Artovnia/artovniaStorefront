@@ -17,21 +17,15 @@ export const OrderCancel = ({ order }: { order: any }) => {
   // 2: "Wysłano" (Shipped)
   // 3: "Dostarczono" (Delivered)
   
-  // Debug the current order status
-  console.log("OrderCancel debug:", {
-    aktualnyKrok: order.aktualnyKrok,
-    statusRealizacji: order.statusRealizacji,
-    status_zamówienia: order.status_zamówienia,
-    ma_realizacje: order.ma_realizacje
-  })
 
   // The cancel button should ONLY be active when the order is in "Zamówienie otrzymane" status (stage 0)
   // Once it enters preparation (stage 1) or beyond, cancellation is not allowed
   const canCancelOrder = order.aktualnyKrok === 0
   const cannotCancelOrder = !canCancelOrder
+  
 
   const handleCancel = () => {
-    console.log("cancel")
+      console.log("cancel")
   }
 
   const handleSelectItem = (item: any) => {
@@ -64,7 +58,7 @@ export const OrderCancel = ({ order }: { order: any }) => {
           </p>
         </div>
         <Button
-          variant="tonal"
+          variant="filled"
           className="uppercase"
           onClick={() => setOpen(true)}
           disabled={cannotCancelOrder}

@@ -1,5 +1,4 @@
-import { LoginForm } from "@/components/molecules"
-import { UserNavigation } from "@/components/molecules"
+import { LoginForm, UserPageLayout } from "@/components/molecules"
 import { retrieveCustomer } from "@/lib/data/customer"
 
 export default async function UserPage() {
@@ -8,14 +7,9 @@ export default async function UserPage() {
   if (!user) return <LoginForm />
 
   return (
-    <main className="h-full max-w-[1920px] mx-auto py-12">
-      <div className="grid grid-cols-1 md:grid-cols-4 mt-6 gap-5 md:gap-8">
-        <UserNavigation />
-        <div className="md:col-span-3">
-          <h1 className="heading-xl uppercase">Witaj {user.first_name}</h1>
-          <p className="label-md">Twoje konto jest gotowe</p>
-        </div>
-      </div>
-    </main>
+    <UserPageLayout className="h-full max-w-[1920px] mx-auto py-12">
+      <h1 className="heading-xl uppercase">Witaj {user.first_name}</h1>
+      <p className="label-md">Twoje konto jest gotowe</p>
+    </UserPageLayout>
   )
 }

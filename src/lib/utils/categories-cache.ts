@@ -95,22 +95,15 @@ export const getCachedCategories = async (
   cacheKey: string,
   ttl: number = 60 * 60 * 1000 // 1 hour default - categories rarely change
 ): Promise<{ categories: any[], parentCategories: any[] }> => {
-  // Check cache first
-  const cached = categoriesCache.get(cacheKey)
-  if (cached) {
-    if (process.env.NODE_ENV === 'development') {
-      console.log(`📦 Using cached categories data for: ${cacheKey}`)
-    }
-    return cached
-  }
-
-  // Fetch and cache
+  // CRITICAL FIX: Disable client-side caching to prevent corruption issues
+  // Always fetch fresh data to avoid infinite loops from corrupted cache
   if (process.env.NODE_ENV === 'development') {
-    console.log(`🔄 Fetching fresh categories data for: ${cacheKey}`)
+    console.log(`🔄 Fetching fresh categories data for: ${cacheKey} (cache disabled)`)
   }
   
   const result = await fetchFn()
-  categoriesCache.set(cacheKey, result, ttl)
+  // Don't cache in development to prevent corruption issues
+  // categoriesCache.set(cacheKey, result, ttl)
   
   return result
 }

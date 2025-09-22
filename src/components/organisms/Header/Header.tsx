@@ -85,17 +85,21 @@ export const Header = async () => {
         </div>
         <div className="flex items-center justify-end gap-2 lg:gap-4 w-full lg:w-1/3 py-4 mr-4">
           <a href="https://artovniapanel.netlify.app/login" className="text-lg mr-4  font-medium hover:text-action transition-colors hover:underline">ZAŁÓŻ SKLEP</a>
-          <UserDropdown user={user} />
-          {user && (
-            <Link href="/user/wishlist" className="relative">
-              <HeartIcon size={20} />
-              {Boolean(wishlistCount) && (
-                <Badge className="absolute -top-2 -right-2 w-4 h-4 p-0">
-                  {wishlistCount}
-                </Badge>
-              )}
-            </Link>
-          )}
+          
+          {/* Hide user dropdown and wishlist on mobile - handled by bottom navigation */}
+          <div className="hidden md:flex items-center gap-2 lg:gap-4">
+            <UserDropdown user={user} />
+            {user && (
+              <Link href="/user/wishlist" className="relative">
+                <HeartIcon size={20} />
+                {Boolean(wishlistCount) && (
+                  <Badge className="absolute -top-2 -right-2 w-4 h-4 p-0">
+                    {wishlistCount}
+                  </Badge>
+                )}
+              </Link>
+            )}
+          </div>
 
           <CartDropdown />
         </div>

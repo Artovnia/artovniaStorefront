@@ -113,17 +113,16 @@ export const retrieveIndividualOrder = async (id: string): Promise<Order | null>
       {
         method: "GET",
         query: {
-          // Include fulfillment and shipping fields
-          fields: "*items,+items.metadata,*items.variant,*items.product,*seller,*reviews,*fulfillments,*fulfillments.packed_at,*fulfillments.shipped_at,*fulfillments.delivered_at,*fulfillments.canceled_at,*shipping_methods,shipping_total,total"
+          // Include fulfillment and shipping fields + seller image fields
+          fields: "*items,+items.metadata,*items.variant,*items.product,*seller,+seller.photo,+seller.avatar,+seller.image,*reviews,*fulfillments,*fulfillments.packed_at,*fulfillments.shipped_at,*fulfillments.delivered_at,*fulfillments.canceled_at,*shipping_methods,+shipping_methods.amount,+shipping_methods.price,+shipping_methods.total,shipping_total,total,currency_code,display_id"
         },
         headers,
         next,
-        cache: "force-cache",
+        cache: "no-cache", // Use fresh data for returns
       }
     )
     
-    const { order } = response
-    
+    const { order } = response 
     // Convert HttpTypes.StoreOrder to our Order interface
     return {
       id: order.id,
@@ -349,7 +348,6 @@ export const getReturns = async () => {
     
     // First try the /store/return-request endpoint
     try {
-      // For Next.js 15 and Vercel compatibility
       const response = await sdk.client.fetch<{
         order_return_requests: Array<any>
       }>(`/store/return-request`, {
@@ -365,12 +363,58 @@ export const getReturns = async () => {
         // Always return an array even if backend returns null
         const returnRequests = Array.isArray(response.order_return_requests) ? 
           response.order_return_requests : [];
+
         
         // If we got an empty array, continue to try the other endpoint
         if (returnRequests.length === 0) {
           // Continue to try alternate endpoint
         } else {
-          return { order_return_requests: returnRequests }
+          // Transform return requests and fetch complete order data for each (same logic as /store/returns)
+          const transformedReturnRequests = await Promise.all(returnRequests.map(async (returnItem) => {
+            // Fetch complete order data if we have an order_id and missing critical data
+            let completeOrderData = returnItem.order;
+        
+            // Get order ID from either order_id field or order.id field
+            const orderId = returnItem.order_id || returnItem.order?.id;
+  
+            
+            // ALWAYS fetch complete order data for return requests since the API doesn't include complete data
+            if (orderId) {
+            } 
+            
+            if (orderId) {
+              try {
+                const fullOrder = await retrieveIndividualOrder(orderId);
+                if (fullOrder) {
+   
+                  completeOrderData = fullOrder;
+                } 
+              } catch (error) {
+                console.error(`❌ Error fetching complete order data for return request ${orderId}:`, error);
+                console.error('Error details:', {
+                  message: error instanceof Error ? error.message : 'Unknown error',
+                  stack: error instanceof Error ? error.stack : undefined
+                });
+                // Continue with existing order data
+              }
+            }
+            
+            const finalReturnItem = {
+              ...returnItem,
+              // Add any missing fields to match the expected format
+              id: returnItem.id || `temp_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
+              status: returnItem.status || 'pending',
+              // Use line_items as provided
+              line_items: Array.isArray(returnItem.line_items) ? returnItem.line_items : [],
+              // Use complete order data with shipping information
+              order: completeOrderData
+            };
+          
+            
+            return finalReturnItem;
+          }));
+          
+          return { order_return_requests: transformedReturnRequests }
         }
       }
     } catch (firstError) {
@@ -395,12 +439,15 @@ export const getReturns = async () => {
         
         // Transform returns and fetch complete order data for each
         const transformedReturns = await Promise.all(returns.map(async (returnItem) => {
-          // Fetch complete order data if we have an order_id
+          // Fetch complete order data if we have an order_id and missing critical data
           let completeOrderData = returnItem.order;
-          if (returnItem.order_id && (!returnItem.order?.shipping_total && !returnItem.order?.shipping_methods?.length)) {
+          
+          // ALWAYS fetch complete order data for returns since the return API doesn't include complete data
+          if (returnItem.order_id) {
             try {
               const fullOrder = await retrieveIndividualOrder(returnItem.order_id);
               if (fullOrder) {
+
                 completeOrderData = fullOrder;
               }
             } catch (error) {
@@ -482,7 +529,6 @@ export const retrieveReturnReasons = async () => {
     })
 
     if (!response || !response.return_reasons) {
-      console.warn('No return reasons found in response')
       return []
     }
 

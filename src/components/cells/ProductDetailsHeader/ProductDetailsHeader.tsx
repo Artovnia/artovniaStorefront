@@ -8,7 +8,7 @@ import { getProductPrice } from "../../../lib/helpers/get-product-price"
 import { getPromotionalPrice } from "../../../lib/helpers/get-promotional-price"
 import { useState, useEffect, useMemo } from "react"
 import { addToCart } from "../../../lib/data/cart"
-import { useCart } from "../../../lib/context/CartContext"
+import { useCart } from "../../../components/context/CartContext"
 import { SellerProps } from "../../../types/seller"
 import { WishlistButton } from "../WishlistButton/WishlistButton"
 import { Wishlist, SerializableWishlist } from "../../../types/wishlist"
@@ -138,10 +138,17 @@ export const ProductDetailsHeader = ({
 
     setIsAdding(true)
 
-    // Use CartContext addItem method for immediate UI updates
-    await addItem(selectedVariantId, 1)
-
-    setIsAdding(false)
+    try {
+      // Use CartContext addItem method for immediate UI updates
+      await addItem(selectedVariantId, 1)
+      
+      // CRITICAL FIX: Brief success feedback
+      console.log('✅ Item successfully added to cart')
+    } catch (error) {
+      console.error('❌ Failed to add item to cart:', error)
+    } finally {
+      setIsAdding(false)
+    }
   }
   
   // Open holiday modal if the vendor is on holiday

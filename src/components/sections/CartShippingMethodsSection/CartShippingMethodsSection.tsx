@@ -17,7 +17,7 @@ import { CartShippingMethodRow } from "./CartShippingMethodRow"
 import { Listbox, Transition } from "@headlessui/react"
 import clsx from "clsx"
 import { InpostShippingMethodWrapper } from "@/components/molecules/InpostShippingMethodWrapper/InpostShippingMethodWrapper"
-import { useCart } from "@/lib/context/CartContext"
+import { setShippingMethod } from "@/lib/data/cart"
 // Import cache invalidation function
 import { invalidateCheckoutCache } from "@/lib/utils/storefront-cache"
 
@@ -58,10 +58,8 @@ const CartShippingMethodsSection: React.FC<ShippingProps> = ({
   cart: propCart,
   availableShippingMethods,
 }) => {
-  const { cart: contextCart, refreshCart, setShipping } = useCart()
-  
-  // Use context cart if available, fallback to prop cart
-  const cart = contextCart || propCart
+  // Use cart prop directly (no context needed)
+  const cart = propCart
   
   const [isLoadingPrices, setIsLoadingPrices] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -208,9 +206,14 @@ const CartShippingMethodsSection: React.FC<ShippingProps> = ({
       setSettingShippingMethod(shippingMethodId)
 
       try {
-        // Use CartContext setShipping method instead of direct API call
-        await setShipping(shippingMethodId)
-        // No need for manual refreshes - CartContext handles state updates
+        // Use direct API call instead of cart context
+        await setShippingMethod({
+          cartId: cart.id,
+          shippingMethodId: shippingMethodId
+        })
+        // Invalidate cache and refresh page
+        invalidateCheckoutCache(cart.id)
+        router.refresh()
       } catch (error: any) {
         console.error("❌ Error setting shipping method:", error)
         setError(error.message || "Failed to set shipping method")
@@ -218,17 +221,18 @@ const CartShippingMethodsSection: React.FC<ShippingProps> = ({
         setSettingShippingMethod(null)
       }
     },
-    [cart.id, settingShippingMethod, setShipping]
+    [cart.id, settingShippingMethod, router]
   )
 
   const handleMethodRemoved = useCallback(async (methodId: string, sellerId?: string) => {
-    // Refresh cart with shipping context for optimized data loading
+    // Refresh page after method removal
     try {
-      await refreshCart('shipping')
+      invalidateCheckoutCache(cart.id)
+      router.refresh()
     } catch (error) {
-      console.error('❌ Error refreshing cart after method removal:', error)
+      console.error('❌ Error refreshing after method removal:', error)
     }
-  }, [refreshCart])
+  }, [cart.id, router])
 
   useEffect(() => {
     setError(null)
@@ -457,8 +461,8 @@ const CartShippingMethodsSection: React.FC<ShippingProps> = ({
                                 sellerId={sellerId}
                                 cartId={cart.id}
                                 onComplete={async () => {
-                                  // Only refresh cart context - no additional API calls needed
-                                  await refreshCart();
+                                  // Refresh page after InPost completion
+                                  invalidateCheckoutCache(cart.id);
                                   router.refresh();
                                 }}
                                 onError={(error) => {

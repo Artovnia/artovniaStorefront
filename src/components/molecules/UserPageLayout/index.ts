@@ -1,0 +1,1 @@
+export { UserPageLayout } from "./UserPageLayout"

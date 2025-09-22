@@ -16,11 +16,6 @@ export default async function ReturnOrderPage({
   const returnReasons = await retrieveReturnReasons()
   const returnMethods = await retrieveReturnMethods(id)
   
-  console.log('Return order page loaded with:', {
-    order_id: id,
-    return_reasons_count: returnReasons?.length || 0,
-    return_methods_count: returnMethods?.length || 0
-  })
 
   return (
     <main className="container">

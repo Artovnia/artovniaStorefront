@@ -73,7 +73,7 @@ export const ReturnSummaryTab = ({
  
 
   return (
-    <div className="sm:mt-20">
+    <div className="mt-20 md:mt-0">
       {selected.length ? (
         <Card className="p-4">
           <ul>
@@ -82,7 +82,7 @@ export const ReturnSummaryTab = ({
                 key={item.id}
                 className="flex items-center gap-2 mb-4 justify-between w-full"
               >
-                <div className="flex items-center gap-2 font-semibold">
+                <div className="flex items-center gap-2  font-instrument-serif">
                   <div className="w-16 rounded-sm border">
                     {item.thumbnail ? (
                       <Image
@@ -114,7 +114,7 @@ export const ReturnSummaryTab = ({
       ) : null}
 
       <Card className="p-4">
-        <p className="label-md flex justify-between mb-4">
+        <p className="label-md flex justify-between mb-4  border-t border-[#3B3634]">
           Kwota zwrotu:
           <span className="label-md !font-bold text-primary">
             {convertToLocale({

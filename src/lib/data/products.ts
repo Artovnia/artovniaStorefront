@@ -1,13 +1,45 @@
 "use server"
 
 import { sdk } from "../config"
-import { sortProducts } from "@/lib/helpers/sort-products"
-import { HttpTypes } from "@medusajs/types"
-import { SortOptions } from "@/types/product"
-import { getAuthHeaders, getCacheOptions } from "./cookies"
+import { getAuthHeaders } from "./cookies"
 import { getRegion, retrieveRegion } from "./regions"
+import { HttpTypes } from "@medusajs/types"
 import { SellerProps } from "@/types/seller"
 import { ProductGPSRData } from "@/types/gpsr"
+import { productDeduplicator, createCacheKey } from "../utils/request-deduplication"
+
+// Type for allowed sort keys in server-side product listing
+type SortOptions = "created_at" | "title" | "price" | "updated_at"
+
+/**
+ * Performs client-side ordering of product arrays when server sorting isn't applied.
+ * Invoked in listProductsWithSort for non-created_at sorts.
+ * Receives filtered products and a SortOptions key.
+ * Returns a newly ordered product list.
+ */
+const sortProducts = (products: HttpTypes.StoreProduct[], sortBy: SortOptions): HttpTypes.StoreProduct[] => {
+  return [...products].sort((a, b) => {
+    switch (sortBy) {
+      case "title":
+        return a.title.localeCompare(b.title)
+      case "price":
+        // Sort by lowest variant price
+        const aPrice = Math.min(...(a.variants?.map(v => v.calculated_price?.calculated_amount || 0) || [0]))
+        const bPrice = Math.min(...(b.variants?.map(v => v.calculated_price?.calculated_amount || 0) || [0]))
+        return aPrice - bPrice
+      case "updated_at":
+        // Use updated_at if available, fallback to created_at
+        const aUpdated = (a as any).updated_at || a.created_at || new Date().toISOString()
+        const bUpdated = (b as any).updated_at || b.created_at || new Date().toISOString()
+        return new Date(bUpdated).getTime() - new Date(aUpdated).getTime()
+      case "created_at":
+      default:
+        const aCreated = a.created_at || new Date().toISOString()
+        const bCreated = b.created_at || new Date().toISOString()
+        return new Date(bCreated).getTime() - new Date(aCreated).getTime()
+    }
+  })
+}
 
 export const listProducts = async ({
   pageParam = 1,
@@ -57,11 +89,10 @@ export const listProducts = async ({
     }
   }
 
+  // CRITICAL FIX: Disable deduplication temporarily to fix carousel issues
   const headers = {
     ...(await getAuthHeaders()),
   }
-
-  const cacheKey = `products-${region.id}-${category_id || 'all'}-${collection_id || 'all'}`
 
   return sdk.client
     .fetch<{
@@ -75,15 +106,12 @@ export const listProducts = async ({
         limit,
         offset,
         region_id: region?.id,
+        // CRITICAL FIX: Always include fresh inventory data for accurate stock levels
         fields: "*variants.calculated_price,*seller,*seller.products,*variants,*variants.inventory_quantity,*variants.manage_inventory,*variants.allow_backorder,*metadata,*categories,*categories.parent_category,*collection",
         ...queryParams,
       },
       headers,
-      next: {
-        revalidate: 300, // 5 minutes - balance between performance and data freshness
-        tags: ['products', cacheKey, queryParams?.handle ? `product-${queryParams.handle}` : ''],
-      },
-      cache: "force-cache" // Keep caching improvement
+      cache: "no-cache", // CRITICAL FIX: Always fresh for inventory data
     })
     .then(({ products, count }) => {
       const nextPage = count > offset + limit ? pageParam + 1 : null
@@ -231,6 +259,24 @@ export const listProductsWithPromotions = async ({
       })
       
       promotionProducts = promotionResponse.products || []
+      
+      // CRITICAL DEBUG: Log what we actually received
+      console.log('🔍 [FRONTEND-DEBUG] Backend response:', {
+        products_count: promotionResponse.products?.length || 0,
+        total_count: promotionResponse.count || 0,
+        promotions_found: promotionResponse.promotions_found || 0,
+        applicable_product_ids: promotionResponse.applicable_product_ids || 0
+      })
+      
+      console.log('🔍 [FRONTEND-DEBUG] Received products:', 
+        promotionResponse.products?.map(p => ({ 
+          id: p.id, 
+          title: p.title, 
+          seller: (p.seller as any)?.company_name || 'No seller',
+          has_promotions: p.has_promotions 
+        })) || []
+      )
+      
     } catch (error) {
       console.warn('Failed to fetch promotion products, continuing with price-list only:', error)
     }
@@ -326,7 +372,7 @@ export const getProductShippingOptions = async (
     }
 
     const cacheOptions = {
-      ...(await getCacheOptions("fulfillment")),
+      cache: "no-cache", // Always fresh for shipping options
       ...next
     }
 

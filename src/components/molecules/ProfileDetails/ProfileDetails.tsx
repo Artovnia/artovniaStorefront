@@ -14,20 +14,20 @@ export const ProfileDetails = ({ user }: { user: HttpTypes.StoreCustomer }) => {
     <>
       <Card className="bg-secondary p-4 flex justify-between items-center">
         <Heading level="h2" className="heading-sm uppercase">
-          Profile details
+          Dane profilu
         </Heading>
         <Button
-          variant="tonal"
+          variant="filled"
           onClick={() => setShowForm(true)}
           className="uppercase flex items-center gap-2 font-semibold"
         >
           <PencilSquare />
-          Edit details
+          Edytuj dane
         </Button>
       </Card>
       <Card className="p-0">
         <div className="p-4">
-          <p className="label-md text-secondary">Name</p>
+          <p className="label-md text-secondary">Imię i nazwisko</p>
           <p className="label-lg text-primary">
             {`${user.first_name} ${user.last_name}`}
           </p>
@@ -39,13 +39,13 @@ export const ProfileDetails = ({ user }: { user: HttpTypes.StoreCustomer }) => {
         </div>
         <Divider />
         <div className="p-4">
-          <p className="label-md text-secondary">Phone number</p>
+          <p className="label-md text-secondary">Numer telefonu</p>
           <p className="label-lg text-primary">{user.phone}</p>
         </div>
       </Card>
       {showForm && (
         <Modal
-          heading="Edit profile details"
+          heading="Edytuj dane profilu"
           onClose={() => setShowForm(false)}
         >
           <ProfileDetailsForm

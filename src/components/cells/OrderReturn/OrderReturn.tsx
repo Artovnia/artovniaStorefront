@@ -45,47 +45,29 @@ interface OrderReturnProps {
 export const OrderReturn = ({ order }: OrderReturnProps) => {
   // Check if order can be returned based on multiple criteria
   const isReturnEligible = () => {
-    // Debug the order object to see what's available
-    console.log("Checking return eligibility for order:", {
-      id: order.id,
-      status: order.status,
-      fulfillment_status: order.fulfillment_status,
-      item_count: order.items?.length || 0,
-      is_order_set: order.is_order_set,
-      created_at: order.created_at
-    });
+   
     
     // Must have items to be returned
     if (!order.items || order.items.length === 0) {
-      console.log("Order has no items, not eligible for return");
       return false;
     }
     
-    // Order status check - only allow completed/delivered orders
-    const validStatuses = ["completed", "delivered"];
-    if (!validStatuses.includes(order.status || "")) {
-      console.log(`Order status '${order.status}' is not eligible for return (need one of ${validStatuses.join(", ")})`); 
+    // CRITICAL FIX: Check for delivered status using multiple sources
+    // Priority: statusRealizacji > aktualnyKrok > order status > fulfillment status
+    const statusRealizacji = (order as any).statusRealizacji;
+    const aktualnyKrok = (order as any).aktualnyKrok;
+    
+    const isDeliveredStatus = statusRealizacji === "delivered" ||
+                             aktualnyKrok === 3 ||
+                             order.status === "completed" || 
+                             order.status === "delivered" ||
+                             order.fulfillment_status === "delivered" || 
+                             order.fulfillment_status === "completed";
+    
+    if (!isDeliveredStatus) {
       return false;
     }
-
-    // Fulfillment status check - also require delivered status if fulfillment_status exists
-    if (order.fulfillment_status !== undefined && 
-        order.fulfillment_status !== "delivered" && 
-        order.fulfillment_status !== "completed") {
-      console.log(`Fulfillment status '${order.fulfillment_status}' is not eligible for return`);
-      return false;
-    }
-
-    // Enhanced debugging to find where parcels data might be
-    console.log("Full order object for debugging:", order);
     
-    // Safely check all possible locations for fulfillment data
-    console.log("Direct parcels property:", order.parcels);
-    // Use safe property access for potentially undefined properties
-    console.log("Fulfillment property:", (order as any).fulfillment);
-    console.log("Fulfillments property:", (order as any).fulfillments);
-    
-    // Get the delivery date from the most appropriate source
     let deliveryDate = null;
     
     // Try to find parcels from different possible locations in the order object
@@ -95,7 +77,6 @@ export const OrderReturn = ({ order }: OrderReturnProps) => {
                             ((order as any).fulfillment ? [(order as any).fulfillment] : []);
     
     if (possibleParcels && possibleParcels.length > 0) {
-      console.log("Found possible parcels:", possibleParcels);
       
       // Find the latest delivery date among all parcels
       for (const parcel of possibleParcels) {
@@ -103,11 +84,11 @@ export const OrderReturn = ({ order }: OrderReturnProps) => {
         const deliveryDateStr = parcel.dostarczono_o || parcel.delivered_at || parcel.delivery_date;
         
         if (deliveryDateStr) {
-          console.log("Found delivery date:", deliveryDateStr);
+         
           const parcelDeliveryDate = new Date(deliveryDateStr);
           if (!deliveryDate || parcelDeliveryDate > deliveryDate) {
             deliveryDate = parcelDeliveryDate;
-            console.log("Using delivery date:", deliveryDate);
+           
           }
         }
       }
@@ -116,7 +97,7 @@ export const OrderReturn = ({ order }: OrderReturnProps) => {
     // Fallback to order creation date if no delivery date found
     if (!deliveryDate && order.created_at) {
       deliveryDate = new Date(order.created_at);
-      console.log("No delivery date found, using order creation date as fallback");
+     
     }
     
     if (deliveryDate) {
@@ -126,23 +107,23 @@ export const OrderReturn = ({ order }: OrderReturnProps) => {
 
       // If more than the maximum days, not eligible
       if (daysSinceDelivery > maxReturnDays) {
-        console.log(`Order was delivered ${daysSinceDelivery} days ago, beyond the ${maxReturnDays} day return window`);
+       
         return false;
       }
 
-      console.log(`Order was delivered ${daysSinceDelivery} days ago, within the ${maxReturnDays} day return window`);
+      
     } else {
       // If we can't find delivery date but the order status is completed/delivered,
       // we'll make the order eligible for return since it was likely delivered recently
       // This ensures customers can return recent orders even if delivery data is missing
       if (order.status === "completed" || order.status === "delivered" || 
           order.fulfillment_status === "delivered" || order.fulfillment_status === "completed") {
-        console.log("Order marked as completed/delivered but no delivery date found. Making eligible for return.");
+       
         return true;
       }
     }
 
-    console.log("Order IS eligible for return");
+    
     return true;
   };
   
@@ -184,7 +165,7 @@ export const OrderReturn = ({ order }: OrderReturnProps) => {
       const yesterday = new Date();
       yesterday.setDate(yesterday.getDate() - 1);
       deliveryDate = yesterday;
-      console.log("No dates found at all, using yesterday as fallback to enable returns");
+     
     }
   }
   
@@ -231,7 +212,7 @@ export const OrderReturn = ({ order }: OrderReturnProps) => {
       </div>
       <LocalizedClientLink href={`/user/orders/${order.id}/return`}>
         <Button 
-          variant="tonal" 
+          variant="filled" 
           className="uppercase hover:bg-black hover:text-white transition-colors"
         >
           Rozpocznij zwrot

@@ -4,23 +4,24 @@ import React, { useState, useEffect, useRef } from "react"
 import { useRouter } from "@/i18n/routing"
 import { selectPaymentSession } from "@/lib/data/cart"
 import ErrorMessage from "@/components/molecules/ErrorMessage/ErrorMessage"
-import { isManual, isPayU, paymentInfoMap } from "../../../lib/constants"
+import { isManual, isPayU, isStripe, paymentInfoMap } from "../../../lib/constants"
 import { HttpTypes } from "@medusajs/types"
 import { Button } from "@/components/atoms"
 import { CreditCard } from "@medusajs/icons"
+import { useTerms } from "../CheckoutWrapper/CheckoutWrapper"
 
 type PaymentButtonProps = {
   cart: HttpTypes.StoreCart
-  termsAccepted: boolean
   "data-testid": string
 }
 
 // Main PaymentButton component that determines which payment method to use
 const PaymentButton: React.FC<PaymentButtonProps> = ({
   cart,
-  termsAccepted,
   "data-testid": dataTestId,
 }): React.ReactElement => {
+  // Use Terms Context directly to avoid prop drilling and caching issues
+  const { termsAccepted } = useTerms()
   // Check if cart is ready for checkout
   const notReady = !cart || 
     !cart.shipping_address || 
@@ -36,20 +37,48 @@ const PaymentButton: React.FC<PaymentButtonProps> = ({
     (paymentSession: any) => paymentSession.status === "pending"
   )
   
-  // Check if there's a selected session - consider any pending session as selected
-  const hasValidPaymentSession = paymentSessions.length > 0 && !!activeSession
+  // CRITICAL FIX: Also check cart metadata for payment provider
+  // Sometimes payment sessions aren't returned in the array but metadata has the provider
+  const metadataProviderId = (cart?.metadata as any)?.payment_provider_id
+  
+  // Check if there's a selected session OR metadata provider
+  const hasValidPaymentSession = (paymentSessions.length > 0 && !!activeSession) || !!metadataProviderId
 
-  // Get payment provider ID from the active session or first available
-  const paymentProviderId = activeSession?.provider_id || paymentSessions[0]?.provider_id
+  // Get payment provider ID from multiple sources (priority order)
+  const paymentProviderId = activeSession?.provider_id || 
+                           paymentSessions[0]?.provider_id || 
+                           metadataProviderId
+  
+  // DEBUG: Add logging to understand what's happening
+  console.log('🔍 PaymentButton Debug:', {
+    termsAccepted,
+    hasValidPaymentSession,
+    paymentProviderId,
+    metadataProviderId,
+    paymentSessionsCount: paymentSessions.length,
+    activeSession: !!activeSession,
+    isPayU: isPayU(paymentProviderId),
+    isStripe: isStripe(paymentProviderId),
+    isManual: isManual(paymentProviderId),
+    notReady
+  })
   
   // Determine which payment button to show based on the payment provider
   switch (true) {
+    case isStripe(paymentProviderId):
+      return (
+        <StripePaymentButton
+          cart={cart}
+          isPaymentReady={!notReady && hasValidPaymentSession}
+          data-testid={dataTestId}
+          paymentProviderId={paymentProviderId}
+        />
+      )
     case isPayU(paymentProviderId):
       return (
         <PayUPaymentButton
           cart={cart}
           isPaymentReady={!notReady && hasValidPaymentSession}
-          termsAccepted={termsAccepted}
           data-testid={dataTestId}
           activeSession={activeSession}
         />
@@ -58,7 +87,6 @@ const PaymentButton: React.FC<PaymentButtonProps> = ({
       return (
         <ManualTestPaymentButton 
           isPaymentReady={!notReady && hasValidPaymentSession}
-          termsAccepted={termsAccepted}
           data-testid={dataTestId}
           cart={cart}
         />
@@ -79,19 +107,226 @@ const PaymentButton: React.FC<PaymentButtonProps> = ({
   }
 }
 
+interface StripePaymentButtonProps {
+  cart: HttpTypes.StoreCart
+  isPaymentReady: boolean
+  "data-testid"?: string
+  paymentProviderId: string
+}
+
+const StripePaymentButton: React.FC<StripePaymentButtonProps> = ({
+  cart,
+  isPaymentReady,
+  "data-testid": dataTestId,
+  paymentProviderId
+}): React.ReactElement => {
+  // Use Terms Context directly
+  const { termsAccepted } = useTerms()
+  const [submitting, setSubmitting] = useState(false)
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
+  const router = useRouter()
+
+  const handleStripePayment = async (): Promise<void> => {
+    if (submitting) return
+
+    setSubmitting(true);
+    setErrorMessage(null);
+
+    try {
+      console.log('🚨 STRIPE PAYMENT HANDLER CALLED - This should ALWAYS use Stripe Checkout')
+      console.log('🔍 Stripe Payment Debug:', {
+        cartId: cart.id,
+        paymentProviderId,
+        isPaymentReady,
+        termsAccepted
+      })
+      
+      // CRITICAL: This function should NEVER call placeOrder directly
+      // It should ALWAYS create a Stripe Checkout session and redirect
+
+      // CRITICAL FIX: Ensure payment session exists before placing order
+      const paymentSessions = cart?.payment_collection?.payment_sessions || []
+      const hasValidSession = paymentSessions.some((session: any) => 
+        session.provider_id === paymentProviderId && session.status === 'pending'
+      )
+
+      console.log('🔍 Payment Session Check:', {
+        paymentSessionsCount: paymentSessions.length,
+        hasValidSession,
+        paymentProviderId,
+        existingSessions: paymentSessions.map((s: any) => ({ id: s.id, provider_id: s.provider_id, status: s.status }))
+      })
+
+      if (!hasValidSession) {
+        console.log('🔍 Creating missing payment session...')
+        // Import the payment session functions
+        const { selectPaymentSession, initiatePaymentSession, retrieveCartForPayment } = await import('@/lib/data/cart')
+        
+        try {
+          // Try to initiate payment session first
+          await initiatePaymentSession(cart, { provider_id: paymentProviderId })
+        } catch (initError: any) {
+          console.log('🔍 Payment session initiation result:', initError?.message)
+          // Continue if session already exists
+        }
+        
+        // Select the payment session
+        await selectPaymentSession(cart.id, paymentProviderId)
+        console.log('🔍 Payment session created/selected successfully')
+        
+        // CRITICAL FIX: Refresh cart data to get updated payment sessions
+        // Wait a bit for backend to process the session creation
+        await new Promise(resolve => setTimeout(resolve, 500))
+        
+        const refreshedCart = await retrieveCartForPayment(cart.id)
+        console.log('🔍 Refreshed cart payment sessions:', {
+          refreshedSessionsCount: refreshedCart?.payment_collection?.payment_sessions?.length || 0,
+          refreshedSessions: refreshedCart?.payment_collection?.payment_sessions?.map((s: any) => ({ 
+            id: s.id, 
+            provider_id: s.provider_id, 
+            status: s.status 
+          })) || []
+        })
+        
+        // Verify the session now exists in refreshed cart
+        const refreshedHasValidSession = refreshedCart?.payment_collection?.payment_sessions?.some((session: any) => 
+          session.provider_id === paymentProviderId && session.status === 'pending'
+        )
+        
+        if (!refreshedHasValidSession) {
+          throw new Error(`Payment session creation failed for provider: ${paymentProviderId}. Session not found in refreshed cart data.`)
+        }
+        
+        // Update the cart reference to use refreshed data for placeOrder
+        console.log('🔍 Using refreshed cart data for order placement')
+      }
+
+      // CRITICAL: For ALL Stripe payments, we must use Stripe Checkout - never call placeOrder directly
+      console.log('🔍 STRIPE CHECKOUT FLOW: Creating Stripe Checkout session for payment provider:', paymentProviderId)
+      console.log('🔍 STRIPE CHECKOUT FLOW: This will redirect to Stripe hosted page for security')
+      
+      // Get the payment session data
+      const currentPaymentSessions = cart?.payment_collection?.payment_sessions || []
+      const currentSession = currentPaymentSessions.find(session => session.provider_id === paymentProviderId)
+      
+      if (!currentSession || !currentSession.data?.id) {
+        throw new Error('No valid payment session found for Stripe payment')
+      }
+      
+      const paymentIntentId = currentSession.data.id
+      console.log('🔍 Using PaymentIntent ID:', paymentIntentId)
+      
+      // Determine payment method types based on provider
+      let paymentMethodTypes = ['card']
+      if (paymentProviderId.includes('blik')) {
+        paymentMethodTypes = ['blik']
+      } else if (paymentProviderId.includes('przelewy24')) {
+        paymentMethodTypes = ['p24']
+      }
+      
+      console.log('🔍 Payment method types:', paymentMethodTypes)
+      
+      // Create Stripe Checkout session
+      console.log('🔍 STRIPE CHECKOUT: Making request to create checkout session')
+      console.log('🔍 STRIPE CHECKOUT: Backend URL:', process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL)
+      console.log('🔍 STRIPE CHECKOUT: Publishable Key:', process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY ? 'Present' : 'Missing')
+      console.log('🔍 STRIPE CHECKOUT: Request payload:', {
+        payment_intent_id: paymentIntentId,
+        cart_id: cart.id,
+        customer_email: cart.email,
+        payment_method_types: paymentMethodTypes
+      })
+      
+      const checkoutResponse = await fetch(`${process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL}/store/stripe/create-checkout-session`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-publishable-api-key': process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || ''
+        },
+        body: JSON.stringify({
+          payment_intent_id: paymentIntentId,
+          cart_id: cart.id,
+          customer_email: cart.email,
+          payment_method_types: paymentMethodTypes
+        })
+      })
+      
+      console.log('🔍 STRIPE CHECKOUT: Response status:', checkoutResponse.status, checkoutResponse.statusText)
+      
+      if (!checkoutResponse.ok) {
+        const errorText = await checkoutResponse.text()
+        console.error('❌ Failed to create Stripe Checkout session:', errorText)
+        throw new Error(`Failed to create checkout session: ${checkoutResponse.statusText}`)
+      }
+      
+      const checkoutResult = await checkoutResponse.json()
+      console.log('🔍 Checkout session created:', checkoutResult)
+      
+      if (checkoutResult.checkout_url) {
+        console.log('🔍 Redirecting to Stripe Checkout:', checkoutResult.checkout_url)
+        window.location.href = checkoutResult.checkout_url
+        return
+      }
+      
+      throw new Error('No checkout URL received from Stripe')
+      
+    } catch (error: any) {
+      console.error('Stripe payment error:', error)
+      setErrorMessage(error?.message || 'Wystąpił błąd podczas płatności')
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  const getPaymentMethodLabel = (providerId: string): string => {
+    return paymentInfoMap[providerId]?.title || 'Płatność Stripe'
+  }
+
+  return (
+    <div className="flex flex-col gap-4">
+      <div className="border rounded-lg p-4">
+        <div className="font-medium mb-3">Metoda płatności:</div>
+        <div className="flex items-center p-3 border rounded-md bg-primary border-[#3B3634]">
+          <div className="flex-grow">
+            {getPaymentMethodLabel(paymentProviderId)}
+          </div>
+        </div>
+        <div className="mt-2 text-sm text-gray-500">
+          Metoda płatności została wybrana w poprzednim kroku.
+        </div>
+      </div>
+      
+      <Button
+        disabled={!isPaymentReady || submitting}
+        onClick={handleStripePayment}
+        loading={submitting}
+        className="w-full"
+        data-testid={dataTestId}
+      >
+        {!termsAccepted ? 'Zaakceptuj regulamin' : 'Złóż zamówienie'}
+      </Button>
+      
+      <ErrorMessage
+        error={errorMessage}
+        data-testid="stripe-payment-error-message"
+      />
+    </div>
+  )
+}
+
 interface ManualTestPaymentButtonProps {
   isPaymentReady: boolean
-  termsAccepted: boolean
   "data-testid"?: string
   cart: HttpTypes.StoreCart
 }
 
 const ManualTestPaymentButton: React.FC<ManualTestPaymentButtonProps> = ({ 
   isPaymentReady, 
-  termsAccepted,
   "data-testid": dataTestId,
   cart
 }): React.ReactElement => {
+  // Use Terms Context directly
+  const { termsAccepted } = useTerms()
   const [submitting, setSubmitting] = useState(false)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const router = useRouter()
@@ -151,7 +386,6 @@ const ManualTestPaymentButton: React.FC<ManualTestPaymentButtonProps> = ({
 interface PayUPaymentButtonProps {
   cart: HttpTypes.StoreCart
   isPaymentReady: boolean
-  termsAccepted: boolean
   "data-testid"?: string
   activeSession?: any
 }
@@ -159,10 +393,11 @@ interface PayUPaymentButtonProps {
 const PayUPaymentButton: React.FC<PayUPaymentButtonProps> = ({
   cart,
   isPaymentReady,
-  termsAccepted,
   "data-testid": dataTestId,
   activeSession
 }): React.ReactElement => {
+  // Use Terms Context directly
+  const { termsAccepted } = useTerms()
   const [submitting, setSubmitting] = useState(false)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [hasRedirected, setHasRedirected] = useState(false)

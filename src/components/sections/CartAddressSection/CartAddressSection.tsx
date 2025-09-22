@@ -1,7 +1,7 @@
 "use client"
 
 import { Heading, Text, useToggleState } from "@medusajs/ui"
-import { useCart } from "@/lib/context/CartContext"
+import { setAddresses } from "@/lib/data/cart"
 import compareAddresses from "@/lib/helpers/compare-addresses"
 import { HttpTypes } from "@medusajs/types"
 import { usePathname, useRouter } from '@/i18n/routing'
@@ -22,13 +22,12 @@ export const CartAddressSection = ({
   cart: HttpTypes.StoreCart | null
   customer: HttpTypes.StoreCustomer | null
 }) => {
-  const { cart: contextCart, setAddress, refreshCart } = useCart()
   const searchParams = useSearchParams()
   const router = useRouter()
   const pathname = usePathname()
   
-  // Use context cart if available, fallback to prop cart
-  const cart = contextCart || propCart
+  // Use cart prop directly (no context needed)
+  const cart = propCart
   
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -84,9 +83,7 @@ export const CartAddressSection = ({
         }
       }
       
-      await setAddress(addressData)
-      // Refresh cart with address context for optimized data loading
-      await refreshCart('address')
+      await setAddresses(null, formData)
       router.replace(`/checkout?step=delivery`)
     } catch (error: any) {
       console.error('Error setting address:', error)
@@ -94,7 +91,7 @@ export const CartAddressSection = ({
     } finally {
       setIsSubmitting(false)
     }
-  }, [cart?.id, sameAsBilling, setAddress, refreshCart, router])
+  }, [cart?.id, sameAsBilling, router])
 
   useEffect(() => {
     if (!isAddress && !isSubmitting) {

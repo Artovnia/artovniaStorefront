@@ -1,4 +1,4 @@
-import { LoginForm, UserNavigation } from "@/components/molecules"
+import { LoginForm, UserPageLayout } from "@/components/molecules"
 import { ReviewsToWrite } from "@/components/organisms"
 import { retrieveCustomer } from "@/lib/data/customer"
 import { listOrders } from "@/lib/data/orders"
@@ -18,14 +18,9 @@ export default async function Page() {
     if (!Array.isArray(orders) || !Array.isArray(reviews)) {
       console.error('Invalid data format: orders or reviews is not an array')
       return (
-        <main className="container">
-          <div className="grid grid-cols-1 md:grid-cols-4 mt-6 gap-5 md:gap-8">
-            <UserNavigation />
-            <div className="md:col-span-3">
-              <p>Unable to load your reviews at this time. Please try again later.</p>
-            </div>
-          </div>
-        </main>
+        <UserPageLayout>
+          <p>Unable to load your reviews at this time. Please try again later.</p>
+        </UserPageLayout>
       )
     }
   
@@ -49,24 +44,16 @@ export default async function Page() {
   }, [])
 
   return (
-    <main className="container">
-      <div className="grid grid-cols-1 md:grid-cols-4 mt-6 gap-5 md:gap-8">
-        <UserNavigation />
-        <ReviewsToWrite reviews={reviewsToWrite} />
-      </div>
-    </main>
+    <UserPageLayout>
+      <ReviewsToWrite reviews={reviewsToWrite} />
+    </UserPageLayout>
   )
   } catch (error) {
     console.error('Error in reviews page:', error)
     return (
-      <main className="container">
-        <div className="grid grid-cols-1 md:grid-cols-4 mt-6 gap-5 md:gap-8">
-          <UserNavigation />
-          <div className="md:col-span-3">
-            <p>Unable to load your reviews at this time. Please try again later.</p>
-          </div>
-        </div>
-      </main>
+      <UserPageLayout>
+        <p>Unable to load your reviews at this time. Please try again later.</p>
+      </UserPageLayout>
     )
   }
 }

@@ -2,7 +2,7 @@
 
 import React, { useState, useCallback, useRef } from "react"
 import { HttpTypes } from "@medusajs/types"
-import { useCart } from "@/lib/context/CartContext"
+import { useCart } from "@/components/context/CartContext"
 
 interface QuantityChangerProps {
   itemId: string

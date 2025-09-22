@@ -1,5 +1,4 @@
-import { LoginForm, ParcelAccordion } from "@/components/molecules"
-import { UserNavigation } from "@/components/molecules"
+import { LoginForm, ParcelAccordion, UserPageLayout } from "@/components/molecules"
 import { retrieveCustomer } from "@/lib/data/customer"
 import { OrdersPagination } from "@/components/sections"
 import { isEmpty } from "lodash"
@@ -23,21 +22,15 @@ export default async function UserPage({
   // Early check for empty orders to prevent errors when processing
   if (isEmpty(orders)) {
     return (
-      <main className="container">
-        <div className="grid grid-cols-1 md:grid-cols-4 mt-6 gap-5 md:gap-8">
-          <UserNavigation />
-          <div className="md:col-span-3 space-y-8">
-            <h1 className="heading-md uppercase">Zamówienia </h1>
-            <div className="text-center">
-              <h3 className="heading-lg text-primary uppercase">Brak zamówień</h3>
-              <p className="text-lg text-secondary mt-2 font-instrument-sans">
-                Nie dokonałeś jeszcze żadnego zamówienia. Po dokonaniu zamówienia
-                pojawi się tutaj.
-              </p>
-            </div>
-          </div>
+      <UserPageLayout title="Zamówienia">
+        <div className="text-center">
+          <h3 className="heading-lg text-primary uppercase">Brak zamówień</h3>
+          <p className="text-lg text-secondary mt-2 font-instrument-sans">
+            Nie dokonałeś jeszcze żadnego zamówienia. Po dokonaniu zamówienia
+            pojawi się tutaj.
+          </p>
         </div>
-      </main>
+      </UserPageLayout>
     )
   }
 
@@ -78,40 +71,34 @@ export default async function UserPage({
   const processedOrders = orderSets.slice(offset, offset + LIMIT)
 
   return (
-    <main className="container">
-      <div className="grid grid-cols-1 md:grid-cols-4 mt-6 gap-5 md:gap-8">
-        <UserNavigation />
-        <div className="md:col-span-3 space-y-8">
-          <h1 className="heading-md uppercase font-instrument-serif">Zamówienia </h1>
-          {isEmpty(orders) ? (
-            <div className="text-center">
-              <h3 className="heading-lg text-primary uppercase font-instrument-serif">Brak zamówień</h3>
-              <p className="text-lg text-secondary mt-2">
-                Nie dokonałeś jeszcze żadnego zamówienia. Po dokonaniu zamówienia
-                pojawi się tutaj.
-              </p>
-            </div>
-          ) : (
-            <>
-              <div className="w-full max-w-full">
-                {processedOrders.map((orderSet) => (
-                  <ParcelAccordion
-                    key={orderSet.id}
-                    orderId={orderSet.id}
-                    orderDisplayId={`#${orderSet.display_id}`}
-                    createdAt={orderSet.created_at}
-                    total={orderSet.total}
-                    items={orderSet.orders.flatMap(order => order.items || [])}
-                    currency_code={orderSet.currency_code}
-                  />
-                ))}
-              </div>
-              {/* TODO - pagination */}
-              <OrdersPagination pages={pages} />
-            </>
-          )}
+    <UserPageLayout title="Zamówienia">
+      {isEmpty(orders) ? (
+        <div className="text-center">
+          <h3 className="heading-lg text-primary uppercase font-instrument-serif">Brak zamówień</h3>
+          <p className="text-lg text-secondary mt-2">
+            Nie dokonałeś jeszcze żadnego zamówienia. Po dokonaniu zamówienia
+            pojawi się tutaj.
+          </p>
         </div>
-      </div>
-    </main>
+      ) : (
+        <>
+          <div className="w-full max-w-full">
+            {processedOrders.map((orderSet) => (
+              <ParcelAccordion
+                key={orderSet.id}
+                orderId={orderSet.id}
+                orderDisplayId={`#${orderSet.display_id}`}
+                createdAt={orderSet.created_at}
+                total={orderSet.total}
+                items={orderSet.orders.flatMap(order => order.items || [])}
+                currency_code={orderSet.currency_code}
+              />
+            ))}
+          </div>
+          {/* TODO - pagination */}
+          <OrdersPagination pages={pages} />
+        </>
+      )}
+    </UserPageLayout>
   )
 }

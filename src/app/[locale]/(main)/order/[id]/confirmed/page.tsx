@@ -141,7 +141,6 @@ async function OrderConfirmedContent({
   params: { id: string; locale?: string } 
 }) {
   try {
-    console.log('Loading order confirmation for ID:', params.id)
     
     // Retrieve the order with enhanced error handling
     const order = await retrieveOrder(params.id).catch((error) => {
@@ -150,7 +149,6 @@ async function OrderConfirmedContent({
     })
 
     if (!order) {
-      console.log('Order not found or failed to retrieve:', params.id)
       
       // Show a more user-friendly error instead of 404
       return (
@@ -161,24 +159,12 @@ async function OrderConfirmedContent({
       )
     }
 
-    console.log('Order loaded successfully:', {
-      id: order.id,
-      display_id: order.display_id,
-      status: order.status,
-      payment_status: order.payment_status,
-      items_count: order.items?.length || 0,
-      is_order_set: order.is_order_set || params.id.startsWith('ordset_')
-    })
 
     // Check if this is an order set (marketplace order)
     const isOrderSet = order.is_order_set || params.id.startsWith('ordset_')
     
-    if (isOrderSet) {
-      console.log('Processing order set confirmation')
-    }
-
     return (
-      <div className="container">
+      <div className=" bg-primary">
         <OrderConfirmedSection 
           order={order} 
           locale={params.locale}

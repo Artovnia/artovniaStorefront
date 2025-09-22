@@ -103,17 +103,11 @@ export const SingleOrderReturn = ({
     
     // Handle null, undefined, or empty reason_id (database issue)
     if (!reasonId || reasonId === null || reasonId === undefined || reasonId === '') {
-      console.warn('Return reason_id is null/empty - this indicates a data creation issue:', {
-        lineItemId: lineItem?.id,
-        returnRequestId: item?.id,
-        orderId: item?.order?.id
-      });
       return "Powód nie został określony"; // More specific message for null reason_id
     }
     
     // Handle case when return reasons API failed to load
     if (!returnReasons || returnReasons.length === 0) {
-      console.warn('Return reasons not loaded - API may have failed');
       return "Powód zwrotu niedostępny"; // When return reasons API failed
     }
     
@@ -124,10 +118,6 @@ export const SingleOrderReturn = ({
     }
     
     // If reason_id exists but no matching reason found (orphaned reason_id)
-    console.warn('Reason ID exists but no matching reason found:', {
-      reasonId,
-      availableReasons: returnReasons.map(r => r.id)
-    });
     return `Powód nieznany (ID: ${reasonId})`;
   };
 
@@ -183,92 +173,109 @@ export const SingleOrderReturn = ({
   // useEffect was moved to the top level
 
   // Add null checking for item.order and its items
-  // TEMPORARY: Show all order items since line_items is empty
-  const filteredItems = item.order?.items || []
+  // Filter to show only items that are being returned (matching line_items)
+  const filteredItems = item.order?.items?.filter((orderItem: any) =>
+    item.line_items?.some(
+      (lineItem: any) => lineItem?.line_item_id === orderItem?.id
+    )
+  ) || []
   
-  // Original filtering logic (commented out until line_items are fixed):
-  // const filteredItems = item.order?.items?.filter((orderItem: any) =>
-  //   item.line_items?.some(
-  //     (lineItem: any) => lineItem?.line_item_id === orderItem?.id
-  //   )
-  // ) || []
+  // Fallback: If no filtered items found but we have order items, show all (for backwards compatibility)
+  const itemsToShow = filteredItems.length > 0 ? filteredItems : (item.order?.items || [])
 
 
 
-  const currency_code = item?.order?.currency_code || "usd"
+  // Fix currency code fetching - use comprehensive fallback chain like OrderTotals
+  const currency_code = item?.order?.payment_collection?.currency_code || 
+                       item?.order?.currency_code || 
+                       item?.payment_collection?.currency_code ||
+                       'PLN'
 
   // CALCULATE TOTALS - Handle both cases: with line_items and without
   let itemsTotal = 0;
-  
-  if (item?.line_items && item.line_items.length > 0) {
-    // 1. Calculate the sum of returned products (from line items) with null checking
+
+  // Priority 1: Use line_items for accurate calculation (preferred method)
+  if (item.line_items && item.line_items.length > 0) {
     itemsTotal = item.line_items.reduce((acc: number, lineItem: any) => {
-      // Check if we have valid line item
-      if (!lineItem) return acc;
-      
       // Find the corresponding order item to get the unit price
-      const orderItem = item?.order?.items?.find((oi: any) => oi?.id === lineItem?.line_item_id);
-      if (!orderItem) return acc;
-      
-      // Multiply unit price by quantity being returned (with null checks)
-      const unitPrice = orderItem?.unit_price || 0;
-      const quantity = lineItem?.quantity || 0;
-      return acc + (unitPrice * quantity);
+      const orderItem = item.order?.items?.find((oi: any) => oi.id === lineItem.line_item_id);
+      if (orderItem) {
+        const unitPrice = orderItem.unit_price || 0;
+        const quantity = lineItem.quantity || 1;
+        return acc + (unitPrice * quantity);
+      }
+      return acc;
     }, 0) || 0;
   } else {
-    // FALLBACK: When line_items is empty, calculate total from all order items
-    // This is temporary until line_items backend issue is fixed
-    itemsTotal = filteredItems.reduce((acc: number, orderItem: any) => {
+    // FALLBACK: When line_items is empty, calculate total from filtered items
+    itemsTotal = itemsToShow.reduce((acc: number, orderItem: any) => {
       const unitPrice = orderItem?.unit_price || 0;
       const quantity = orderItem?.quantity || 1; // Default to 1 if quantity not available
       return acc + (unitPrice * quantity);
     }, 0) || 0;
   }
   
-  // 2. Calculate shipping cost - prioritize order.shipping_total if available
-  const orderTotal = item?.order?.total || 0;
-  const orderShippingTotal = item?.order?.shipping_total;
-  const itemsOnlyTotal = filteredItems.reduce((acc: number, orderItem: any) => {
-    const unitPrice = orderItem?.unit_price || 0;
-    const quantity = orderItem?.quantity || 1;
-    return acc + (unitPrice * quantity);
-  }, 0);
+  // 2. Calculate shipping costs - separate original shipping and return shipping
+ 
   
-  let shippingCost = 0;
+  // Original shipping cost (what customer paid when ordering) - need to separate from return costs
+  let originalShippingCost = 0;
+  let returnShippingFromMethods = 0;
   
-  // Priority 1: Use order.shipping_total if it exists and is a valid number
-  if (orderShippingTotal !== null && orderShippingTotal !== undefined && !isNaN(orderShippingTotal)) {
-    shippingCost = Number(orderShippingTotal);
+  if (item?.order?.shipping_methods?.length > 0) {
+    // Analyze each shipping method to separate delivery vs return costs
+    item.order.shipping_methods.forEach((method: any, index: number) => {
+      const methodCost = method.amount || method.price || method.total || 0;
+     
+      // Identify return shipping methods by return_id field (most reliable)
+      const hasReturnId = method.detail?.return_id || method.return_id;
+      
+      if (hasReturnId) {
+        returnShippingFromMethods += methodCost;
+      } else {
+        originalShippingCost += methodCost;
+      }
+    });
+  } else {
+    // Fallback to shipping_total if no methods available
+    originalShippingCost = item?.order?.shipping_total || 
+                          item?.order?.shipping_subtotal || 
+                          item?.order?.delivery_total || 
+                          item?.order?.delivery_cost || 0
   }
-  // Priority 2: Calculate from order total vs items total difference
-  else if (orderTotal > itemsOnlyTotal) {
-    shippingCost = orderTotal - itemsOnlyTotal;
-  }
-  // Priority 3: If order total < items total, check if there are shipping methods
-  else if (orderTotal < itemsOnlyTotal) {
-    // Check if there are shipping methods that might indicate shipping cost
-    const hasShippingMethods = item?.order?.shipping_methods && item.order.shipping_methods.length > 0;
-    if (hasShippingMethods) {
-      // Try to get shipping cost from shipping methods
-      const shippingMethodsCost = item.order.shipping_methods.reduce((acc: number, method: any) => {
-        return acc + (Number(method?.amount) || 0);
-      }, 0);
-      if (shippingMethodsCost > 0) {
-        shippingCost = shippingMethodsCost;
+  
+  // Return shipping cost (what customer pays to return items)
+  let returnShippingCost = 0;
+  
+  // Priority 1: Use return shipping found in shipping methods
+  if (returnShippingFromMethods > 0) {
+    returnShippingCost = returnShippingFromMethods;
+  } else {
+    // Priority 2: Check return-specific fields
+    const returnShippingFields = item?.return_shipping_cost || item?.shipping_cost || item?.return_shipping_total || 0;
+    
+    if (returnShippingFields > 0) {
+      returnShippingCost = returnShippingFields;
+    } else {
+      // Priority 3: Check if there are return shipping methods specifically
+      if (item?.return_shipping_methods?.length > 0) {
+        returnShippingCost = item.return_shipping_methods.reduce((shippingAcc: number, method: any) => {
+          const methodCost = method.amount || method.price || method.total || 0;
+          return shippingAcc + methodCost;
+        }, 0);
+      } else {
+        returnShippingCost = 0;
       }
     }
-    // If no shipping methods or cost found, assume 0 (discounts applied)
   }
   
-
-  
-  // 3. Calculate final total - use itemsTotal (returned items) + shipping cost
-  // Use Number() to force numeric values
+  // 3. Calculate final total - product refund + original shipping cost (customer gets back what they paid)
+  // Return shipping cost is NOT included in refund total (customer pays separately if applicable)
   const subtotal = Number(itemsTotal) || 0;
-  const shipping = Number(shippingCost) || 0;
-  const total = subtotal + shipping;
-  
-  
+  const originalShipping = Number(originalShippingCost) || 0;
+  const returnShipping = Number(returnShippingCost) || 0;
+  const total = subtotal + originalShipping; // Refund = items + original shipping
+
 
   // Map status to appropriate step in our 3-step progress bar
   let currentStep = 0 // Default to first step (pending)
@@ -287,7 +294,7 @@ export const SingleOrderReturn = ({
   return (
     <>
       <Card className="bg-secondary p-4 flex justify-between mt-8 border border-[#3B3634]">
-        <Heading level="h2" className="font-instrument-sans">Zamówienie: #{item.order.display_id}</Heading>
+        <Heading level="h2" className="font-instrument-sans">Zamówienie: #{item?.order?.display_id || 'N/A'}</Heading>
         <div className="flex flex-col gap-2 items-center ">
           <p className="label-sm text-secondary">
             Data prośby zwrotu:{" "}
@@ -336,13 +343,14 @@ export const SingleOrderReturn = ({
               <>
                 <div className="flex items-center gap-2">
                   <Avatar
-                    src={item.order.seller.photo || item.order.seller.avatar || "/talkjs-placeholder.jpg"}
+                    src={item.order.seller.photo || item.order.seller.avatar || item.order.seller.image || item.order.seller.profile_picture || "/talkjs-placeholder.jpg"}
                   />
-                  <p className="label-lg text-primary">{item.order.seller.name}</p>
+                  <p className="label-lg text-primary">{item.order.seller.name || item.order.seller.display_name || item.order.seller.business_name || 'Sprzedawca'}</p>
+                
                 </div>
                 <SellerMessageTab
                   seller_id={item.order.seller.id}
-                  seller_name={item.order.seller.name}
+                  seller_name={item.order.seller.name || item.order.seller.display_name || 'Sprzedawca'}
                   isAuthenticated={user !== null}
                 />
               </>
@@ -356,7 +364,7 @@ export const SingleOrderReturn = ({
           <Divider />
           <div className="p-4 flex justify-between w-full">
             <div className="flex flex-col gap-4 w-full">
-              {filteredItems.map((orderItem: any) => {
+              {itemsToShow.map((orderItem: any) => {
                 // Find the corresponding line item with the return reason, with null checking
                 const returnLineItem = item?.line_items?.find(
                   (li: any) => li?.line_item_id === orderItem?.id
@@ -396,27 +404,17 @@ export const SingleOrderReturn = ({
                     <p className="label-md !font-semibold text-primary">
                       <Badge className="bg-primary text-primary border border-[#3B3634] rounded-sm">
                         {(() => {
-                          console.log('Badge rendering debug:', {
-                            hasReturnLineItem: !!returnLineItem,
-                            returnLineItem: returnLineItem,
-                            orderItemId: orderItem?.id,
-                            allLineItems: item?.line_items || [],
-                            lineItemsCount: item?.line_items?.length || 0
-                          });
-                          
+                         
                           if (returnLineItem) {
-                            console.log('Calling getReasonLabel with:', returnLineItem);
                             const result = getReasonLabel(returnLineItem);
-                            console.log('getReasonLabel returned:', result);
                             return result;
                           } else {
-                            console.log('No returnLineItem found, showing fallback');
                             return 'Powód zwrotu niedostępny';
                           }
                         })()}
                       </Badge>
                     </p>
-                    <p className="label-md !font-semibold text-primary">
+                    <p className="label-sm !font-semibold text-primary">
                       {convertToLocale({
                         amount: orderItem.unit_price,
                         currency_code,
@@ -428,31 +426,29 @@ export const SingleOrderReturn = ({
             </div>
           </div>
           <Divider />
-          {/* Totals Section - Exact copy from OrderTotals component */}
-          <div className="p-4 flex justify-between">
-            <p className="text-secondary label-md mb-2">Podsumowanie:</p>
-            <span className="font-instrument-sans heading-md">
+          <div className="p-4 flex justify-between  ">
+            <p className="text-secondary label-sm">Koszt dostawy:</p>
+            <span className="font-instrument-sans label-sm">
               {convertToLocale({
-                amount: itemsTotal,
+                amount: originalShipping,
+                currency_code,
+              })}
+            </span>
+          </div>
+          <div className="p-4 flex justify-between  ">
+            <p className="text-secondary label-sm">Koszt zwrotu:</p>
+            <span className="font-instrument-sans label-sm">
+              {convertToLocale({
+                amount: returnShipping,
                 currency_code,
               })}
             </span>
           </div>
           
-          <div className="p-4 flex justify-between border-t border-ui-border-base">
-            <p className="text-secondary label-md">Dostawa:</p>
-            <span className="font-instrument-sans heading-md">
-              {convertToLocale({
-                amount: shippingCost,
-                currency_code,
-              })}
-            </span>
-          </div>
+          <Divider className="mt-4" />
           
-          <Divider className="my-4" />
-          
-          <div className="p-4 flex justify-between items-center">
-            <p className="text-secondary label-md">Suma:</p>
+          <div className="p-4 flex justify-between items-center border-t border-[#3B3634]">
+            <p className="text-secondary label-md">Suma zwrotu:</p>
             <span className="font-instrument-sans heading-md">
               {convertToLocale({
                 amount: total,

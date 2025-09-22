@@ -28,6 +28,8 @@ import { CartDropdownItem } from "./CartDropdownItem/CartDropdownItem"
 import { LoginForm } from "./LoginForm/LoginForm"
 import { RegisterForm } from "./RegisterForm/RegisterForm"
 import { UserNavigation } from "./UserNavigation/UserNavigation"
+import { MobileUserNavigation } from "./MobileUserNavigation/MobileUserNavigation"
+import { UserPageLayout } from "./UserPageLayout/UserPageLayout"
 import NewsletterForm from "./NewsletterForm/NewsletterForm"
 import { ParcelAccordion } from "./ParcelAccordion/ParcelAccordion"
 import { AddressForm } from "./AddressForm/AddressForm"
@@ -73,6 +75,8 @@ export {
   LoginForm,
   RegisterForm,
   UserNavigation,
+  MobileUserNavigation,
+  UserPageLayout,
   ParcelAccordion,
   AddressForm,
   ReviewForm,

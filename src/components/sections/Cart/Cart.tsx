@@ -1,7 +1,7 @@
 "use client"
 
 import ErrorMessage from "@/components/molecules/ErrorMessage/ErrorMessage"
-import { useCart } from "@/lib/context/CartContext"
+import { useCart } from "@/components/context/CartContext"
 import { CartItems, CartSummary } from "@/components/organisms"
 import CartPromotionCode from "../CartReview/CartPromotionCode"
 import { CartClient } from "./CartClient"
@@ -57,7 +57,7 @@ const Cart: React.FC = () => {
       <div className="col-span-12 flex flex-col items-center justify-center min-h-[300px] p-8 text-center">
         <h2 className="text-[#3B3634] font-instrument-serif text-2xl mb-4">Twój koszyk jest pusty</h2>
         <p className="text-gray-500 mb-6">Dodaj produkty do koszyka aby kontynuować zakupy</p>
-        <Link href="/products" className="inline-block px-6 py-3 bg-[#3B3634] text-white rounded hover:bg-[#2a2624] transition-colors">
+        <Link href="/categories" className="inline-block px-6 py-3 bg-[#3B3634] text-white rounded hover:bg-[#2a2624] transition-colors">
           Przeglądaj produkty
         </Link>
       </div>

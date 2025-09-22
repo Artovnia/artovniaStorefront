@@ -15,7 +15,7 @@ export const ReviewsToWrite = ({ reviews }: { reviews: Review[] }) => {
   return (
     <>
       <div className="md:col-span-3 space-y-8">
-        <h1 className="heading-md uppercase">Reviews</h1>
+        <h1 className="heading-md uppercase">Recenzje</h1>
         <div className="flex gap-4">
           {navigation.map((item) => (
             <NavigationItem
@@ -32,10 +32,10 @@ export const ReviewsToWrite = ({ reviews }: { reviews: Review[] }) => {
           <Card>
             <div className="text-center py-6">
               <h3 className="heading-lg text-primary uppercase">
-                No reviews to write
+                Brak recenzji do napisania
               </h3>
               <p className="text-lg text-secondary mt-2">
-                You currently have no one to review.
+                Obecnie nie masz nikogo do recenzowania.
               </p>
             </div>
           </Card>
@@ -57,15 +57,15 @@ export const ReviewsToWrite = ({ reviews }: { reviews: Review[] }) => {
               </div>
               <div className="col-span-5 flex flex-col lg:flex-row justify-between lg:items-center gap-4">
                 <p className="text-md text-primary">
-                  Write a review for this seller.
+                  Napisz recenzję dla tego sprzedawcy.
                   <br />
-                  Your feedback helps other buyers make informed decisions.
+                  Twoje opinie pomagają innym kupującym podjąć świadomy zakup.
                 </p>
                 <Button
                   onClick={() => setShowForm(review.seller?.id || "")}
                   className="w-fit uppercase"
                 >
-                  Write review
+                  Napisz recenzję
                 </Button>
               </div>
             </Card>
@@ -73,7 +73,7 @@ export const ReviewsToWrite = ({ reviews }: { reviews: Review[] }) => {
         )}
       </div>
       {showForm && (
-        <Modal heading="Write review" onClose={() => setShowForm("")}>
+        <Modal heading="Napisz recenzję" onClose={() => setShowForm("")}>
           <ReviewForm sellerId={showForm} handleClose={() => setShowForm("")} />
         </Modal>
       )}

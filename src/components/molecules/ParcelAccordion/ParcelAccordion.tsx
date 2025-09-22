@@ -64,8 +64,8 @@ export const ParcelAccordion = ({
         </div>
         <div className="col-span-1 flex justify-end items-center gap-4">
           <Link href={`/user/orders/${orderId}`}>
-            <Button variant="tonal" onClick={(e) => e.stopPropagation()}>
-              <span className="label-md text-primary">Zobacz zamówienie</span>
+            <Button variant="filled" onClick={(e) => e.stopPropagation()}>
+              <span className="label-md text-white ">Zobacz zamówienie</span>
             </Button>
           </Link>
           <CollapseIcon

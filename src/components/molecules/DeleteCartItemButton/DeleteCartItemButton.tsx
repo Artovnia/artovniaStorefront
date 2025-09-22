@@ -2,7 +2,7 @@
 
 import { Button } from "@/components/atoms"
 import { BinIcon } from "@/icons"
-import { useCart } from "@/lib/context/CartContext"
+import { useCart } from "@/components/context/CartContext"
 import { useState } from "react"
 
 export const DeleteCartItemButton = ({ 

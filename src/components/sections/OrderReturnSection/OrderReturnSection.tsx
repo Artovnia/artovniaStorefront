@@ -42,7 +42,6 @@ export const OrderReturnSection = ({
 
   // Updated to fix message channel error and checkbox behavior
   const handleSelectItem = (item: any, reason_id: string = "") => {
-    console.log('Selecting item:', item.id, 'with reason:', reason_id)
     setError(false)
     
     // Check if item is already in selectedItems
@@ -51,7 +50,6 @@ export const OrderReturnSection = ({
     
     // If we're toggling selection (no reason provided) and item is selected, remove it
     if (!reason_id && isSelected) {
-      console.log('Removing item from selection')
       const newSelectedItems = [...selectedItems]
       newSelectedItems.splice(existingItemIndex, 1)
       setSelectedItems(newSelectedItems)
@@ -60,7 +58,6 @@ export const OrderReturnSection = ({
     
     // If toggling selection and item is not selected, add it with empty reason
     if (!reason_id && !isSelected) {
-      console.log('Adding item to selection with empty reason')
       setSelectedItems([
         ...selectedItems,
         { line_item_id: item.id, quantity: item.quantity, reason_id: "" },
@@ -70,7 +67,6 @@ export const OrderReturnSection = ({
     
     // If reason is provided and item is selected, update its reason
     if (reason_id && isSelected) {
-      console.log('Updating reason for selected item')
       const newSelectedItems = selectedItems.map(i => 
         i.line_item_id === item.id ? { ...i, reason_id } : i
       )
@@ -80,7 +76,6 @@ export const OrderReturnSection = ({
     
     // If reason is provided and item is not selected, add it with the reason
     if (reason_id && !isSelected) {
-      console.log('Adding item to selection with specific reason')
       setSelectedItems([
         ...selectedItems,
         { line_item_id: item.id, quantity: item.quantity, reason_id },
@@ -107,7 +102,7 @@ export const OrderReturnSection = ({
   }
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-4 mt-6 gap-5 md:gap-8">
+    <div className="grid grid-cols-1 xl:grid-cols-4 mt-6 gap-5 md:gap-8">
       <UserNavigation />
       <div className="md:col-span-3 mb-8 md:mb-0">
         {tab === 0 ? (
@@ -132,7 +127,7 @@ export const OrderReturnSection = ({
         )}
         <div className="grid grid-cols-1 md:grid-cols-8 gap-4 mt-8">
           <div className="col-span-4">
-            <div className="mb-4">
+            <div className="mb-4 font-instrument-sans">
               <StepProgressBar
                 steps={["Wybierz przedmioty do zwrotu", "Wybierz metodę zwrotu"]}
                 currentStep={tab}

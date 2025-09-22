@@ -1,6 +1,6 @@
 "use client"
 
-import React, { createContext, useContext, useReducer, useCallback, useEffect, useMemo } from 'react'
+import React, { createContext, useContext, useReducer, useCallback, useEffect, useMemo, useRef } from 'react'
 import { HttpTypes } from '@medusajs/types'
 import { retrieveCart, retrieveCartForAddress, retrieveCartForShipping, retrieveCartForPayment, addToCart, updateLineItem, deleteLineItem, setAddresses, setShippingMethod, selectPaymentSession, initiatePaymentSession } from '@/lib/data/cart'
 import { invalidateCheckoutCache } from "@/lib/utils/storefront-cache"
@@ -104,47 +104,69 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children, initialCar
     lastUpdated: Date.now()
   })
 
+  // CRITICAL FIX: Add operation locking to prevent race conditions
+  const operationInProgress = useRef(false)
+  const refreshCartRef = useRef<Promise<void> | null>(null)
+  
   // Optimized cart refresh with context-aware data loading
   const refreshCart = useCallback(async (context?: 'address' | 'shipping' | 'payment') => {
     if (state.isLoading) return // Prevent concurrent refreshes
     
-    dispatch({ type: 'SET_LOADING', payload: true })
-    dispatch({ type: 'SET_ERROR', payload: null })
-    
-    try {
-      let updatedCart
-      
-      // Use specialized cart functions based on context to reduce data transfer
-      // Default to general cart retrieval for backward compatibility
-      switch (context) {
-        case 'address':
-          updatedCart = await retrieveCartForAddress()
-          break
-        case 'shipping':
-          updatedCart = await retrieveCartForShipping()
-          break
-        case 'payment':
-          updatedCart = await retrieveCartForPayment()
-          break
-        default:
-          // Use general cart retrieval for cart operations (add/update/remove items)
-          updatedCart = await retrieveCart()
-      }
-      
-      dispatch({ type: 'SET_CART', payload: updatedCart as ExtendedCart | null })
-    } catch (error) {
-      console.error('Error refreshing cart:', error)
-      dispatch({ type: 'SET_ERROR', payload: error instanceof Error ? error.message : 'Failed to refresh cart' })
-    } finally {
-      dispatch({ type: 'SET_LOADING', payload: false })
+    // CRITICAL FIX: Deduplicate simultaneous refresh requests
+    if (refreshCartRef.current) {
+      return refreshCartRef.current
     }
+    
+    const refreshPromise = (async () => {
+      try {
+        dispatch({ type: 'SET_LOADING', payload: true })
+        dispatch({ type: 'SET_ERROR', payload: null })
+        
+        let updatedCart
+        
+        // Use specialized cart functions based on context to reduce data transfer
+        // Default to general cart retrieval for backward compatibility
+        switch (context) {
+          case 'address':
+            updatedCart = await retrieveCartForAddress()
+            break
+          case 'shipping':
+            updatedCart = await retrieveCartForShipping()
+            break
+          case 'payment':
+            updatedCart = await retrieveCartForPayment()
+            break
+          default:
+            // Use general cart retrieval for cart operations (add/update/remove items)
+            updatedCart = await retrieveCart()
+        }
+        
+        dispatch({ type: 'SET_CART', payload: updatedCart as ExtendedCart | null })
+      } catch (error) {
+        console.error('Error refreshing cart:', error)
+        dispatch({ type: 'SET_ERROR', payload: error instanceof Error ? error.message : 'Failed to refresh cart' })
+      } finally {
+        dispatch({ type: 'SET_LOADING', payload: false })
+        refreshCartRef.current = null
+      }
+    })()
+    
+    refreshCartRef.current = refreshPromise
+    return refreshPromise
   }, [state.isLoading])
 
-  // Optimistic updates for better UX
+  // CRITICAL FIX: Add item with operation locking to prevent race conditions
   const addItem = useCallback(async (variantId: string, quantity: number, metadata?: any) => {
-    dispatch({ type: 'SET_ERROR', payload: null })
+    if (operationInProgress.current) {
+      console.warn('Cart operation already in progress, skipping add item')
+      return
+    }
+    
+    operationInProgress.current = true
     
     try {
+      dispatch({ type: 'SET_ERROR', payload: null })
+      
       const updatedCart = await addToCart({
         variantId,
         quantity,
@@ -153,8 +175,10 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children, initialCar
       
       if (updatedCart) {
         dispatch({ type: 'SET_CART', payload: updatedCart })
-        // Invalidate cache for fresh data on next request
-        invalidateCheckoutCache(updatedCart.id)
+        // CRITICAL FIX: Force immediate refresh to ensure UI updates
+        setTimeout(() => {
+          dispatch({ type: 'SET_CART', payload: updatedCart })
+        }, 50)
       } else {
         // If no cart returned, refresh to get latest state
         await refreshCart()
@@ -162,6 +186,10 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children, initialCar
     } catch (error) {
       console.error('Error adding item to cart:', error)
       dispatch({ type: 'SET_ERROR', payload: error instanceof Error ? error.message : 'Failed to add item' })
+      // CRITICAL FIX: Refresh cart on error to get true server state
+      await refreshCart()
+    } finally {
+      operationInProgress.current = false
     }
   }, [refreshCart])
 
@@ -204,30 +232,36 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children, initialCar
   const removeItem = useCallback(async (itemId: string) => {
     if (!state.cart) return
     
-    dispatch({ type: 'SET_ERROR', payload: null })
-    
-    // Optimistic update
-    const optimisticCart = {
-      ...state.cart,
-      items: state.cart.items?.filter(item => item.id !== itemId)
+    if (operationInProgress.current) {
+      console.warn('Cart operation already in progress, skipping remove item')
+      return
     }
-    dispatch({ type: 'UPDATE_CART', payload: optimisticCart })
+    
+    operationInProgress.current = true
     
     try {
+      dispatch({ type: 'SET_ERROR', payload: null })
+      
+      // CRITICAL FIX: No optimistic update for remove - wait for server confirmation
+      // This prevents trying to delete items that don't exist on server
+      
       const updatedCart = await deleteLineItem(itemId)
       
       if (updatedCart) {
         dispatch({ type: 'SET_CART', payload: updatedCart as ExtendedCart })
-        invalidateCheckoutCache(updatedCart.id)
+        console.log(`✅ Cart updated after removing item ${itemId}`)
       } else {
         // If no cart returned, refresh to get latest state
+        console.warn(`⚠️ No cart returned after deleting item ${itemId}, refreshing...`)
         await refreshCart()
       }
     } catch (error) {
       console.error('Error removing cart item:', error)
       dispatch({ type: 'SET_ERROR', payload: error instanceof Error ? error.message : 'Failed to remove item' })
-      // Revert optimistic update
+      // CRITICAL FIX: Always refresh on error to get true server state
       await refreshCart()
+    } finally {
+      operationInProgress.current = false
     }
   }, [state.cart, refreshCart])
 

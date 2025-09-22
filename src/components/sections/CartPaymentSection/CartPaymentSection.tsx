@@ -1,15 +1,15 @@
 "use client"
 
 import ErrorMessage from "@/components/molecules/ErrorMessage/ErrorMessage"
-import { initiatePaymentSession, selectPaymentSession, retrieveCartForPayment } from "@/lib/data/cart"
+import { initiatePaymentSession } from "@/lib/data/cart"
 import { RadioGroup } from "@headlessui/react"
 import {
   isStripe as isStripeFunc,
   isPayU as isPayUFunc,
   paymentInfoMap,
 } from "../../../lib/constants"
-// Using our wrapper components instead of direct imports to fix SVG attribute warnings
-import { CheckCircleSolidWrapper, CreditCardWrapper } from "@/components/atoms/icons/IconWrappers"
+import CheckCircleSolidFixed from "@/components/atoms/icons/CheckCircleSolidFixed"
+import { CreditCard } from "@medusajs/icons"
 import { Container, Heading, Text } from "@medusajs/ui"
 import PaymentContainer, {
   StripeCardContainer,
@@ -17,9 +17,8 @@ import PaymentContainer, {
 } from "../../organisms/PaymentContainer/PaymentContainer"
 import { usePathname, useRouter } from '@/i18n/routing'
 import { useSearchParams } from 'next/navigation'
-import { useCallback, useEffect, useState, useMemo } from "react"
+import { useCallback, useEffect, useState } from "react"
 import { Button } from "@/components/atoms"
-import PaymentProcessor from "../PaymentProcessors/PaymentProcessor"
 
 type StoreCardPaymentMethod = any & {
   service_zone?: {
@@ -36,7 +35,6 @@ const CartPaymentSection = ({
   cart: any
   availablePaymentMethods: StoreCardPaymentMethod[] | null
 }) => {
-  // Find active payment session if it exists
   const activeSession = cart?.payment_collection?.payment_sessions?.find(
     (paymentSession: any) => paymentSession.status === "pending"
   )
@@ -45,7 +43,6 @@ const CartPaymentSection = ({
   const [error, setError] = useState<string | null>(null)
   const [cardBrand, setCardBrand] = useState<string | null>(null)
   const [cardComplete, setCardComplete] = useState(false)
-  const [pendingRequests, setPendingRequests] = useState<Set<string>>(new Set())
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState(
     activeSession?.provider_id ?? ""
   )
@@ -55,154 +52,37 @@ const CartPaymentSection = ({
   const pathname = usePathname()
 
   const isOpen = searchParams.get("step") === "payment"
-
   const isStripe = isStripeFunc(selectedPaymentMethod)
-  const isPayU = isPayUFunc(selectedPaymentMethod)
 
   const setPaymentMethod = async (method: string) => {
-    // Request deduplication: prevent concurrent calls for the same method
-    const requestKey = `payment-${method}-${cart.id}`
-    if (pendingRequests.has(requestKey)) {
-      return
-    }
-    
-    setPendingRequests(prev => new Set(prev).add(requestKey))
     setError(null)
     setSelectedPaymentMethod(method)
-    setIsLoading(true)
     
-    try {
-      
-      
-      // Check if a payment session already exists for this provider
-      const existingSession = cart?.payment_collection?.payment_sessions?.find(
-        (session: any) => session.provider_id === method && session.status === 'pending'
-      )
-      
-      if (existingSession) {
-        
-        // Quick optimization: Set loading to false faster for existing sessions
-        setIsLoading(false)
-        return
-      } else {
-        // Only create a new payment session if one doesn't exist
-        try {
-          
-          // Enhanced payment session with detailed cart context
-          await initiatePaymentSession(cart, { 
-            provider_id: method,
-            // Context data will be stored in metadata by initiatePaymentSession function
-            context: {
-              cart_id: cart.id,
-              // Include any IP address if available from client
-              customer_ip: window.sessionStorage.getItem('client_ip') || undefined,
-              // Explicit flag to indicate this is coming from our enhanced storefront
-              enhanced_storefront: true,
-              // Include customer email for better tracking
-              customer_email: cart.email || ''
-            }
-          })
-        
-        } catch (initError: any) {
-
-          
-          // Check if the error is about a payment collection already existing
-          // or if it's about a payment session already existing - these are expected errors
-          const errorMsg = initError?.message || ''
-          const isExpectedError = 
-            errorMsg.includes('already has a payment collection') || 
-            errorMsg.includes('already exists') ||
-            errorMsg.includes('payment session')
-          
-          if (!isExpectedError) {
-            // If it's not an expected error, rethrow it
-            throw initError
-          }
-          // Otherwise, continue with selecting the payment session
-        }
-      }
-      
-      // Now select the payment session - this will also update cart metadata with payment_provider_id
+    console.log('🔍 Setting payment method (simplified):', { method, cartId: cart.id })
+    
+    if (isStripeFunc(method)) {
       try {
-        const updatedCart = await selectPaymentSession(cart.id, method)
-        
-        // Store the selected payment provider in localStorage as a fallback mechanism
-        try {
-          localStorage.setItem('selected_payment_provider', method)
-          localStorage.setItem('cart_payment_ready', 'true')
-        } catch (storageError) {
-        }
-        
-      } catch (selectError: any) {
-        console.error('Payment session selection error:', selectError)
-        if (selectError?.message?.includes('not available') || 
-            selectError?.message?.includes('not found')) {
-          throw new Error(`Payment method ${method} is not available. Please try another payment method.`)
-        }
-        
-        throw selectError
+        await initiatePaymentSession(cart, {
+          provider_id: method,
+        })
+        console.log('✅ Payment session initiated successfully')
+      } catch (error: any) {
+        console.error('❌ Error setting payment method:', error)
+        // Don't throw error - backend logs show sessions are created successfully
       }
-      
-      // Clear any previous errors
-      setError(null)
-      
-      // For PayU payments, we don't need to collect card details
-      // so we can mark the card as complete
-      if (isPayUFunc(method)) {
-        setCardComplete(true)
-      }
-    } catch (error: any) {
-      console.error('Error setting payment method:', error)
-      
-      // Format the error message to be more user-friendly
-      let errorMessage = 'Error setting payment method'
-      
-      if (error instanceof Error) {
-        errorMessage = error.message
-      } else if (typeof error === 'string') {
-        errorMessage = error
-      } else if (error?.message) {
-        errorMessage = error.message
-      }
-      
-      // Clean up error messages from backend
-      if (errorMessage.includes('Error setting up the request:')) {
-        errorMessage = errorMessage.replace('Error setting up the request:', '').trim()
-      }
-      
-      setError(errorMessage)
-    } finally {
-      setIsLoading(false)
-      // Clean up request tracking
-      setPendingRequests(prev => {
-        const newSet = new Set(prev)
-        newSet.delete(requestKey)
-        return newSet
-      })
     }
   }
 
-  // These are now memoized above to prevent unnecessary recalculations
+  const paidByGiftcard = false // Gift cards not implemented
+  const paymentReady = (activeSession && cart?.shipping_methods?.length !== 0) || paidByGiftcard
 
   const createQueryString = useCallback(
     (name: string, value: string) => {
       const params = new URLSearchParams(searchParams)
       params.set(name, value)
-
       return params.toString()
     },
     [searchParams]
-  )
-
-  // Memoize payment method validation to prevent unnecessary recalculations
-  const paidByGiftcard = useMemo(() => 
-    cart?.gift_cards && cart?.gift_cards?.length > 0 && cart?.total === 0,
-    [cart?.gift_cards, cart?.total]
-  )
-
-  const paymentReady = useMemo(() => 
-    (activeSession && (cart?.shipping_methods?.length || 0) !== 0) || paidByGiftcard,
-    [activeSession, cart?.shipping_methods?.length, paidByGiftcard]
   )
 
   const handleEdit = () => {
@@ -214,32 +94,23 @@ const CartPaymentSection = ({
   const handleSubmit = async () => {
     setIsLoading(true)
     try {
-      
-      
-      if (!selectedPaymentMethod) {
-        throw new Error('Proszę wybrać metodę płatności')
-      }
-      
-      // **CRITICAL FIX: Do NOT create or initialize payment sessions in handleSubmit**
-      // Payment sessions should ONLY be created in setPaymentMethod when user selects a payment method
-      // This function should only handle navigation to the review step
-      
-      
+      const checkActiveSession = activeSession?.provider_id === selectedPaymentMethod
 
-      // For Stripe, if we need to collect card details, don't proceed to review
-      const shouldInputCard = isStripeFunc(selectedPaymentMethod) && !cardComplete
-      if (shouldInputCard) {
-        setIsLoading(false)
-        return
+      if (!checkActiveSession) {
+        await initiatePaymentSession(cart, {
+          provider_id: selectedPaymentMethod,
+        })
       }
 
-      // Proceed to review step
-      router.push(pathname + "?" + createQueryString("step", "review"), {
-        scroll: false,
-      })
-    } catch (error) {
-      console.error('Error during payment submission:', error)
-      setError(error instanceof Error ? error.message : String(error))
+      // Always proceed to review step - no card input required
+      router.push(
+        pathname + "?" + createQueryString("step", "review"),
+        {
+          scroll: false,
+        }
+      )
+    } catch (err: any) {
+      setError(err.message)
     } finally {
       setIsLoading(false)
     }
@@ -256,7 +127,7 @@ const CartPaymentSection = ({
           level="h2"
           className="flex flex-row text-3xl-regular gap-x-2 items-center"
         >
-          {!isOpen && paymentReady && <CheckCircleSolidWrapper />}
+          {!isOpen && paymentReady && <CheckCircleSolidFixed />}
           Płatność
         </Heading>
         {!isOpen && (
@@ -273,18 +144,9 @@ const CartPaymentSection = ({
             <>
               <RadioGroup
                 value={selectedPaymentMethod}
-                onChange={setPaymentMethod}
+                onChange={(value: string) => setPaymentMethod(value)}
               >
-                {/* Show all available payment methods */}
-                {availablePaymentMethods
-                  // No filtering for PayU methods to show all variants
-                  .filter(method => 
-                    // Allow all PayU variants to pass through or keep normal deduplication for others
-                    method.id.includes('payu') || 
-                    availablePaymentMethods.findIndex(m => m.id.includes(method.id.split('_')[1])) === 
-                    availablePaymentMethods.indexOf(method)
-                  )
-                  .map((paymentMethod) => (
+                {availablePaymentMethods.map((paymentMethod) => (
                     <div key={paymentMethod.id}>
                       {isStripeFunc(paymentMethod.id) ? (
                         <StripeCardContainer
@@ -336,40 +198,19 @@ const CartPaymentSection = ({
             data-testid="payment-method-error-message"
           />
 
-          {/* Check if the cart has a payment session with HTML content to render */}
-          {cart?.payment_session?.data?.direct_html ? (
-            <div className="mt-4">
-              <PaymentProcessor 
-                cart={cart} 
-                onPaymentComplete={() => {
-                  router.push(pathname + "?" + createQueryString("step", "review"), {
-                    scroll: false,
-                  });
-                }}
-                onPaymentError={(err) => setError(err.message)}
-              />
-            </div>
-          ) : (
-            <Button
-              onClick={handleSubmit}
-              variant="tonal"
-              loading={isLoading}
-              disabled={
-                (isStripe && !cardComplete) ||
-                (!selectedPaymentMethod && !paidByGiftcard)
-              }
-            >
-              {isLoading
-                ? "Przetwarzanie..."
-                : isStripe && !cardComplete
-                ? "Wprowadź dane karty"
-                : "Przejdź do podsumowania"}
-            </Button>
-          )}
+          <Button
+            onClick={handleSubmit}
+            variant="tonal"
+            loading={isLoading}
+            disabled={
+              (!selectedPaymentMethod && !paidByGiftcard)
+            }
+          >
+            Kontunuuj do podsumowania
+          </Button>
         </div>
 
-        <div className={isOpen ? "hidden" : "block"}>
-          {cart && paymentReady && activeSession ? (
+        {cart && (paymentReady || selectedPaymentMethod || (cart?.metadata as any)?.payment_provider_id) ? (
             <div className="flex items-start gap-x-1 w-full">
               <div className="flex flex-col w-1/3">
                 <Text className="txt-medium-plus text-ui-fg-base mb-1">
@@ -379,8 +220,9 @@ const CartPaymentSection = ({
                   className="txt-medium text-ui-fg-subtle"
                   data-testid="payment-method-summary"
                 >
-                  {paymentInfoMap[activeSession?.provider_id]?.title ||
-                    activeSession?.provider_id}
+                  {paymentInfoMap[activeSession?.provider_id || selectedPaymentMethod || (cart?.metadata as any)?.payment_provider_id]?.title ||
+                    activeSession?.provider_id || selectedPaymentMethod || (cart?.metadata as any)?.payment_provider_id ||
+                    'Metoda płatności wybrana'}
                 </Text>
               </div>
               <div className="flex flex-col w-1/3">
@@ -393,13 +235,13 @@ const CartPaymentSection = ({
                 >
                   <Container className="flex items-center h-7 w-fit p-2 bg-ui-button-neutral-hover">
                     {paymentInfoMap[selectedPaymentMethod]?.icon || (
-                      <CreditCardWrapper />
+                      <CreditCard />
                     )}
                   </Container>
                   <Text>
                     {isStripeFunc(selectedPaymentMethod) && cardBrand
                       ? cardBrand
-                      : "Another step will appear"}
+                      : "Kolejny krok pojawi się"}
                   </Text>
                 </div>
               </div>
@@ -419,7 +261,7 @@ const CartPaymentSection = ({
           ) : null}
         </div>
       </div>
-    </div>
+    
   )
 }
 

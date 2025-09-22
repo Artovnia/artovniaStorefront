@@ -40,7 +40,7 @@ export const ReturnItemsTab = ({
                 {/* Added preventDefault to avoid message channel error */}
                 <div onClick={(e) => {
                   e.preventDefault()
-                  console.log('Checkbox clicked for item:', item.id)
+                 
                   handleSelectItem(item, "")
                 }}>
                   <Checkbox
@@ -98,14 +98,13 @@ export const ReturnItemsTab = ({
                           ?.reason_id || ""
                       }
                       onChange={(value) => {
-                        console.log('Return reason selected:', value)
                         handleSelectItem(item, value || "")  
                       }}
                     >
                       <div className="relative">
                         <ListboxButton
                           className={cn(
-                            "relative w-full flex justify-between items-center px-4 h-12 bg-component-secondary text-left cursor-default focus:outline-none border rounded-lg focus-visible:ring-2 focus-visible:ring-opacity-75 focus-visible:ring-white focus-visible:ring-offset-gray-300 focus-visible:ring-offset-2 focus-visible:border-gray-300 text-base-regular",
+                            "relative w-full flex justify-between items-center px-4 h-12 bg-component-secondary text-left cursor-default focus:outline-none border rounded-lg focus-visible:ring-2 focus-visible:ring-opacity-75 focus-visible:ring-white focus-visible:ring-offset-gray-300 focus-visible:ring-offset-2 focus-visible:border-gray-300 text-md",
                             error &&
                               !selectedItems.find((i) => i.line_item_id === item.id)
                                 ?.reason_id &&

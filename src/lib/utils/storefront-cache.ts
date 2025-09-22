@@ -90,110 +90,104 @@ export const CACHE_TTL = {
 } as const
 
 class StorefrontCache {
+  private connectionState: 'connecting' | 'ready' | 'error' = 'connecting'
+  
+  constructor() {
+    this.initializeConnection()
+  }
+
+  private initializeConnection() {
+    if (redis.status === 'ready') {
+      this.connectionState = 'ready'
+    } else {
+      redis.once('ready', () => {
+        this.connectionState = 'ready'
+        if (process.env.NODE_ENV === 'development') {
+          console.log('✅ Redis connection established')
+        }
+      })
+      redis.once('error', (error: any) => {
+        this.connectionState = 'error'
+        if (process.env.NODE_ENV === 'development') {
+          console.warn('❌ Redis connection failed:', error?.message || 'Unknown error')
+        }
+      })
+    }
+  }
+
   async get<T>(key: string): Promise<T | null> {
+    if (this.connectionState !== 'ready') {
+      return null
+    }
+    
     try {
-      // Allow both ready and connecting for rapid requests
-      if (redis.status !== 'ready' && redis.status !== 'connecting') {
-        console.warn(`Redis not ready (status: ${redis.status}), skipping get operation`)
-        return null
-      }
-      
-      // For connecting status, add small timeout to allow connection to complete
-      if (redis.status === 'connecting') {
-        await new Promise(resolve => setTimeout(resolve, 50))
-        if (redis.status !== 'ready') {
-          return null // Still not ready after brief wait
-        }
-      }
-      
-      const data = await redis.get(key)
-      return data ? JSON.parse(data) : null
+      const data = await Promise.race([
+        redis.get(key),
+        new Promise<null>((_, reject) => 
+          setTimeout(() => reject(new Error('Redis timeout')), 1000)
+        )
+      ])
+      return data ? JSON.parse(data as string) : null
     } catch (error) {
-      // Enhanced error handling for Redis connection issues
-      if (error instanceof Error) {
-        const errorMessage = error.message
-        if (errorMessage.includes('ENOTFOUND') ||
-            errorMessage.includes('ECONNREFUSED') ||
-            errorMessage.includes('Connection is closed') ||
-            errorMessage.includes('Stream isn\'t writeable') ||
-            errorMessage.includes('enableOfflineQueue')) {
-          console.warn(`Redis cache unavailable for get operation: ${errorMessage.split(':')[0]}`)
-          return null
-        }
+      if (process.env.NODE_ENV === 'development') {
+        console.warn(`Cache get failed for key: ${key}`, error)
       }
-      console.error('Cache get error:', error)
       return null
     }
   }
 
   async set(key: string, data: any, ttlSeconds: number): Promise<void> {
+    if (this.connectionState !== 'ready') {
+      return
+    }
+    
     try {
-      // Allow connecting status with brief wait for rapid requests
-      if (redis.status !== 'ready' && redis.status !== 'connecting') {
-        return // Skip silently for non-ready/non-connecting states
-      }
-      
-      // For connecting status, add small timeout
-      if (redis.status === 'connecting') {
-        await new Promise(resolve => setTimeout(resolve, 50))
-        if (redis.status !== 'ready') {
-          return // Still not ready after brief wait
-        }
-      }
-      
-      await redis.setex(key, ttlSeconds, JSON.stringify(data))
+      await Promise.race([
+        redis.setex(key, ttlSeconds, JSON.stringify(data)),
+        new Promise<void>((_, reject) => 
+          setTimeout(() => reject(new Error('Redis timeout')), 1000)
+        )
+      ])
     } catch (error) {
-      // Enhanced error handling for production Redis issues
-      if (error instanceof Error) {
-        const errorMessage = error.message
-        
-        // Handle common Redis connection errors gracefully
-        if (errorMessage.includes('enableOfflineQueue') || 
-            errorMessage.includes('Stream isn\'t writeable') ||
-            errorMessage.includes('ENOTFOUND') ||
-            errorMessage.includes('ECONNREFUSED') ||
-            errorMessage.includes('Connection is closed') ||
-            errorMessage.includes('Redis connection')) {
-          // Log warning but don't throw - app should continue without cache
-          console.warn(`Redis cache unavailable (${errorMessage.split(':')[0]}), continuing without cache`)
-          return
-        }
+      if (process.env.NODE_ENV === 'development') {
+        console.warn(`Cache set failed for key: ${key}`, error)
       }
-      console.error('Cache set error:', error)
     }
   }
 
   async del(key: string): Promise<void> {
+    if (this.connectionState !== 'ready') {
+      return
+    }
+    
     try {
-      // Only proceed if Redis is fully ready
-      if (redis.status !== 'ready') {
-        console.warn(`Redis not ready (status: ${redis.status}), skipping delete operation`)
-        return
-      }
-      
-      await redis.del(key)
+      await Promise.race([
+        redis.del(key),
+        new Promise<void>((_, reject) => 
+          setTimeout(() => reject(new Error('Redis timeout')), 1000)
+        )
+      ])
     } catch (error) {
-      if (error instanceof Error) {
-        const errorMessage = error.message
-        if (errorMessage.includes('Stream isn\'t writeable') ||
-            errorMessage.includes('Connection is closed') ||
-            errorMessage.includes('ENOTFOUND')) {
-          console.warn(`Redis cache unavailable for delete operation: ${errorMessage.split(':')[0]}`)
-          return
-        }
+      if (process.env.NODE_ENV === 'development') {
+        console.warn(`Cache delete failed for key: ${key}`, error)
       }
-      console.error('Cache delete error:', error)
     }
   }
 
   async invalidatePattern(pattern: string): Promise<void> {
+    if (this.connectionState !== 'ready') {
+      return
+    }
+    
     try {
-      const keys = await redis.keys(pattern)
+      const keys = await redis.keys(`*${pattern}*`)
       if (keys.length > 0) {
         await redis.del(...keys)
       }
     } catch (error) {
-      console.error('Cache pattern invalidation error:', error)
+      if (process.env.NODE_ENV === 'development') {
+        console.warn(`Pattern invalidation failed: ${pattern}`, error)
+      }
     }
   }
 

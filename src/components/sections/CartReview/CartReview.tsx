@@ -6,6 +6,7 @@ import { CartSummary } from "@/components/organisms"
 import { Text } from "@medusajs/ui"
 import InpostParcelInfo from "@/components/molecules/InpostParcelInfo/InpostParcelInfo"
 import { InpostParcelData } from "@/lib/services/inpost-api"
+import { useTerms } from "../CheckoutWrapper/CheckoutWrapper"
 
 // Helper function to calculate shipping total from shipping methods
 const calculateShippingTotal = (shippingMethods?: any[]): number => {
@@ -21,7 +22,9 @@ const calculateShippingTotal = (shippingMethods?: any[]): number => {
 }
 
 
-const Review = ({ cart, termsAccepted }: { cart: any; termsAccepted?: boolean }) => {
+const Review = ({ cart }: { cart: any }) => {
+  // Use Terms Context instead of props to avoid cart caching issues
+  const { termsAccepted } = useTerms()
   const paidByGiftcard =
     cart?.gift_cards && cart?.gift_cards?.length > 0 && cart?.total === 0
 
@@ -69,7 +72,7 @@ const Review = ({ cart, termsAccepted }: { cart: any; termsAccepted?: boolean })
               return (
               <div key={method.id} className="mb-2">
                 <Text className="txt-small-plus text-ui-fg-base">{method.name}</Text>
-                <Text className="txt-small text-ui-fg-subtle">Amount: {method.amount || 'undefined'}</Text>
+                
                 
                 {/* Display InPost parcel machine information if available */}
                 {method.data?.inpostParcelMachine && (
@@ -87,7 +90,6 @@ const Review = ({ cart, termsAccepted }: { cart: any; termsAccepted?: boolean })
       {shouldRenderButton && (
         <PaymentButton 
           cart={cart} 
-          termsAccepted={termsAccepted || false}
           data-testid="submit-order-button" 
         />
       )}

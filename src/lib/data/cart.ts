@@ -1,17 +1,10 @@
 "use server"
 
 import { sdk } from "../config"
-import medusaError from "@/lib/helpers/medusa-error"
 import { HttpTypes } from "@medusajs/types"
+import medusaError from "../helpers/medusa-error"
+import { cartDeduplicator, createCacheKey } from "../utils/request-deduplication"
 import { revalidatePath, revalidateTag } from "next/cache"
-
-// Extended cart type that includes properties that exist in the API but not in the TypeScript definitions
-interface ExtendedStoreCart extends HttpTypes.StoreCart {
-  completed_at?: string;
-  status?: string;
-  completed?: boolean;
-  payment_status?: string;
-}
 import { redirect } from "next/navigation"
 import {
   getAuthHeaders,
@@ -21,8 +14,17 @@ import {
   removeCartId,
   setCartId,
 } from "./cookies"
+
 import { getRegion } from "./regions"
 import { getPublishableApiKey } from "../get-publishable-key"
+
+// Extended cart type that includes properties that exist in the API but not in the TypeScript definitions
+interface ExtendedStoreCart extends HttpTypes.StoreCart {
+  completed_at?: string;
+  status?: string;
+  completed?: boolean;
+  payment_status?: string;
+}
 
 /**
  * Gets the headers needed for payment operations, including the publishable API key
@@ -50,6 +52,7 @@ export async function retrieveCart(cartId?: string) {
     return null
   }
 
+  // CRITICAL FIX: Disable deduplication temporarily to fix cart UI updates
   const headers = {
     ...(await getAuthHeaders())
   }
@@ -59,35 +62,51 @@ export async function retrieveCart(cartId?: string) {
       .fetch<{ cart: ExtendedStoreCart }>(`/store/carts/${id}`, {
         method: "GET",
         query: {
-          fields:
-            "*items,*region, *items.product, *items.variant, *items.variant.options, items.variant.options.option.title," +
-            "*items.thumbnail, *items.metadata, +items.total, *promotions, +shipping_methods.name, *items.product.seller," +
-            "*payment_collection,*payment_collection.payment_sessions",
+          fields: "*items,*region,*region.countries,*items.product,*items.variant,*items.variant.options,items.variant.options.option.title,*items.thumbnail,*items.metadata,+items.total,+items.unit_price,+items.original_total,*promotions,*shipping_methods,*items.product.seller,*payment_collection,*payment_collection.payment_sessions,email,*shipping_address,*billing_address,subtotal,total,tax_total,item_total,shipping_total,currency_code",
         },
         headers,
-        cache: "no-store", // Don't cache cart data for immediate updates
+        cache: "no-cache", // Always fresh for cart data (critical data)
       });
       
     const cart = result.cart;
       
     // Check if cart is completed and handle accordingly using our extended type
     if (cart && cart.completed_at) {
-    
       // Don't try to remove cart ID here, as it causes the cookie error
       // The header component should handle this in a server action
       return null; // Return null so a new cart can be created
     }
     
-    // Also check other indicators of completion
+    // Check other indicators of completion
     if (cart && (cart.status === "complete" || cart.completed === true || cart.payment_status === "captured")) {
-      
       return null;
     }
     
     return cart as HttpTypes.StoreCart; // Cast back to the expected type
-  } catch (error) {
-    console.warn(`Could not retrieve cart ${id}:`, error);
-    return null;
+  } catch (error: any) {
+    if (error?.status === 404) {
+      // CRITICAL FIX: Cart not found - clean up corrupted cart ID
+      console.warn(`🔍 Cart ${id} not found, cleaning up corrupted cart ID`)
+      await removeCartId()
+      
+      // Also clean localStorage to prevent infinite loops
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('_medusa_cart_id')
+        localStorage.removeItem('medusa_cart_id')
+      }
+      
+      return null
+    }
+    
+    // CRITICAL FIX: For other errors, don't throw immediately - log and return null
+    console.error(`🔍 Cart retrieval error for ${id}:`, error)
+    
+    // If it's a network error or server error, return null to prevent infinite retries
+    if (error?.status >= 500 || error?.code === 'ECONNREFUSED' || error?.code === 'ENOTFOUND') {
+      return null
+    }
+    
+    throw error
   }
 }
 
@@ -197,7 +216,7 @@ export async function retrieveCartForPayment(cartId?: string) {
   }
 
   try {
-    const fields = "*items,*region,*region.countries,*items.product,*items.variant,*items.variant.options,items.variant.options.option.title,*items.thumbnail,*items.metadata,+items.total,+items.unit_price,+items.original_total,*promotions,*shipping_methods,*items.product.seller,*payment_collection,*payment_collection.payment_sessions,*gift_cards,email,subtotal,total,tax_total,item_total,shipping_total,currency_code"
+    const fields = "*items,*region,*region.countries,*items.product,*items.variant,*items.variant.options,items.variant.options.option.title,*items.thumbnail,*items.metadata,+items.total,+items.unit_price,+items.original_total,*promotions,*shipping_methods,*items.product.seller,*payment_collection,*payment_collection.payment_sessions,email,subtotal,total,tax_total,item_total,shipping_total,currency_code"
     const result = await sdk.client
       .fetch<{ cart: ExtendedStoreCart }>(`/store/carts/${id}`, {
         method: "GET",
@@ -246,7 +265,7 @@ export async function retrieveCartForReview(cartId?: string) {
             "*items,*region,*region.countries,*items.product,*items.variant,*items.variant.options," +
             "items.variant.options.option.title,*items.thumbnail,*items.metadata," +
             "+items.total,+items.unit_price,+items.original_total,*promotions,*shipping_methods," +
-            "*items.product.seller,*payment_collection,*payment_collection.payment_sessions,*gift_cards," +
+            "*items.product.seller,*payment_collection,*payment_collection.payment_sessions," +
             "*shipping_address,*billing_address,email,subtotal,total,tax_total,item_total,shipping_total,currency_code",
         },
         headers,
@@ -280,6 +299,12 @@ export async function getOrSetCart(countryCode: string) {
     ...(await getAuthHeaders()),
   }
 
+  // CRITICAL DEBUG: Log cart state before any operations
+  if (process.env.NODE_ENV === 'development') {
+    const extendedCart = cart as any
+    console.log(`🔍 getOrSetCart - Initial cart promotions:`, extendedCart?.promotions?.length || 0)
+  }
+
   if (!cart) {
     const cartResp = await sdk.store.cart.create(
       { region_id: region.id },
@@ -292,15 +317,29 @@ export async function getOrSetCart(countryCode: string) {
 
     const cartCacheTag = await getCacheTag("carts")
     revalidateTag(cartCacheTag)
+    
+    console.log(`✅ Created new cart ${cart.id} for region ${region.id}`)
   }
 
-  if (cart && cart?.region_id !== region.id) {
+  // CRITICAL FIX: Only update region if it's actually different to prevent promotion loss
+  if (cart && cart?.region_id && cart.region_id !== region.id) {
+    console.log(`🔄 Updating cart region from ${cart.region_id} to ${region.id}`)
     await sdk.store.cart.update(cart.id, { region_id: region.id }, {}, headers)
     const cartCacheTag = await getCacheTag("carts")
     revalidateTag(cartCacheTag)
+  } else if (cart && cart?.region_id === region.id) {
+    console.log(`✅ Cart region already matches ${region.id}, skipping update to preserve promotions`)
   }
 
-  return cart
+  // CRITICAL DEBUG: Log cart state after operations
+  if (process.env.NODE_ENV === 'development') {
+    const finalCart = await retrieveCart(cart.id)
+    const extendedFinalCart = finalCart as any
+    console.log(`🔍 getOrSetCart - Final cart promotions:`, extendedFinalCart?.promotions?.length || 0)
+  }
+
+  // CRITICAL FIX: Return fresh cart data instead of potentially stale cart object
+  return await retrieveCart(cart.id)
 }
 
 export async function updateCart(data: HttpTypes.StoreUpdateCart) {
@@ -337,7 +376,20 @@ export async function addToCart({
     throw new Error("Missing variant ID when adding to cart")
   }
 
+  // CRITICAL DEBUG: Log promotion state before getOrSetCart
+  if (process.env.NODE_ENV === 'development') {
+    const existingCart = await retrieveCart()
+    const extendedExisting = existingCart as any
+    console.log(`🔍 addToCart - BEFORE getOrSetCart - Existing cart promotions:`, extendedExisting?.promotions?.length || 0)
+  }
+
   const cart = await getOrSetCart(countryCode)
+  
+  // CRITICAL DEBUG: Log promotion state after getOrSetCart
+  if (process.env.NODE_ENV === 'development') {
+    const extendedCart = cart as any
+    console.log(`🔍 addToCart - AFTER getOrSetCart - Cart promotions:`, extendedCart?.promotions?.length || 0)
+  }
 
   if (!cart) {
     throw new Error("Error retrieving or creating cart")
@@ -347,26 +399,32 @@ export async function addToCart({
     ...(await getAuthHeaders()),
   }
 
-  const currentItem = cart.items?.find((item) => item.variant_id === variantId)
+  try {
+    // CRITICAL DEBUG: Log cart state before line item operations
+    if (process.env.NODE_ENV === 'development') {
+      const extendedCart = cart as any
+      console.log(`🔍 addToCart - Cart promotions BEFORE line item operation:`, extendedCart?.promotions?.length || 0)
+      console.log(`🔍 addToCart - Current items count:`, cart.items?.length || 0)
+    }
 
-  if (currentItem) {
-    await sdk.store.cart
-      .updateLineItem(
+    const currentItem = cart.items?.find((item) => item.variant_id === variantId)
+
+    // CRITICAL FIX: Store existing promotions before line item operation
+    const existingPromotions = (cart as any).promotions || []
+    console.log(`🔍 Storing ${existingPromotions.length} existing promotions before line item operation`)
+
+    if (currentItem) {
+      console.log(`🔄 Updating existing line item ${currentItem.id} quantity from ${currentItem.quantity} to ${currentItem.quantity + quantity}`)
+      await sdk.store.cart.updateLineItem(
         cart.id,
         currentItem.id,
         { quantity: currentItem.quantity + quantity },
         {},
         headers
       )
-      .then(async () => {
-        // Only invalidate persistent cache - avoid revalidateTag that triggers page refresh
-        const { invalidateCheckoutCache } = await import('../utils/storefront-cache')
-        invalidateCheckoutCache(cart.id)
-      })
-      .catch(medusaError)
-  } else {
-    await sdk.store.cart
-      .createLineItem(
+    } else {
+      console.log(`➕ Creating new line item for variant ${variantId} with quantity ${quantity}`)
+      await sdk.store.cart.createLineItem(
         cart.id,
         {
           variant_id: variantId,
@@ -375,16 +433,89 @@ export async function addToCart({
         {},
         headers
       )
-      .then(async () => {
-        // Only invalidate persistent cache - avoid revalidateTag that triggers page refresh
-        const { invalidateCheckoutCache } = await import('../utils/storefront-cache')
-        invalidateCheckoutCache(cart.id)
-      })
-      .catch(medusaError)
-  }
+    }
 
-  // Return updated cart
-  return await retrieveCart()
+    // CRITICAL FIX: If promotions were lost, try to reapply them
+    const cartAfterLineItem = await retrieveCart(cart.id)
+    const promotionsAfter = (cartAfterLineItem as any).promotions || []
+    
+    if (existingPromotions.length > 0 && promotionsAfter.length === 0) {
+      console.log(`🚨 Promotions lost during line item operation! Attempting to reapply...`)
+      
+      // Try to reapply the promotion codes that were active
+      const promoCodes = existingPromotions.map((p: any) => p.code).filter(Boolean)
+      if (promoCodes.length > 0) {
+        try {
+          console.log(`🔄 Reapplying promotion codes:`, promoCodes)
+          await sdk.store.cart.update(cart.id, { promo_codes: promoCodes }, {}, headers)
+          console.log(`✅ Successfully reapplied promotions`)
+          
+          // CRITICAL DEBUG: Check if promotions were actually applied
+          const cartAfterReapply = await retrieveCart(cart.id)
+          const promotionsAfterReapply = (cartAfterReapply as any).promotions || []
+          console.log(`🔍 Promotions after reapplication attempt:`, promotionsAfterReapply.length)
+          
+          if (promotionsAfterReapply.length === 0) {
+            console.log(`🚨 PROMOTION REJECTED BY MEDUSA! The promotion code '${promoCodes[0]}' is not compatible with multiple items in cart.`)
+            console.log(`🔍 Current cart state:`)
+            console.log(`   - Items count: ${cartAfterReapply?.items?.length || 0}`)
+            console.log(`   - Cart total: ${cartAfterReapply?.total || 0}`)
+            console.log(`   - Item total: ${cartAfterReapply?.item_total || 0}`)
+            console.log(`🔧 SOLUTION: Check Medusa promotion rules for '${promoCodes[0]}' in the admin panel.`)
+          }
+        } catch (error) {
+          console.error(`❌ Failed to reapply promotions:`, error)
+        }
+      } else {
+        // Handle automatic promotions (no codes)
+        console.log(`🔍 Lost promotions were automatic (no codes). This indicates promotion rules are not compatible with multiple items.`)
+        console.log(`🔍 Lost promotion details:`, existingPromotions.map((p: any) => ({ 
+          id: p.id, 
+          code: p.code, 
+          is_automatic: p.is_automatic,
+          type: p.type 
+        })))
+      }
+    }
+
+    // CRITICAL DEBUG: Log cart state immediately after line item operation
+    if (process.env.NODE_ENV === 'development') {
+      const cartAfterLineItem = await retrieveCart(cart.id)
+      const extendedCartAfter = cartAfterLineItem as any
+      console.log(`🔍 addToCart - Cart promotions AFTER line item operation:`, extendedCartAfter?.promotions?.length || 0)
+    }
+
+    // CRITICAL FIX: Auto-detect and apply promotions for newly added items
+    console.log(`🤖 [AUTO-APPLY] Checking for automatic promotions after adding item`)
+    
+    try {
+      // Trigger automatic promotion detection for the cart
+      await sdk.client.fetch(`/store/carts/${cart.id}/scan-promotions`, {
+        method: "POST",
+        headers,
+        cache: "no-cache"
+      })
+      console.log(`✅ [AUTO-APPLY] Automatic promotion scan completed`)
+    } catch (autoError) {
+      console.warn(`⚠️ [AUTO-APPLY] Automatic promotion scan failed:`, autoError)
+    }
+    
+    // Return fresh cart data
+    const updatedCart = await retrieveCart(cart.id)
+    
+    // CRITICAL DEBUG: Log promotion status after adding item
+    if (process.env.NODE_ENV === 'development') {
+      const extendedCart = updatedCart as any
+      console.log(`🔍 Cart after adding item - Promotions:`, extendedCart?.promotions?.length || 0)
+      if (extendedCart?.promotions && extendedCart.promotions.length > 0) {
+        console.log(`📋 Active promotions:`, extendedCart.promotions.map((p: any) => ({ id: p.id, code: p.code })))
+      }
+    }
+    
+    return updatedCart
+  } catch (error) {
+    throw medusaError(error)
+  }
 }
 
 export async function updateLineItem({
@@ -436,17 +567,33 @@ export async function deleteLineItem(lineId: string) {
     ...(await getAuthHeaders()),
   }
 
-  await sdk.store.cart
-    .deleteLineItem(cartId, lineId, headers)
-    .then(async () => {
-      // Only invalidate persistent cache - avoid revalidateTag that triggers page refresh
-      const { invalidateCheckoutCache } = await import('../utils/storefront-cache')
-      invalidateCheckoutCache(cartId)
-    })
-    .catch(medusaError)
-
-  // Return updated cart
-  return await retrieveCart()
+  try {
+    // Delete the line item
+    await sdk.store.cart.deleteLineItem(cartId, lineId, headers)
+    
+    // CRITICAL FIX: Comprehensive cache cleanup for cart deletion
+    const { invalidateCheckoutCache } = await import('../utils/storefront-cache')
+    invalidateCheckoutCache(cartId)
+    
+    // Also invalidate Next.js cache
+    const cartCacheTag = await getCacheTag("carts")
+    revalidateTag(cartCacheTag)
+    
+    console.log(`✅ Successfully deleted line item ${lineId} from cart ${cartId}`)
+    
+    // Return fresh cart data
+    return await retrieveCart(cartId)
+  } catch (error) {
+    console.error(`❌ Failed to delete line item ${lineId}:`, error)
+    
+    // CRITICAL FIX: On error, still try to return current cart state
+    try {
+      return await retrieveCart(cartId)
+    } catch (retrieveError) {
+      console.error('❌ Failed to retrieve cart after delete error:', retrieveError)
+      throw medusaError(error)
+    }
+  }
 }
 
 export async function setShippingMethod({
@@ -539,12 +686,49 @@ export async function initiatePaymentSession(
     'x-publishable-api-key': await getPublishableApiKey()
   }
   
+  // Check if this is a redirect-based payment method
+  const isRedirectPayment = data.provider_id.includes('przelewy24') || 
+                           data.provider_id.includes('blik') || 
+                           data.provider_id.includes('bancontact') ||
+                           data.provider_id.includes('ideal') ||
+                           data.provider_id.includes('giropay')
+  
+  // Prepare payment session data
+  const sessionData: any = {
+    cart: cart, // This passes the cart to input.data.cart in the provider
+  }
+  
+  // Add payment method types for redirect-based payments
+  if (isRedirectPayment) {
+    // Map provider IDs to Stripe payment method types
+    let paymentMethodTypes: string[] = []
+    
+    if (data.provider_id.includes('przelewy24')) {
+      paymentMethodTypes = ['p24']
+    } else if (data.provider_id.includes('blik')) {
+      paymentMethodTypes = ['blik']
+    } else if (data.provider_id.includes('bancontact')) {
+      paymentMethodTypes = ['bancontact']
+    } else if (data.provider_id.includes('ideal')) {
+      paymentMethodTypes = ['ideal']
+    } else if (data.provider_id.includes('giropay')) {
+      paymentMethodTypes = ['giropay']
+    }
+    
+    if (paymentMethodTypes.length > 0) {
+      sessionData.payment_method_types = paymentMethodTypes
+    }
+    
+    console.log('🔍 Adding payment method types for redirect payment:', {
+      provider_id: data.provider_id,
+      payment_method_types: paymentMethodTypes
+    })
+  }
+  
   try {
     const response = await sdk.store.payment.initiatePaymentSession(cart, {
       provider_id: data.provider_id,
-      data: {
-        cart: cart, // This passes the cart to input.data.cart in the provider
-      }
+      data: sessionData
     }, {}, headers)
     
     const cartCacheTag = await getCacheTag("carts")
@@ -642,13 +826,37 @@ export async function applyPromotions(codes: string[]) {
     ...(await getAuthHeaders()),
   }
 
-  return sdk.store.cart
-    .update(cartId, { promo_codes: codes }, {}, headers)
-    .then(async () => {
-      const cartCacheTag = await getCacheTag("carts")
-      revalidateTag(cartCacheTag)
-    })
-    .catch(medusaError)
+  // CRITICAL FIX: Also trigger automatic promotion detection
+  console.log(`🎯 [APPLY-PROMOTIONS] Applying codes: ${codes.join(', ')} to cart ${cartId}`)
+  
+  try {
+    // Step 1: Apply the manual promotion codes
+    const result = await sdk.store.cart.update(cartId, { promo_codes: codes }, {}, headers)
+    
+    // Step 2: Trigger automatic promotion detection
+    console.log(`🤖 [AUTO-PROMOTIONS] Triggering automatic promotion scan for cart ${cartId}`)
+    
+    try {
+      await sdk.client.fetch(`/store/carts/${cartId}/scan-promotions`, {
+        method: "POST",
+        headers,
+        cache: "no-cache"
+      })
+      console.log(`✅ [AUTO-PROMOTIONS] Automatic promotion scan completed`)
+    } catch (autoError) {
+      console.warn(`⚠️ [AUTO-PROMOTIONS] Automatic promotion scan failed:`, autoError)
+      // Don't fail the whole operation if auto-promotion fails
+    }
+    
+    // Step 3: Revalidate cache
+    const cartCacheTag = await getCacheTag("carts")
+    revalidateTag(cartCacheTag)
+    
+    return result
+  } catch (error) {
+    console.error(`❌ [APPLY-PROMOTIONS] Failed to apply promotions:`, error)
+    throw medusaError(error)
+  }
 }
 
 /**
@@ -988,10 +1196,64 @@ export async function placeOrder(cartId?: string, skipRedirectCheck: boolean = f
     if (!skipRedirectCheck) {
       for (const session of paymentSessions) {
         const isPayUProvider = session.provider_id?.includes('payu')
+        const isStripeProvider = session.provider_id?.includes('stripe')
         const sessionData = session.data || {}
-        const redirectUrl = sessionData.redirect_url || sessionData.redirectUrl || sessionData.redirectUri
+        const redirectUrl = sessionData.redirect_url || sessionData.redirectUrl || sessionData.redirectUri || sessionData.url
         
+        // CRITICAL: For Stripe payments, we should NEVER call placeOrder directly
+        // All Stripe payments must go through Stripe Checkout for security
+        // UNLESS we're returning from Stripe (skipRedirectCheck = true)
+        if (isStripeProvider && session.status === 'pending') {
+          console.log('🚨 CRITICAL: Stripe payment detected - placeOrder should not be called directly!')
+          console.log('🚨 All Stripe payments must use Stripe Checkout for security!')
+          console.log('🚨 Provider:', session.provider_id, 'Status:', session.status)
+          console.log('🚨 skipRedirectCheck:', skipRedirectCheck)
+          
+          if (!skipRedirectCheck) {
+            throw new Error('Stripe payments must use Stripe Checkout. Direct cart completion is not allowed for security reasons.')
+          } else {
+            console.log('🔍 Allowing cart completion - returning from Stripe Checkout')
+          }
+        }
+        
+        // Handle Stripe redirects (for redirect-based methods like Przelewy24, BLIK)
+        if (isStripeProvider && (session.provider_id?.includes('przelewy24') || session.provider_id?.includes('blik'))) {
+          console.log('🔍 Stripe redirect payment detected, need to confirm PaymentIntent:', session.provider_id)
+          
+          // For redirect payments, we need to confirm the PaymentIntent to get the redirect URL
+          const paymentIntentId = sessionData.id
+          if (paymentIntentId) {
+            return {
+              type: 'redirect_confirm',
+              paymentIntentId: paymentIntentId,
+              cartId: cart.id,
+              session: session,
+              cart: cart
+            }
+          }
+        }
+        
+        // Handle other Stripe redirects (for Stripe Checkout or Connect)
+        if (isStripeProvider && redirectUrl && session.status === 'pending') {
+          return {
+            type: 'redirect',
+            redirectUrl: redirectUrl,
+            cart: cart
+          }
+        }
+        
+        // Handle PayU redirects
         if (isPayUProvider && redirectUrl && session.status === 'pending') {
+          return {
+            type: 'redirect',
+            redirectUrl: redirectUrl,
+            cart: cart
+          }
+        }
+        
+        // Handle Stripe redirects (for Stripe Checkout or Connect)
+        if (isStripeProvider && redirectUrl && session.status === 'pending') {
+          console.log('🔍 Stripe redirect detected:', redirectUrl)
           return {
             type: 'redirect',
             redirectUrl: redirectUrl,
@@ -1094,6 +1356,68 @@ export async function listCartOptions() {
     headers,
     cache: "force-cache",
   })
+}
+
+/**
+ * Confirm Stripe PaymentIntent for redirect payments and get redirect URL
+ */
+export async function confirmStripeRedirectPayment(paymentIntentId: string, cartId: string, customerEmail?: string) {
+  const headers = {
+    ...(await getAuthHeaders()),
+    'x-publishable-api-key': await getPublishableApiKey()
+  }
+  
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 
+                  (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000')
+  const returnUrl = `${baseUrl}/stripe/return?cart_id=${cartId}`
+  
+  console.log('🔍 Confirming Stripe PaymentIntent for redirect:', {
+    paymentIntentId,
+    cartId,
+    returnUrl
+  })
+  
+  try {
+    const backendUrl = process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL
+    const fullUrl = `${backendUrl}/store/stripe/confirm-payment-intent`
+    
+    console.log('🔍 Making confirmation request to:', fullUrl)
+    console.log('🔍 Request payload:', {
+      payment_intent_id: paymentIntentId,
+      return_url: returnUrl
+    })
+    
+    // We need to call a backend endpoint to confirm the PaymentIntent
+    // Since we can't call Stripe directly from the frontend for security reasons
+    const response = await fetch(fullUrl, {
+      method: 'POST',
+      headers: {
+        ...headers,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        payment_intent_id: paymentIntentId,
+        return_url: returnUrl,
+        customer_email: customerEmail
+      })
+    })
+    
+    console.log('🔍 Response status:', response.status, response.statusText)
+    
+    if (!response.ok) {
+      const errorText = await response.text()
+      console.error('❌ Backend error response:', errorText)
+      throw new Error(`Failed to confirm PaymentIntent: ${response.status} ${response.statusText} - ${errorText}`)
+    }
+    
+    const result = await response.json()
+    console.log('🔍 PaymentIntent confirmation result:', result)
+    
+    return result
+  } catch (error) {
+    console.error('❌ Error confirming PaymentIntent:', error)
+    throw error
+  }
 }
 
 /**

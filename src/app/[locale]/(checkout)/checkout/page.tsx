@@ -1,15 +1,11 @@
 import CheckoutWrapper from "@/components/sections/CheckoutWrapper/CheckoutWrapper"
-import { CartProvider } from "@/lib/context/CartContext"
-import { retrieveCart } from "@/lib/data/cart"
+import { retrieveCartForReview } from "@/lib/data/cart"
 import { listCartShippingMethods } from "@/lib/data/fulfillment"
 import { listCartPaymentMethods } from "@/lib/data/payment"
 import { retrieveCustomer } from "@/lib/data/cookies"
-import { getCacheOptions } from "@/lib/data/cookies"
 import { notFound } from "next/navigation"
 import { Suspense } from "react"
-import { Metadata } from "next"
 import Link from "next/link"
-import { headers } from "next/headers"
 
 export default async function CheckoutPage() {
   return (
@@ -27,8 +23,8 @@ export default async function CheckoutPage() {
 
 async function CheckoutPageContent() {
   try {
-    // First get the cart, then use its ID for other calls
-    const cart = await retrieveCart().catch(() => null);
+    // Get cart with all review data including payment sessions
+    const cart = await retrieveCartForReview().catch(() => null);
     
     if (!cart) {
       return notFound()
@@ -40,23 +36,14 @@ async function CheckoutPageContent() {
       retrieveCustomer().catch(() => null)
     ]);
 
-    // Provide comprehensive cart data to all components
-    const typeSafeCart = cart as any;
-    const typeSafeShippingMethods = shippingMethods as any
-
     return (
       <div className="container">
-        
-          <CartProvider initialCart={cart as any}>
-            <Suspense fallback={<div className="animate-pulse">Loading checkout...</div>}>
-              <CheckoutWrapper
-                customer={customer}
-                availableShippingMethods={shippingMethods}
-                availablePaymentMethods={paymentMethods}
-              />
-            </Suspense>
-          </CartProvider>
-        
+        <CheckoutWrapper
+          cart={cart}
+          customer={customer}
+          availableShippingMethods={shippingMethods}
+          availablePaymentMethods={paymentMethods}
+        />
       </div>
     )
   } catch (error) {
