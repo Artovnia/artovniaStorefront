@@ -23,12 +23,11 @@ export const Navbar = ({
     if (USE_MOCK_DATA) {
       // Always use mock data when USE_MOCK_DATA is true
       const mockCategories = getTopLevelCategories();
-      console.log('Using mock categories:', mockCategories.length)
+     
       setCategories(mockCategories);
       
       // For testing - show first category dropdown automatically
       if (mockCategories.length > 0) {
-        console.log('Setting initial active category:', mockCategories[0].name)
         setTimeout(() => {
           setDropdownActiveCategory(mockCategories[0])
           setIsDropdownVisible(true)
@@ -73,7 +72,7 @@ export const Navbar = ({
 
   return (
     <div 
-      className="w-full border ring-1 ring-[#BFB7AD] bg-primary relative"
+      className="hidden md:block w-full border ring-1 ring-[#BFB7AD] bg-primary relative"
       onMouseLeave={handleDropdownMouseLeave}
       aria-label="Main navigation bar with categories"
     >
@@ -85,7 +84,7 @@ export const Navbar = ({
           />
         </div>
 
-        <div className="px-0 mr-4">
+        <div className="hidden md:flex px-0 mr-4">
           <NavbarSearch />
         </div>
       </div>

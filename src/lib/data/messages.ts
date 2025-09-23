@@ -62,4 +62,4 @@ export type MessageThread = {
 }
 
 // Export the server actions from the actions file
-export { listMessageThreads, getMessageThread, createMessageThread, sendMessage, markThreadAsRead } from "@/lib/data/actions/message-actions"
+export { listMessageThreads, getMessageThread, createMessageThread, sendMessage, markThreadAsRead } from "@/lib/data/actions/messages"

@@ -21,7 +21,6 @@ export async function createServerMessageThread(data: {
     
     // If no customer data, the user is not authenticated
     if (!customer) {
-      console.error("Authentication failed: No customer data found")
       return { 
         success: false, 
         error: 'User not authenticated' 
@@ -30,16 +29,6 @@ export async function createServerMessageThread(data: {
     
     // Get auth headers from cookies
     const headers = await getAuthHeaders()
-    
-    // Check if we have auth headers with proper type narrowing
-    const hasAuth = 'authorization' in headers
-    
-    // Log authentication details for debugging
-    console.log('Creating message with server authentication:', { 
-      customerId: customer.id,
-      hasAuthHeader: hasAuth,
-      sellerId: data.seller_id
-    })
 
     // Use the correct endpoint for creating a message thread
     const response = await sdk.client.fetch<{ thread: MessageThread }>(`/store/messages`, {
@@ -58,26 +47,20 @@ export async function createServerMessageThread(data: {
     })
     
     if (!response || !response.thread) {
-      console.error("Invalid response from server:", response)
       return { 
         success: false, 
         error: 'Invalid response from server' 
       }
     }
     
-    console.log("Message sent successfully:", { threadId: response.thread.id })
     return { 
       success: true, 
       thread: response.thread 
     }
   } catch (error: any) {
-    console.error(`Error creating message thread:`, error)
-    
     // Provide more detailed error information
     const errorMessage = error?.message || error?.toString() || 'An unknown error occurred'
-    const statusCode = error?.status || error?.statusCode
-    
-    console.error(`Message error details:`, { errorMessage, statusCode })
+
     
     return { 
       success: false, 

@@ -12,13 +12,17 @@ export const MobileCategoryItem = ({
 }: MobileCategoryItemProps) => {
   const hasChildren = category.category_children && category.category_children.length > 0;
 
-  const handleClick = () => {
+  const handleClick = (e: React.MouseEvent) => {
     if (hasChildren) {
       // Navigate to submenu
+      e.preventDefault();
       onNavigate(category);
     } else {
-      // Navigate to category page and close menu
-      onClose();
+      // For leaf categories, let the link handle navigation but also close menu
+      // We'll close the menu after a small delay to allow navigation to start
+      setTimeout(() => {
+        onClose();
+      }, 100);
     }
   };
 
@@ -55,7 +59,7 @@ export const MobileCategoryItem = ({
 
   // If it's a leaf category, render as link
   return (
-    <Link href={`/categories/${category.handle}`} className="block w-full">
+    <Link href={`/categories/${category.handle}`} className="block w-full" onClick={handleClick}>
       {content}
     </Link>
   );

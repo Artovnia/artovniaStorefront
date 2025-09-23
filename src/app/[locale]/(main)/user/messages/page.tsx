@@ -1,6 +1,6 @@
 import { LoginForm, UserPageLayout } from "@/components/molecules"
 import { retrieveCustomer } from "@/lib/data/customer"
-import { listMessageThreads } from "@/lib/data/actions/message-actions"
+import { listMessageThreads } from "@/lib/data/actions/messages"
 import { MessageThread, MessageSender } from "@/types/messages"
 import Link from "next/link"
 import Image from "next/image"
@@ -8,7 +8,7 @@ import { format } from "date-fns"
 import { isEmpty } from "lodash"
 import { MessagePagination } from "./message-pagination"
 import { hasUnreadMessages } from "@/lib/utils/message-utils"
-import { markThreadAsRead } from "@/lib/data/actions/message-read-actions"
+import { markThreadAsRead } from "@/lib/data/actions/messages"
 
 // Simple Bell Icon component
 const BellIcon = ({ className = "" }: { className?: string }) => (
@@ -92,10 +92,7 @@ export default async function MessagesPage({ searchParams }: PageProps) {
          /\b401\b/.test(err.message) || 
          (err as any)?.status === 401)) {
       hasUnauthorizedError = true
-      // Don't log as error since this is expected for new users
-      console.log('User is not yet authorized for messages or has no message threads')
     } else {
-      console.error('Error retrieving message threads:', err)
       error = err instanceof Error ? err : new Error(String(err))
     }
   }
@@ -129,7 +126,6 @@ export default async function MessagesPage({ searchParams }: PageProps) {
                     try {
                       return format(new Date(dateString), 'MMM d, yyyy')
                     } catch (error) {
-                      console.warn(`Error formatting date: ${dateString}`, error)
                       return 'Unknown date'
                     }
                   }

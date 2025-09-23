@@ -4,16 +4,18 @@ import { Textarea, Button } from "@/components/atoms"
 import { useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
 import { Message, MessageSender } from "@/lib/data/messages"
-import { sendMessage } from "@/lib/data/actions/message-actions"
+import { sendMessage } from "@/lib/data/actions/messages"
 
 export function MessageForm({ 
   threadId, 
   onOptimisticUpdate,
-  onMessageSent
+  onMessageSent,
+  onMessageError
 }: { 
   threadId: string, 
   onOptimisticUpdate: (message: Message) => void,
-  onMessageSent: (messageId: string) => void
+  onMessageSent: (messageId: string) => void,
+  onMessageError?: (optimisticId: string) => void
 }) {
   const [content, setContent] = useState("")
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -51,23 +53,23 @@ export function MessageForm({
     setIsSubmitting(true)
     
     try {
-      console.log('Sending message to server:', messageContent)
-      
       // Send the message to the server using server action
-      // This will properly handle authentication with HTTP-only cookies
-      await sendMessage(threadId, messageContent)
+      const sentMessage = await sendMessage(threadId, messageContent)
       
-      console.log('Message sent successfully')
-      
-      // We don't need to do anything after sending the message successfully
-      // The optimistic message should remain in the UI until the page is refreshed
-      // This ensures the message persists in the UI without constant API requests
+      if (sentMessage) {
+        // Message was sent successfully, remove the optimistic message
+        onMessageSent(sentMessage.id)
+      } else {
+        throw new Error('Failed to send message')
+      }
     } catch (error) {
       console.error("Error sending message:", error)
       alert("Failed to send message. Please try again.")
       
       // Remove the optimistic message if there was an error
-      onMessageSent(optimisticId)
+      if (onMessageError) {
+        onMessageError(optimisticId)
+      }
       
       // Restore the content to the input field so the user doesn't lose their message
       setContent(messageContent)
@@ -79,7 +81,7 @@ export function MessageForm({
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div className="space-y-2 font-instrument-sans">
-        <label htmlFor="reply-message" className="block text-sm font-medium font-instrument-sans">Odpowiedz</label>
+        <label htmlFor="reply-message" className="block text-lg font-medium font-instrument-sans">Odpowiedz</label>
         <Textarea
           className="bg-white"
           id="reply-message"

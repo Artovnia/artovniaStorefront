@@ -2,7 +2,7 @@
 import { Card, Divider, LogoutButton, NavigationItem } from "@/components/atoms"
 import { usePathname } from "next/navigation"
 import { useEffect, useState } from "react"
-import { getUnreadMessagesCount } from "@/lib/data/actions/unread-messages"
+import { getUnreadMessagesCount } from "@/lib/data/actions/messages"
 
 // Bell Icon component for unread messages indicator
 const BellIcon = ({ className = "" }: { className?: string }) => (
@@ -79,13 +79,11 @@ export const UserNavigation = () => {
           })
         )
       } catch (error) {
-        console.error('Failed to check for unread messages:', error)
       }
     }
     
     // Event handler for when messages are marked as read
     const handleMarkedAsRead = () => {
-      console.log('Received message marked as read event')
       // Force a refresh of the unread message count
       checkUnreadMessages()
     }

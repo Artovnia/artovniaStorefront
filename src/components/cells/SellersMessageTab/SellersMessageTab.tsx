@@ -3,7 +3,7 @@
 import { useState } from "react"
 import { Button, Input, Textarea } from "@/components/atoms"
 import { MessageThreadTypeEnum } from "@/lib/data/messages"
-import { createMessageThread } from "@/lib/actions/message-actions"
+import { createMessageThread } from "@/lib/data/actions/messages"
 import { useRouter } from "@/i18n/routing"
 
 export const SellersMessageTab = ({
@@ -34,13 +34,14 @@ export const SellersMessageTab = ({
     setIsSubmitting(true)
     
     try {
-      const response = await createMessageThread(
-        seller_id,
-        formData.content
-      )
+      const response = await createMessageThread({
+        subject: formData.subject,
+        seller_id: seller_id,
+        content: formData.content
+      })
       
-      if (response?.id) {
-        router.push(`/user/messages/${response.id}`)
+      if (response?.success && response?.thread?.id) {
+        router.push(`/user/messages/${response.thread.id}`)
       } else {
         router.push("/user/messages")
       }

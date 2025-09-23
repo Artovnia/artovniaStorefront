@@ -40,7 +40,7 @@ export const MobileCategoryLevel = ({
           <Link 
             href="/categories" 
             className="block w-full"
-            onClick={onClose}
+            onClick={() => setTimeout(() => onClose(), 100)}
           >
             <div className="flex items-center justify-between w-full py-4 px-4 border-b border-gray-200 hover:bg-gray-50 active:bg-gray-100 transition-colors">
               <span className="text-base font-instrument-sans font-medium text-gray-900">
@@ -55,7 +55,7 @@ export const MobileCategoryLevel = ({
           <Link 
             href={`/categories/${level.parentCategory.handle}`} 
             className="block w-full"
-            onClick={onClose}
+            onClick={() => setTimeout(() => onClose(), 100)}
           >
             <div className="flex items-center justify-between w-full py-4 px-4 border-b-2 border-primary/20 bg-primary/5 hover:bg-primary/10 transition-colors">
               <span className="text-base font-semibold text-primary capitalize">

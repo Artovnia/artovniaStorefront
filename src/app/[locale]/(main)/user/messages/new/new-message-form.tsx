@@ -3,7 +3,7 @@
 import { Button, Input, Textarea } from "@/components/atoms"
 import { useState } from "react"
 import { MessageThreadTypeEnum } from "@/types/messages"
-import { createMessageThread } from "@/lib/data/actions/message-actions"
+import { createMessageThread } from "@/lib/data/actions/messages"
 import { useRouter } from "next/navigation"
 
 export function NewMessageForm() {
@@ -33,9 +33,7 @@ export function NewMessageForm() {
         subject: formData.subject,
         type: formData.type,
         seller_id: formData.seller_id,
-        initial_message: {
-          content: formData.content
-        }
+        content: formData.content
       })
       
       if (response?.thread?.id) {
@@ -44,7 +42,6 @@ export function NewMessageForm() {
         router.push("/user/messages")
       }
     } catch (error) {
-      console.error("Error creating message thread:", error)
       alert("Failed to create message thread. Please try again.")
     } finally {
       setIsSubmitting(false)

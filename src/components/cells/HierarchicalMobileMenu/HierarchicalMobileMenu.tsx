@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { CloseIcon } from '@/icons';
 import { cn } from '@/lib/utils';
 import { MobileCategoryLevel } from './MobileCategoryLevel';
@@ -13,6 +13,8 @@ export const HierarchicalMobileMenu = ({
   onClose,
 }: HierarchicalMobileMenuProps) => {
   const [navigationStack, setNavigationStack] = useState<MenuLevel[]>([]);
+  const [isAnimating, setIsAnimating] = useState(false);
+  const [shouldRender, setShouldRender] = useState(false);
 
   // Get top-level categories (no parent)
   const topLevelCategories = useMemo(() => {
@@ -60,30 +62,57 @@ export const HierarchicalMobileMenu = ({
     setNavigationStack(prev => prev.slice(0, -1));
   };
 
-  // Handle menu close
+  // Handle smooth menu close with animation
   const handleClose = () => {
-    setNavigationStack([]);
-    onClose();
+    setIsAnimating(true);
+    setTimeout(() => {
+      setNavigationStack([]);
+      setShouldRender(false);
+      setIsAnimating(false);
+      onClose();
+    }, 300); // Match the CSS transition duration
   };
 
   // Reset navigation when menu closes
   const handleMenuClose = () => {
-    setNavigationStack([]);
-    onClose();
+    handleClose();
   };
 
-  if (!isOpen) return null;
+  // Handle animation states based on isOpen prop
+  useEffect(() => {
+    if (isOpen) {
+      setShouldRender(true);
+      // Small delay to ensure the element is rendered before animation starts
+      setTimeout(() => setIsAnimating(false), 10);
+    } else if (shouldRender) {
+      setIsAnimating(true);
+      setTimeout(() => {
+        setShouldRender(false);
+        setIsAnimating(false);
+        setNavigationStack([]);
+      }, 300);
+    }
+  }, [isOpen, shouldRender]);
+
+  if (!shouldRender) return null;
 
   return (
     <div className="fixed inset-0 z-50 lg:hidden">
       {/* Backdrop */}
       <div 
-        className="fixed inset-0 bg-black bg-opacity-50"
+        className={cn(
+          "fixed inset-0 bg-black transition-opacity duration-300",
+          isAnimating ? "bg-opacity-0" : "bg-opacity-50"
+        )}
         onClick={handleMenuClose}
       />
       
       {/* Menu Panel */}
-      <div className="fixed inset-y-0 left-0 w-full max-w-sm bg-primary shadow-xl">
+      <div className={cn(
+        "fixed inset-y-0 left-0 w-full max-w-sm bg-primary shadow-xl",
+        "transform transition-transform duration-300 ease-in-out",
+        isAnimating ? "-translate-x-full" : "translate-x-0"
+      )}>
         <div className="flex flex-col h-full">
           {/* Header */}
           <div className="flex items-center justify-between p-4 border-b border-[#BFB7AD] bg-primary">

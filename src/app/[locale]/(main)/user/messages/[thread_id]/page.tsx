@@ -1,15 +1,13 @@
 import { LoginForm } from "@/components/molecules"
 import { UserNavigation } from "@/components/molecules"
 import { retrieveCustomer } from "@/lib/data/customer"
-import { getMessageThread } from "@/lib/data/actions/message-actions"
-import { Divider } from "@/components/atoms"
+import { getMessageThread } from "@/lib/data/actions/messages"
 import Link from "next/link"
 import Image from "next/image"
 import { notFound } from "next/navigation"
 import { MessageContainer } from "./message-container"
 import { MarkAsRead } from "./mark-as-read"
-import { sdk } from "@/lib/config"
-import { getAuthHeaders } from "@/lib/data/cookies"
+
 
 // Define the correct type for Next.js 15
 type PageProps = {
@@ -47,7 +45,7 @@ export default async function MessageThreadPage(props: PageProps) {
         <div className="md:col-span-3 space-y-8">
           <div className="flex justify-between items-center">
             <div className="w-full">
-              <Link href="/user/messages" className="text-sm text-black hover:underline mb-2 inline-block font-instrument-sans">
+              <Link href="/user/messages" className="text-lg text-black hover:underline mb-4 inline-block font-instrument-sans">
                 ← Wróć do tematów
               </Link>
               

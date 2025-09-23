@@ -60,7 +60,7 @@ const Form = () => {
       
       // CRITICAL: Mark this as a login flow for the callback page
       localStorage.setItem('google_oauth_flow', 'login')
-      console.log('🔄 Set OAuth flow type to: login')
+   
       
       const result = await loginWithGoogle()
       
@@ -89,20 +89,20 @@ const Form = () => {
 
   return (
     <main className="container">
-      <h1 className="heading-xl text-center uppercase my-6">
+      <h1 className="heading-xl text-center uppercase my-6 font-instrument-serif">
        Zaloguj się do swojego konta
       </h1>
       <form onSubmit={handleSubmit(submit)}>
         <div className="w-96 max-w-full mx-auto space-y-4">
           <LabeledInput
             label="E-mail"
-            placeholder="Your e-mail address"
+            placeholder="Twój adres e-mail"
             error={errors.email as FieldError}
             {...register("email")}
           />
           <LabeledInput
-            label="Password"
-            placeholder="Your password"
+            label="Hasło"
+            placeholder="Twoje hasło"
             type="password"
             error={errors.password as FieldError}
             {...register("password")}
@@ -115,7 +115,7 @@ const Form = () => {
           {/* Divider */}
           <div className="flex items-center my-4">
             <div className="flex-1 border-t border-gray-300"></div>
-            <span className="px-4 text-sm text-gray-500">or</span>
+            <span className="px-4 text-sm text-gray-500">lub</span>
             <div className="flex-1 border-t border-gray-300"></div>
           </div>
           
@@ -123,7 +123,7 @@ const Form = () => {
           <Button 
             type="button"
             onClick={handleGoogleLogin}
-            className="w-full bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 flex items-center justify-center gap-3"
+            className="w-full bg-white border border-[#3B3634] text-[#3B3634] hover:bg-[#3B3634] hover:text-white flex items-center justify-center gap-3"
             disabled={isSubmitting}
           >
             <svg className="w-5 h-5" viewBox="0 0 24 24">

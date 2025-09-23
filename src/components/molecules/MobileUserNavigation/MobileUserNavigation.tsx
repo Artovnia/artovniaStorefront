@@ -1,9 +1,9 @@
 "use client"
-import { usePathname } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
 import { useEffect, useState } from "react"
 import { Link } from "@/components/atoms"
-import { getUnreadMessagesCount } from "@/lib/data/actions/unread-messages"
-import { signout } from "@/lib/data/customer"
+import { getUnreadMessagesCount } from "@/lib/data/actions/messages"
+import { signout, retrieveCustomer } from "@/lib/data/customer"
 import { cn } from "@/lib/utils"
 
 // Icons for mobile navigation
@@ -83,6 +83,13 @@ const CloseIcon = ({ className = "" }: { className?: string }) => (
   </svg>
 )
 
+const SearchIcon = ({ className = "" }: { className?: string }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+    <circle cx="11" cy="11" r="8"></circle>
+    <path d="m21 21-4.35-4.35"></path>
+  </svg>
+)
+
 interface NavigationItem {
   label: string
   href: string
@@ -134,17 +141,41 @@ const mobileSecondaryItems: NavigationItem[] = [
 
 export const MobileUserNavigation = () => {
   const pathname = usePathname()
+  const router = useRouter()
   const [hasUnreadMessages, setHasUnreadMessages] = useState<boolean>(false)
   const [isMenuOpen, setIsMenuOpen] = useState<boolean>(false)
+  const [isSearchOpen, setIsSearchOpen] = useState<boolean>(false)
+  const [searchQuery, setSearchQuery] = useState<string>("")
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false)
 
-  // Fetch unread messages count
+  // Check authentication status
   useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        const customer = await retrieveCustomer()
+        setIsAuthenticated(!!customer)
+      } catch {
+        setIsAuthenticated(false)
+      }
+    }
+    
+    checkAuth()
+  }, [])
+
+  // Fetch unread messages count - only for authenticated users
+  useEffect(() => {
+    if (!isAuthenticated) {
+      setHasUnreadMessages(false)
+      return
+    }
+
     const checkUnreadMessages = async () => {
       try {
         const unreadCount = await getUnreadMessagesCount()
         setHasUnreadMessages(unreadCount > 0)
       } catch (error) {
-        console.error('Failed to check for unread messages:', error)
+        // Silent fail - authentication check already handled in getUnreadMessagesCount
+        setHasUnreadMessages(false)
       }
     }
     
@@ -152,22 +183,24 @@ export const MobileUserNavigation = () => {
       checkUnreadMessages()
     }
     
+    // Initial check
     checkUnreadMessages()
-    const intervalId = setInterval(checkUnreadMessages, 30000)
+    
+    // Poll every 2 minutes instead of 30 seconds to reduce server load
+    const intervalId = setInterval(checkUnreadMessages, 120000)
     window.addEventListener('messages:marked-as-read', handleMarkedAsRead)
     
     return () => {
       clearInterval(intervalId)
       window.removeEventListener('messages:marked-as-read', handleMarkedAsRead)
     }
-  }, [])
+  }, [isAuthenticated])
 
   const handleLogout = async () => {
     try {
       await signout()
       setIsMenuOpen(false)
     } catch (error) {
-      console.error('Logout failed:', error)
     }
   }
 
@@ -179,16 +212,90 @@ export const MobileUserNavigation = () => {
     setIsMenuOpen(false)
   }
 
+  const toggleSearch = () => {
+    setIsSearchOpen(!isSearchOpen)
+    if (isMenuOpen) {
+      setIsMenuOpen(false)
+    }
+  }
+
+  const closeSearch = () => {
+    setIsSearchOpen(false)
+    setSearchQuery("")
+  }
+
+  const handleSearchSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (searchQuery.trim()) {
+      router.push(`/categories?query=${encodeURIComponent(searchQuery.trim())}`)
+      closeSearch()
+    } else {
+      router.push(`/categories`)
+      closeSearch()
+    }
+  }
+
   const allItems = [...mobileNavigationItems, ...mobileSecondaryItems]
 
   return (
     <>
-      {/* Backdrop with blur effect */}
+      {/* Backdrop with blur effect for menu */}
       {isMenuOpen && (
         <div 
           className="fixed inset-0 bg-black/40 backdrop-blur-sm z-40 md:hidden transition-all duration-300"
           onClick={closeMenu}
         />
+      )}
+
+      {/* Backdrop with blur effect for search */}
+      {isSearchOpen && (
+        <div 
+          className="fixed inset-0 bg-black/40 backdrop-blur-sm z-40 md:hidden transition-all duration-300"
+          onClick={closeSearch}
+        />
+      )}
+
+      {/* Search Modal */}
+      {isSearchOpen && (
+        <div className="fixed bottom-4 left-4 right-4 mx-auto max-w-sm bg-primary backdrop-blur-xl rounded-3xl shadow-2xl border border-white/20 z-50 md:hidden overflow-hidden animate-in slide-in-from-bottom-4 duration-300">
+          <div className="p-6">
+            {/* Search Header */}
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold text-gray-900">Wyszukaj produkty</h2>
+              <button
+                onClick={closeSearch}
+                className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+              >
+                <CloseIcon className="w-5 h-5 text-gray-600" />
+              </button>
+            </div>
+
+            {/* Search Form */}
+            <form onSubmit={handleSearchSubmit} className="space-y-4">
+              <div className="relative">
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Wpisz nazwę produktu..."
+                  className="w-full px-4 py-3 pr-12 bg-white border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#3B3634] focus:border-transparent text-gray-900 placeholder-gray-500"
+                  autoFocus
+                />
+                <button
+                  type="submit"
+                  className="absolute right-2 top-1/2 transform -translate-y-1/2 p-2 bg-[#3B3634] text-white rounded-xl hover:bg-[#2d2a28] transition-colors"
+                >
+                  <SearchIcon className="w-4 h-4" />
+                </button>
+              </div>
+              
+              {/* Quick search suggestions could go here */}
+              <div className="text-sm text-gray-500 text-center">
+                Naciśnij Enter lub kliknij lupę aby wyszukać
+              </div>
+            </form>
+          </div>
+        </div>
       )}
 
       {/* Floating Menu with improved design */}
@@ -270,23 +377,18 @@ export const MobileUserNavigation = () => {
                 <HomeIcon className="w-5 h-5" />
               </Link>
 
-              {/* Messages Button with Notification */}
-              <Link
-                href="/user/messages"
+              {/* Search Button */}
+              <button
+                onClick={toggleSearch}
                 className={cn(
                   "w-12 h-12 rounded-full flex items-center justify-center transition-all duration-200 hover:scale-110 relative",
-                  pathname === '/user/messages'
-                    ? "bg-[#3B3634] text-white shadow-lg"
+                  isSearchOpen
+                    ? "bg-[#3B3634] text-white shadow-lg scale-110"
                     : "bg-white/10 hover:bg-white/20 text-white"
                 )}
               >
-                <MessagesIcon className="w-5 h-5" />
-                {hasUnreadMessages && (
-                  <div className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full border-2 border-gray-900 flex items-center justify-center">
-                    <div className="w-2 h-2 bg-primary ring-1 ring-[#3B3634] rounded-full animate-pulse" />
-                  </div>
-                )}
-              </Link>
+                <SearchIcon className="w-5 h-5" />
+              </button>
 
               {/* User Menu Toggle */}
               <button

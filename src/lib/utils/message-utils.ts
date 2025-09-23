@@ -8,6 +8,7 @@ import { MessageThread, MessageSender } from "@/lib/data/messages"
 export function hasUnreadMessages(thread: MessageThread): boolean {
   if (!thread) return false;
   
+  
   // Use unread_count if available and reliable
   if (typeof thread.unread_count === 'number') {
     return thread.unread_count > 0;
@@ -95,7 +96,6 @@ export function updateUnreadCountLocally(count: number): void {
   try {
     localStorage.setItem(UNREAD_COUNT_KEY, count.toString());
   } catch (error) {
-    console.error('Error updating unread count in localStorage:', error);
   }
 }
 
@@ -110,7 +110,6 @@ export function getUnreadCountLocally(): number {
     const count = localStorage.getItem(UNREAD_COUNT_KEY);
     return count ? parseInt(count, 10) : 0;
   } catch (error) {
-    console.error('Error getting unread count from localStorage:', error);
     return 0;
   }
 }

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { Button, Input, Textarea } from "@/components/atoms"
-import { createDirectMessage } from "@/lib/data/actions/direct-message-fixed"
+import { createMessageThread } from "@/lib/data/actions/messages"
 import { useRouter } from "@/i18n/routing"
 import toast from "react-hot-toast"
 import { AuthCheck } from "./AuthCheck"
@@ -52,7 +52,7 @@ export const MessageForm = ({
     
     try {
       // Use the fixed direct message function with simplified parameters
-      const result = await createDirectMessage({
+      const result = await createMessageThread({
         subject: formData.subject,
         seller_id: seller_id,
         content: formData.content
@@ -83,7 +83,6 @@ export const MessageForm = ({
         }
       }
     } catch (error: any) {
-      console.error("Error creating message thread:", error)
       toast.dismiss(loadingToast)
       
       // Show more specific error message

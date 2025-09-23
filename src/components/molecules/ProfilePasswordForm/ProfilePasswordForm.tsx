@@ -94,7 +94,7 @@ const Form = ({
   const updatePassword = async (data: FieldValues) => {
     if (form.getValues("confirmPassword") !== form.getValues("newPassword")) {
       setConfirmPasswordError({
-        message: "New password and old password cannot be identical",
+        message: "Nowe hasło i stare hasło nie mogą być identyczne",
         type: "custom",
       } as FieldError)
       return
@@ -106,13 +106,12 @@ const Form = ({
       try {
         const res = await updateCustomerPassword(data.newPassword, token!)
         if (res.success) {
-          toast.success("Password updated")
+          toast.success("Hasło zostało zaktualizowane")
           setSuccess(true)
         } else {
-          toast.error(res.error || "Something went wrong")
+          toast.error(res.error || "Wystąpił błąd")
         }
       } catch (err) {
-        console.log(err)
         return
       }
     }
@@ -124,18 +123,18 @@ const Form = ({
         level="h1"
         className="uppercase heading-md text-primary text-center"
       >
-        Password updated
+        Hasło zostało zaktualizowane
       </Heading>
       <p className="text-center my-8">
-        Your password has been updated. You can now login with your new
-        password.
+        Hasło zostało zaktualizowane. Możesz się teraz zalogować z nowym
+        hasłem.
       </p>
       <LocalizedClientLink href="/user">
         <Button
           className="uppercase py-3 px-6 !font-semibold w-full"
           size="large"
         >
-          Go to user page
+          Do strony użytkownika
         </Button>
       </LocalizedClientLink>
     </div>
@@ -163,7 +162,7 @@ const Form = ({
             newPasswordError["8chars"] ? "text-red-700" : "text-green-700"
           )}
         >
-          <CheckCircle /> At least 8 characters
+          <CheckCircle /> Minimalnie 8 znaków
         </p>
         <p
           className={cn(
@@ -171,7 +170,7 @@ const Form = ({
             newPasswordError["lower"] ? "text-red-700" : "text-green-700"
           )}
         >
-          <CheckCircle /> One lowercase letter
+          <CheckCircle /> Jedna mała litera
         </p>
         <p
           className={cn(
@@ -179,7 +178,7 @@ const Form = ({
             newPasswordError["upper"] ? "text-red-700" : "text-green-700"
           )}
         >
-          <CheckCircle /> One uppercase letter
+          <CheckCircle /> Jedna duża litera
         </p>
         <p
           className={cn(
@@ -189,7 +188,7 @@ const Form = ({
               : "text-green-700"
           )}
         >
-          <CheckCircle /> One number or symbol
+          <CheckCircle /> Jedna cyfra lub znak specjalny
         </p>
       </Card>
       <LabeledInput
@@ -198,7 +197,7 @@ const Form = ({
         error={confirmPasswordError as FieldError}
         {...register("confirmPassword")}
       />
-      <Button className="w-full my-4">Change password</Button>
+      <Button className="w-full my-4">Zmień hasło</Button>
     </form>
   )
 }

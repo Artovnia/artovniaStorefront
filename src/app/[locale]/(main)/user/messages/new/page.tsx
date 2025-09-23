@@ -15,7 +15,7 @@ export default async function NewMessagePage() {
         <UserNavigation />
         <div className="md:col-span-3 space-y-8">
           <div>
-            <Link href="/user/messages" className="text-sm text-primary hover:underline mb-2 inline-block font-instrument-sans">
+            <Link href="/user/messages" className="text-lg hover:underline mb-2 inline-block font-instrument-sans">
               ← Wróć do wiadomości
             </Link>
             <h1 className="heading-md uppercase font-instrument-sans">Nowa wiadomość</h1>

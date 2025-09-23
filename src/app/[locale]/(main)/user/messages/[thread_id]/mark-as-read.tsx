@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect } from "react"
-import { markThreadAsRead } from "@/lib/data/actions/message-actions"
+import { markThreadAsRead } from "@/lib/data/actions/messages"
 import { markThreadAsReadLocally, updateUnreadCountLocally } from "@/lib/utils/message-utils"
 
 /**
@@ -19,11 +19,11 @@ export function MarkAsRead({ threadId }: { threadId: string }) {
       
       // First try the API endpoint
       try {
-        console.log(`Marking thread ${threadId} as read...`)
+      
         apiSuccess = await markThreadAsRead(threadId)
         
         if (apiSuccess) {
-          console.log(`Successfully marked thread ${threadId} as read via API`)
+          
           
           // Update the UI to reflect read state
           updateUnreadCountLocally(0)
@@ -34,15 +34,14 @@ export function MarkAsRead({ threadId }: { threadId: string }) {
           })
           window.dispatchEvent(markAsReadEvent)
         } else {
-          console.warn(`API call succeeded but returned failure response for thread ${threadId}`)
+        
         }
       } catch (error) {
-        console.error(`Error marking thread ${threadId} as read:`, error)
+       
       }
       
       // If the API call failed, still update the UI using client-side fallback
       if (!apiSuccess) {
-        console.log(`Using client-side fallback to mark thread ${threadId} as read`)
         
         // Update the local storage state to consider this thread read
         // This ensures the UI shows the correct state even if the API failed
