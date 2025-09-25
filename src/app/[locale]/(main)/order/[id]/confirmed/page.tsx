@@ -1,8 +1,6 @@
-// src/app/[locale]/(main)/order/[id]/confirmed/page.tsx
 import { OrderConfirmedSection } from "@/components/sections/OrderConfirmedSection/OrderConfirmedSection"
 import { retrieveOrder } from "@/lib/data/orders"
 import { Metadata } from "next"
-import { notFound } from "next/navigation"
 import { Suspense } from "react"
 
 type Props = {

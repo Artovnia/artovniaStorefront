@@ -61,27 +61,6 @@ export async function retrieveCart(cartId?: string, fields?: string) {
       
     const cart = result.cart;
     
-    // Debug logging for cart data
-    if (process.env.NODE_ENV === 'development') {
-      console.log('🛒 Cart retrieved:', {
-        cartId: cart?.id,
-        itemsCount: cart?.items?.length || 0,
-        promotionsCount: cart?.promotions?.length || 0,
-        items: cart?.items?.map(item => ({
-          id: item.id,
-          product_title: item.product_title,
-          total: item.total,
-          original_total: item.original_total,
-          unit_price: item.unit_price,
-          quantity: item.quantity
-        })),
-        promotions: cart?.promotions?.map((promo: any) => ({
-          id: promo.id,
-          code: promo.code,
-          type: promo.type
-        }))
-      })
-    }
       
     // Check if cart is completed and handle accordingly
     if (cart && cart.completed_at) {
@@ -531,7 +510,6 @@ export async function applyPromotions(codes: string[]) {
   const headers = await getAuthHeaders()
   
   try {
-    console.log('🎫 Applying promotion codes:', codes)
     
     // Apply promotion codes to cart
     const response = await sdk.client.fetch(`/store/carts/${cartId}`, {
@@ -542,19 +520,7 @@ export async function applyPromotions(codes: string[]) {
       }
     })
     
-    console.log('🎫 Promotion application response:', {
-      success: !!response,
-      cart: (response as any)?.cart ? {
-        id: (response as any).cart.id,
-        promotions: (response as any).cart.promotions?.map((p: any) => ({
-          id: p.id,
-          code: p.code,
-          type: p.type
-        })),
-        total: (response as any).cart.total,
-        subtotal: (response as any).cart.subtotal
-      } : null
-    })
+   
     
     const cartCacheTag = await getCacheTag("carts")
     revalidateTag(cartCacheTag)

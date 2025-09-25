@@ -71,6 +71,7 @@ export interface CartContextType {
   setAddress: (address: any) => Promise<void>
   completeOrder: () => Promise<any>
   clearError: () => void
+  clearCart: () => void
   
   // Computed properties
   itemCount: number
@@ -152,6 +153,24 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children, initialCar
         
         // Clear timeout on success
         if (timeoutId) clearTimeout(timeoutId)
+        
+        // Check if cart is completed and clear it if so
+        if (updatedCart && ((updatedCart as any).status === 'completed' || (updatedCart as any).completed_at)) {
+          console.log('🔄 Cart is completed, clearing from context and storage')
+          
+          // Clear cart ID from localStorage and cookies
+          if (typeof window !== 'undefined') {
+            try {
+              localStorage.removeItem('_medusa_cart_id')
+              document.cookie = '_medusa_cart_id=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;'
+            } catch (error) {
+              console.warn('Could not clear cart ID from storage:', error)
+            }
+          }
+          
+          dispatch({ type: 'CLEAR_CART' })
+          return
+        }
         
         dispatch({ type: 'SET_CART', payload: updatedCart as ExtendedCart | null })
         
@@ -276,9 +295,37 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children, initialCar
     }
   }, [state.cart, refreshCart])
 
+  // Clear cart function - defined early to be used by other methods
+  const clearCart = useCallback(() => {
+    dispatch({ type: 'CLEAR_CART' })
+    
+    // Clear cart ID from localStorage and cookies
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.removeItem('_medusa_cart_id')
+        document.cookie = '_medusa_cart_id=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;'
+        console.log('✅ Cart manually cleared from storage')
+      } catch (error) {
+        console.warn('Could not clear cart ID from storage:', error)
+      }
+    }
+    
+    // Invalidate cache
+    unifiedCache.invalidate(['cart', 'inventory', 'promotions']).catch(err => {
+      console.warn('Cache invalidation failed:', err)
+    })
+  }, [])
+
   // Remove item with proper error handling
   const removeItem = useCallback(async (itemId: string) => {
     if (!state.cart || operationInProgress.current) return
+    
+    // Check if cart is completed
+    if ((state.cart as any).status === 'completed' || (state.cart as any).completed_at) {
+      console.log('🚫 Cannot remove item from completed cart, clearing cart context')
+      clearCart()
+      return
+    }
     
     operationInProgress.current = true
     
@@ -295,12 +342,21 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children, initialCar
       }
     } catch (error) {
       console.error('Error removing cart item:', error)
-      dispatch({ type: 'SET_ERROR', payload: error instanceof Error ? error.message : 'Failed to remove item' })
+      
+      // If error mentions payment sessions or completed cart, clear the cart
+      const errorMessage = error instanceof Error ? error.message : 'Failed to remove item'
+      if (errorMessage.includes('payment sessions') || errorMessage.includes('completed')) {
+        console.log('🚫 Cart appears to be completed, clearing cart context')
+        clearCart()
+        return
+      }
+      
+      dispatch({ type: 'SET_ERROR', payload: errorMessage })
       await refreshCart()
     } finally {
       operationInProgress.current = false
     }
-  }, [state.cart, refreshCart])
+  }, [state.cart, refreshCart, clearCart])
 
   // Set shipping method
   const setShipping = useCallback(async (methodId: string) => {
@@ -401,6 +457,18 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children, initialCar
       if (result) {
         if (result.type === 'order_set' || result.order_set || result.type === 'order' || result.order) {
           dispatch({ type: 'CLEAR_CART' })
+          
+          // Clear cart ID from localStorage and cookies
+          if (typeof window !== 'undefined') {
+            try {
+              localStorage.removeItem('_medusa_cart_id')
+              document.cookie = '_medusa_cart_id=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;'
+              console.log('✅ Cart ID cleared from storage')
+            } catch (error) {
+              console.warn('Could not clear cart ID from storage:', error)
+            }
+          }
+          
           await unifiedCache.invalidate(['cart', 'inventory', 'promotions'])
         }
       }
@@ -457,6 +525,7 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children, initialCar
     setAddress,
     completeOrder,
     clearError,
+    clearCart,
     
     // Computed properties
     ...computedValues

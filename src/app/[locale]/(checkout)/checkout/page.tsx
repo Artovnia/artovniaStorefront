@@ -6,6 +6,7 @@ import { retrieveCustomer } from "@/lib/data/cookies"
 import { notFound } from "next/navigation"
 import { Suspense } from "react"
 import Link from "next/link"
+import { CartProvider } from "@/components/context/CartContext"
 
 export default async function CheckoutPage() {
   return (
@@ -37,14 +38,16 @@ async function CheckoutPageContent() {
     ]);
 
     return (
-      <div className="container">
-        <CheckoutWrapper
-          cart={cart}
-          customer={customer}
-          availableShippingMethods={shippingMethods}
-          availablePaymentMethods={paymentMethods}
-        />
-      </div>
+      <CartProvider initialCart={cart}>
+        <div className="container">
+          <CheckoutWrapper
+            cart={cart}
+            customer={customer}
+            availableShippingMethods={shippingMethods}
+            availablePaymentMethods={paymentMethods}
+          />
+        </div>
+      </CartProvider>
     )
   } catch (error) {
     console.error("Error loading checkout page:", error)

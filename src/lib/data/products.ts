@@ -258,23 +258,6 @@ export const listProductsWithPromotions = async ({
       
       promotionProducts = promotionResponse.products || []
       
-      // CRITICAL DEBUG: Log what we actually received
-      console.log('🔍 [FRONTEND-DEBUG] Backend response:', {
-        products_count: promotionResponse.products?.length || 0,
-        total_count: promotionResponse.count || 0,
-        promotions_found: promotionResponse.promotions_found || 0,
-        applicable_product_ids: promotionResponse.applicable_product_ids || 0
-      })
-      
-      console.log('🔍 [FRONTEND-DEBUG] Received products:', 
-        promotionResponse.products?.map(p => ({ 
-          id: p.id, 
-          title: p.title, 
-          seller: (p.seller as any)?.company_name || 'No seller',
-          has_promotions: p.has_promotions 
-        })) || []
-      )
-      
     } catch (error) {
       console.warn('Failed to fetch promotion products, continuing with price-list only:', error)
     }
@@ -307,17 +290,11 @@ export const listProductsWithPromotions = async ({
       console.warn('Failed to fetch price-list products:', error)
     }
 
-    // Debug logging
-    console.log('🔍 Debug - Promotion products found:', promotionProducts.length)
-    console.log('🔍 Debug - Price-list products found:', priceListProducts.length)
-    
     // Step 4: Combine and paginate
     const allDiscountedProducts = [
       ...promotionProducts.map(p => ({ ...p, discount_type: 'promotion' })),
       ...priceListProducts.map(p => ({ ...p, discount_type: 'price_list', has_promotions: true }))
     ]
-
-    console.log('🔍 Debug - Total discounted products:', allDiscountedProducts.length)
 
     // Apply pagination
     const startIndex = (page - 1) * limit
@@ -325,8 +302,6 @@ export const listProductsWithPromotions = async ({
     const paginatedProducts = allDiscountedProducts.slice(startIndex, endIndex)
 
     const nextPage = endIndex < allDiscountedProducts.length ? page + 1 : null
-
-    console.log('🔍 Debug - Paginated products for page', page, ':', paginatedProducts.length)
 
     return {
       response: {

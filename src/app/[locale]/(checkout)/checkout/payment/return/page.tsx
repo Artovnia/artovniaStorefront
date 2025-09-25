@@ -33,12 +33,6 @@ async function PaymentReturnContent({ searchParams }: PaymentReturnContentProps)
   const { cartId, paymentIntent, paymentIntentClientSecret, redirectStatus } = 
     parseStripeReturnParams(urlParams)
 
-  console.log('🔍 Payment return page accessed:', {
-    cartId,
-    paymentIntent,
-    paymentIntentClientSecret,
-    redirectStatus
-  })
 
   if (!cartId) {
     console.error('❌ No cart ID in payment return')
@@ -54,7 +48,6 @@ async function PaymentReturnContent({ searchParams }: PaymentReturnContentProps)
     )
 
     if (result.success && result.orderId) {
-      console.log('✅ Payment completed successfully, redirecting to confirmation')
       redirect(`/order/confirmed/${result.orderId}`)
     } else {
       console.error('❌ Payment completion failed:', result.error)

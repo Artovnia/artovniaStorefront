@@ -45,11 +45,6 @@ const CheckoutWrapper: React.FC<CheckoutWrapperProps> = ({
     const isNewCart = cart?.id && cart.id !== lastCartId
     
     if (isNewCart) {
-      console.log('🔍 New cart detected - resetting terms acceptance:', {
-        oldCartId: lastCartId,
-        newCartId: cart.id,
-        wasAccepted: termsAccepted
-      })
       
       setTermsAccepted(false)
       setLastCartId(cart.id)

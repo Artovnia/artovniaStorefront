@@ -1,6 +1,3 @@
-// src/components/sections/OrderConfirmedSection/OrderConfirmedSection.tsx
-//after processing payment and order, order confirmation page
-import { Container, Heading, Text } from "@medusajs/ui"
 import React from "react"
 import SVGWrapper from "@/components/atoms/SVGWrapper/SVGWrapper"
 

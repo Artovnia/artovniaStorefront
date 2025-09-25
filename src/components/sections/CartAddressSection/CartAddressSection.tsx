@@ -14,6 +14,7 @@ import ShippingAddress from "@/components/organisms/ShippingAddress/ShippingAddr
 import CheckCircleSolidFixed from "@/components/atoms/icons/CheckCircleSolidFixed"
 import { CheckCircleSolid } from "@medusajs/icons"
 import { Link } from "@/i18n/routing"
+import { useCart } from "@/components/context/CartContext"
 
 export const CartAddressSection = ({
   cart: propCart,
@@ -26,33 +27,36 @@ export const CartAddressSection = ({
   const router = useRouter()
   const pathname = usePathname()
   
-  // Use cart prop directly (no context needed)
-  const cart = propCart
+  // Use cart context for live updates
+  const { cart, refreshCart, setAddress } = useCart()
+  
+  // Fallback to prop cart if context cart is not available
+  const activeCart = cart || propCart
   
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   // Memoize address validation to prevent unnecessary recalculations
   const isAddress = useMemo(() => Boolean(
-    cart?.shipping_address &&
-      cart?.shipping_address.first_name &&
-      cart?.shipping_address.last_name &&
-      cart?.shipping_address.address_1 &&
-      cart?.shipping_address.city &&
-      cart?.shipping_address.postal_code &&
-      cart?.shipping_address.country_code
-  ), [cart?.shipping_address])
+    activeCart?.shipping_address &&
+      activeCart?.shipping_address.first_name &&
+      activeCart?.shipping_address.last_name &&
+      activeCart?.shipping_address.address_1 &&
+      activeCart?.shipping_address.city &&
+      activeCart?.shipping_address.postal_code &&
+      activeCart?.shipping_address.country_code
+  ), [activeCart?.shipping_address])
   const isOpen = searchParams.get("step") === "address" || !isAddress
 
   const { state: sameAsBilling, toggle: toggleSameAsBilling } = useToggleState(
-    cart?.shipping_address && cart?.billing_address
-      ? compareAddresses(cart?.shipping_address, cart?.billing_address)
+    activeCart?.shipping_address && activeCart?.billing_address
+      ? compareAddresses(activeCart?.shipping_address, activeCart?.billing_address)
       : true
   )
 
   // Handle address form submission
   const handleAddressSubmit = useCallback(async (formData: FormData) => {
-    if (!cart?.id) return
+    if (!activeCart?.id) return
     
     setIsSubmitting(true)
     setError(null)
@@ -83,7 +87,13 @@ export const CartAddressSection = ({
         }
       }
       
-      await setAddresses(null, formData)
+      // Use cart context setAddress method for proper state management
+      await setAddress(addressData)
+      
+      // Refresh cart to get updated shipping methods
+      await refreshCart('address')
+      
+      // Navigate to delivery step
       router.replace(`/checkout?step=delivery`)
     } catch (error: any) {
       console.error('Error setting address:', error)
@@ -91,7 +101,7 @@ export const CartAddressSection = ({
     } finally {
       setIsSubmitting(false)
     }
-  }, [cart?.id, sameAsBilling, router])
+  }, [activeCart?.id, sameAsBilling, router, setAddress, refreshCart])
 
   useEffect(() => {
     if (!isAddress && !isSubmitting) {
@@ -130,7 +140,7 @@ export const CartAddressSection = ({
               customer={customer}
               checked={sameAsBilling}
               onChange={toggleSameAsBilling}
-              cart={cart}
+              cart={activeCart}
             />
             <Button
               className="mt-6"
@@ -149,23 +159,23 @@ export const CartAddressSection = ({
         ) : (
           <div>
             <div className="text-small-regular">
-              {cart && cart.shipping_address ? (
+              {activeCart && activeCart.shipping_address ? (
                 <div className="flex items-start gap-x-8">
                   <div className="flex items-start gap-x-1 w-full">
                     <div>
                       <Text className="txt-medium-plus font-bold">
-                        {cart.shipping_address.first_name}{" "}
-                        {cart.shipping_address.last_name}
+                        {activeCart.shipping_address.first_name}{" "}
+                        {activeCart.shipping_address.last_name}
                       </Text>
                       <Text>
-                        {cart.shipping_address.address_1}{" "}
-                        {cart.shipping_address.address_2},{" "}
-                        {cart.shipping_address.postal_code}{" "}
-                        {cart.shipping_address.city},{" "}
-                        {cart.shipping_address.country_code?.toUpperCase()}
+                        {activeCart.shipping_address.address_1}{" "}
+                        {activeCart.shipping_address.address_2},{" "}
+                        {activeCart.shipping_address.postal_code}{" "}
+                        {activeCart.shipping_address.city},{" "}
+                        {activeCart.shipping_address.country_code?.toUpperCase()}
                       </Text>
                       <Text>
-                        {cart.email}, {cart.shipping_address.phone}
+                        {activeCart.email}, {activeCart.shipping_address.phone}
                       </Text>
                     </div>
                   </div>

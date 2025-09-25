@@ -82,8 +82,6 @@ async function CheckoutCompleteContent({
       redirect(`/${locale}/cart?error=no-session`)
       return <ProcessingCheckout />;
     }
-
-    console.log('Completing checkout for session:', sessionId)
     
     // Complete the checkout using the lib function
     const result = await completeCheckout(sessionId)

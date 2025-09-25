@@ -3,15 +3,19 @@
 import React, { useEffect, useState } from 'react'
 import { useRouter } from '@/i18n/routing'
 import { useSearchParams, useParams } from 'next/navigation'
+import { useCart, CartProvider } from '@/components/context/CartContext'
 // Removed unused import: completeCart
 
-const StripeReturnPage: React.FC = () => {
+const StripeReturnPageContent: React.FC = () => {
   const router = useRouter()
   const searchParams = useSearchParams()
   const params = useParams()
   const locale = params.locale as string || 'pl'
   const [isProcessing, setIsProcessing] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  
+  // Get cart context to clear cart after successful completion
+  const { completeOrder } = useCart()
 
   useEffect(() => {
     const processStripeReturn = async () => {
@@ -24,14 +28,6 @@ const StripeReturnPage: React.FC = () => {
         const cartId = searchParams.get('cart_id')
         const status = searchParams.get('status') // Our custom status parameter
         
-        console.log('🔍 All URL parameters:', {
-          paymentIntent,
-          paymentIntentClientSecret,
-          redirectStatus,
-          cartId,
-          status,
-          allParams: Object.fromEntries(searchParams.entries())
-        })
         
         if (!cartId) {
           throw new Error('Missing cart_id parameter')
@@ -41,23 +37,16 @@ const StripeReturnPage: React.FC = () => {
         const finalStatus = redirectStatus || status
 
         if (finalStatus === 'succeeded' || finalStatus === 'success') {
-          console.log('🔍 Payment succeeded, processing order completion')
-          console.log('🔍 Cart ID:', cartId)
-          console.log('🔍 Payment Intent:', paymentIntent)
           
           // For Stripe Checkout payments, the payment providers now automatically detect
           // completed Stripe Checkout sessions and authorize the payment accordingly
           try {
-            console.log('🔍 Completing cart after successful Stripe Checkout payment')
-            console.log('🔍 Payment providers will automatically detect and authorize Stripe Checkout')
+            console.log('🔄 Completing cart via context:', cartId)
             
-            // Complete the cart - payment providers will handle Stripe Checkout detection
-            const { completeCart } = await import('@/lib/data/client-payment')
-            const result = await completeCart(cartId)
+            // Use cart context to complete the order - this will clear the cart state
+            const result = await completeOrder()
             
-            console.log('🔍 completeCart result:', result)
-            console.log('🔍 completeCart result type:', typeof result)
-            console.log('🔍 completeCart result keys:', result ? Object.keys(result) : 'null')
+            console.log('✅ Cart completion result:', result)
             
             // Handle different response formats from cart completion
             let orderId = null
@@ -67,21 +56,17 @@ const StripeReturnPage: React.FC = () => {
               orderId = result.id || 
                        result.order?.id || 
                        result.data?.id ||
-                       (result.type === 'order' && result.order?.id)
-              
-              console.log('🔍 Extracted order ID:', orderId)
-              console.log('🔍 result.id:', result.id)
-              console.log('🔍 result.order:', result.order)
-              console.log('🔍 result.data:', result.data)
-              console.log('🔍 result.type:', result.type)
+                       result.order_set?.id ||
+                       (result.type === 'order' && result.order?.id) ||
+                       (result.type === 'order_set' && result.order_set?.id)
             }
             
             if (orderId) {
-              console.log('🔍 Redirecting to order confirmation:', `/order/${orderId}/confirmed`)
+              console.log('✅ Order completed successfully, redirecting to:', orderId)
               router.push(`/order/${orderId}/confirmed`)
               return
             } else {
-              console.error('❌ No order ID found in result')
+              console.error('❌ No order ID found in result:', result)
               setError(locale === 'pl' ? 'Zamówienie zostało utworzone, ale nie znaleziono ID zamówienia. Sprawdź historię zamówień.' : 'Order was created but order ID not found. Please check your order history.')
             }
             
@@ -93,7 +78,6 @@ const StripeReturnPage: React.FC = () => {
           }
           
         } else if (finalStatus === 'failed') {
-          console.log('❌ Payment failed')
           setError(locale === 'pl' ? 'Płatność nie powiodła się. Spróbuj ponownie.' : 'Payment failed. Please try again.')
           
           // Redirect back to checkout after a delay
@@ -250,6 +234,15 @@ const StripeReturnPage: React.FC = () => {
         </div>
       </div>
     </div>
+  )
+}
+
+// Wrapper component with CartProvider
+const StripeReturnPage: React.FC = () => {
+  return (
+    <CartProvider>
+      <StripeReturnPageContent />
+    </CartProvider>
   )
 }
 
