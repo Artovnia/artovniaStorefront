@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from "react"
 import { LowestPriceData } from "@/types/price-history"
 import { getPublishableApiKey } from "@/lib/get-publishable-key"
-import { getCachedBatchLowestPrices } from "@/lib/utils/storefront-cache"
+import { unifiedCache } from "@/lib/utils/unified-cache"
 
 interface BatchLowestPricesOptions {
   variantIds: string[]
@@ -82,8 +82,9 @@ export function useBatchLowestPrices({
       }
     }
 
-    // Use persistent cache with 15-minute duration
-    return getCachedBatchLowestPrices(variantIds, currencyCode, regionId, days, fetchFn)
+    const cacheKey = `promotional:price:batch:${variantIds.sort().join(',')}:${currencyCode}:${regionId || 'default'}:${days}`
+    
+    return unifiedCache.get(cacheKey, fetchFn)
   }, [variantIds, currencyCode, regionId, days])
 
   const refetch = useCallback(async () => {

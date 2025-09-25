@@ -1,8 +1,7 @@
 "use client"
 
 import Image from "next/image"
-import { useState, useEffect } from "react"
-import { imageDeduplicator, performanceMonitor } from "@/lib/utils/performance"
+import { useState, useEffect, useCallback } from "react"
 
 interface OptimizedImageProps {
   src: string
@@ -18,6 +17,32 @@ interface OptimizedImageProps {
   onLoad?: () => void
   onError?: () => void
   prefetch?: boolean
+}
+
+// Client-side image prefetching utility
+const prefetchImage = (src: string) => {
+  if (typeof window === 'undefined') return
+  
+  const link = document.createElement('link')
+  link.rel = 'prefetch'
+  link.href = src
+  link.as = 'image'
+  document.head.appendChild(link)
+  
+  if (process.env.NODE_ENV === 'development') {
+    console.log(`🖼️ Prefetched image: ${src}`)
+  }
+}
+
+// Performance measurement utility for client-side
+const measureImageLoad = (alt: string, startTime: number) => {
+  if (process.env.NODE_ENV === 'production') return 0
+  
+  const duration = performance.now() - startTime
+  if (duration > 100) { // Only log slow loads
+    console.warn(`⚠️ Slow image load: ${alt} took ${duration.toFixed(0)}ms`)
+  }
+  return duration
 }
 
 export const OptimizedImage = ({
@@ -39,35 +64,32 @@ export const OptimizedImage = ({
   const [isLoading, setIsLoading] = useState(true)
   const [hasError, setHasError] = useState(false)
   const [loadTime, setLoadTime] = useState<number | null>(null)
+  const [startTime] = useState(() => performance.now())
 
   // Prefetch image if requested
   useEffect(() => {
-    if (prefetch && !priority) {
-      performanceMonitor.prefetch.image(src)
+    if (prefetch && !priority && typeof window !== 'undefined') {
+      prefetchImage(src)
     }
   }, [src, prefetch, priority])
 
-  // Track image loading performance
-  useEffect(() => {
-    if (!isLoading && !hasError) {
-      const measureRender = performanceMonitor.measureRender(`Image-${alt}`)
-      const duration = measureRender()
-      setLoadTime(duration)
-    }
-  }, [isLoading, hasError, alt])
-
-  const handleLoad = () => {
+  const handleLoad = useCallback(() => {
     setIsLoading(false)
     setHasError(false)
+    
+    // Measure load time
+    const duration = measureImageLoad(alt, startTime)
+    setLoadTime(duration)
+    
     onLoad?.()
-  }
+  }, [alt, startTime, onLoad])
 
-  const handleError = () => {
+  const handleError = useCallback(() => {
     setIsLoading(false)
     setHasError(true)
     console.warn(`🖼️ Image failed to load: ${src}`)
     onError?.()
-  }
+  }, [src, onError])
 
   // Generate optimized sizes if not provided
   const optimizedSizes = sizes || (
@@ -114,7 +136,7 @@ export const OptimizedImage = ({
       )}
       
       {/* Performance indicator for development */}
-      {process.env.NODE_ENV === 'development' && loadTime !== null && (
+      {process.env.NODE_ENV === 'development' && loadTime !== null && loadTime > 100 && (
         <div className="absolute top-0 right-0 bg-black bg-opacity-50 text-white text-xs px-1 rounded">
           {loadTime.toFixed(0)}ms
         </div>
@@ -123,26 +145,21 @@ export const OptimizedImage = ({
   )
 }
 
-// Hook for batch image prefetching
+// Client-side image prefetching hook with batching
 export const usePrefetchImages = (urls: string[]) => {
   useEffect(() => {
     const prefetchBatch = async () => {
-      // Prefetch in batches to avoid overwhelming the browser
+      if (typeof window === 'undefined' || urls.length === 0) return
+      
+      // Prefetch in small batches to avoid overwhelming the browser
       const batchSize = 3
       for (let i = 0; i < urls.length; i += batchSize) {
         const batch = urls.slice(i, i + batchSize)
-        await Promise.all(
-          batch.map(url => 
-            imageDeduplicator.dedupe(
-              `prefetch-${url}`,
-              async () => {
-                performanceMonitor.prefetch.image(url)
-                return Promise.resolve()
-              },
-              { useCache: true }
-            )
-          )
-        )
+        
+        // Prefetch all images in the batch
+        batch.forEach(url => {
+          prefetchImage(url)
+        })
         
         // Small delay between batches
         if (i + batchSize < urls.length) {
@@ -151,8 +168,40 @@ export const usePrefetchImages = (urls: string[]) => {
       }
     }
 
-    if (urls.length > 0) {
-      prefetchBatch()
-    }
+    prefetchBatch()
   }, [urls])
+}
+
+// Batch image preloading utility
+export const batchPrefetchImages = (imageUrls: string[], batchSize: number = 3) => {
+  if (typeof window === 'undefined') return Promise.resolve()
+  
+  return new Promise<void>((resolve) => {
+    let processed = 0
+    const total = imageUrls.length
+    
+    if (total === 0) {
+      resolve()
+      return
+    }
+    
+    const processBatch = (startIndex: number) => {
+      const endIndex = Math.min(startIndex + batchSize, total)
+      
+      for (let i = startIndex; i < endIndex; i++) {
+        prefetchImage(imageUrls[i])
+      }
+      
+      processed = endIndex
+      
+      if (processed >= total) {
+        resolve()
+      } else {
+        // Continue with next batch after a short delay
+        setTimeout(() => processBatch(processed), 50)
+      }
+    }
+    
+    processBatch(0)
+  })
 }

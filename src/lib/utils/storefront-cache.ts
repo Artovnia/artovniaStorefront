@@ -136,18 +136,40 @@ class StorefrontCache {
     }
   }
 
-  async set(key: string, data: any, ttlSeconds: number): Promise<void> {
+  async set(key: string, data: any, ttlSeconds: number, tags: string[] = []): Promise<void> {
     if (this.connectionState !== 'ready') {
       return
     }
     
     try {
+      // Set the main data first
       await Promise.race([
         redis.setex(key, ttlSeconds, JSON.stringify(data)),
         new Promise<void>((_, reject) => 
           setTimeout(() => reject(new Error('Redis timeout')), 1000)
         )
       ])
+      
+      // Track tags separately (non-blocking) - with fallback for unsupported Redis commands
+      if (tags.length > 0) {
+        try {
+          for (const tag of tags) {
+            // Check if Redis client supports sadd
+            if (typeof redis.sadd === 'function') {
+              await redis.sadd(`tag:${tag}`, key)
+              await redis.expire(`tag:${tag}`, ttlSeconds + 300)
+            } else {
+              // Fallback: store as simple key-value pairs
+              await redis.setex(`tag:${tag}:${key}`, ttlSeconds + 300, '1')
+            }
+          }
+        } catch (tagError) {
+          // Tag tracking is optional - don't fail the main cache operation
+          if (process.env.NODE_ENV === 'development') {
+            console.warn(`Tag tracking failed for key: ${key}`, tagError)
+          }
+        }
+      }
     } catch (error) {
       if (process.env.NODE_ENV === 'development') {
         console.warn(`Cache set failed for key: ${key}`, error)
@@ -187,6 +209,47 @@ class StorefrontCache {
     } catch (error) {
       if (process.env.NODE_ENV === 'development') {
         console.warn(`Pattern invalidation failed: ${pattern}`, error)
+      }
+    }
+  }
+
+  async invalidateTags(tags: string[]): Promise<void> {
+    if (this.connectionState !== 'ready') {
+      return
+    }
+
+    try {
+      for (const tag of tags) {
+        try {
+          // Try Redis sets first
+          if (typeof redis.smembers === 'function') {
+            const keys = await redis.smembers(`tag:${tag}`)
+            if (keys.length > 0) {
+              await redis.del(...keys)
+              await redis.del(`tag:${tag}`) // Clean up the tag set itself
+            }
+          } else {
+            throw new Error('smembers not supported')
+          }
+        } catch (setError) {
+          // Fallback: use pattern matching for key-value pairs
+          try {
+            const pattern = `tag:${tag}:*`
+            const keys = await redis.keys(pattern)
+            if (keys.length > 0) {
+              // Extract actual cache keys from tag keys
+              const cacheKeys = keys.map((k: string) => k.replace(`tag:${tag}:`, ''))
+              await redis.del(...keys, ...cacheKeys)
+            }
+          } catch (fallbackError) {
+            // If both methods fail, use simple pattern invalidation
+            await this.invalidatePattern(`*${tag}*`)
+          }
+        }
+      }
+    } catch (error) {
+      if (process.env.NODE_ENV === 'development') {
+        console.warn(`Tag-based invalidation failed for tags: ${tags.join(', ')}`, error)
       }
     }
   }

@@ -117,7 +117,6 @@ export const SmartProductsListing = (props: SmartProductsListingProps) => {
   }
 
   // Fallback to database listing
-  // Fallback to database listing
   return (
     <ProductListing
       category_id={category_id}

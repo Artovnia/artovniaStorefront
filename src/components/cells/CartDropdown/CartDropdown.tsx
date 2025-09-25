@@ -1,3 +1,4 @@
+// src/components/cells/CartDropdown/CartDropdown.tsx
 "use client"
 
 import { Badge, Button } from "@/components/atoms"
@@ -7,8 +8,8 @@ import { Link } from "@/i18n/routing"
 import { CartIcon } from "@/icons"
 import { convertToLocale } from "@/lib/helpers/money"
 import { HttpTypes } from "@medusajs/types"
-import { useEffect, useState } from "react"
-import { useCart } from "@/components/context/CartContext"
+import { useContext, useEffect, useState } from "react"
+import CartContext from "../../context/CartContext"
 
 const getItemCount = (cart: HttpTypes.StoreCart | null | undefined) => {
   return cart?.items?.reduce((acc, item) => acc + item.quantity, 0) || 0
@@ -22,10 +23,14 @@ export const CartDropdown = ({
   cart: propCart,
 }: CartDropdownProps) => {
   const [open, setOpen] = useState(false)
-  const { cart: contextCart, refreshCart, removeItem, lastUpdated } = useCart()
   
-  // Always use context cart for real-time updates - ignore prop cart completely
-  const cart = contextCart
+  // Safely check for cart context - don't throw error if not available
+  const cartContext = useContext(CartContext)
+  
+  // Use context cart if available, otherwise fall back to prop cart
+  const cart = cartContext?.cart || propCart
+  const refreshCart = cartContext?.refreshCart
+  const removeItem = cartContext?.removeItem
 
   // Force recalculation on every render to avoid stale closures
   const cartItemsCount = cart?.items?.reduce((acc, item) => acc + item.quantity, 0) || 0
@@ -36,14 +41,12 @@ export const CartDropdown = ({
     currency_code: cart?.currency_code || "eur",
   })
 
-  // Auto-refresh cart on mount to ensure we have cart data
+  // Auto-refresh cart on mount to ensure we have cart data (only if context available)
   useEffect(() => {
-    if (!contextCart) {
+    if (cartContext && !cartContext.cart && refreshCart) {
       refreshCart()
     }
-  }, [contextCart, refreshCart])
-
-
+  }, [cartContext, refreshCart])
 
   useEffect(() => {
     if (open) {
@@ -70,7 +73,7 @@ export const CartDropdown = ({
       <Link href="/cart" className="relative">
         <CartIcon size={20} />
         {Boolean(cartItemsCount) && (
-          <Badge className="absolute -top-2 -right-2 w-4 h-4 p-0">
+          <Badge className="absolute -top-2 -right-2 w-4 h-4 p-2">
             {cartItemsCount}
           </Badge>
         )}
@@ -82,9 +85,9 @@ export const CartDropdown = ({
             {Boolean(cartItemsCount) ? (
               <div>
                 <div className="overflow-y-scroll max-h-[360px] no-scrollbar">
-                  {cart?.items?.map((item) => (
+                  {cart?.items?.map((item, index) => (
                     <CartDropdownItem
-                      key={item.id}
+                      key={item.id || `cart-item-${index}`}
                       item={item}
                       currency_code={cart.currency_code}
                       onDeleted={() => {

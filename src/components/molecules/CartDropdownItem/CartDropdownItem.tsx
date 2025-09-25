@@ -12,13 +12,40 @@ export const CartDropdownItem = ({
   currency_code: string
   onDeleted?: () => void
 }) => {
+  // Enhanced fallback calculation for missing pricing data
+  const calculateFallbackPrice = (item: HttpTypes.StoreCartLineItem): number => {
+    // Priority order: total -> original_total -> unit_price * quantity -> 0
+    if (typeof item.total === 'number' && item.total > 0) return item.total
+    if (typeof item.original_total === 'number' && item.original_total > 0) return item.original_total
+    if (typeof item.unit_price === 'number' && item.unit_price > 0) return item.unit_price * item.quantity
+    return 0
+  }
+
+  // Debug logging for missing pricing data (only when all pricing fields are missing)
+  if (process.env.NODE_ENV === 'development') {
+    const hasAnyPricing = item.total !== undefined || item.original_total !== undefined || item.unit_price !== undefined
+    if (!hasAnyPricing) {
+      console.warn('CartDropdownItem: Missing all pricing data', {
+        itemId: item.id,
+        original_total: item.original_total,
+        total: item.total,
+        unit_price: item.unit_price,
+        product_title: item.product_title,
+        quantity: item.quantity
+      })
+    }
+  }
+
+  const totalAmount = calculateFallbackPrice(item)
+  const originalAmount = item.original_total || totalAmount
+
   const original_total = convertToLocale({
-    amount: item.original_total,
+    amount: originalAmount,
     currency_code,
   })
 
   const total = convertToLocale({
-    amount: item.total,
+    amount: totalAmount,
     currency_code,
   })
 

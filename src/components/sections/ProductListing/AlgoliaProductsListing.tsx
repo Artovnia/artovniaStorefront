@@ -39,6 +39,7 @@ interface AlgoliaProductsListingProps {
   collection_id?: string
   locale?: string
   seller_handle?: string
+  seller_name?: string
   categories?: HttpTypes.StoreProductCategory[]
   currentCategory?: HttpTypes.StoreProductCategory
 }
@@ -49,6 +50,7 @@ export const AlgoliaProductsListing = (props: AlgoliaProductsListingProps) => {
     category_ids,
     collection_id,
     seller_handle,
+    seller_name,
     locale = process.env.NEXT_PUBLIC_DEFAULT_REGION,
     categories = [],
     currentCategory,
@@ -162,6 +164,9 @@ export const AlgoliaProductsListing = (props: AlgoliaProductsListingProps) => {
     query,  // Use Algolia's search functionality
     hitsPerPage: PRODUCT_LIMIT,
     page: page - 1,
+    // ✅ FIXED: Request all attributes to prevent incomplete objects
+    // Using '*' to get all available attributes, then filter on frontend
+    attributesToRetrieve: ['*'],
   };
   
   // Search configuration that balances precision and recall
@@ -273,12 +278,16 @@ export const AlgoliaProductsListing = (props: AlgoliaProductsListingProps) => {
       key={instantSearchKey}
       searchClient={searchClient} 
       indexName={activeIndexName}
+      future={{
+        preserveSharedStateOnUnmount: true // ✅ Fix InstantSearch warning
+      }}
     >
       <Configure {...configureProps} />
       <ProductsListing 
         sortOptions={sortOptions} 
         category_id={category_id} 
         categories={categories}
+
         // Pass category_ids for parent category aggregation
         category_ids={category_ids}
         currentCategory={currentCategory}
@@ -331,13 +340,14 @@ const ProductsListing = ({
     limit: 10,
   })
 
-  // Centralized fetch of customer and wishlist data for all product cards
+  // ✅ OPTIMIZED: Memoized user data fetching to prevent re-renders
   const [user, setUser] = useState<HttpTypes.StoreCustomer | null>(null)
   const [wishlist, setWishlist] = useState<SerializableWishlist[]>([])
-  const [isLoading, setIsLoading] = useState(false)
+  const [isUserDataLoaded, setIsUserDataLoaded] = useState(false)
+  const [debugLogged, setDebugLogged] = useState(false)
 
-  // Function to refresh wishlist data after wishlist changes
-  const refreshWishlist = async () => {
+  // ✅ OPTIMIZED: Memoized refresh function to prevent re-renders
+  const refreshWishlist = useMemo(() => async () => {
     if (!user) return;
     
     try {
@@ -346,32 +356,45 @@ const ProductsListing = ({
     } catch (error) {
       console.error('Error refreshing wishlist:', error)
     }
-  }
+  }, [user])
   
-  // Fetch user and wishlist data
-  const fetchUserData = async () => {
-    try {
-      setIsLoading(true)
-      const customer = await retrieveCustomer()
-      setUser(customer)
-      
-      if (customer) {
-        const wishlistData = await getUserWishlists()
-        setWishlist(wishlistData.wishlists || [])
-      }
-    } catch (error) {
-      console.error('Error fetching user data:', error)
-      setUser(null)
-      setWishlist([])
-    } finally {
-      setIsLoading(false)
-    }
-  }
-  
-  // Initial fetch when component mounts
+  // ✅ OPTIMIZED: Single effect for user data with proper cleanup
   useEffect(() => {
+    let isMounted = true
+    
+    const fetchUserData = async () => {
+      try {
+        const customer = await retrieveCustomer()
+        
+        if (!isMounted) return // Prevent state update if component unmounted
+        
+        setUser(customer)
+        
+        if (customer) {
+          const wishlistData = await getUserWishlists()
+          if (isMounted) {
+            setWishlist(wishlistData.wishlists || [])
+          }
+        }
+      } catch (error) {
+        if (isMounted) {
+          console.error('Error fetching user data:', error)
+          setUser(null)
+          setWishlist([])
+        }
+      } finally {
+        if (isMounted) {
+          setIsUserDataLoaded(true)
+        }
+      }
+    }
+
     fetchUserData()
-  }, []) // Empty dependency array - initial fetch only once when component mounts
+    
+    return () => {
+      isMounted = false // Cleanup flag
+    }
+  }, []) // Empty dependency array - fetch only once
 
   const selectOptionHandler = (value: string) => {
     // Update the URL search params to trigger re-render with new sort
@@ -418,19 +441,22 @@ const ProductsListing = ({
               </div>
             ) : (
               <div className="w-full flex justify-center xl:justify-start">
-                <BatchPriceProvider currencyCode="PLN" days={30}>
-                  <ul className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-12 w-fit mx-auto xl:mx-0">
-                    {items.map((hit: any) => (
-                      <ProductCard 
-                        key={hit.objectID} 
-                        product={hit} 
-                        user={user}
-                        wishlist={wishlist}
-                        onWishlistChange={refreshWishlist}
-                      />
-                    ))}
-                  </ul>
-                </BatchPriceProvider>
+                <ul className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-12 w-fit mx-auto xl:mx-0">
+                    {items
+                      .filter((hit: any) => hit?.objectID && hit?.title) 
+                      .map((hit: any, index: number) => {
+                     
+                        return (
+                          <ProductCard 
+                            key={hit.objectID} 
+                            product={hit} 
+                            user={user}
+                            wishlist={wishlist}
+                            onWishlistChange={refreshWishlist}
+                          />
+                        )
+                      })}
+                </ul>
               </div>
             )}
           </div>

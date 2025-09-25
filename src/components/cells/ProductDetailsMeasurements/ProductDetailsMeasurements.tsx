@@ -1,3 +1,4 @@
+// src/components/cells/ProductDetailsMeasurements/ProductDetailsMeasurements.tsx
 'use client';
 
 import {
@@ -20,100 +21,223 @@ export const ProductDetailsMeasurements = ({
   productId,
   locale = 'pl',
   variants = [],
-  initialMeasurements = []
+  initialMeasurements
 }: MeasurementProps) => {
-  // Use variant selection from context
   const { selectedVariantId } = useVariantSelection();
-  // State for measurements, initialized with server-side data
-  const [measurements, setMeasurements] = useState<SingleProductMeasurement[]>(initialMeasurements);
+  
+  // Ensure initialMeasurements is always an array
+  const safeInitialMeasurements = Array.isArray(initialMeasurements) ? initialMeasurements : []
+  
+  const [measurements, setMeasurements] = useState<SingleProductMeasurement[]>(safeInitialMeasurements);
   const [isLoading, setIsLoading] = useState(false);
+  const [hasError, setHasError] = useState(false);
   const [isPending, startTransition] = useTransition();
+  const [hasFetchedInitial, setHasFetchedInitial] = useState(safeInitialMeasurements.length > 0);
   
-  // Helper function to find measurements for a specific variant - wrapped in useCallback
+  // Track request cache to avoid duplicate requests
+  const requestCacheRef = useRef(new Map<string, Promise<SingleProductMeasurement[]>>());
+  const debouncedVariantChangeRef = useRef<NodeJS.Timeout | null>(null);
+  
   const findVariantMeasurements = useCallback((variantId: string) => {
-    // Check if we have measurements for this variant in our data already
-    const variantMeasurements = initialMeasurements.filter(m => m.variantId === variantId);
-    // Also get product-level measurements that don't have a variant ID
-    const productMeasurements = initialMeasurements.filter(m => !m.variantId);
-    
-    // Return variant measurements + product measurements as fallback
+    const variantMeasurements = measurements.filter(m => m.variantId === variantId);
+    const productMeasurements = measurements.filter(m => !m.variantId);
     return variantMeasurements.length > 0 ? variantMeasurements : productMeasurements;
-  }, [initialMeasurements]);
+  }, [measurements]);
   
-  // Function to fetch measurements from API - wrapped in useCallback
   const fetchMeasurementsFromAPI = useCallback(async (productId: string, variantId: string) => {
     if (!productId || !variantId) return false;
     
+    // Check cache first
+    const cacheKey = `${productId}:${variantId}:${locale}`;
+    if (requestCacheRef.current.has(cacheKey)) {
+      try {
+        const cachedData = await requestCacheRef.current.get(cacheKey)!;
+        if (Array.isArray(cachedData)) {
+          setMeasurements(cachedData);
+          setHasError(false);
+          return true;
+        }
+      } catch (error) {
+        requestCacheRef.current.delete(cacheKey);
+      }
+    }
+    
     setIsLoading(true);
+    setHasError(false);
+    
     try {
-      const data = await getProductMeasurements(productId, variantId, locale);
-      setMeasurements(data);
-      return true;
+      // Create request promise and cache it
+      // Create timeout with proper cleanup (reduced to 5 seconds)
+      let timeoutId: NodeJS.Timeout
+      const timeoutPromise = new Promise<never>((_, reject) => {
+        timeoutId = setTimeout(() => reject(new Error('Measurements request timeout')), 5000) // 5 second timeout
+      })
+
+      const requestPromise = Promise.race([
+        getProductMeasurements(productId, variantId, locale),
+        timeoutPromise
+      ]).finally(() => {
+        // Always clear timeout to prevent memory leaks
+        if (timeoutId) clearTimeout(timeoutId)
+      });
+      
+      requestCacheRef.current.set(cacheKey, requestPromise as Promise<SingleProductMeasurement[]>);
+      
+      const data = await requestPromise;
+      
+      // Validate the data is an array
+      if (Array.isArray(data)) {
+        setMeasurements(data);
+        setHasError(false);
+        return true;
+      } else {
+    
+        setHasError(true);
+        return false;
+      }
     } catch (error) {
-      console.error('Error fetching measurements:', error);
+      // Handle timeout errors gracefully to prevent navigation freeze
+      if (error instanceof Error && error.message.includes('timeout')) {
+        console.warn('Measurements request timed out, continuing without measurements');
+        setHasError(false); // Don't show error for timeout, just continue without measurements
+        setMeasurements([]); // Set empty measurements
+      } else {
+        console.error('Error fetching measurements:', error);
+        setHasError(true);
+      }
+      requestCacheRef.current.delete(cacheKey);
       return false;
     } finally {
       setIsLoading(false);
     }
-  }, [locale, setIsLoading, setMeasurements]);
+  }, [locale]);
   
-  // Debounced variant change handler to prevent excessive API calls
-  const debouncedVariantChangeRef = useRef<NodeJS.Timeout | null>(null);
-  
-  // Update measurements when variant changes with debouncing
+  // Load initial measurements if not provided from server
   useEffect(() => {
-    if (!productId || !selectedVariantId) return;
+    if (!hasFetchedInitial && productId && selectedVariantId) {
+      setHasFetchedInitial(true);
+      startTransition(async () => {
+        await fetchMeasurementsFromAPI(productId, selectedVariantId);
+      });
+    }
+  }, [productId, selectedVariantId, hasFetchedInitial]);
+  
+  // Handle variant changes
+  useEffect(() => {
+    if (!productId || !selectedVariantId || !hasFetchedInitial) return;
     
     // Clear any pending debounced calls
     if (debouncedVariantChangeRef.current) {
       clearTimeout(debouncedVariantChangeRef.current);
     }
     
-    // IMMEDIATE: First try to use local data for instant feedback
+    // Try to use local data first
     const localMeasurements = findVariantMeasurements(selectedVariantId);
     if (localMeasurements.length > 0) {
       setMeasurements(localMeasurements);
-      return; // Don't make API call if we have local data
+      return;
     }
     
-    // DEBOUNCED: Only fetch from API if we don't have local data
+    // Debounced API call
     debouncedVariantChangeRef.current = setTimeout(() => {
       startTransition(() => {
         fetchMeasurementsFromAPI(productId, selectedVariantId);
       });
-    }, 300); // 300ms debounce
+    }, 300);
     
-    // Cleanup timeout on unmount or dependency change
     return () => {
       if (debouncedVariantChangeRef.current) {
         clearTimeout(debouncedVariantChangeRef.current);
       }
     };
-    
-  }, [productId, selectedVariantId, locale, findVariantMeasurements, fetchMeasurementsFromAPI]);
+  }, [productId, selectedVariantId, hasFetchedInitial]); // Removed callback dependencies to prevent infinite loop
   
- 
-  
-  // Get title for the accordion based on locale
   const accordionTitle = locale === 'pl' ? 'Wymiary' : 'Dimensions';
   
-  // No measurements to display at all
+  // Loading state
+  if (isLoading && measurements.length === 0) {
+    return (
+      <div className="m-0">
+        <ProductPageAccordion
+          heading={accordionTitle}
+          defaultOpen={false}
+        >
+          <div className="w-full py-8 flex flex-col items-center space-y-2">
+            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-ui-border-interactive"></div>
+            <p className="text-sm text-gray-500">
+              {locale === 'pl' ? 'Ładowanie wymiarów...' : 'Loading measurements...'}
+            </p>
+          </div>
+        </ProductPageAccordion>
+      </div>
+    );
+  }
+  
+  // Error state
+  if (hasError && measurements.length === 0) {
+    return (
+      <div className="m-0">
+        <ProductPageAccordion
+          heading={accordionTitle}
+          defaultOpen={false}
+        >
+          <div className="w-full py-8 flex flex-col items-center space-y-2">
+            <p className="text-sm text-gray-500">
+              {locale === 'pl' 
+                ? 'Nie udało się załadować wymiarów' 
+                : 'Failed to load measurements'}
+            </p>
+            <button 
+              onClick={() => {
+                if (selectedVariantId) {
+                  fetchMeasurementsFromAPI(productId, selectedVariantId);
+                }
+              }}
+              className="text-xs px-3 py-1 border rounded hover:bg-gray-50 transition-colors"
+              disabled={isLoading}
+            >
+              {locale === 'pl' ? 'Spróbuj ponownie' : 'Try again'}
+            </button>
+          </div>
+        </ProductPageAccordion>
+      </div>
+    );
+  }
+  
+
+  // Show loading state if we haven't tried to fetch yet
+  if (!hasFetchedInitial && !isLoading && (!measurements || measurements.length === 0)) {
+    return (
+      <div className="m-0">
+        <ProductPageAccordion
+          heading={accordionTitle}
+          defaultOpen={false}
+        >
+          <div className="p-4 text-center text-secondary">
+            {locale === 'pl' ? 'Ładowanie wymiarów...' : 'Loading dimensions...'}
+          </div>
+        </ProductPageAccordion>
+      </div>
+    );
+  }
+
+  // If we have no measurements after trying to fetch, show "no measurements" message with retry
   if (!measurements || measurements.length === 0) {
-    if (isLoading) {
-      return (
-        <div className="m-0">
-          <ProductPageAccordion
-            heading={accordionTitle}
-            defaultOpen={false}
-          >
-            <div className="w-full py-4 flex justify-center">
-              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-ui-border-interactive"></div>
-            </div>
-          </ProductPageAccordion>
-        </div>
-      );
-    }
-    return null;
+    return (
+      <div className="m-0">
+        <ProductPageAccordion
+          heading={accordionTitle}
+          defaultOpen={false}
+        >
+          <div className="p-4 text-center text-[#3B3634]/90 ">
+            <p className="mb-3">
+              {locale === 'pl' ? 'Brak dostępnych wymiarów dla tego produktu' : 'No dimensions available for this product'}
+            </p>
+           
+          </div>
+        </ProductPageAccordion>
+      </div>
+    );
   }
 
   return (
@@ -122,13 +246,30 @@ export const ProductDetailsMeasurements = ({
         heading={accordionTitle}
         defaultOpen={false}
       >
-        {/* Show measurements for the current selected variant */}
-        {measurements.map((measurement: SingleProductMeasurement) => (
-          <ProdutMeasurementRow
-            key={`${measurement.label}-${measurement.variantId || 'product'}`}
-            measurement={measurement}
-          />
-        ))}
+        <div className="relative">
+          {/* Loading overlay for variant changes */}
+          {isLoading && measurements.length > 0 && (
+            <div className="absolute inset-0 bg-white bg-opacity-75 flex items-center justify-center z-10">
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-ui-border-interactive"></div>
+            </div>
+          )}
+          
+          {measurements.map((measurement: SingleProductMeasurement) => (
+            <ProdutMeasurementRow
+              key={`${measurement.label}-${measurement.variantId || 'product'}`}
+              measurement={measurement}
+            />
+          ))}
+          
+          {/* Error indicator for partial failures */}
+          {hasError && measurements.length > 0 && (
+            <div className="mt-2 p-2 bg-yellow-50 border border-yellow-200 rounded text-xs text-yellow-700">
+              {locale === 'pl' 
+                ? 'Niektóre wymiary mogą być nieaktualne' 
+                : 'Some measurements might be outdated'}
+            </div>
+          )}
+        </div>
       </ProductPageAccordion>
     </div>
   );

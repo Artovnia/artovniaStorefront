@@ -165,8 +165,8 @@ export async function SellerPostLayout({ post }: SellerPostLayoutProps) {
                           />
                         </div>
                       )}
-                      <div className="p-6">
-                        <h3 className="text-lg font-medium text-[#3B3634] group-hover:text-[#BFB7AD] transition-colors duration-300">
+                      <div className="p-6 hover:bg-[#3B3634] hover:text-white transition-colors duration-300">
+                        <h3 className="text-lg font-medium text-[#3B3634] group-hover:text-white">
                           {product.productName}
                         </h3>
                       </div>

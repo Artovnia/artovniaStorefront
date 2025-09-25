@@ -1,7 +1,6 @@
 import { sdk } from "@/lib/config"
 import { HttpTypes } from "@medusajs/types"
-// Note: Removed persistent-cache import as it may not exist
-// Using simple caching approach instead
+import { unifiedCache } from "@/lib/utils/unified-cache"
 
 interface CategoriesProps {
   query?: {
@@ -16,25 +15,26 @@ interface CategoriesProps {
  * This is used to filter categories to only show those with actual products
  */
 export const getCategoriesWithProductsFromDatabase = async (): Promise<Set<string>> => {
-  try {
-    
-    // Fetch all products from Medusa backend to get category information
-    const response = await sdk.client.fetch<{
-      products: Array<{
-        id: string
-        categories?: Array<{
+  const cachedResult = await unifiedCache.get('category:tree:products-database', async () => {
+    try {
+      
+      // Fetch all products from Medusa backend to get category information
+      const response = await sdk.client.fetch<{
+        products: Array<{
           id: string
-          name?: string
+          categories?: Array<{
+            id: string
+            name?: string
+          }>
         }>
-      }>
-    }>("/store/products", {
-      query: {
-        fields: "id,categories.id,categories.name", // Only get category data for efficiency
-        limit: 1000, // Get many products to ensure we capture all categories
-      },
-      cache: "force-cache",
-      next: { revalidate: 300 }
-    })
+      }>("/store/products", {
+        query: {
+          fields: "id,categories.id,categories.name", // Only get category data for efficiency
+          limit: 1000, // Get many products to ensure we capture all categories
+        },
+        cache: "force-cache",
+        next: { revalidate: 300 }
+      })
 
     // Extract unique category IDs that have products
     const categoryIds = new Set<string>()
@@ -52,13 +52,17 @@ export const getCategoriesWithProductsFromDatabase = async (): Promise<Set<strin
       })
     }
     
-    return categoryIds
-  } catch (error) {
-    console.error("🔍 Database: Error fetching categories with products:", error)
-    console.error("🔍 Database: Error details:", error instanceof Error ? error.message : String(error))
-    // Return empty set on error - will show all categories as fallback
-    return new Set()
-  }
+      return Array.from(categoryIds) // Convert Set to Array for caching
+    } catch (error) {
+      console.error("🔍 Database: Error fetching categories with products:", error)
+      console.error("🔍 Database: Error details:", error instanceof Error ? error.message : String(error))
+      // Return empty array on error - will be converted to Set below
+      return []
+    }
+  })
+  
+  // Convert cached result back to Set (handles both Array and Set cases)
+  return new Set(Array.isArray(cachedResult) ? cachedResult : Array.from(cachedResult || []))
 }
 
 /**
@@ -70,21 +74,22 @@ export const listCategories = async (): Promise<{
   parentCategories: HttpTypes.StoreProductCategory[]
   categories: HttpTypes.StoreProductCategory[]
 }> => {
-  try {
-    
-    
-    // Fetch all categories from Medusa backend - simple and clean
-    const response = await sdk.client.fetch<HttpTypes.StoreProductCategoryListResponse>(
-      `/store/product-categories`,
-      {
-        query: {
-          fields: "id, handle, name, rank, parent_category_id, mpath",
-          limit: 1000,
-        },
-        cache: "force-cache",
-        next: { revalidate: 300 }
-      }
-    )
+  return unifiedCache.get('category:tree:all', async () => {
+    try {
+      
+      
+      // Fetch all categories from Medusa backend - simple and clean
+      const response = await sdk.client.fetch<HttpTypes.StoreProductCategoryListResponse>(
+        `/store/product-categories`,
+        {
+          query: {
+            fields: "id, handle, name, rank, parent_category_id, mpath",
+            limit: 1000,
+          },
+          cache: "force-cache",
+          next: { revalidate: 300 }
+        }
+      )
     
     const allCategories = response?.product_categories || []
     
@@ -95,17 +100,18 @@ export const listCategories = async (): Promise<{
     const parentCategories = hierarchicalCategories.filter(cat => !cat.parent_category_id)
     
     
-    return {
-      parentCategories,
-      categories: hierarchicalCategories
+      return {
+        parentCategories,
+        categories: hierarchicalCategories
+      }
+    } catch (error) {
+      console.error('Error in listCategories:', error)
+      return {
+        parentCategories: [],
+        categories: []
+      }
     }
-  } catch (error) {
-    console.error('Error in listCategories:', error)
-    return {
-      parentCategories: [],
-      categories: []
-    }
-  }
+  })
 }
 
 /**
@@ -411,19 +417,20 @@ export const getCategoryByHandle = async (categoryHandle: string[]) => {
   // Decode handle outside try-catch to ensure it's accessible in error handling
   const decodedHandle = categoryHandle.map(segment => decodeURIComponent(segment)).join("/")
   
-  try {
-    // First try to find by exact handle
-    const response = await sdk.client.fetch<HttpTypes.StoreProductCategoryListResponse>(
-      `/store/product-categories`,
-      {
-        query: {
-          fields: "handle, name, rank, parent_category_id, mpath, *category_children, *parent_category",
-          handle: decodedHandle,
-        },
-        cache: "force-cache",
-        next: { revalidate: 300 }
-      }
-    )
+  return unifiedCache.get(`category:metadata:${decodedHandle}`, async () => {
+    try {
+      // First try to find by exact handle
+      const response = await sdk.client.fetch<HttpTypes.StoreProductCategoryListResponse>(
+        `/store/product-categories`,
+        {
+          query: {
+            fields: "handle, name, rank, parent_category_id, mpath, *category_children, *parent_category",
+            handle: decodedHandle,
+          },
+          cache: "force-cache",
+          next: { revalidate: 300 }
+        }
+      )
     
     if (response?.product_categories?.length > 0) {
       return response.product_categories[0]
@@ -457,10 +464,11 @@ export const getCategoryByHandle = async (categoryHandle: string[]) => {
       console.warn(`Fallback category search failed for handle: ${decodedHandle}`, fallbackError)
     }
     
-    console.warn(`Category not found for handle: ${decodedHandle}`)
-    return null
-  } catch (error) {
-    console.error(`Error fetching category by handle: ${decodedHandle}`, error)
-    return null
-  }
+      console.warn(`Category not found for handle: ${decodedHandle}`)
+      return null
+    } catch (error) {
+      console.error(`Error fetching category by handle: ${decodedHandle}`, error)
+      return null
+    }
+  })
 }

@@ -142,8 +142,7 @@ export const ProductDetailsHeader = ({
       // Use CartContext addItem method for immediate UI updates
       await addItem(selectedVariantId, 1)
       
-      // CRITICAL FIX: Brief success feedback
-      console.log('✅ Item successfully added to cart')
+      
     } catch (error) {
       console.error('❌ Failed to add item to cart:', error)
     } finally {
@@ -218,9 +217,10 @@ export const ProductDetailsHeader = ({
             )}
           </div>
           
-          {/* Lowest Price Display - only show if there are price list discounts */}
+          {/* Lowest Price Display - show if there are price list discounts OR promotions */}
           {currentVariantId && (
-            variantPrice?.calculated_price_number !== variantPrice?.original_price_number
+            variantPrice?.calculated_price_number !== variantPrice?.original_price_number ||
+            promotionalPricing?.hasPromotion
           ) && (
             <div className="mt-3">
               <OptimizedLowestPriceDisplay

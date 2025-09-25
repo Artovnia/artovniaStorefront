@@ -51,7 +51,7 @@ export const HomeProductSection = async ({
           <div className="w-full flex justify-center">
             <HomeProductsCarousel
               locale={locale}
-              sellerProducts={products.slice(0, 4)}
+              sellerProducts={products.slice(0, 8)}
               home={home}
               theme={theme}
               isSellerSection={isSellerSection}

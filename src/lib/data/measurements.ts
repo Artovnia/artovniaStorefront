@@ -3,61 +3,57 @@
 import { sdk } from "../config"
 import { getAuthHeaders } from "./cookies"
 import { SingleProductMeasurement } from "@/types/product"
-import { measurementDeduplicator, performanceMonitor } from "../utils/performance"
+import { unifiedCache } from "../utils/unified-cache"
 
 /**
  * Gets a product and its variants by ID with all measurements included
- * Uses request deduplication to prevent multiple identical API calls
+ * Uses unified cache to prevent multiple identical API calls
  */
 async function getProductWithMeasurements(productId: string) {
-  const cacheKey = `product-measurements-${productId}`;
+  const cacheKey = `product:measurements:${productId}`;
   
-  return measurementDeduplicator.dedupe(
-    cacheKey,
-    async () => {
-      try {
-        const headers = {
-          ...(await getAuthHeaders()),
-        }
+  return unifiedCache.get(cacheKey, async () => {
+    try {
+      const startTime = performance.now();
+      
+      const authHeaders = await getAuthHeaders();
+      
+      const headers = {
+        ...authHeaders,
+      }
 
-        // Fetch product with all measurement fields
-        const response = await sdk.client.fetch<{
-          product: {
+      // Fetch product with all measurement fields
+      const response = await sdk.client.fetch<{
+        product: {
+          id: string
+          weight?: number | null
+          length?: number | null
+          height?: number | null
+          width?: number | null
+          variants: Array<{
             id: string
             weight?: number | null
             length?: number | null
             height?: number | null
             width?: number | null
-            variants: Array<{
-              id: string
-              weight?: number | null
-              length?: number | null
-              height?: number | null
-              width?: number | null
-            }>
-          }
-        }>(`/store/products/${productId}`, {
-          method: "GET",
-          headers,
-          query: {
-            fields: "id,weight,length,height,width,variants.id,variants.weight,variants.length,variants.height,variants.width"
-          },
-          next: {
-            revalidate: 3600, // Cache for 1 hour
-            tags: ['product-measurements', `product-${productId}`],
-          }
-        })
+          }>
+        }
+      }>(`/store/products/${productId}`, {
+        method: "GET",
+        headers,
+        query: {
+          fields: "id,weight,length,height,width,variants.id,variants.weight,variants.length,variants.height,variants.width"
+        }
+      })
 
-        return response.product
-      } catch (error) {
-        console.error(`Error fetching product with measurements for product ${productId}:`, error)
-        return null
-      }
-    },
-    {
-      useCache: true
+   
+      
+      return response.product
+    } catch (error) {
+      console.error(`Error fetching product with measurements for product ${productId}:`, error)
+      return null
     }
-  );
+  });
 }
 
 // Translations for dimension labels
@@ -121,104 +117,145 @@ function formatMeasurement(
 
 /**
  * Get measurements from a product and all its variants
- * Optimized with single-layer deduplication to prevent duplicate API calls
+ * Optimized with unified cache to prevent duplicate API calls
  */
 export const getProductMeasurements = async (
   productId: string,
   selectedVariantId?: string,
   locale: string = 'en'
 ): Promise<SingleProductMeasurement[]> => {
-  const measureRender = performanceMonitor.measureRender('getProductMeasurements');
-  const cacheKey = `measurements-${productId}-${selectedVariantId || 'no-variant'}-${locale}`;
+  const startTime = process.env.NODE_ENV === 'development' ? performance.now() : 0;
+  const cacheKey = `measurements:${productId}:${selectedVariantId || 'no-variant'}:${locale}`;
   
-  // Use single-layer deduplication to prevent duplicate API calls
-  return measurementDeduplicator.dedupe(
-    cacheKey,
-    async () => {
-      try {
-        // Fetch the product with all measurement fields (uses deduplication)
-        const product = await getProductWithMeasurements(productId)
-        if (!product) {
-          console.error(`Could not find product ${productId}`)
-          return [];
+
+  // In development, bypass cache to prevent timeout issues
+  if (process.env.NODE_ENV === 'development') {
+    try {
+      const product = await getProductWithMeasurements(productId)
+      if (!product) {
+        console.error(`Could not find product ${productId}`)
+        return [];
+      }
+
+      // Get the translated labels based on locale
+      const labels = dimensionLabels[locale as keyof typeof dimensionLabels] || dimensionLabels.en
+      
+      // Define dimension categories
+      const physicalDimensions = ['length', 'width', 'height'] // These can fall back to product level
+      const specialDimensions = ['weight'] // These should only show if explicitly defined on the variant
+      
+      // Get all dimension keys
+      const dimensionKeys = [...physicalDimensions, ...specialDimensions]
+      
+      // Create separate collections to track measurements by source
+      const productLevelMeasurements: SingleProductMeasurement[] = [];
+      const variantMeasurementsMap: Record<string, SingleProductMeasurement[]> = {};
+      
+      // 1. First collect all product-level measurements
+      dimensionKeys.forEach(key => {
+        const value = product ? (product as any)[key] : undefined;
+        const label = labels[key as keyof typeof labels];
+        
+        const measurement = formatMeasurement(value, key, label, locale);
+        if (measurement) {
+          productLevelMeasurements.push(measurement);
         }
-        
-        // Get the translated labels based on locale
-        const labels = dimensionLabels[locale as keyof typeof dimensionLabels] || dimensionLabels.en
-        
-        // Define dimension categories
-        const physicalDimensions = ['length', 'width', 'height'] // These can fall back to product level
-        const specialDimensions = ['weight'] // These should only show if explicitly defined on the variant
-        
-        // Get all dimension keys
-        const dimensionKeys = [...physicalDimensions, ...specialDimensions]
-        
-        // Create separate collections to track measurements by source
-        const productLevelMeasurements: SingleProductMeasurement[] = [];
-        const variantMeasurementsMap: Record<string, SingleProductMeasurement[]> = {};
-        
-        // 1. First collect all product-level measurements
-        dimensionKeys.forEach(key => {
-          const value = product ? (product as any)[key] : undefined;
-          const label = labels[key as keyof typeof labels];
+      });
+      
+      // 2. Then collect all variant-level measurements, organized by variant ID
+      if (product.variants && product.variants.length > 0) {
+        product.variants.forEach(variant => {
+          const variantId = variant.id;
+          variantMeasurementsMap[variantId] = [];
           
-          const measurement = formatMeasurement(value, key, label, locale);
-          if (measurement) {
-            productLevelMeasurements.push(measurement);
-          }
+          dimensionKeys.forEach(key => {
+            const value = (variant as any)[key];
+            const label = labels[key as keyof typeof labels];
+            
+            // Only add variant measurements if they exist
+            if (value !== null && value !== undefined) {
+              const measurement = formatMeasurement(value, key, label, locale);
+              if (measurement) {
+                measurement.variantId = variantId;
+                variantMeasurementsMap[variantId].push(measurement);
+              }
+            }
+          });
+        });
+      }
+      
+      // 3. If we have a selected variant, return its measurements + product fallbacks
+      if (selectedVariantId) {
+        // Get the measurements for the selected variant
+        const selectedVariantMeasurements = variantMeasurementsMap[selectedVariantId] || [];
+        
+        // Find which product-level measurements we need to include as fallbacks
+        // (only physical dimensions not already covered by the variant)
+        const variantDimensionLabels = selectedVariantMeasurements.map(m => m.label);
+        const productFallbacks = productLevelMeasurements.filter(m => {
+          // Only include product-level fallbacks for physical dimensions, not special ones like weight
+          const dimensionKey = Object.keys(labels).find(key => labels[key as keyof typeof labels] === m.label);
+          const isPhysicalDimension = dimensionKey && physicalDimensions.includes(dimensionKey);
+          
+          return isPhysicalDimension && !variantDimensionLabels.includes(m.label);
         });
         
-        // 2. Then collect all variant-level measurements, organized by variant ID
-        if (product.variants && product.variants.length > 0) {
-          product.variants.forEach(variant => {
-            const variantId = variant.id;
-            variantMeasurementsMap[variantId] = [];
-            
-            dimensionKeys.forEach(key => {
-              const value = (variant as any)[key];
-              const label = labels[key as keyof typeof labels];
-              
-              // Only add variant measurements if they exist
-              if (value !== null && value !== undefined) {
-                const measurement = formatMeasurement(value, key, label, locale);
-                if (measurement) {
-                  measurement.variantId = variantId;
-                  variantMeasurementsMap[variantId].push(measurement);
-                }
-              }
-            });
-          });
-        }
-        
-        // 3. If we have a selected variant, return its measurements + product fallbacks
-        if (selectedVariantId) {
-          // Get the measurements for the selected variant
-          const selectedVariantMeasurements = variantMeasurementsMap[selectedVariantId] || [];
-          
-          // Find which product-level measurements we need to include as fallbacks
-          // (only physical dimensions not already covered by the variant)
-          const variantDimensionLabels = selectedVariantMeasurements.map(m => m.label);
-          const productFallbacks = productLevelMeasurements.filter(m => {
-            // Only include product-level fallbacks for physical dimensions, not special ones like weight
-            const dimensionKey = Object.keys(labels).find(key => labels[key as keyof typeof labels] === m.label);
-            const isPhysicalDimension = dimensionKey && physicalDimensions.includes(dimensionKey);
-            
-            return isPhysicalDimension && !variantDimensionLabels.includes(m.label);
-          });
-          
-          // Combine variant measurements with product fallbacks
-          return [...selectedVariantMeasurements, ...productFallbacks];
-        }
-        
-        return productLevelMeasurements;
-        
-      } catch (error) {
-        console.error(`Error getting measurements for product ${productId}:`, error)
-        return [];
-      } finally {
-        measureRender();
+        // Combine variant measurements with product fallbacks
+        return [...selectedVariantMeasurements, ...productFallbacks];
       }
-    },
-    { useCache: true }
-  );
+      
+      return productLevelMeasurements;
+      
+    } catch (error) {
+      console.error(`Error getting measurements for product ${productId}:`, error)
+      return [];
+    } finally {
+      // Performance tracking for development
+      if (process.env.NODE_ENV === 'development' && startTime > 0) {
+        const duration = performance.now() - startTime;
+        if (duration > 100) {
+          console.warn(`⚠️ Slow measurements fetch for ${productId}: ${duration.toFixed(0)}ms`);
+        }
+      }
+    }
+  }
+  
+  // Production: use cache
+  return unifiedCache.get(cacheKey, async () => {
+    try {
+      const product = await getProductWithMeasurements(productId)
+      if (!product) {
+        console.error(`Could not find product ${productId}`)
+        return [];
+      }
+
+      // Get the translated labels based on locale
+      const labels = dimensionLabels[locale as keyof typeof dimensionLabels] || dimensionLabels.en
+      
+      // Define dimension categories
+      const physicalDimensions = ['length', 'width', 'height']
+      const specialDimensions = ['weight']
+      const dimensionKeys = [...physicalDimensions, ...specialDimensions]
+      
+      // Process measurements (simplified for production)
+      const productLevelMeasurements: SingleProductMeasurement[] = []
+      
+      for (const key of dimensionKeys) {
+        const value = (product as any)[key]
+        const label = labels[key as keyof typeof labels]
+        
+        if (value !== null && value !== undefined && label) {
+          const measurement = formatMeasurement(value, key, label, locale)
+          if (measurement) {
+            productLevelMeasurements.push(measurement)
+          }
+        }
+      }
+      
+      return productLevelMeasurements;
+    } catch (error) {
+      console.error(`Error getting measurements for product ${productId}:`, error)
+      return [];
+    }
+  });
 }

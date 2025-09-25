@@ -2,7 +2,7 @@
 import { HttpTypes } from "@medusajs/types"
 import { Button, Input } from "@/components/atoms"
 import { Heading, Label } from "@medusajs/ui"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { applyPromotions } from "@/lib/data/cart"
 
 export default function CartPromotionCode({
@@ -21,7 +21,6 @@ export default function CartPromotionCode({
       await applyPromotions([promotionCode])
       setPromotionCode("")
     } catch (err) {
-      console.log(err)
     } finally {
       setIsLoading(false)
     }

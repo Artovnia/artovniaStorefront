@@ -1,6 +1,6 @@
 "use client"
 import Image from "next/image"
-import { useEffect, useState, useMemo } from "react"
+import { useEffect, useState, useMemo, memo } from "react"
 
 import { Button } from "@/components/atoms"
 import { HttpTypes } from "@medusajs/types"
@@ -17,7 +17,7 @@ import { BatchLowestPriceDisplay } from "@/components/cells/LowestPriceDisplay/B
 import { SerializableWishlist } from "@/types/wishlist"
 import { useRouter } from "next/navigation"
 
-export const ProductCard = ({
+const ProductCardComponent = ({
   product,
   sellerPage = false,
   themeMode = 'default',
@@ -37,6 +37,7 @@ export const ProductCard = ({
   const { getProductWithPromotions, isLoading } = usePromotionData()
   const [isMounted, setIsMounted] = useState(false)
   const productUrl = `/products/${product.handle}`
+  
   
   // Ensure component is mounted on client-side to prevent hydration mismatch
   useEffect(() => {
@@ -77,13 +78,20 @@ export const ProductCard = ({
     }
   }
   
-  const { cheapestPrice } = getProductPrice({
+  // ✅ SAFETY CHECK: Ensure product has required fields before price calculation
+  const { cheapestPrice } = product?.id ? getProductPrice({
     product,
-  })
+  }) : { cheapestPrice: null }
 
-  const { cheapestPrice: sellerCheapestPrice } = getSellerProductPrice({
+  const { cheapestPrice: sellerCheapestPrice } = product?.id ? getSellerProductPrice({
     product,
-  })
+  }) : { cheapestPrice: null }
+
+  // ✅ SAFETY CHECK: Don't render card if product is invalid
+  if (!product?.id || !product?.title) {
+    console.warn('⚠️ ProductCard received invalid product:', product)
+    return null
+  }
 
   return (
     <div
@@ -152,12 +160,23 @@ export const ProductCard = ({
               {product.title}
             </h3>
             
-            {/* Seller name below title */}
-            {product.seller && (
-              <p className={`font-instrument-sans text-sm mb-1  ${themeMode === 'light' ? 'text-white/80' : 'text-black'}`}>
-                {product.seller.name}
-              </p>
-            )}
+            {/* Seller name below title - Enhanced for Algolia compatibility */}
+            {(() => {
+              // ✅ Multiple fallback patterns for seller name detection
+              const sellerName = 
+                product.seller?.name ||           // Standard Medusa structure
+                product.seller?.company_name ||   // Alternative company name field
+                (product as any).seller_name ||   // Direct seller_name field (Algolia)
+                (product as any).seller?.name ||  // Nested seller.name (Algolia)
+                (product as any)['seller.name']   // Flattened seller.name (Algolia)
+              
+              
+              return sellerName ? (
+                <p className={`font-instrument-sans text-sm mb-1  ${themeMode === 'light' ? 'text-white/80' : 'text-black'}`}>
+                  {sellerName}
+                </p>
+              ) : null
+            })()}
             
             <div className="flex items-center gap-2">
               {hasAnyDiscount ? (
@@ -227,3 +246,15 @@ export const ProductCard = ({
     </div>
   )
 }
+
+// ✅ OPTIMIZED: Memoize ProductCard to prevent unnecessary re-renders
+export const ProductCard = memo(ProductCardComponent, (prevProps, nextProps) => {
+  // Custom comparison to prevent re-renders when props haven't meaningfully changed
+  return (
+    prevProps.product.id === nextProps.product.id &&
+    prevProps.user?.id === nextProps.user?.id &&
+    (prevProps.wishlist?.length || 0) === (nextProps.wishlist?.length || 0) &&
+    prevProps.sellerPage === nextProps.sellerPage &&
+    prevProps.themeMode === nextProps.themeMode
+  )
+})

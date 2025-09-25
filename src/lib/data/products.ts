@@ -5,8 +5,6 @@ import { getAuthHeaders } from "./cookies"
 import { getRegion, retrieveRegion } from "./regions"
 import { HttpTypes } from "@medusajs/types"
 import { SellerProps } from "@/types/seller"
-import { ProductGPSRData } from "@/types/gpsr"
-import { productDeduplicator, createCacheKey } from "../utils/request-deduplication"
 
 // Type for allowed sort keys in server-side product listing
 type SortOptions = "created_at" | "title" | "price" | "updated_at"

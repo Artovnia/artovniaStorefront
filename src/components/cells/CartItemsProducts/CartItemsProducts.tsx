@@ -8,7 +8,6 @@ import { convertToLocale } from "@/lib/helpers/money"
 import { DeleteCartItemButton } from "@/components/molecules"
 import { Link } from "@/i18n/routing"
 import { QuantityChanger } from "@/components/cells"
-import { globalDeduplicator } from "@/lib/utils/performance"
 import { retrieveCart } from "@/lib/data/cart"
 
 

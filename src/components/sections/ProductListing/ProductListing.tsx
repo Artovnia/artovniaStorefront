@@ -212,6 +212,7 @@ export const ProductListing = ({
                     <ProductCard
                       key={product.id}
                       product={product}
+                  
                       user={user}
                       wishlist={wishlist}
                       onWishlistChange={refreshWishlist}

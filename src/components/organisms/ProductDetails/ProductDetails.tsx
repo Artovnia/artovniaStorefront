@@ -1,8 +1,8 @@
+// src/components/organisms/ProductDetails/ProductDetails.tsx
 import {
   ProductDetailsFooter,
   ProductDetailsHeader,
   ProductDetailsMeasurements,
-  ProductDetailsSeller,
   ProductDetailsSellerReviews,
   ProductDetailsShipping,
   ProductPageDetails,
@@ -11,16 +11,25 @@ import { getProductMeasurements } from "@/lib/data/measurements"
 import { retrieveCustomer, isAuthenticated } from "@/lib/data/customer"
 import { getUserWishlists } from "@/lib/data/wishlist"
 import { getRegion } from "@/lib/data/regions"
-import { globalDeduplicator, measurementDeduplicator } from "@/lib/utils/performance"
+import { unifiedCache } from "@/lib/utils/unified-cache"
 import { SellerProps } from "@/types/seller"
 import { Wishlist, SerializableWishlist } from "@/types/wishlist"
+import { SingleProductMeasurement } from "@/types/product"
 import { HttpTypes } from "@medusajs/types"
-import "@/types/medusa" // Import extended types
+import "@/types/medusa"
 import { ProductGPSR } from "@/components/molecules/ProductGPSR/ProductGPSR"
 import { ProductAdditionalAttributes } from "@/components/cells/ProductAdditionalAttributes/ProductAdditionalAttributes"
-import { VariantSelectionProvider } from "@/components/context/VariantSelectionContext"
-// Import a client component wrapper for the provider
 import { ProductDetailsClient } from "@/components/organisms/ProductDetails/ProductDetailsClient"
+import { MeasurementsErrorBoundary } from "./MeasurementsErrorBoundary"
+
+// Helper function to validate measurements data
+function isValidMeasurementsArray(data: any): data is SingleProductMeasurement[] {
+  return Array.isArray(data) && data.every((item: any) => 
+    item && 
+    typeof item === 'object' && 
+    typeof item.label === 'string'
+  )
+}
 
 export const ProductDetails = async ({
   product,
@@ -31,7 +40,7 @@ export const ProductDetails = async ({
   }
   locale: string
 }) => {
-  // Pre-calculate variant and locale data to avoid duplication
+  // Pre-calculate variant and locale data
   const selectedVariantId = Array.isArray(product.variants) && product.variants.length > 0 && product.variants[0]?.id 
     ? product.variants[0].id 
     : undefined
@@ -39,29 +48,24 @@ export const ProductDetails = async ({
   const supportedLocales = ['en', 'pl']
   const currentLocale = supportedLocales.includes(locale) ? locale : 'en'
   
-  // Optimized parallel data fetching with better cache keys
-  const [user, authenticated, measurements, region] = await Promise.allSettled([
-    globalDeduplicator.dedupe(`customer-${product.id}`, retrieveCustomer),
-    globalDeduplicator.dedupe(`auth-${product.id}`, isAuthenticated),
-    measurementDeduplicator.dedupe(
-      `measurements-${product.id}-${selectedVariantId || 'default'}-${currentLocale}`,
-      () => getProductMeasurements(product.id, selectedVariantId, currentLocale)
-    ),
-    globalDeduplicator.dedupe(`region-pl`, () => getRegion("pl"))
+  // Load critical data first - measurements are loaded separately
+  const [user, authenticated, region] = await Promise.allSettled([
+    unifiedCache.get(`customer:${product.id}`, retrieveCustomer),
+    unifiedCache.get(`auth:${product.id}`, isAuthenticated),
+    unifiedCache.get(`region:pl`, () => getRegion("pl"))
   ])
 
-  // Extract results with fallbacks
+  // Extract critical results
   const customer = user.status === 'fulfilled' ? user.value : null
   const isUserAuthenticated = authenticated.status === 'fulfilled' ? authenticated.value : false
-  const productMeasurements = measurements.status === 'fulfilled' ? measurements.value : null
   const regionData = region.status === 'fulfilled' ? region.value : null
 
+  // Load wishlist if user is authenticated
   let wishlist: SerializableWishlist[] = []
   if (customer) {
     try {
-      // Use deduplication for wishlist fetching
-      const response = await globalDeduplicator.dedupe(
-        `wishlists-${customer.id}`,
+      const response = await unifiedCache.get(
+        `wishlists:${customer.id}`,
         () => getUserWishlists()
       )
       wishlist = response.wishlists
@@ -69,10 +73,42 @@ export const ProductDetails = async ({
       console.error('Error fetching wishlists:', error)
     }
   }
-  
-  // Variables already calculated above - no need to redeclare
-  
 
+  // Try to load measurements quickly, but don't block page render
+  let initialMeasurements: SingleProductMeasurement[] | undefined = undefined
+  try {
+    
+    // Set a very short timeout for initial measurements load
+    const measurementsPromise = unifiedCache.get(
+      `measurements:${product.id}:${selectedVariantId || 'no-variant'}:${currentLocale}`,
+      () => getProductMeasurements(product.id, selectedVariantId, currentLocale)
+    )
+    
+    // Race against a reasonable timeout with proper cleanup
+    let timeoutId: NodeJS.Timeout
+    const timeoutPromise = new Promise<null>((_, reject) => {
+      timeoutId = setTimeout(() => reject(new Error('Initial measurements timeout')), 3000) // 3 seconds max
+    })
+
+    const measurementsResult = await Promise.race([
+      measurementsPromise,
+      timeoutPromise
+    ]).finally(() => {
+      // Always clear timeout to prevent memory leaks
+      if (timeoutId) clearTimeout(timeoutId)
+    })
+    
+    // Validate the result is the correct type
+    if (isValidMeasurementsArray(measurementsResult)) {
+      initialMeasurements = measurementsResult
+    } else {
+      if (process.env.NODE_ENV === 'development') {
+        console.warn('Invalid measurements data structure:', measurementsResult)
+      }
+    }
+  } catch (error) {
+    // Measurements will be loaded client-side
+  }
 
   return (
     <div>
@@ -87,15 +123,17 @@ export const ProductDetails = async ({
           product={product}
         />
         <ProductPageDetails details={product?.description || ""} />
+        <MeasurementsErrorBoundary locale={locale}>
         <ProductDetailsMeasurements 
           productId={product.id}
           locale={currentLocale}
-          initialMeasurements={productMeasurements || undefined}
+          initialMeasurements={initialMeasurements}
           variants={product.variants?.map(v => ({
             id: v.id,
-            title: v.title || undefined // Convert null to undefined
+            title: v.title || undefined
           })) || []}
         />
+        </MeasurementsErrorBoundary>
       </ProductDetailsClient>
       <ProductGPSR product={product} />
       <ProductDetailsShipping product={product} region={regionData as HttpTypes.StoreRegion} />

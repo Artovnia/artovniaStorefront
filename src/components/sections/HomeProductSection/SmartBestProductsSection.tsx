@@ -2,6 +2,7 @@ import { HomeProductsCarousel } from "@/components/organisms"
 import { listProducts } from "@/lib/data/products"
 import { Product } from "@/types/product"
 import { BatchPriceProvider } from "@/components/context/BatchPriceProvider"
+import { unifiedCache } from "@/lib/utils/unified-cache"
 
 interface SmartBestProductsSectionProps {
   heading?: string
@@ -18,17 +19,22 @@ export const SmartBestProductsSection = async ({
   home = false
 }: SmartBestProductsSectionProps) => {
   try {
-    // Fetch products with expanded data including reviews and wishlists
-    const result = await listProducts({
-      countryCode: locale,
-      queryParams: {
-        limit: 50, // Get more products to have better selection
-        order: "created_at",
-        // Note: expand parameter not supported in this API, but we can still access nested data
-      },
-    })
+    // Cache the best products with a reasonable TTL
+    const cacheKey = `homepage:top:${locale}:${limit}`
     
-    const allProducts = result?.response?.products || []
+    const allProducts = await unifiedCache.get(cacheKey, async () => {
+      // Fetch products with expanded data including reviews and wishlists
+      const result = await listProducts({
+        countryCode: locale,
+        queryParams: {
+          limit: 50, // Get more products to have better selection
+          order: "created_at",
+          // Note: expand parameter not supported in this API, but we can still access nested data
+        },
+      })
+      
+      return result?.response?.products || []
+    })
     
     if (allProducts.length === 0) {
       return (
