@@ -22,33 +22,52 @@ async function getProductWithMeasurements(productId: string) {
         ...authHeaders,
       }
 
-      // Fetch product with all measurement fields
-      const response = await sdk.client.fetch<{
-        product: {
-          id: string
-          weight?: number | null
-          length?: number | null
-          height?: number | null
-          width?: number | null
-          variants: Array<{
+      // Fetch product with all measurement fields - with timeout handling
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 20000); // 20 second timeout
+      
+      try {
+        const response = await sdk.client.fetch<{
+          product: {
             id: string
             weight?: number | null
             length?: number | null
             height?: number | null
             width?: number | null
-          }>
+            variants: Array<{
+              id: string
+              weight?: number | null
+              length?: number | null
+              height?: number | null
+              width?: number | null
+            }>
+          }
+        }>(`/store/products/${productId}`, {
+          method: "GET",
+          headers,
+          query: {
+            fields: "id,weight,length,height,width,variants.id,variants.weight,variants.length,variants.height,variants.width"
+          },
+          signal: controller.signal
+        })
+        
+        clearTimeout(timeoutId);
+        
+        const endTime = performance.now();
+        const duration = endTime - startTime;
+        
+        // Log slow API calls in production
+        if (process.env.NODE_ENV === 'production' && duration > 5000) {
+          console.warn(`⚠️ Slow measurements API call for product ${productId}: ${duration.toFixed(0)}ms`);
         }
-      }>(`/store/products/${productId}`, {
-        method: "GET",
-        headers,
-        query: {
-          fields: "id,weight,length,height,width,variants.id,variants.weight,variants.length,variants.height,variants.width"
-        }
-      })
-
-   
+        
+        return response.product;
+        
+      } catch (fetchError) {
+        clearTimeout(timeoutId);
+        throw fetchError;
+      }
       
-      return response.product
     } catch (error) {
       console.error(`Error fetching product with measurements for product ${productId}:`, error)
       return null

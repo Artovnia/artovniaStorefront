@@ -33,7 +33,10 @@ if (process.env.NODE_ENV === 'development') {
 
 if (typeof window === 'undefined' && Redis && process.env.STOREFRONT_REDIS_URL) {
   try {
-    console.log('🚀 Attempting Redis connection...')
+    // Only log connection attempts in development
+    if (process.env.NODE_ENV === 'development') {
+      console.log('🚀 Attempting Redis connection...')
+    }
     redis = new Redis(process.env.STOREFRONT_REDIS_URL, {
       // Vercel serverless optimizations
       maxRetriesPerRequest: 0,

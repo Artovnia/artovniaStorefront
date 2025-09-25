@@ -26,8 +26,8 @@ const CACHE_CONFIGS: Record<string, CacheConfig> = {
   'homepage:': { ttl: 900000, batchable: false, invalidationTags: ['homepage'], fallbackEnabled: true },
   'reviews:': { ttl: 600000, batchable: false, invalidationTags: ['reviews'], fallbackEnabled: true },
   
-  // Time-sensitive data with fallbacks
-  'measurements:': { ttl: 120000, batchable: false, invalidationTags: ['measurements'], fallbackEnabled: true }, // 2 min
+  // Time-sensitive data with fallbacks - increased TTL for measurements due to slow API
+  'measurements:': { ttl: 600000, batchable: false, invalidationTags: ['measurements'], fallbackEnabled: true }, // 10 min (increased from 2 min)
   'region:': { ttl: 3600000, batchable: false, invalidationTags: ['regions'], fallbackEnabled: true },
   
   // Product display data
@@ -72,12 +72,12 @@ class UnifiedCache {
   private pendingRequests = new Map<string, Promise<any>>()
   private isServerless = !!(process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME)
   
-  // Circuit breaker - more conservative for production
+  // Circuit breaker - more tolerant for production serverless environment
   private failureCount = 0
   private lastFailureTime = 0
   private circuitBreakerOpen = false
-  private readonly maxFailures = 10 // Increased threshold
-  private readonly resetTimeout = 30000 // 30 seconds
+  private readonly maxFailures = 20 // Increased threshold for production (was 10)
+  private readonly resetTimeout = 60000 // 60 seconds (was 30)
 
   private checkCircuitBreaker(): boolean {
     if (this.circuitBreakerOpen) {
@@ -118,7 +118,7 @@ class UnifiedCache {
         const cached = await Promise.race([
           this.redis.get<T>(key),
           new Promise<T | null>((_, reject) => 
-            setTimeout(() => reject(new Error('Cache timeout')), 1000)
+            setTimeout(() => reject(new Error('Cache timeout')), 3000) // Increased from 1s to 3s
           )
         ])
         
@@ -148,8 +148,8 @@ class UnifiedCache {
 
   private async executeFetch<T>(key: string, fetchFn: () => Promise<T>, config: CacheConfig): Promise<T> {
     try {
-      // Set reasonable timeout for fetch operations
-      const fetchTimeout = this.isServerless ? 8000 : 15000
+      // Set more generous timeout for production serverless - measurements can be slow
+      const fetchTimeout = this.isServerless ? 25000 : 30000 // Increased from 8s to 25s for serverless
       
       const result = await Promise.race([
         fetchFn(),
