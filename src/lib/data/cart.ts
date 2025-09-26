@@ -39,16 +39,36 @@ async function getPaymentHeaders() {
 /**
  * Core cart retrieval function - handles completed cart cleanup and errors
  */
+/**
+ * Core cart retrieval function - handles completed cart cleanup and errors
+ */
+/**
+ * Core cart retrieval function - handles completed cart cleanup and errors
+ */
 export async function retrieveCart(cartId?: string, fields?: string) {
   const id = cartId || (await getCartId())
 
+  console.log('🛒 retrieveCart called:', {
+    providedCartId: cartId,
+    retrievedCartId: id,
+    fields: fields || 'using default fields',
+    timestamp: new Date().toISOString()
+  })
+
   if (!id) {
+    console.log('🛒 No cart ID found, returning null')
     return null
   }
 
   const headers = await getAuthHeaders()
+  console.log('🛒 Headers prepared:', {
+    hasAuth: !!(headers as any).authorization,
+    headerKeys: Object.keys(headers)
+  })
 
   try {
+    console.log('🛒 Making API call to:', `/store/carts/${id}`)
+    
     const result = await sdk.client
       .fetch<{ cart: ExtendedStoreCart }>(`/store/carts/${id}`, {
         method: "GET",
@@ -59,24 +79,55 @@ export async function retrieveCart(cartId?: string, fields?: string) {
         cache: "no-cache",
       });
       
+    console.log('🛒 API Response received:', {
+      hasCart: !!result?.cart,
+      cartId: result?.cart?.id,
+      cartStatus: result?.cart?.status,
+      completedAt: result?.cart?.completed_at,
+      paymentStatus: result?.cart?.payment_status,
+      itemsCount: result?.cart?.items?.length || 0
+    })
+      
     const cart = result.cart;
     
     // Check if cart is completed and handle accordingly
     if (cart && cart.completed_at) {
+      console.log('🛒 Cart is completed (completed_at exists), returning null:', cart.completed_at)
       return null;
     }
     
     // Check other indicators of completion
     if (cart && (cart.status === "complete" || cart.completed === true || cart.payment_status === "captured")) {
+      console.log('🛒 Cart is completed (status/payment indicators):', {
+        status: cart.status,
+        completed: cart.completed,
+        payment_status: cart.payment_status
+      })
       return null;
     }
     
+    console.log('🛒 Returning valid cart:', {
+      id: cart?.id,
+      itemsCount: cart?.items?.length || 0,
+      total: cart?.total,
+      currency: cart?.currency_code
+    })
+    
     return cart as HttpTypes.StoreCart;
   } catch (error: any) {
+    console.error('🛒 Error in retrieveCart:', {
+      error: error?.message || error,
+      status: error?.status,
+      code: error?.code,
+      cartId: id
+    })
+
     if (error?.status === 404) {
+      console.log('🛒 Cart not found (404), cleaning up cart ID')
       await removeCartId()
       
       if (typeof window !== 'undefined') {
+        console.log('🛒 Cleaning up localStorage cart IDs')
         localStorage.removeItem('_medusa_cart_id')
         localStorage.removeItem('medusa_cart_id')
       }
@@ -86,9 +137,14 @@ export async function retrieveCart(cartId?: string, fields?: string) {
     
     // For network/server errors, return null to prevent infinite retries
     if (error?.status >= 500 || error?.code === 'ECONNREFUSED' || error?.code === 'ENOTFOUND') {
+      console.log('🛒 Server/network error, returning null to prevent retries:', {
+        status: error?.status,
+        code: error?.code
+      })
       return null
     }
     
+    console.error('🛒 Unexpected error, rethrowing:', error)
     throw error
   }
 }
@@ -96,8 +152,14 @@ export async function retrieveCart(cartId?: string, fields?: string) {
 /**
  * Gets the cart from the API based on the cart ID in cookies
  */
+/**
+ * Gets the cart from the API based on the cart ID in cookies
+ */
 export async function getCart() {
-  return retrieveCart()
+  console.log('🛒 getCart called from layout at:', new Date().toISOString())
+  const result = await retrieveCart()
+  console.log('🛒 getCart result:', result ? `Cart ${result.id} with ${result.items?.length || 0} items` : 'null')
+  return result
 }
 
 /**
@@ -147,16 +209,11 @@ export async function getOrSetCart(countryCode: string) {
     cart = cartResp.cart
 
     await setCartId(cart.id)
-
-    const cartCacheTag = await getCacheTag("carts")
-    revalidateTag(cartCacheTag)
   }
 
   // Only update region if it's actually different to prevent promotion loss
   if (cart && cart?.region_id && cart.region_id !== region.id) {
     await sdk.store.cart.update(cart.id, { region_id: region.id }, { fields: CART_FIELDS }, headers)
-    const cartCacheTag = await getCacheTag("carts")
-    revalidateTag(cartCacheTag)
     return await retrieveCart(cart.id)
   }
 
@@ -165,7 +222,6 @@ export async function getOrSetCart(countryCode: string) {
 
 export async function updateCart(data: HttpTypes.StoreUpdateCart) {
   const cartId = await getCartId()
-
   if (!cartId) {
     throw new Error("No existing cart found, please create one before updating")
   }

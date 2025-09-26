@@ -9,6 +9,7 @@ import { SingleProductMeasurement } from '@/types/product';
 import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from 'react';
 import { useVariantSelection } from '@/components/context/VariantSelectionContext';
 import { getProductMeasurements } from '@/lib/data/measurements';
+import { getCachedMeasurements } from '@/lib/utils/unified-cache';
 
 interface MeasurementProps {
   productId: string;
@@ -47,43 +48,30 @@ export const ProductDetailsMeasurements = ({
   const fetchMeasurementsFromAPI = useCallback(async (productId: string, variantId: string) => {
     if (!productId || !variantId) return false;
     
-    // Check cache first
-    const cacheKey = `${productId}:${variantId}:${locale}`;
-    if (requestCacheRef.current.has(cacheKey)) {
-      try {
-        const cachedData = await requestCacheRef.current.get(cacheKey)!;
-        if (Array.isArray(cachedData)) {
-          setMeasurements(cachedData);
-          setHasError(false);
-          return true;
-        }
-      } catch (error) {
-        requestCacheRef.current.delete(cacheKey);
-      }
-    }
-    
     setIsLoading(true);
     setHasError(false);
     
     try {
-      // Create request promise and cache it
-      // Create timeout with proper cleanup (reduced to 5 seconds)
-      let timeoutId: NodeJS.Timeout
-      const timeoutPromise = new Promise<never>((_, reject) => {
-        timeoutId = setTimeout(() => reject(new Error('Measurements request timeout')), 5000) // 5 second timeout
-      })
+      // Use unified cache with timeout protection
+      const data = await getCachedMeasurements(
+        productId,
+        variantId,
+        locale,
+        () => {
+          // Create timeout with proper cleanup
+          let timeoutId: NodeJS.Timeout
+          const timeoutPromise = new Promise<never>((_, reject) => {
+            timeoutId = setTimeout(() => reject(new Error('Measurements request timeout')), 5000)
+          })
 
-      const requestPromise = Promise.race([
-        getProductMeasurements(productId, variantId, locale),
-        timeoutPromise
-      ]).finally(() => {
-        // Always clear timeout to prevent memory leaks
-        if (timeoutId) clearTimeout(timeoutId)
-      });
-      
-      requestCacheRef.current.set(cacheKey, requestPromise as Promise<SingleProductMeasurement[]>);
-      
-      const data = await requestPromise;
+          return Promise.race([
+            getProductMeasurements(productId, variantId, locale),
+            timeoutPromise
+          ]).finally(() => {
+            if (timeoutId) clearTimeout(timeoutId)
+          });
+        }
+      );
       
       // Validate the data is an array
       if (Array.isArray(data)) {
@@ -91,7 +79,6 @@ export const ProductDetailsMeasurements = ({
         setHasError(false);
         return true;
       } else {
-    
         setHasError(true);
         return false;
       }
@@ -105,7 +92,6 @@ export const ProductDetailsMeasurements = ({
         console.error('Error fetching measurements:', error);
         setHasError(true);
       }
-      requestCacheRef.current.delete(cacheKey);
       return false;
     } finally {
       setIsLoading(false);

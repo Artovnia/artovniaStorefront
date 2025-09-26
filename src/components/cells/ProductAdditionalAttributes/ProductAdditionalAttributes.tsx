@@ -3,7 +3,7 @@
 import { ProductPageAccordion } from "@/components/molecules"
 import { AdditionalAttributeProps } from "@/types/product"
 import { HttpTypes } from "@medusajs/types"
-import { useEffect, useState, useTransition } from "react"
+import { useCallback, useEffect, useRef, useState, useTransition } from "react"
 import "@/types/medusa" // Import extended types
 import { useVariantSelection } from "@/components/context/VariantSelectionContext"
 import { getVariantAttributes } from "@/lib/data/variant-attributes"
@@ -18,25 +18,69 @@ export const ProductAdditionalAttributes = ({
   const [isPending, startTransition] = useTransition()
   const { selectedVariantId } = useVariantSelection()
 
-  // Function to fetch variant attributes from the API
-  async function fetchVariantAttributes(productId: string, variantId: string) {
+  // Request deduplication cache - prevents multiple simultaneous requests
+  const requestCacheRef = useRef(new Map<string, Promise<any>>())
+  const lastFetchedRef = useRef<string>('')
+
+  // Function to fetch variant attributes with request deduplication
+  const fetchVariantAttributes = useCallback(async (productId: string, variantId: string) => {
+    const cacheKey = `${productId}:${variantId}`
+    
+    // Prevent duplicate requests for the same variant
+    if (lastFetchedRef.current === cacheKey) {
+      return false
+    }
+
+    // Check if there's already a request in progress for this variant
+    if (requestCacheRef.current.has(cacheKey)) {
+      try {
+        const cachedResult = await requestCacheRef.current.get(cacheKey)
+        if (cachedResult) {
+          setAttributes(cachedResult)
+          return true
+        }
+      } catch (error) {
+        // Remove failed request from cache
+        requestCacheRef.current.delete(cacheKey)
+      }
+    }
+
     setIsLoading(true)
-    try {
-      const response = await getVariantAttributes(productId, variantId)
-      
-      // Format the response to match our AdditionalAttributeProps type
-      if (response && response.attribute_values && response.attribute_values.length > 0) {
-        const formattedAttributes = response.attribute_values.map(attr => ({
-          id: attr.id,
-          value: attr.value,
-          attribute_id: attr.attribute_id,
-          attribute: {
-            id: attr.attribute.id,
-            name: attr.attribute.name
-          }
-        }))
+    lastFetchedRef.current = cacheKey
+
+    // Create the request promise and cache it
+    const requestPromise = (async () => {
+      try {
+        const response = await getVariantAttributes(productId, variantId)
         
-        setAttributes(formattedAttributes)
+        // Format the response to match our AdditionalAttributeProps type
+        if (response && response.attribute_values && response.attribute_values.length > 0) {
+          const formattedAttributes = response.attribute_values.map(attr => ({
+            id: attr.id,
+            value: attr.value,
+            attribute_id: attr.attribute_id,
+            attribute: {
+              id: attr.attribute.id,
+              name: attr.attribute.name
+            }
+          }))
+          
+          return formattedAttributes
+        }
+        return null
+      } catch (error) {
+        console.error('Error fetching variant attributes:', error)
+        throw error
+      }
+    })()
+
+    // Cache the request promise
+    requestCacheRef.current.set(cacheKey, requestPromise)
+
+    try {
+      const result = await requestPromise
+      if (result) {
+        setAttributes(result)
         return true
       }
       return false
@@ -45,21 +89,20 @@ export const ProductAdditionalAttributes = ({
       return false
     } finally {
       setIsLoading(false)
+      // Clean up the request cache after completion
+      requestCacheRef.current.delete(cacheKey)
     }
-  }
+  }, [])
 
   useEffect(() => {
-
     // If we have a selected variant, check local data immediately first
     if (selectedVariantId && product.id) {
       // 1. IMMEDIATE: Check if we have variant data locally and show it right away for a fast UI update
       const selectedVariant = product.variants?.find((v) => v.id === selectedVariantId)
       
       if (selectedVariant?.attribute_values?.length) {
-    
         setAttributes(selectedVariant.attribute_values)
       } else {
-      
         setAttributes(product.attribute_values || [])
       }
       
@@ -75,7 +118,7 @@ export const ProductAdditionalAttributes = ({
       // Otherwise fall back to product attributes
       setAttributes(product.attribute_values || [])
     }
-  }, [product, selectedVariantId])
+  }, [product, selectedVariantId, fetchVariantAttributes])
   
   if (!attributes.length) return null
 

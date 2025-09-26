@@ -4,7 +4,7 @@ import { ProductReviews } from "@/components/organisms/ProductReviews/ProductRev
 import { VendorAvailabilityProvider } from "../../../components/organisms/VendorAvailabilityProvider/vendor-availability-provider"
 import { BatchPriceProvider } from "@/components/context/BatchPriceProvider"
 import { PromotionDataProvider } from "@/components/context/PromotionDataProvider"
-import { listProducts } from "../../../lib/data/products"
+import { listProducts, batchFetchProductsByHandles } from "../../../lib/data/products"
 import { getVendorAvailability, getVendorHolidayMode, getVendorSuspension } from "../../../lib/data/vendor-availability"
 import { HomeProductSection } from "../HomeProductSection/HomeProductSection"
 import { unifiedCache } from "@/lib/utils/unified-cache"
@@ -39,7 +39,7 @@ export const ProductDetailsPage = async ({
 
   if (!prod) return null
   
-  // Fetch seller's products with unified cache and batch processing
+  // Fetch seller's products with optimized batch processing
   let sellerProducts: any[] = []
   if (prod.seller?.id) {
     try {
@@ -49,29 +49,30 @@ export const ProductDetailsPage = async ({
         // Check if seller products are available in the API response
         if (prod.seller?.products && prod.seller.products.length > 0) {
           
-          // Limit to 8 products for performance and fetch full product data
-          const productPromises = prod.seller.products.slice(0, 8).map(async (sellerProduct: any) => {
-            if (!sellerProduct.handle) return null
-            
-            try {
-              const { response } = await listProducts({
-                countryCode: locale,
-                queryParams: { handle: sellerProduct.handle },
-              })
-              return response.products[0] || null
-            } catch (error) {
-              console.error(`Error fetching seller product ${sellerProduct.handle}:`, error)
-              return null
-            }
+          // Extract handles for batch fetching (limit to 8 for performance)
+          const handles = prod.seller.products
+            .slice(0, 8)
+            .map((sellerProduct: any) => sellerProduct.handle)
+            .filter(Boolean)
+          
+          if (handles.length === 0) return []
+          
+          // Use batch fetch instead of individual API calls
+          console.log(`Batch fetching ${handles.length} seller products for ${prod.seller.name}`)
+          const fetchedProducts = await batchFetchProductsByHandles({
+            handles,
+            countryCode: locale,
+            limit: 8
           })
           
-          const fetchedProducts = await Promise.all(productPromises)
-          return fetchedProducts.filter(Boolean)
+          console.log(`Successfully fetched ${fetchedProducts.length} seller products`)
+          return fetchedProducts
         } else {
           return []
         }
       })
     } catch (error) {
+      console.error('Error fetching seller products:', error)
       sellerProducts = []
     }
   }

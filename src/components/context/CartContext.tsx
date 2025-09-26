@@ -69,7 +69,7 @@ export interface CartContextType {
   setShipping: (methodId: string) => Promise<void>
   setPayment: (providerId: string) => Promise<void>
   setAddress: (address: any) => Promise<void>
-  completeOrder: () => Promise<any>
+  completeOrder: (skipRedirectCheck?: boolean, cartId?: string) => Promise<any>
   clearError: () => void
   clearCart: () => void
   
@@ -109,6 +109,37 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children, initialCar
 
   // Simple operation locking
   const operationInProgress = useRef(false)
+  
+  // Ensure cart exists using server action
+  const ensureCart = useCallback(async (countryCode: string = 'pl') => {
+    if (operationInProgress.current) return null
+    
+    operationInProgress.current = true
+    
+    try {
+      console.log('🛒 Ensuring cart exists...')
+      
+      // Try to get existing cart first
+      let cart = await retrieveCart()
+      
+      if (!cart) {
+        console.log('🛒 No cart found, creating via server action...')
+        
+        // Import and call server action
+        const { createCartAction } = await import('@/lib/actions/cart-actions')
+        cart = await createCartAction(countryCode)
+      } else {
+        console.log('🛒 Existing cart found:', cart.id)
+      }
+      
+      return cart
+    } catch (error) {
+      console.error('Error ensuring cart:', error)
+      return null
+    } finally {
+      operationInProgress.current = false
+    }
+  }, [])
   
   // Simplified cart refresh
   const refreshCart = useCallback(async (context?: 'address' | 'shipping' | 'payment') => {
@@ -376,14 +407,15 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children, initialCar
   }, [state.cart, refreshCart])
 
   // Complete order
-  const completeOrder = useCallback(async (skipRedirectCheck: boolean = false) => {
-    if (!state.cart) throw new Error('No cart available')
+  const completeOrder = useCallback(async (skipRedirectCheck: boolean = false, cartId?: string) => {
+    const targetCartId = cartId || state.cart?.id
+    if (!targetCartId) throw new Error('No cart available')
     
     dispatch({ type: 'SET_ERROR', payload: null })
     
     try {
       const { placeOrder } = await import('@/lib/data/cart')
-      const result = await placeOrder(state.cart.id, skipRedirectCheck)
+      const result = await placeOrder(targetCartId, skipRedirectCheck)
       
       if (result) {
         if (result.type === 'order_set' || result.order_set || result.type === 'order' || result.order) {
@@ -403,7 +435,6 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children, initialCar
   const clearError = useCallback(() => {
     dispatch({ type: 'SET_ERROR', payload: null })
   }, [])
-
   // Computed properties
   const computedValues = useMemo(() => {
     const cart = state.cart

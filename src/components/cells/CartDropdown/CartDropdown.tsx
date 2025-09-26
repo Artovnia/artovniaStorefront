@@ -8,7 +8,7 @@ import { Link } from "@/i18n/routing"
 import { CartIcon } from "@/icons"
 import { convertToLocale } from "@/lib/helpers/money"
 import { HttpTypes } from "@medusajs/types"
-import { useContext, useEffect, useState } from "react"
+import { useContext, useEffect, useState, useRef } from "react"
 import CartContext from "../../context/CartContext"
 
 const getItemCount = (cart: HttpTypes.StoreCart | null | undefined) => {
@@ -23,6 +23,7 @@ export const CartDropdown = ({
   cart: propCart,
 }: CartDropdownProps) => {
   const [open, setOpen] = useState(false)
+  const hasTriedRefresh = useRef(false) // ✅ Prevent infinite refresh
   
   // Safely check for cart context - don't throw error if not available
   const cartContext = useContext(CartContext)
@@ -35,18 +36,36 @@ export const CartDropdown = ({
   // Force recalculation on every render to avoid stale closures
   const cartItemsCount = cart?.items?.reduce((acc, item) => acc + item.quantity, 0) || 0
   const previousItemCount = usePrevious(cartItemsCount)
-
   const total = convertToLocale({
     amount: cart?.item_total || 0,
     currency_code: cart?.currency_code || "eur",
   })
 
-  // Auto-refresh cart on mount to ensure we have cart data (only if context available)
+  // ✅ FIXED: Auto-refresh cart only ONCE on mount
   useEffect(() => {
-    if (cartContext && !cartContext.cart && refreshCart) {
+    // Only refresh if:
+    // 1. We have cart context
+    // 2. No cart exists
+    // 3. We haven't tried refreshing yet
+    // 4. We're not currently loading
+    if (cartContext && 
+        !cartContext.cart && 
+        !hasTriedRefresh.current && 
+        !cartContext.isLoading &&
+        refreshCart) {
+      
+      console.log('🔄 CartDropdown calling refreshCart() - ONCE on mount')
+      hasTriedRefresh.current = true
       refreshCart()
     }
-  }, [cartContext, refreshCart])
+  }, []) // ✅ Empty dependency array - only run on mount
+
+  // ✅ Reset the refresh flag when we get a cart
+  useEffect(() => {
+    if (cartContext?.cart) {
+      hasTriedRefresh.current = false
+    }
+  }, [cartContext?.cart])
 
   useEffect(() => {
     if (open) {

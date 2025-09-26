@@ -427,18 +427,30 @@ export const getCartId = async (): Promise<string | null> => {
 
 export const setCartId = async (cartId: string) => {
   try {
-    // Try to set the cart ID in server cookies first
-    const serverCookies = await getServerCookies();
-    if (serverCookies) {
-      serverCookies.set('_medusa_cart_id', cartId, {
-        maxAge: 60 * 60 * 24 * 7,
-        httpOnly: true,
-        sameSite: 'strict',
-        secure: process.env.NODE_ENV === 'production',
-      });
+    console.log('🍪 setCartId called with:', cartId)
+    
+    // Clear cache immediately
+    cartIdCache = { id: cartId, timestamp: Date.now() };
+    
+    // Skip server cookies if we're in a rendering context
+    if (!isBrowser) {
+      try {
+        const serverCookies = await getServerCookies();
+        if (serverCookies) {
+          serverCookies.set('_medusa_cart_id', cartId, {
+            maxAge: 60 * 60 * 24 * 7,
+            httpOnly: true,
+            sameSite: 'strict',
+            secure: process.env.NODE_ENV === 'production',
+          });
+        }
+      } catch (error) {
+        console.log('🍪 Could not set server cookie (probably in render context), will rely on client-side storage');
+        // Don't throw - this is expected during rendering
+      }
     }
     
-    // Always set in browser cookies and localStorage for client-side access
+    // Always set client-side storage when available
     if (isBrowser) {
       setBrowserCookie('_medusa_cart_id', cartId, {
         maxAge: 60 * 60 * 24 * 7,
@@ -447,10 +459,16 @@ export const setCartId = async (cartId: string) => {
       });
       
       // Also store in localStorage as a fallback
-      localStorage.setItem('_medusa_cart_id', cartId);
+      try {
+        localStorage.setItem('_medusa_cart_id', cartId);
+      } catch (storageError) {
+        console.warn('Could not access localStorage:', storageError);
+      }
     }
   } catch (error) {
     console.warn('Error setting cart ID:', error);
+    // Still cache the ID even if we can't persist it
+    cartIdCache = { id: cartId, timestamp: Date.now() };
   }
 };
 

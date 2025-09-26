@@ -9,8 +9,7 @@ import {
 } from "@/components/cells"
 import { SafeI18nLink as Link } from "@/components/atoms/SafeI18nLink"
 import { HeartIcon } from "@/icons"
-import { listCategories, listCategoriesWithProducts } from "@/lib/data/categories"
-import { sdk } from "@/lib/config"
+import { listCategoriesWithProducts } from "@/lib/data/categories"
 // Removed hardcoded PARENT_CATEGORIES import - now using dynamic detection
 // import { retrieveCart } from "@/lib/data/cart" // Removed to use CartContext instead
 import { UserDropdown } from "@/components/cells/UserDropdown/UserDropdown"

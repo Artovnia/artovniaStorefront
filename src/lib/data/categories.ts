@@ -1,6 +1,7 @@
 import { sdk } from "@/lib/config"
 import { HttpTypes } from "@medusajs/types"
-import { unifiedCache } from "@/lib/utils/unified-cache"
+// Temporarily disabled to fix infinite requests
+// import { unifiedCache } from "@/lib/utils/unified-cache"
 
 interface CategoriesProps {
   query?: {
@@ -15,9 +16,10 @@ interface CategoriesProps {
  * This is used to filter categories to only show those with actual products
  */
 export const getCategoriesWithProductsFromDatabase = async (): Promise<Set<string>> => {
-  const cachedResult = await unifiedCache.get('category:tree:products-database', async () => {
+  // Temporarily disabled caching to fix infinite requests
+  // const cachedResult = await unifiedCache.get('category:tree:products-database', async () => {
+  const cachedResult = await (async () => {
     try {
-      
       // Fetch all products from Medusa backend to get category information
       const response = await sdk.client.fetch<{
         products: Array<{
@@ -36,22 +38,21 @@ export const getCategoriesWithProductsFromDatabase = async (): Promise<Set<strin
         next: { revalidate: 300 }
       })
 
-    // Extract unique category IDs that have products
-    const categoryIds = new Set<string>()
-    
-    if (response?.products && Array.isArray(response.products)) {
+      // Extract unique category IDs that have products
+      const categoryIds = new Set<string>()
       
-      response.products.forEach((product, index) => {
-        if (product.categories && Array.isArray(product.categories)) {
-          product.categories.forEach((category) => {
-            if (category.id) {
-              categoryIds.add(category.id)
-            }
-          })
-        } 
-      })
-    }
-    
+      if (response?.products && Array.isArray(response.products)) {
+        response.products.forEach((product, index) => {
+          if (product.categories && Array.isArray(product.categories)) {
+            product.categories.forEach((category) => {
+              if (category.id) {
+                categoryIds.add(category.id)
+              }
+            })
+          } 
+        })
+      }
+      
       return Array.from(categoryIds) // Convert Set to Array for caching
     } catch (error) {
       console.error("🔍 Database: Error fetching categories with products:", error)
@@ -59,10 +60,10 @@ export const getCategoriesWithProductsFromDatabase = async (): Promise<Set<strin
       // Return empty array on error - will be converted to Set below
       return []
     }
-  })
+  })()
   
   // Convert cached result back to Set (handles both Array and Set cases)
-  return new Set(Array.isArray(cachedResult) ? cachedResult : Array.from(cachedResult || []))
+  return new Set(cachedResult || [])
 }
 
 /**
@@ -74,10 +75,10 @@ export const listCategories = async (): Promise<{
   parentCategories: HttpTypes.StoreProductCategory[]
   categories: HttpTypes.StoreProductCategory[]
 }> => {
-  return unifiedCache.get('category:tree:all', async () => {
+  // Temporarily disabled caching to fix infinite requests
+  // return unifiedCache.get('category:tree:all', async () => {
+  return await (async () => {
     try {
-      
-      
       // Fetch all categories from Medusa backend - simple and clean
       const response = await sdk.client.fetch<HttpTypes.StoreProductCategoryListResponse>(
         `/store/product-categories`,
@@ -91,15 +92,14 @@ export const listCategories = async (): Promise<{
         }
       )
     
-    const allCategories = response?.product_categories || []
-    
-    // Build a clean hierarchical tree - no complex filtering
-    const hierarchicalCategories = buildCategoryTree(allCategories)
-    
-    // Get top-level categories (those without parents)
-    const parentCategories = hierarchicalCategories.filter(cat => !cat.parent_category_id)
-    
-    
+      const allCategories = response?.product_categories || []
+      
+      // Build a clean hierarchical tree - no complex filtering
+      const hierarchicalCategories = buildCategoryTree(allCategories)
+      
+      // Get top-level categories (those without parents)
+      const parentCategories = hierarchicalCategories.filter(cat => !cat.parent_category_id)
+      
       return {
         parentCategories,
         categories: hierarchicalCategories
@@ -111,7 +111,7 @@ export const listCategories = async (): Promise<{
         categories: []
       }
     }
-  })
+  })()
 }
 
 /**
@@ -189,8 +189,6 @@ export const listCategoriesWithProducts = async (): Promise<{
   categories: HttpTypes.StoreProductCategory[]
 }> => {
   try {
-    
-    
     // Get categories that have products from database
     const categoriesWithProducts = await getCategoriesWithProductsFromDatabase()
     
@@ -198,8 +196,6 @@ export const listCategoriesWithProducts = async (): Promise<{
       const essentialCategories = await getEssentialCategories()
       return essentialCategories
     }
-    
-    
     
     // Fetch all categories from database (single request)
     const response = await sdk.client.fetch<HttpTypes.StoreProductCategoryListResponse>(
@@ -336,7 +332,6 @@ export const getCategoryHierarchy = async (categoryHandle: string): Promise<Http
       hierarchy.unshift(currentCategory) // Add to beginning to build root-to-leaf path
       depth++
       
-      
       // Find parent category using parent_category_id field
       if (currentCategory.parent_category_id) {
         const parentId: string = currentCategory.parent_category_id
@@ -354,8 +349,6 @@ export const getCategoryHierarchy = async (categoryHandle: string): Promise<Http
     if (depth >= maxDepth) {
       console.warn(`Category hierarchy depth exceeded maximum (${maxDepth}) for category: ${categoryHandle}`)
     }
-
-   
 
     return hierarchy
   } catch (error) {
@@ -417,20 +410,21 @@ export const getCategoryByHandle = async (categoryHandle: string[]) => {
   // Decode handle outside try-catch to ensure it's accessible in error handling
   const decodedHandle = categoryHandle.map(segment => decodeURIComponent(segment)).join("/")
   
-  return unifiedCache.get(`category:metadata:${decodedHandle}`, async () => {
-    try {
-      // First try to find by exact handle
-      const response = await sdk.client.fetch<HttpTypes.StoreProductCategoryListResponse>(
-        `/store/product-categories`,
-        {
-          query: {
-            fields: "handle, name, rank, parent_category_id, mpath, *category_children, *parent_category",
-            handle: decodedHandle,
-          },
-          cache: "force-cache",
-          next: { revalidate: 300 }
-        }
-      )
+  // Temporarily disabled caching to fix infinite requests
+  // return unifiedCache.get(`category:metadata:${decodedHandle}`, async () => {
+  try {
+    // First try to find by exact handle
+    const response = await sdk.client.fetch<HttpTypes.StoreProductCategoryListResponse>(
+      `/store/product-categories`,
+      {
+        query: {
+          fields: "handle, name, rank, parent_category_id, mpath, *category_children, *parent_category",
+          handle: decodedHandle,
+        },
+        cache: "force-cache",
+        next: { revalidate: 300 }
+      }
+    )
     
     if (response?.product_categories?.length > 0) {
       return response.product_categories[0]
@@ -464,11 +458,10 @@ export const getCategoryByHandle = async (categoryHandle: string[]) => {
       console.warn(`Fallback category search failed for handle: ${decodedHandle}`, fallbackError)
     }
     
-      console.warn(`Category not found for handle: ${decodedHandle}`)
-      return null
-    } catch (error) {
-      console.error(`Error fetching category by handle: ${decodedHandle}`, error)
-      return null
-    }
-  })
+    console.warn(`Category not found for handle: ${decodedHandle}`)
+    return null
+  } catch (error) {
+    console.error(`Error fetching category by handle: ${decodedHandle}`, error)
+    return null
+  }
 }
