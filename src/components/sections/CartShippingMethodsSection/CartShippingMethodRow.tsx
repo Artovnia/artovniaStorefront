@@ -8,7 +8,7 @@ import { HttpTypes } from "@medusajs/types"
 import { Text } from "@medusajs/ui"
 import { InpostParcelInfo } from "@/components/molecules"
 import { InpostParcelData } from "@/lib/services/inpost-api"
-import { invalidateCheckoutCache } from "@/lib/utils/storefront-cache"
+import { unifiedCache } from "@/lib/utils/unified-cache" // ✅ Updated import
 import { useState } from "react"
 
 export const CartShippingMethodRow = ({
@@ -44,14 +44,13 @@ export const CartShippingMethodRow = ({
         sellerId = method.data.seller_specific_id as string;
       }
       
-     
-      
       // Attempt to delete the shipping method
       const response = await removeShippingMethod(method.id);
       
-      // After successful removal, invalidate the cache
-      invalidateCheckoutCache(cartId);
-    
+      // After successful removal, invalidate the cache using new system
+      await unifiedCache.invalidate(['cart', 'checkout']).catch(() => {
+        // Silent failure - don't break the flow
+      })
       
       // Call the callback if provided to update parent state immediately
       // This is critical for ensuring the UI updates correctly
@@ -70,7 +69,6 @@ export const CartShippingMethodRow = ({
 
   const isInpostPaczkomat = method.name?.toLowerCase().includes('paczkomat')
   
-
   return (
     <div className="mb-4 border rounded-md p-4">
       <div className="flex items-center justify-between">

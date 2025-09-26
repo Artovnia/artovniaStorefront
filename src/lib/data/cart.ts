@@ -16,6 +16,7 @@ import {
 
 import { getRegion } from "./regions"
 import { getPublishableApiKey } from "../get-publishable-key"
+import { unifiedCache } from "../utils/unified-cache" // ✅ New import
 
 interface ExtendedStoreCart extends HttpTypes.StoreCart {
   completed_at?: string;
@@ -34,7 +35,6 @@ async function getPaymentHeaders() {
     'x-publishable-api-key': await getPublishableApiKey()
   }
 }
-
 
 /**
  * Core cart retrieval function - handles completed cart cleanup and errors
@@ -61,7 +61,6 @@ export async function retrieveCart(cartId?: string, fields?: string) {
       
     const cart = result.cart;
     
-      
     // Check if cart is completed and handle accordingly
     if (cart && cart.completed_at) {
       return null;
@@ -142,7 +141,7 @@ export async function getOrSetCart(countryCode: string) {
   if (!cart) {
     const cartResp = await sdk.store.cart.create(
       { region_id: region.id },
-      { fields: CART_FIELDS }, // ✅ Include full cart fields
+      { fields: CART_FIELDS },
       headers
     )
     cart = cartResp.cart
@@ -178,6 +177,10 @@ export async function updateCart(data: HttpTypes.StoreUpdateCart) {
     .then(async ({ cart }) => {
       const cartCacheTag = await getCacheTag("carts")
       await revalidateTag(cartCacheTag)
+      
+      // ✅ Updated cache invalidation
+      unifiedCache.invalidate(['cart']).catch(() => {})
+      
       return cart
     })
     .catch(medusaError)
@@ -213,14 +216,12 @@ export async function addToCart({
  try {
    const currentItem = cart.items?.find((item) => item.variant_id === variantId)
 
-   // This code block is now moved above to capture the response directly 
-
    if (currentItem) {
     const response = await sdk.store.cart.updateLineItem(
       cart.id,
       currentItem.id,
       { quantity: currentItem.quantity + quantity },
-      { fields: CART_FIELDS }, // ✅ Include full cart fields for seller data and pricing
+      { fields: CART_FIELDS },
       headers
     )
     updatedCart = response.cart
@@ -231,13 +232,14 @@ export async function addToCart({
          variant_id: variantId,
          quantity,
        },
-       { fields: CART_FIELDS }, // ✅ Include full cart fields for seller data and pricing
+       { fields: CART_FIELDS },
        headers
      )
     updatedCart = response.cart
   }
   
-  
+  // ✅ Updated cache invalidation
+  unifiedCache.invalidate(['cart', 'inventory']).catch(() => {})
    
   return updatedCart
    
@@ -268,8 +270,8 @@ export async function updateLineItem({
   await sdk.store.cart
     .updateLineItem(cartId, lineId, { quantity }, { fields: CART_FIELDS }, headers)
     .then(async () => {
-      const { invalidateCheckoutCache } = await import('../utils/storefront-cache')
-      invalidateCheckoutCache(cartId)
+      // ✅ Updated cache invalidation
+      unifiedCache.invalidate(['cart', 'inventory']).catch(() => {})
     })
     .catch(medusaError)
 
@@ -291,10 +293,9 @@ export async function deleteLineItem(lineId: string) {
 
   try {
     await sdk.store.cart.deleteLineItem(cartId, lineId, headers)
-    // Note: deleteLineItem doesn't return cart data, so we retrieve it separately
     
-    const { invalidateCheckoutCache } = await import('../utils/storefront-cache')
-    invalidateCheckoutCache(cartId)
+    // ✅ Updated cache invalidation
+    unifiedCache.invalidate(['cart', 'inventory']).catch(() => {})
     
     const cartCacheTag = await getCacheTag("carts")
     revalidateTag(cartCacheTag)
@@ -335,8 +336,8 @@ export async function setShippingMethod({
       const cartCacheTag = await getCacheTag("carts")
       revalidateTag(cartCacheTag)
       
-      const { invalidateCheckoutCache } = await import('../utils/storefront-cache')
-      invalidateCheckoutCache(cartId)
+      // ✅ Updated cache invalidation
+      unifiedCache.invalidate(['cart']).catch(() => {})
       
       return response
     })
@@ -369,6 +370,9 @@ export async function updateShippingMethodData({
 
     const cartCacheTag = await getCacheTag("carts")
     revalidateTag(cartCacheTag)
+    
+    // ✅ Updated cache invalidation
+    unifiedCache.invalidate(['cart']).catch(() => {})
     
     return response
   } catch (error) {
@@ -426,6 +430,10 @@ export async function initiatePaymentSession(
     
     const cartCacheTag = await getCacheTag("carts")
     revalidateTag(cartCacheTag)
+    
+    // ✅ Updated cache invalidation
+    unifiedCache.invalidate(['cart']).catch(() => {})
+    
     return response
   } catch (error) {
     throw medusaError(error)
@@ -490,6 +498,9 @@ export async function selectPaymentSession(
     const cartCacheTag = await getCacheTag("carts");
     revalidateTag(cartCacheTag);
     
+    // ✅ Updated cache invalidation
+    unifiedCache.invalidate(['cart']).catch(() => {})
+    
     return response.cart;
     
   } catch (error) {
@@ -510,7 +521,6 @@ export async function applyPromotions(codes: string[]) {
   const headers = await getAuthHeaders()
   
   try {
-    
     // Apply promotion codes to cart
     const response = await sdk.client.fetch(`/store/carts/${cartId}`, {
       method: "POST",
@@ -520,10 +530,11 @@ export async function applyPromotions(codes: string[]) {
       }
     })
     
-   
-    
     const cartCacheTag = await getCacheTag("carts")
     revalidateTag(cartCacheTag)
+    
+    // ✅ Updated cache invalidation
+    unifiedCache.invalidate(['cart', 'promotions']).catch(() => {})
     
     return response
   } catch (error) {
@@ -622,8 +633,8 @@ export async function removeShippingMethod(shippingMethodId: string, sellerId?: 
     const fulfillmentTag = await getCacheTag("fulfillment");
     revalidateTag(fulfillmentTag);
     
-    const { invalidateCheckoutCache } = await import('@/lib/utils/storefront-cache')
-    invalidateCheckoutCache(cartId)
+    // ✅ Updated cache invalidation
+    unifiedCache.invalidate(['cart']).catch(() => {})
     
     return {
       success: true,
@@ -663,6 +674,9 @@ export async function deletePromotionCode(promoId: string) {
     .then(async () => {
       const cartCacheTag = await getCacheTag("carts")
       revalidateTag(cartCacheTag)
+      
+      // ✅ Updated cache invalidation
+      unifiedCache.invalidate(['cart', 'promotions']).catch(() => {})
     })
     .catch(medusaError)
 }
@@ -902,6 +916,9 @@ export async function placeOrder(cartId?: string, skipRedirectCheck: boolean = f
     // Clear cart ID after successful completion
     if (result.type === 'order_set' || result.order_set || result.type === 'order' || result.order) {
       removeCartId()
+      
+      // ✅ Updated cache invalidation for completed order
+      unifiedCache.invalidate(['cart', 'inventory']).catch(() => {})
     }
     
     return result

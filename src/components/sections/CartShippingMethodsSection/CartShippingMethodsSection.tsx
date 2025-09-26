@@ -19,7 +19,7 @@ import clsx from "clsx"
 import { InpostShippingMethodWrapper } from "@/components/molecules/InpostShippingMethodWrapper/InpostShippingMethodWrapper"
 import { setShippingMethod } from "@/lib/data/cart"
 // Import cache invalidation function
-import { invalidateCheckoutCache } from "@/lib/utils/storefront-cache"
+import { unifiedCache } from "@/lib/utils/unified-cache"
 import { useCart } from "@/components/context/CartContext"
 
 // Extended cart item product type to include seller
@@ -501,7 +501,9 @@ const CartShippingMethodsSection: React.FC<ShippingProps> = ({
                                 cartId={activeCart.id}
                                 onComplete={async () => {
                                   // Refresh page after InPost completion
-                                  invalidateCheckoutCache(activeCart.id);
+                                  await unifiedCache.invalidate(['cart', 'checkout']).catch(() => {
+                                    // Silent failure - don't break the flow
+                                  })
                                   router.refresh();
                                 }}
                                 onError={(error) => {

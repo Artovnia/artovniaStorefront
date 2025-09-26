@@ -107,115 +107,80 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children, initialCar
     lastUpdated: Date.now()
   })
 
-  // Operation locking to prevent race conditions
+  // Simple operation locking
   const operationInProgress = useRef(false)
-  const refreshCartRef = useRef<Promise<void> | null>(null)
   
-  // Optimized cart refresh with better error handling and timeout
+  // Simplified cart refresh
   const refreshCart = useCallback(async (context?: 'address' | 'shipping' | 'payment') => {
     if (state.isLoading || operationInProgress.current) return
     
-    // Deduplicate simultaneous refresh requests
-    if (refreshCartRef.current) {
-      return refreshCartRef.current
-    }
+    operationInProgress.current = true
     
-    const refreshPromise = (async () => {
-      let timeoutId: NodeJS.Timeout | undefined
+    try {
+      dispatch({ type: 'SET_LOADING', payload: true })
+      dispatch({ type: 'SET_ERROR', payload: null })
       
-      try {
-        dispatch({ type: 'SET_LOADING', payload: true })
-        dispatch({ type: 'SET_ERROR', payload: null })
-        
-        // Add timeout to prevent hanging requests
-        const timeoutPromise = new Promise<never>((_, reject) => {
-          timeoutId = setTimeout(() => reject(new Error('Cart refresh timeout')), 5000)
-        })
-        
-        let cartPromise: Promise<ExtendedCart | null>
-        
-        // Use specialized cart functions based on context
-        switch (context) {
-          case 'address':
-            cartPromise = retrieveCartForAddress()
-            break
-          case 'shipping':
-            cartPromise = retrieveCartForShipping()
-            break
-          case 'payment':
-            cartPromise = retrieveCartForPayment()
-            break
-          default:
-            cartPromise = retrieveCart()
-        }
-        
-        const updatedCart = await Promise.race([cartPromise, timeoutPromise])
-        
-        // Clear timeout on success
-        if (timeoutId) clearTimeout(timeoutId)
-        
-        // Check if cart is completed and clear it if so
-        if (updatedCart && ((updatedCart as any).status === 'completed' || (updatedCart as any).completed_at)) {
-          console.log('🔄 Cart is completed, clearing from context and storage')
-          
-          // Clear cart ID from localStorage and cookies
-          if (typeof window !== 'undefined') {
-            try {
-              localStorage.removeItem('_medusa_cart_id')
-              document.cookie = '_medusa_cart_id=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;'
-            } catch (error) {
-              console.warn('Could not clear cart ID from storage:', error)
-            }
-          }
-          
-          dispatch({ type: 'CLEAR_CART' })
-          return
-        }
-        
-        dispatch({ type: 'SET_CART', payload: updatedCart as ExtendedCart | null })
-        
-        // Invalidate cart-related caches (non-blocking)
-        if (updatedCart?.id) {
-          unifiedCache.invalidate(['cart']).catch(err => {
-            console.warn('Cache invalidation failed:', err)
-          })
-        }
-        
-      } catch (error) {
-        // Clear timeout on error
-        if (timeoutId) clearTimeout(timeoutId)
-        
-        console.error('Error refreshing cart:', error)
-        
-        // Don't show error for timeout - just log it
-        if (error instanceof Error && error.message.includes('timeout')) {
-          console.warn('Cart refresh timed out, continuing with current state')
-        } else {
-          dispatch({ type: 'SET_ERROR', payload: error instanceof Error ? error.message : 'Failed to refresh cart' })
-        }
-      } finally {
-        dispatch({ type: 'SET_LOADING', payload: false })
-        refreshCartRef.current = null
+      let updatedCart: ExtendedCart | null
+      
+      // Use context-specific retrieval
+      switch (context) {
+        case 'address':
+          updatedCart = await retrieveCartForAddress()
+          break
+        case 'shipping':
+          updatedCart = await retrieveCartForShipping()
+          break
+        case 'payment':
+          updatedCart = await retrieveCartForPayment()
+          break
+        default:
+          updatedCart = await retrieveCart()
       }
-    })()
-    
-    refreshCartRef.current = refreshPromise
-    return refreshPromise
+      
+      // Handle completed cart
+      if (updatedCart && ((updatedCart as any).status === 'completed' || (updatedCart as any).completed_at)) {
+        console.log('Cart is completed, clearing')
+        clearCartStorage()
+        dispatch({ type: 'CLEAR_CART' })
+        return
+      }
+      
+      dispatch({ type: 'SET_CART', payload: updatedCart })
+      
+      // Simple cache invalidation
+      if (updatedCart?.id) {
+        unifiedCache.invalidate(['cart']).catch(() => {})
+      }
+        
+    } catch (error) {
+      console.error('Error refreshing cart:', error)
+      dispatch({ type: 'SET_ERROR', payload: error instanceof Error ? error.message : 'Failed to refresh cart' })
+    } finally {
+      dispatch({ type: 'SET_LOADING', payload: false })
+      operationInProgress.current = false
+    }
   }, [state.isLoading])
 
-  // Add item with improved immediate response and error handling
-  const addItem = useCallback(async (variantId: string, quantity: number, metadata?: any) => {
-    if (operationInProgress.current) {
-      console.warn('Cart operation already in progress, skipping add item')
-      return
+  // Helper function to clear cart storage
+  const clearCartStorage = () => {
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.removeItem('_medusa_cart_id')
+        document.cookie = '_medusa_cart_id=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;'
+      } catch (error) {
+        console.warn('Could not clear cart storage:', error)
+      }
     }
+  }
+
+  // Add item - simplified
+  const addItem = useCallback(async (variantId: string, quantity: number, metadata?: any) => {
+    if (operationInProgress.current) return
     
     operationInProgress.current = true
     
     try {
       dispatch({ type: 'SET_ERROR', payload: null })
-      
-      // Show loading state immediately for better UX
       dispatch({ type: 'SET_LOADING', payload: true })
       
       const updatedCart = await addToCart({
@@ -225,55 +190,37 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children, initialCar
       })
       
       if (updatedCart) {
-        // ✅ Set cart data immediately from API response with full seller/pricing data
         dispatch({ type: 'SET_CART', payload: updatedCart })
-        
-        // ✅ Debug log to verify seller data is present
-        if (process.env.NODE_ENV === 'development') {
-          console.log('🔄 CartContext: Updated cart with seller data:', {
-            itemsCount: updatedCart.items?.length || 0,
-            itemsWithSeller: updatedCart.items?.filter(item => (item.product as any)?.seller).length || 0,
-            promotionsCount: (updatedCart as any)?.promotions?.length || 0
-          })
-        }
-        
-        // Invalidate cache in background (non-blocking)
-        unifiedCache.invalidate(['cart', 'inventory', 'promotions']).catch(err => {
-          console.warn('Cache invalidation failed:', err)
-        })
+        unifiedCache.invalidate(['cart', 'inventory']).catch(() => {})
       } else {
-        // Fallback refresh if no cart returned
-        console.warn('⚠️ No cart returned from addToCart, refreshing...')
         await refreshCart()
       }
     } catch (error) {
-      console.error('Error adding item to cart:', error)
+      console.error('Error adding item:', error)
       dispatch({ type: 'SET_ERROR', payload: error instanceof Error ? error.message : 'Failed to add item' })
-      // Refresh cart to get current state on error
       await refreshCart()
     } finally {
       operationInProgress.current = false
     }
   }, [refreshCart])
 
-  // Update item with optimistic updates and error handling
+  // Update item - simplified with optimistic updates
   const updateItem = useCallback(async (itemId: string, quantity: number) => {
     if (!state.cart || operationInProgress.current) return
     
     operationInProgress.current = true
     
+    // Optimistic update
+    const optimisticCart = {
+      ...state.cart,
+      items: state.cart.items?.map(item => 
+        item.id === itemId ? { ...item, quantity } : item
+      )
+    }
+    dispatch({ type: 'UPDATE_CART', payload: optimisticCart })
+    
     try {
       dispatch({ type: 'SET_ERROR', payload: null })
-      
-      // Optimistic update
-      const optimisticCart = {
-        ...state.cart,
-        items: state.cart.items?.map(item => 
-          item.id === itemId ? { ...item, quantity } : item
-        )
-      }
-      
-      dispatch({ type: 'UPDATE_CART', payload: optimisticCart })
       
       const updatedCart = await updateLineItem({
         lineId: itemId,
@@ -282,12 +229,12 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children, initialCar
       
       if (updatedCart) {
         dispatch({ type: 'SET_CART', payload: updatedCart as ExtendedCart })
-        await unifiedCache.invalidate(['cart', 'inventory', 'promotions'])
+        unifiedCache.invalidate(['cart', 'inventory']).catch(() => {})
       } else {
         await refreshCart()
       }
     } catch (error) {
-      console.error('Error updating cart item:', error)
+      console.error('Error updating item:', error)
       dispatch({ type: 'SET_ERROR', payload: error instanceof Error ? error.message : 'Failed to update item' })
       await refreshCart() // Revert optimistic update
     } finally {
@@ -295,34 +242,20 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children, initialCar
     }
   }, [state.cart, refreshCart])
 
-  // Clear cart function - defined early to be used by other methods
+  // Clear cart function
   const clearCart = useCallback(() => {
     dispatch({ type: 'CLEAR_CART' })
-    
-    // Clear cart ID from localStorage and cookies
-    if (typeof window !== 'undefined') {
-      try {
-        localStorage.removeItem('_medusa_cart_id')
-        document.cookie = '_medusa_cart_id=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;'
-        console.log('✅ Cart manually cleared from storage')
-      } catch (error) {
-        console.warn('Could not clear cart ID from storage:', error)
-      }
-    }
-    
-    // Invalidate cache
-    unifiedCache.invalidate(['cart', 'inventory', 'promotions']).catch(err => {
-      console.warn('Cache invalidation failed:', err)
-    })
+    clearCartStorage()
+    unifiedCache.invalidate(['cart']).catch(() => {})
   }, [])
 
-  // Remove item with proper error handling
+  // Remove item - simplified
   const removeItem = useCallback(async (itemId: string) => {
     if (!state.cart || operationInProgress.current) return
     
     // Check if cart is completed
     if ((state.cart as any).status === 'completed' || (state.cart as any).completed_at) {
-      console.log('🚫 Cannot remove item from completed cart, clearing cart context')
+      console.log('Cannot remove item from completed cart')
       clearCart()
       return
     }
@@ -336,17 +269,15 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children, initialCar
       
       if (updatedCart) {
         dispatch({ type: 'SET_CART', payload: updatedCart as ExtendedCart })
-        await unifiedCache.invalidate(['cart', 'inventory', 'promotions'])
+        unifiedCache.invalidate(['cart', 'inventory']).catch(() => {})
       } else {
         await refreshCart()
       }
     } catch (error) {
-      console.error('Error removing cart item:', error)
+      console.error('Error removing item:', error)
       
-      // If error mentions payment sessions or completed cart, clear the cart
       const errorMessage = error instanceof Error ? error.message : 'Failed to remove item'
       if (errorMessage.includes('payment sessions') || errorMessage.includes('completed')) {
-        console.log('🚫 Cart appears to be completed, clearing cart context')
         clearCart()
         return
       }
@@ -372,10 +303,10 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children, initialCar
       
       if (response && response.cart) {
         dispatch({ type: 'SET_CART', payload: response.cart as ExtendedCart })
-        await unifiedCache.invalidate(['cart'])
+        unifiedCache.invalidate(['cart']).catch(() => {})
       }
     } catch (error) {
-      console.error('Error setting shipping method:', error)
+      console.error('Error setting shipping:', error)
       dispatch({ type: 'SET_ERROR', payload: error instanceof Error ? error.message : 'Failed to set shipping method' })
     }
   }, [state.cart])
@@ -399,10 +330,10 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children, initialCar
       
       if (updatedCart) {
         dispatch({ type: 'SET_CART', payload: updatedCart as ExtendedCart })
-        await unifiedCache.invalidate(['cart'])
+        unifiedCache.invalidate(['cart']).catch(() => {})
       }
     } catch (error) {
-      console.error('Error setting payment method:', error)
+      console.error('Error setting payment:', error)
       dispatch({ type: 'SET_ERROR', payload: error instanceof Error ? error.message : 'Failed to set payment method' })
     }
   }, [state.cart])
@@ -434,7 +365,7 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children, initialCar
       
       if (result === 'success') {
         await refreshCart('address')
-        await unifiedCache.invalidate(['cart'])
+        unifiedCache.invalidate(['cart']).catch(() => {})
       } else {
         dispatch({ type: 'SET_ERROR', payload: result || 'Failed to set address' })
       }
@@ -456,20 +387,8 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children, initialCar
       
       if (result) {
         if (result.type === 'order_set' || result.order_set || result.type === 'order' || result.order) {
-          dispatch({ type: 'CLEAR_CART' })
-          
-          // Clear cart ID from localStorage and cookies
-          if (typeof window !== 'undefined') {
-            try {
-              localStorage.removeItem('_medusa_cart_id')
-              document.cookie = '_medusa_cart_id=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;'
-              console.log('✅ Cart ID cleared from storage')
-            } catch (error) {
-              console.warn('Could not clear cart ID from storage:', error)
-            }
-          }
-          
-          await unifiedCache.invalidate(['cart', 'inventory', 'promotions'])
+          clearCart()
+          unifiedCache.invalidate(['cart', 'inventory']).catch(() => {})
         }
       }
       
@@ -479,7 +398,7 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children, initialCar
       dispatch({ type: 'SET_ERROR', payload: error instanceof Error ? error.message : 'Failed to complete order' })
       throw error
     }
-  }, [state.cart])
+  }, [state.cart, clearCart])
 
   const clearError = useCallback(() => {
     dispatch({ type: 'SET_ERROR', payload: null })

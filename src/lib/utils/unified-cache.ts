@@ -1,414 +1,196 @@
-import { storefrontCache, getCacheStats } from './storefront-cache'
 import { cache } from 'react'
 
-interface CacheConfig {
-  ttl: number
-  batchable: boolean
-  invalidationTags: string[]
-  fallbackEnabled: boolean
-}
+// Simple memory cache for frequently accessed data
+class SimpleMemoryCache {
+  private cache = new Map<string, { data: any; expires: number }>()
+  private readonly maxSize = 500 // Reduced for serverless memory limits
+  private readonly defaultTTL = 300000 // 5 minutes
 
-const CACHE_CONFIGS: Record<string, CacheConfig> = {
-  // Product data - optimized TTLs for performance
-  'product:details:': { ttl: 300000, batchable: false, invalidationTags: ['products'], fallbackEnabled: true }, // 5 min
-  'product:pricing:': { ttl: 30000, batchable: true, invalidationTags: ['pricing', 'promotions'], fallbackEnabled: true }, // 30s
-  'product:inventory:': { ttl: 45000, batchable: true, invalidationTags: ['inventory'], fallbackEnabled: true }, // 45s
-  'cart:': { ttl: 60000, batchable: false, invalidationTags: ['cart'], fallbackEnabled: true }, // 1 min
-  
-  // Semi-critical data
-  'seller:products:': { ttl: 600000, batchable: false, invalidationTags: ['products', 'sellers'], fallbackEnabled: true },
-  'product:reviews:': { ttl: 900000, batchable: false, invalidationTags: ['reviews'], fallbackEnabled: true },
-  'wishlist:': { ttl: 300000, batchable: false, invalidationTags: ['wishlist'], fallbackEnabled: true },
-  'breadcrumbs:': { ttl: 1800000, batchable: false, invalidationTags: ['navigation'], fallbackEnabled: true },
-  
-  // Static data - longer cache times
-  'categories:': { ttl: 3600000, batchable: false, invalidationTags: ['categories'], fallbackEnabled: true },
-  'homepage:': { ttl: 900000, batchable: false, invalidationTags: ['homepage'], fallbackEnabled: true },
-  'reviews:': { ttl: 600000, batchable: false, invalidationTags: ['reviews'], fallbackEnabled: true },
-  
-  // Time-sensitive data with fallbacks - increased TTL for measurements due to slow API
-  'measurements:': { ttl: 600000, batchable: false, invalidationTags: ['measurements'], fallbackEnabled: true }, // 10 min (increased from 2 min)
-  'region:': { ttl: 3600000, batchable: false, invalidationTags: ['regions'], fallbackEnabled: true },
-  
-  // Product display data
-  'product:card:': { ttl: 180000, batchable: true, invalidationTags: ['products'], fallbackEnabled: true }, // 3 min
-  'category:tree:': { ttl: 1800000, batchable: false, invalidationTags: ['categories'], fallbackEnabled: true },
-  'category:metadata:': { ttl: 1800000, batchable: false, invalidationTags: ['categories'], fallbackEnabled: true },
-  
-  // Homepage content
-  'homepage:newest:': { ttl: 300000, batchable: false, invalidationTags: ['products', 'homepage'], fallbackEnabled: true },
-  'homepage:top:': { ttl: 600000, batchable: false, invalidationTags: ['products', 'homepage'], fallbackEnabled: true },
-  
-  // Promotion data
-  'products:promotions:': { ttl: 30000, batchable: false, invalidationTags: ['promotions', 'products'], fallbackEnabled: true }, // 30s - same as pricing
-  'promotional:price:': { ttl: 30000, batchable: true, invalidationTags: ['promotions', 'pricing'], fallbackEnabled: true }, // 30s - same as pricing
-}
-
-interface CacheStats {
-  connected: boolean
-  size: number
-  operations: number
-  failures: number
-  circuitBreakerOpen: boolean
-  timestamp: number
-  error?: string
-}
-
-interface UnifiedCacheStats {
-  redis: CacheStats
-  pending: number
-  circuitBreaker: {
-    open: boolean
-    failures: number
-    lastFailure: number
-  }
-  pendingKeys: string[]
-  serverless: boolean
-  error?: string
-}
-
-class UnifiedCache {
-  private redis = storefrontCache
-  private pendingRequests = new Map<string, Promise<any>>()
-  private isServerless = !!(process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME)
-  
-  // Circuit breaker - more tolerant for production serverless environment
-  private failureCount = 0
-  private lastFailureTime = 0
-  private circuitBreakerOpen = false
-  private readonly maxFailures = 20 // Increased threshold for production (was 10)
-  private readonly resetTimeout = 60000 // 60 seconds (was 30)
-
-  private checkCircuitBreaker(): boolean {
-    if (this.circuitBreakerOpen) {
-      if (Date.now() - this.lastFailureTime > this.resetTimeout) {
-        this.circuitBreakerOpen = false
-        this.failureCount = 0
-        console.log('🔄 Cache circuit breaker reset')
-      } else {
-        return false
-      }
-    }
-    return true
-  }
-
-  private recordFailure() {
-    this.failureCount++
-    this.lastFailureTime = Date.now()
+  get<T>(key: string): T | null {
+    const entry = this.cache.get(key)
     
-    if (this.failureCount >= this.maxFailures) {
-      this.circuitBreakerOpen = true
-      console.error('🚨 Cache circuit breaker opened - too many failures')
+    if (!entry) return null
+    
+    if (Date.now() > entry.expires) {
+      this.cache.delete(key)
+      return null
     }
+    
+    return entry.data
   }
 
-  private recordSuccess() {
-    // Reset failure count on successful operations
-    if (this.failureCount > 0) {
-      this.failureCount = Math.max(0, this.failureCount - 1)
+  set(key: string, data: any, ttlMs: number = this.defaultTTL): void {
+    // Simple LRU eviction
+    if (this.cache.size >= this.maxSize) {
+      const firstKey = this.cache.keys().next().value
+      if (firstKey) this.cache.delete(firstKey)
     }
-  }
-
-  async get<T>(key: string, fetchFn: () => Promise<T>): Promise<T> {
-    const config = this.getConfig(key)
     
-    // Always try cache first - this is crucial for performance
-    if (this.checkCircuitBreaker()) {
-      try {
-        const cached = await Promise.race([
-          this.redis.get<T>(key),
-          new Promise<T | null>((_, reject) => 
-            setTimeout(() => reject(new Error('Cache timeout')), 3000) // Increased from 1s to 3s
-          )
-        ])
-        
-        if (cached !== null) {
-          this.recordSuccess()
-          return cached
-        }
-      } catch (error) {
-        this.recordFailure()
-        console.warn(`Cache read failed for ${key}:`, error)
-      }
-    }
-
-    // Handle request deduplication for serverless
-    if (this.pendingRequests.has(key)) {
-      return this.pendingRequests.get(key) as Promise<T>
-    }
-
-    // Execute fetch with proper error handling
-    const promise = this.executeFetch(key, fetchFn, config)
-    this.pendingRequests.set(key, promise)
-    
-    return promise.finally(() => {
-      this.pendingRequests.delete(key)
+    this.cache.set(key, {
+      data,
+      expires: Date.now() + ttlMs
     })
   }
 
-  private async executeFetch<T>(key: string, fetchFn: () => Promise<T>, config: CacheConfig): Promise<T> {
-    try {
-      // Set more generous timeout for production serverless - measurements can be slow
-      const fetchTimeout = this.isServerless ? 25000 : 30000 // Increased from 8s to 25s for serverless
-      
-      const result = await Promise.race([
-        fetchFn(),
-        new Promise<never>((_, reject) => 
-          setTimeout(() => reject(new Error(`Fetch timeout for ${key}`)), fetchTimeout)
-        )
-      ])
-
-      // Cache the successful result
-      this.cacheResult(key, result, config).catch(error => {
-        console.warn(`Failed to cache result for ${key}:`, error)
-      })
-
-      this.recordSuccess()
-      return result
-
-    } catch (error) {
-      this.recordFailure()
-      console.error(`Fetch failed for ${key}:`, error)
-      
-      // Try fallback value if enabled
-      if (config.fallbackEnabled) {
-        const fallback = this.getFallbackValue<T>(key)
-        if (fallback !== null) {
-          console.warn(`Using fallback value for ${key}`)
-          return fallback
-        }
+  invalidate(pattern: string): void {
+    for (const key of this.cache.keys()) {
+      if (key.includes(pattern)) {
+        this.cache.delete(key)
       }
-
-      throw error
     }
   }
 
-  private async cacheResult(key: string, result: any, config: CacheConfig): Promise<void> {
-    if (!this.checkCircuitBreaker()) return
-    
-    try {
-      await this.redis.set(key, result, Math.floor(config.ttl / 1000), config.invalidationTags)
-    } catch (error) {
-      // Cache write failures shouldn't break the main flow
-      console.warn(`Cache write failed for ${key}:`, error)
-    }
+  clear(): void {
+    this.cache.clear()
   }
 
-  private getFallbackValue<T>(key: string): T | null {
-    // Enhanced fallback values for better UX
-    if (key.includes('cart:')) {
-      return { 
-        id: null, 
-        items: [], 
-        total: 0, 
-        subtotal: 0, 
-        item_total: 0,
-        shipping_total: 0,
-        tax_total: 0,
-        currency_code: 'PLN',
-        region: null,
-        shipping_address: null,
-        billing_address: null,
-        shipping_methods: [],
-        payment_collection: null
-      } as T
+  getStats() {
+    return {
+      size: this.cache.size,
+      maxSize: this.maxSize
+    }
+  }
+}
+
+// Global memory cache instance
+const memoryCache = new SimpleMemoryCache()
+
+// Simple Redis client (optional, for persistent caching)
+let Redis: any
+let redis: any
+
+if (typeof window === 'undefined' && process.env.STOREFRONT_REDIS_URL) {
+  try {
+    Redis = require('ioredis')
+    redis = new Redis(process.env.STOREFRONT_REDIS_URL, {
+      maxRetriesPerRequest: 1,
+      retryDelayOnFailover: 100,
+      connectTimeout: 3000,
+      commandTimeout: 2000,
+      lazyConnect: true,
+      keepAlive: 0,
+      enableOfflineQueue: false,
+      // Minimal error handling
+      retryStrategy: (times: number) => times > 2 ? null : 100
+    })
+    
+    redis.on('error', () => {
+      redis = null // Disable on error
+    })
+  } catch {
+    redis = null
+  }
+}
+
+// TTL configurations
+export const CACHE_TTL = {
+  PRODUCT: 300, // 5 minutes
+  PRICING: 30,  // 30 seconds
+  INVENTORY: 60, // 1 minute
+  MEASUREMENTS: 600, // 10 minutes
+  CART: 120, // 2 minutes
+  CATEGORIES: 1800, // 30 minutes
+} as const
+
+// Main cache interface
+class UnifiedCache {
+  async get<T>(key: string, fetchFn: () => Promise<T>, ttlSeconds: number = CACHE_TTL.PRODUCT): Promise<T> {
+    // Check memory cache first (instant)
+    const memoryResult = memoryCache.get<T>(key)
+    if (memoryResult !== null) {
+      return memoryResult
+    }
+
+    // Check Redis if available (with timeout)
+    if (redis) {
+      try {
+        const redisResult = await Promise.race([
+          redis.get(key),
+          new Promise<null>((_, reject) => 
+            setTimeout(() => reject(new Error('timeout')), 1500)
+          )
+        ])
+        
+        if (redisResult) {
+          const parsed = JSON.parse(redisResult)
+          memoryCache.set(key, parsed, ttlSeconds * 1000)
+          return parsed
+        }
+      } catch {
+        // Silent fallback
+      }
+    }
+
+    // Fetch fresh data
+    const result = await fetchFn()
+    
+    // Cache in memory
+    memoryCache.set(key, result, ttlSeconds * 1000)
+    
+    // Cache in Redis (non-blocking)
+    if (redis) {
+      redis.setex(key, ttlSeconds, JSON.stringify(result)).catch(() => {
+        // Silent failure
+      })
     }
     
-    if (key.includes('measurements')) {
-      return [] as T
-    }
-    
-    if (key.includes('product:inventory:')) {
-      return { available: false, quantity: 0, manage_inventory: true } as T
-    }
-    
-    if (key.includes('product:pricing:') || key.includes('promotional:price:')) {
-      return { 
-        calculated_price: null, 
-        original_price: null,
-        has_promotion: false,
-        promotional_price: null 
-      } as T
-    }
-    
-    if (key.includes('reviews')) {
-      return [] as T
-    }
-    
-    if (key.includes('categories') || key.includes('category:tree')) {
-      return [] as T
-    }
-    
-    if (key.includes('category:metadata')) {
-      return { title: '', description: '', seo_title: '', seo_description: '' } as T
-    }
-    
-    if (key.includes('breadcrumbs')) {
-      return [] as T
-    }
-    
-    if (key.includes('wishlist')) {
-      return { wishlists: [], inWishlist: false, wishlistId: null } as T
-    }
-    
-    if (key.includes('products:list') || key.includes('homepage:newest') || key.includes('homepage:top')) {
-      return { products: [], count: 0, nextPage: null } as T
-    }
-    
-    if (key.includes('seller:products')) {
-      return { products: [], count: 0 } as T
-    }
-    
-    if (key.includes('region')) {
-      return null as T
-    }
-    
-    return null
+    return result
   }
 
   async invalidate(tags: string[]): Promise<void> {
-    try {
-      await this.redis.invalidateTags(tags)
-      console.log(`Invalidated cache tags: ${tags.join(', ')}`)
-    } catch (error) {
-      console.warn(`Failed to invalidate tags ${tags.join(', ')}:`, error)
-    }
+    // Clear memory cache
+    tags.forEach(tag => memoryCache.invalidate(tag))
     
-    // Clear related pending requests
-    for (const [key] of this.pendingRequests.entries()) {
-      const config = this.getConfig(key)
-      if (config.invalidationTags.some(t => tags.includes(t))) {
-        this.pendingRequests.delete(key)
-      }
+    // Clear Redis (non-blocking)
+    if (redis) {
+      tags.forEach(tag => {
+        redis.keys(`*${tag}*`).then((keys: string[]) => {
+          if (keys.length > 0) {
+            redis.del(...keys).catch(() => {})
+          }
+        }).catch(() => {})
+      })
     }
   }
 
   async invalidateKey(key: string): Promise<void> {
-    try {
-      await this.redis.del(key)
-      this.pendingRequests.delete(key)
-      console.log(`Invalidated cache key: ${key}`)
-    } catch (error) {
-      console.warn(`Failed to invalidate key ${key}:`, error)
-    }
-  }
-
-  private getConfig(key: string): CacheConfig {
-    // Efficient prefix matching
-    for (const [pattern, config] of Object.entries(CACHE_CONFIGS)) {
-      if (key.startsWith(pattern)) {
-        return config
-      }
-    }
+    memoryCache.invalidate(key)
     
-    // Sensible defaults
-    return { 
-      ttl: 300000, // 5 minutes
-      batchable: false, 
-      invalidationTags: ['general'],
-      fallbackEnabled: true
+    if (redis) {
+      redis.del(key).catch(() => {})
     }
   }
 
-  async getStats(): Promise<UnifiedCacheStats> {
-    try {
-      const redisStats = await getCacheStats()
-      
-      // Ensure all stats have the required properties
-      const normalizedRedisStats: CacheStats = {
-        connected: redisStats.connected ?? false,
-        size: redisStats.size ?? 0,
-        operations: redisStats.operations ?? 0,
-        failures: redisStats.failures ?? 0,
-        circuitBreakerOpen: redisStats.circuitBreakerOpen ?? false,
-        timestamp: redisStats.timestamp ?? Date.now(),
-        ...(redisStats.error && { error: redisStats.error })
-      }
-
-      return {
-        redis: normalizedRedisStats,
-        pending: this.pendingRequests.size,
-        circuitBreaker: {
-          open: this.circuitBreakerOpen,
-          failures: this.failureCount,
-          lastFailure: this.lastFailureTime
-        },
-        pendingKeys: Array.from(this.pendingRequests.keys()),
-        serverless: this.isServerless
-      }
-    } catch (error) {
-      return {
-        redis: {
-          connected: false,
-          size: 0,
-          operations: 0,
-          failures: 0,
-          circuitBreakerOpen: false,
-          timestamp: Date.now(),
-          error: 'Failed to get Redis stats'
-        },
-        pending: this.pendingRequests.size,
-        circuitBreaker: {
-          open: this.circuitBreakerOpen,
-          failures: this.failureCount,
-          lastFailure: this.lastFailureTime
-        },
-        pendingKeys: Array.from(this.pendingRequests.keys()),
-        serverless: this.isServerless,
-        error: error instanceof Error ? error.message : 'Unknown error'
-      }
-    }
+  clear(): void {
+    memoryCache.clear()
   }
 
-  clear() {
-    this.pendingRequests.clear()
-    console.log('🧹 Cache cleared')
-  }
-
-  // Health check method
-  async healthCheck(): Promise<{ healthy: boolean; details: any }> {
-    try {
-      const stats = await this.getStats()
-      const healthy = !this.circuitBreakerOpen && 
-                     stats.redis.connected &&
-                     this.failureCount < this.maxFailures / 2
-
-      return {
-        healthy,
-        details: {
-          circuitBreakerOpen: this.circuitBreakerOpen,
-          failureCount: this.failureCount,
-          pendingRequests: this.pendingRequests.size,
-          redisConnected: stats.redis.connected,
-          redisErrors: stats.redis.error
-        }
-      }
-    } catch (error) {
-      return {
-        healthy: false,
-        details: { error: error instanceof Error ? error.message : 'Unknown error' }
-      }
+  getStats() {
+    return {
+      memory: memoryCache.getStats(),
+      redis: redis ? 'connected' : 'disabled'
     }
   }
 }
 
 export const unifiedCache = new UnifiedCache()
 
-// Request-level cache deduplication using React cache()
+// React cache wrapper for request deduplication
 export const getCachedValue = cache(async <T>(
-  key: string, 
-  fetchFn: () => Promise<T>
+  key: string,
+  fetchFn: () => Promise<T>,
+  ttl: number = CACHE_TTL.PRODUCT
 ): Promise<T> => {
-  return unifiedCache.get(key, fetchFn)
+  return unifiedCache.get(key, fetchFn, ttl)
 })
 
-// Convenience functions for common patterns
+// Convenience functions
 export const getCachedProduct = cache(async <T>(
   productId: string,
   locale: string,
   fetchFn: () => Promise<T>
 ): Promise<T> => {
-  return getCachedValue(`product:details:${productId}:${locale}`, fetchFn)
+  return getCachedValue(`product:${productId}:${locale}`, fetchFn, CACHE_TTL.PRODUCT)
 })
 
 export const getCachedPricing = cache(async <T>(
@@ -416,12 +198,22 @@ export const getCachedPricing = cache(async <T>(
   regionId: string,
   fetchFn: () => Promise<T>
 ): Promise<T> => {
-  return getCachedValue(`product:pricing:${variantId}:${regionId}`, fetchFn)
+  return getCachedValue(`pricing:${variantId}:${regionId}`, fetchFn, CACHE_TTL.PRICING)
 })
 
 export const getCachedInventory = cache(async <T>(
   variantId: string,
   fetchFn: () => Promise<T>
 ): Promise<T> => {
-  return getCachedValue(`product:inventory:${variantId}`, fetchFn)
+  return getCachedValue(`inventory:${variantId}`, fetchFn, CACHE_TTL.INVENTORY)
+})
+
+export const getCachedMeasurements = cache(async <T>(
+  productId: string,
+  variantId: string | undefined,
+  locale: string,
+  fetchFn: () => Promise<T>
+): Promise<T> => {
+  const key = `measurements:${productId}:${variantId || 'default'}:${locale}`
+  return getCachedValue(key, fetchFn, CACHE_TTL.MEASUREMENTS)
 })
