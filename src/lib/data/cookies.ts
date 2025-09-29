@@ -77,95 +77,42 @@ const removeBrowserCookie = (name: string) => {
   document.cookie = `${name}=; Max-Age=-1; Path=/`;
 };
 
-// Optimized single-layer cache for auth headers
-let authHeadersCache: { headers: any; timestamp: number; token?: string } | null = null;
-const CACHE_DURATION = 30000; // Back to 30 seconds for normal operation
-const PUBLISHABLE_KEY_CACHE = { key: '', timestamp: 0 };
-const PUBLISHABLE_KEY_CACHE_DURATION = 30000; // Aligned with auth cache
-
+// Simple auth headers - no complex caching
 export const getAuthHeaders = async (): Promise<
   { authorization: string; 'x-publishable-api-key': string } | { 'x-publishable-api-key': string }
 > => {
-  // Fast path: Check cache first to avoid blocking operations
-  if (authHeadersCache && (Date.now() - authHeadersCache.timestamp) < CACHE_DURATION) {
-    return authHeadersCache.headers;
-  }
+  // Get publishable key
+  const publishableKey = process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || '';
   
-  // Get publishable key with minimal overhead
-  let publishableKey = '';
-  if (PUBLISHABLE_KEY_CACHE.key && (Date.now() - PUBLISHABLE_KEY_CACHE.timestamp) < PUBLISHABLE_KEY_CACHE_DURATION) {
-    publishableKey = PUBLISHABLE_KEY_CACHE.key;
-  } else {
-    try {
-      publishableKey = await getPublishableApiKey();
-      PUBLISHABLE_KEY_CACHE.key = publishableKey;
-      PUBLISHABLE_KEY_CACHE.timestamp = Date.now();
-    } catch {
-      // Fallback to environment variable to prevent blocking
-      publishableKey = process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || '';
-    }
-  }
-  
-  // Make the publishable key available globally for client components
-  if (isBrowser && publishableKey) {
-    // @ts-ignore - Add to window object
-    window.__MEDUSA_PUBLISHABLE_KEY__ = publishableKey;
-  }
-  
-  // Skip cookie access during static generation
+  // Skip during static generation
   if (process.env.NEXT_PHASE === 'phase-production-build' || 
       process.env.NEXT_PHASE === 'phase-export') {
-    const headers = { 'x-publishable-api-key': publishableKey };
-    authHeadersCache = { headers, timestamp: Date.now() };
-    return headers;
+    return { 'x-publishable-api-key': publishableKey };
   }
   
-  // Optimized non-blocking token retrieval with concurrent access protection
+  // Get token
   let token: string | null = null;
   
   if (isBrowser) {
-    // Client-side: Direct cookie access (fastest, non-blocking)
     token = getBrowserCookie('_medusa_jwt');
-    console.log('🔍 Token Debug - Browser token:', token ? `present (${token.length} chars)` : 'not found');
   } else {
-    // Server-side: Protected cookie access with timeout for concurrent requests
     try {
-      const timeoutPromise = new Promise<null>((_, reject) => 
-        setTimeout(() => reject(new Error('Cookie access timeout')), 100)
-      );
-      
-      const cookiePromise = getServerCookies().then(cookies => 
-        cookies?.get('_medusa_jwt')?.value || null
-      );
-      
-      token = await Promise.race([cookiePromise, timeoutPromise]);
-    } catch (error) {
-      // Gracefully handle server cookie access issues
+      const serverCookies = await getServerCookies();
+      token = serverCookies?.get('_medusa_jwt')?.value || null;
+    } catch {
       token = null;
     }
   }
 
-  // Simple token validation - only use if it looks like a valid JWT
-  let validToken = null;
-  if (token) {
-    // Basic JWT format validation (should have 3 parts separated by dots)
-    const tokenParts = token.split('.');
-    if (tokenParts.length === 3 && token.length > 50) {
-      validToken = token;
-    }
-    // If token format is invalid, just ignore it (don't use it)
-  }
+  // Validate token format
+  const isValidToken = token && token.split('.').length === 3 && token.length > 50;
 
-  const headers = validToken ? {
-    authorization: `Bearer ${validToken}`,
+  return isValidToken ? {
+    authorization: `Bearer ${token}`,
     'x-publishable-api-key': publishableKey
   } : {
     'x-publishable-api-key': publishableKey
   };
-  
-  // Cache the result
-  authHeadersCache = { headers, timestamp: Date.now(), token: token || undefined };
-  return headers;
 };
 
 // Request deduplication for retrieveCustomer
@@ -206,9 +153,11 @@ export const retrieveCustomer = async (): Promise<HttpTypes.StoreCustomer | null
       
       return response.customer || null;
     } catch (error) {
-      // Clear auth cache on unauthorized errors to prevent reuse
-      if (error instanceof Error && error.message.includes('Unauthorized')) {
-        authHeadersCache = null;
+      // Clear token on unauthorized errors
+      if (error instanceof Error && (error.message.includes('Unauthorized') || error.message.includes('401'))) {
+        if (isBrowser) {
+          removeBrowserCookie('_medusa_jwt');
+        }
       }
       
       return null;
@@ -349,9 +298,6 @@ export const setBatchCookies = async (cookieData: Array<{name: string, value: st
 };
 
 export const setAuthToken = async (token: string) => {
-  // Clear cache immediately when setting new token
-  authHeadersCache = null;
-  
   await setBatchCookies([{
     name: '_medusa_jwt',
     value: token
@@ -359,9 +305,6 @@ export const setAuthToken = async (token: string) => {
 };
 
 export const removeAuthToken = async () => {
-  // Clear auth headers cache immediately
-  authHeadersCache = null;
-  
   await setBatchCookies([{
     name: '_medusa_jwt',
     value: '',
@@ -427,7 +370,6 @@ export const getCartId = async (): Promise<string | null> => {
 
 export const setCartId = async (cartId: string) => {
   try {
-    console.log('🍪 setCartId called with:', cartId)
     
     // Clear cache immediately
     cartIdCache = { id: cartId, timestamp: Date.now() };
@@ -445,7 +387,6 @@ export const setCartId = async (cartId: string) => {
           });
         }
       } catch (error) {
-        console.log('🍪 Could not set server cookie (probably in render context), will rely on client-side storage');
         // Don't throw - this is expected during rendering
       }
     }
@@ -466,8 +407,6 @@ export const setCartId = async (cartId: string) => {
       }
     }
   } catch (error) {
-    console.warn('Error setting cart ID:', error);
-    // Still cache the ID even if we can't persist it
     cartIdCache = { id: cartId, timestamp: Date.now() };
   }
 };
@@ -482,11 +421,10 @@ export const removeCartId = async () => {
       serverCookies.set('_medusa_cart_id', '', { maxAge: -1 });
     }
   } catch (error) {
-    console.warn('Could not remove cart ID from server cookies (this is expected in some contexts):', error);
-    // Try to remove from client-side storage instead
     if (typeof window !== 'undefined') {
       try {
-        localStorage.removeItem('medusa_cart_id');
+        localStorage.removeItem('_medusa_cart_id');  // Fixed: added underscore
+        localStorage.removeItem('medusa_cart_id');   // Also remove old key just in case
         document.cookie = '_medusa_cart_id=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
       } catch (clientError) {
         console.warn('Could not remove cart ID from client storage:', clientError);

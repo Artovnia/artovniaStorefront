@@ -48,27 +48,13 @@ async function getPaymentHeaders() {
 export async function retrieveCart(cartId?: string, fields?: string) {
   const id = cartId || (await getCartId())
 
-  console.log('🛒 retrieveCart called:', {
-    providedCartId: cartId,
-    retrievedCartId: id,
-    fields: fields || 'using default fields',
-    timestamp: new Date().toISOString()
-  })
-
   if (!id) {
-    console.log('🛒 No cart ID found, returning null')
     return null
   }
 
   const headers = await getAuthHeaders()
-  console.log('🛒 Headers prepared:', {
-    hasAuth: !!(headers as any).authorization,
-    headerKeys: Object.keys(headers)
-  })
 
   try {
-    console.log('🛒 Making API call to:', `/store/carts/${id}`)
-    
     const result = await sdk.client
       .fetch<{ cart: ExtendedStoreCart }>(`/store/carts/${id}`, {
         method: "GET",
@@ -79,39 +65,19 @@ export async function retrieveCart(cartId?: string, fields?: string) {
         cache: "no-cache",
       });
       
-    console.log('🛒 API Response received:', {
-      hasCart: !!result?.cart,
-      cartId: result?.cart?.id,
-      cartStatus: result?.cart?.status,
-      completedAt: result?.cart?.completed_at,
-      paymentStatus: result?.cart?.payment_status,
-      itemsCount: result?.cart?.items?.length || 0
-    })
       
     const cart = result.cart;
     
     // Check if cart is completed and handle accordingly
     if (cart && cart.completed_at) {
-      console.log('🛒 Cart is completed (completed_at exists), returning null:', cart.completed_at)
       return null;
     }
     
     // Check other indicators of completion
     if (cart && (cart.status === "complete" || cart.completed === true || cart.payment_status === "captured")) {
-      console.log('🛒 Cart is completed (status/payment indicators):', {
-        status: cart.status,
-        completed: cart.completed,
-        payment_status: cart.payment_status
-      })
       return null;
     }
     
-    console.log('🛒 Returning valid cart:', {
-      id: cart?.id,
-      itemsCount: cart?.items?.length || 0,
-      total: cart?.total,
-      currency: cart?.currency_code
-    })
     
     return cart as HttpTypes.StoreCart;
   } catch (error: any) {
@@ -123,11 +89,9 @@ export async function retrieveCart(cartId?: string, fields?: string) {
     })
 
     if (error?.status === 404) {
-      console.log('🛒 Cart not found (404), cleaning up cart ID')
       await removeCartId()
       
       if (typeof window !== 'undefined') {
-        console.log('🛒 Cleaning up localStorage cart IDs')
         localStorage.removeItem('_medusa_cart_id')
         localStorage.removeItem('medusa_cart_id')
       }
@@ -137,10 +101,7 @@ export async function retrieveCart(cartId?: string, fields?: string) {
     
     // For network/server errors, return null to prevent infinite retries
     if (error?.status >= 500 || error?.code === 'ECONNREFUSED' || error?.code === 'ENOTFOUND') {
-      console.log('🛒 Server/network error, returning null to prevent retries:', {
-        status: error?.status,
-        code: error?.code
-      })
+ 
       return null
     }
     
@@ -156,9 +117,7 @@ export async function retrieveCart(cartId?: string, fields?: string) {
  * Gets the cart from the API based on the cart ID in cookies
  */
 export async function getCart() {
-  console.log('🛒 getCart called from layout at:', new Date().toISOString())
   const result = await retrieveCart()
-  console.log('🛒 getCart result:', result ? `Cart ${result.id} with ${result.items?.length || 0} items` : 'null')
   return result
 }
 
@@ -234,8 +193,8 @@ export async function updateCart(data: HttpTypes.StoreUpdateCart) {
       const cartCacheTag = await getCacheTag("carts")
       await revalidateTag(cartCacheTag)
       
-      // ✅ Updated cache invalidation
-      unifiedCache.invalidate(['cart']).catch(() => {})
+      // ✅ Targeted cache invalidation after cart change
+      unifiedCache.invalidateAfterCartChange()
       
       return cart
     })
@@ -294,8 +253,8 @@ export async function addToCart({
     updatedCart = response.cart
   }
   
-  // ✅ Updated cache invalidation
-  unifiedCache.invalidate(['cart', 'inventory']).catch(() => {})
+  // ✅ Targeted cache invalidation after cart change
+  unifiedCache.invalidateAfterCartChange()
    
   return updatedCart
    
@@ -326,8 +285,8 @@ export async function updateLineItem({
   await sdk.store.cart
     .updateLineItem(cartId, lineId, { quantity }, { fields: CART_FIELDS }, headers)
     .then(async () => {
-      // ✅ Updated cache invalidation
-      unifiedCache.invalidate(['cart', 'inventory']).catch(() => {})
+      // ✅ Targeted cache invalidation after cart change
+      unifiedCache.invalidateAfterCartChange()
     })
     .catch(medusaError)
 
@@ -350,8 +309,8 @@ export async function deleteLineItem(lineId: string) {
   try {
     await sdk.store.cart.deleteLineItem(cartId, lineId, headers)
     
-    // ✅ Updated cache invalidation
-    unifiedCache.invalidate(['cart', 'inventory']).catch(() => {})
+    // ✅ Targeted cache invalidation after cart change
+    unifiedCache.invalidateAfterCartChange()
     
     const cartCacheTag = await getCacheTag("carts")
     revalidateTag(cartCacheTag)
@@ -392,8 +351,8 @@ export async function setShippingMethod({
       const cartCacheTag = await getCacheTag("carts")
       revalidateTag(cartCacheTag)
       
-      // ✅ Updated cache invalidation
-      unifiedCache.invalidate(['cart']).catch(() => {})
+      // ✅ Targeted cache invalidation after cart change
+      unifiedCache.invalidateAfterCartChange()
       
       return response
     })
@@ -428,7 +387,7 @@ export async function updateShippingMethodData({
     revalidateTag(cartCacheTag)
     
     // ✅ Updated cache invalidation
-    unifiedCache.invalidate(['cart']).catch(() => {})
+    unifiedCache.invalidate('cart')
     
     return response
   } catch (error) {
@@ -488,7 +447,7 @@ export async function initiatePaymentSession(
     revalidateTag(cartCacheTag)
     
     // ✅ Updated cache invalidation
-    unifiedCache.invalidate(['cart']).catch(() => {})
+    unifiedCache.invalidate('cart')
     
     return response
   } catch (error) {
@@ -555,7 +514,7 @@ export async function selectPaymentSession(
     revalidateTag(cartCacheTag);
     
     // ✅ Updated cache invalidation
-    unifiedCache.invalidate(['cart']).catch(() => {})
+    unifiedCache.invalidate('cart')
     
     return response.cart;
     
@@ -590,7 +549,7 @@ export async function applyPromotions(codes: string[]) {
     revalidateTag(cartCacheTag)
     
     // ✅ Updated cache invalidation
-    unifiedCache.invalidate(['cart', 'promotions']).catch(() => {})
+    unifiedCache.invalidate('cart')
     
     return response
   } catch (error) {
@@ -690,7 +649,7 @@ export async function removeShippingMethod(shippingMethodId: string, sellerId?: 
     revalidateTag(fulfillmentTag);
     
     // ✅ Updated cache invalidation
-    unifiedCache.invalidate(['cart']).catch(() => {})
+    unifiedCache.invalidate('cart')
     
     return {
       success: true,
@@ -732,7 +691,7 @@ export async function deletePromotionCode(promoId: string) {
       revalidateTag(cartCacheTag)
       
       // ✅ Updated cache invalidation
-      unifiedCache.invalidate(['cart', 'promotions']).catch(() => {})
+      unifiedCache.invalidate('cart')
     })
     .catch(medusaError)
 }
@@ -970,11 +929,16 @@ export async function placeOrder(cartId?: string, skipRedirectCheck: boolean = f
     const result = await completionResponse.json()
     
     // Clear cart ID after successful completion
-    if (result.type === 'order_set' || result.order_set || result.type === 'order' || result.order) {
-      removeCartId()
+    // Check for various success indicators: type properties, nested objects, or order/ordset IDs
+    const hasOrderSet = result.type === 'order_set' || result.order_set
+    const hasOrder = result.type === 'order' || result.order
+    const hasOrderId = result.id && (result.id.startsWith('ordset_') || result.id.startsWith('order_'))
+    
+    if (hasOrderSet || hasOrder || hasOrderId) {
+      await removeCartId()
       
-      // ✅ Updated cache invalidation for completed order
-      unifiedCache.invalidate(['cart', 'inventory']).catch(() => {})
+      // ✅ Targeted cache invalidation for completed order
+      unifiedCache.invalidateAfterCartChange()
     }
     
     return result

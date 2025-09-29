@@ -9,7 +9,7 @@ import { SingleProductMeasurement } from '@/types/product';
 import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from 'react';
 import { useVariantSelection } from '@/components/context/VariantSelectionContext';
 import { getProductMeasurements } from '@/lib/data/measurements';
-import { getCachedMeasurements } from '@/lib/utils/unified-cache';
+import { unifiedCache, CACHE_TTL } from '@/lib/utils/unified-cache';
 
 interface MeasurementProps {
   productId: string;
@@ -52,12 +52,12 @@ export const ProductDetailsMeasurements = ({
     setHasError(false);
     
     try {
-      // Use unified cache with timeout protection
-      const data = await getCachedMeasurements(
-        productId,
-        variantId,
-        locale,
-        () => {
+      // ✅ FIXED: Use unified cache properly with timeout protection
+      const cacheKey = `measurements:${productId}:${variantId}:${locale}`
+      
+      const data = await unifiedCache.get(
+        cacheKey,
+        async () => {
           // Create timeout with proper cleanup
           let timeoutId: NodeJS.Timeout
           const timeoutPromise = new Promise<never>((_, reject) => {
@@ -70,7 +70,8 @@ export const ProductDetailsMeasurements = ({
           ]).finally(() => {
             if (timeoutId) clearTimeout(timeoutId)
           });
-        }
+        },
+        CACHE_TTL.MEASUREMENTS
       );
       
       // Validate the data is an array

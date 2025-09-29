@@ -116,20 +116,14 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children, initialCar
     
     operationInProgress.current = true
     
-    try {
-      console.log('🛒 Ensuring cart exists...')
-      
+    try {      
       // Try to get existing cart first
       let cart = await retrieveCart()
       
       if (!cart) {
-        console.log('🛒 No cart found, creating via server action...')
-        
         // Import and call server action
         const { createCartAction } = await import('@/lib/actions/cart-actions')
         cart = await createCartAction(countryCode)
-      } else {
-        console.log('🛒 Existing cart found:', cart.id)
       }
       
       return cart
@@ -170,7 +164,6 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children, initialCar
       
       // Handle completed cart
       if (updatedCart && ((updatedCart as any).status === 'completed' || (updatedCart as any).completed_at)) {
-        console.log('Cart is completed, clearing')
         clearCartStorage()
         dispatch({ type: 'CLEAR_CART' })
         return
@@ -180,7 +173,7 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children, initialCar
       
       // Simple cache invalidation
       if (updatedCart?.id) {
-        unifiedCache.invalidate(['cart']).catch(() => {})
+        unifiedCache.invalidateAfterCartChange()
       }
         
     } catch (error) {
@@ -199,7 +192,6 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children, initialCar
         localStorage.removeItem('_medusa_cart_id')
         document.cookie = '_medusa_cart_id=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;'
       } catch (error) {
-        console.warn('Could not clear cart storage:', error)
       }
     }
   }
@@ -222,7 +214,7 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children, initialCar
       
       if (updatedCart) {
         dispatch({ type: 'SET_CART', payload: updatedCart })
-        unifiedCache.invalidate(['cart', 'inventory']).catch(() => {})
+        unifiedCache.invalidateAfterCartChange()
       } else {
         await refreshCart()
       }
@@ -260,7 +252,7 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children, initialCar
       
       if (updatedCart) {
         dispatch({ type: 'SET_CART', payload: updatedCart as ExtendedCart })
-        unifiedCache.invalidate(['cart', 'inventory']).catch(() => {})
+        unifiedCache.invalidateAfterCartChange()
       } else {
         await refreshCart()
       }
@@ -277,7 +269,7 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children, initialCar
   const clearCart = useCallback(() => {
     dispatch({ type: 'CLEAR_CART' })
     clearCartStorage()
-    unifiedCache.invalidate(['cart']).catch(() => {})
+    unifiedCache.invalidate('cart')
   }, [])
 
   // Remove item - simplified
@@ -286,7 +278,6 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children, initialCar
     
     // Check if cart is completed
     if ((state.cart as any).status === 'completed' || (state.cart as any).completed_at) {
-      console.log('Cannot remove item from completed cart')
       clearCart()
       return
     }
@@ -300,7 +291,7 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children, initialCar
       
       if (updatedCart) {
         dispatch({ type: 'SET_CART', payload: updatedCart as ExtendedCart })
-        unifiedCache.invalidate(['cart', 'inventory']).catch(() => {})
+        unifiedCache.invalidateAfterCartChange()
       } else {
         await refreshCart()
       }
@@ -334,7 +325,7 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children, initialCar
       
       if (response && response.cart) {
         dispatch({ type: 'SET_CART', payload: response.cart as ExtendedCart })
-        unifiedCache.invalidate(['cart']).catch(() => {})
+        unifiedCache.invalidateAfterCartChange()
       }
     } catch (error) {
       console.error('Error setting shipping:', error)
@@ -361,7 +352,7 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children, initialCar
       
       if (updatedCart) {
         dispatch({ type: 'SET_CART', payload: updatedCart as ExtendedCart })
-        unifiedCache.invalidate(['cart']).catch(() => {})
+        unifiedCache.invalidateAfterCartChange()
       }
     } catch (error) {
       console.error('Error setting payment:', error)
@@ -396,7 +387,7 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children, initialCar
       
       if (result === 'success') {
         await refreshCart('address')
-        unifiedCache.invalidate(['cart']).catch(() => {})
+        unifiedCache.invalidateAfterCartChange()
       } else {
         dispatch({ type: 'SET_ERROR', payload: result || 'Failed to set address' })
       }
@@ -420,7 +411,7 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children, initialCar
       if (result) {
         if (result.type === 'order_set' || result.order_set || result.type === 'order' || result.order) {
           clearCart()
-          unifiedCache.invalidate(['cart', 'inventory']).catch(() => {})
+          unifiedCache.invalidateAfterCartChange()
         }
       }
       

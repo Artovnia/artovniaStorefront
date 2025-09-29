@@ -1,219 +1,130 @@
-import { cache } from 'react'
-
-// Simple memory cache for frequently accessed data
-class SimpleMemoryCache {
-  private cache = new Map<string, { data: any; expires: number }>()
-  private readonly maxSize = 500 // Reduced for serverless memory limits
-  private readonly defaultTTL = 300000 // 5 minutes
-
-  get<T>(key: string): T | null {
-    const entry = this.cache.get(key)
-    
-    if (!entry) return null
-    
-    if (Date.now() > entry.expires) {
-      this.cache.delete(key)
-      return null
-    }
-    
-    return entry.data
-  }
-
-  set(key: string, data: any, ttlMs: number = this.defaultTTL): void {
-    // Simple LRU eviction
-    if (this.cache.size >= this.maxSize) {
-      const firstKey = this.cache.keys().next().value
-      if (firstKey) this.cache.delete(firstKey)
-    }
-    
-    this.cache.set(key, {
-      data,
-      expires: Date.now() + ttlMs
-    })
-  }
-
-  invalidate(pattern: string): void {
-    for (const key of this.cache.keys()) {
-      if (key.includes(pattern)) {
-        this.cache.delete(key)
-      }
-    }
-  }
-
-  clear(): void {
-    this.cache.clear()
-  }
-
-  getStats() {
-    return {
-      size: this.cache.size,
-      maxSize: this.maxSize
-    }
-  }
-}
-
-// Global memory cache instance
-const memoryCache = new SimpleMemoryCache()
-
-// Simple Redis client (optional, for persistent caching)
-let Redis: any
-let redis: any
-
-if (typeof window === 'undefined' && process.env.STOREFRONT_REDIS_URL) {
-  try {
-    Redis = require('ioredis')
-    redis = new Redis(process.env.STOREFRONT_REDIS_URL, {
-      maxRetriesPerRequest: 1,
-      retryDelayOnFailover: 100,
-      connectTimeout: 3000,
-      commandTimeout: 2000,
-      lazyConnect: true,
-      keepAlive: 0,
-      enableOfflineQueue: false,
-      // Minimal error handling
-      retryStrategy: (times: number) => times > 2 ? null : 100
-    })
-    
-    redis.on('error', () => {
-      redis = null // Disable on error
-    })
-  } catch {
-    redis = null
-  }
-}
+// Simple client-side cache that actually works
+const memoryCache = new Map<string, { data: any; expires: number }>()
+const pendingRequests = new Map<string, Promise<any>>()
+const MAX_CACHE_SIZE = 500
 
 // TTL configurations
 export const CACHE_TTL = {
   PRODUCT: 300, // 5 minutes
-  PRICING: 30,  // 30 seconds
-  INVENTORY: 60, // 1 minute
+  PRICING: 60,  // 1 minute
+  CART: 30,     // 30 seconds
+  PROMOTIONS: 60, // 1 minute
+  INVENTORY: 120, // 2 minutes
   MEASUREMENTS: 600, // 10 minutes
-  CART: 120, // 2 minutes
-  CATEGORIES: 1800, // 30 minutes
 } as const
 
-// Main cache interface
+// 🔒 ENHANCED SAFETY: Comprehensive user-specific data protection
+const USER_SPECIFIC_PREFIXES = [
+  'cart:', 'user:', 'customer:', 'order:', 'checkout:', 
+  'payment:', 'session:', 'auth:', 'billing:'
+]
+
+const isUserSpecificKey = (key: string): boolean => {
+  return USER_SPECIFIC_PREFIXES.some(prefix => key.startsWith(prefix)) ||
+         key.includes('_user_') || 
+         key.includes('_customer_') ||
+         key.includes('_cart_')
+}
+
 class UnifiedCache {
   async get<T>(key: string, fetchFn: () => Promise<T>, ttlSeconds: number = CACHE_TTL.PRODUCT): Promise<T> {
-    // Check memory cache first (instant)
-    const memoryResult = memoryCache.get<T>(key)
-    if (memoryResult !== null) {
-      return memoryResult
+    // 🔒 CRITICAL: Block user-specific data from being cached
+    if (isUserSpecificKey(key)) {
+      return fetchFn()
     }
 
-    // Check Redis if available (with timeout)
-    if (redis) {
-      try {
-        const redisResult = await Promise.race([
-          redis.get(key),
-          new Promise<null>((_, reject) => 
-            setTimeout(() => reject(new Error('timeout')), 1500)
-          )
-        ])
-        
-        if (redisResult) {
-          const parsed = JSON.parse(redisResult)
-          memoryCache.set(key, parsed, ttlSeconds * 1000)
-          return parsed
-        }
-      } catch {
-        // Silent fallback
+    // Check cache first
+    const cached = memoryCache.get(key)
+    if (cached && Date.now() < cached.expires) {
+      return cached.data
+    }
+
+    // Check if request is already pending
+    const pending = pendingRequests.get(key)
+    if (pending) {
+      return pending
+    }
+
+    // Make new request
+    const promise = fetchFn().then(result => {
+      // Cache the result
+      this.set(key, result, ttlSeconds)
+      pendingRequests.delete(key)
+      return result
+    }).catch(error => {
+      pendingRequests.delete(key)
+      throw error
+    })
+
+    pendingRequests.set(key, promise)
+    return promise
+  }
+
+  set(key: string, data: any, ttlSeconds: number): void {
+    // 🔒 CRITICAL: Block user-specific data from being cached
+    if (isUserSpecificKey(key)) {
+      return
+    }
+    
+    // Simple LRU eviction
+    if (memoryCache.size >= MAX_CACHE_SIZE) {
+      const firstKey = memoryCache.keys().next().value
+      if (firstKey) memoryCache.delete(firstKey)
+    }
+    
+    memoryCache.set(key, {
+      data,
+      expires: Date.now() + (ttlSeconds * 1000)
+    })
+  }
+
+  // ✅ More targeted invalidation
+  invalidateByPattern(pattern: string): void {
+    for (const key of memoryCache.keys()) {
+      if (key.includes(pattern)) {
+        memoryCache.delete(key)
       }
     }
-
-    // Fetch fresh data
-    const result = await fetchFn()
-    
-    // Cache in memory
-    memoryCache.set(key, result, ttlSeconds * 1000)
-    
-    // Cache in Redis (non-blocking)
-    if (redis) {
-      redis.setex(key, ttlSeconds, JSON.stringify(result)).catch(() => {
-        // Silent failure
-      })
-    }
-    
-    return result
-  }
-
-  async invalidate(tags: string[]): Promise<void> {
-    // Clear memory cache
-    tags.forEach(tag => memoryCache.invalidate(tag))
-    
-    // Clear Redis (non-blocking)
-    if (redis) {
-      tags.forEach(tag => {
-        redis.keys(`*${tag}*`).then((keys: string[]) => {
-          if (keys.length > 0) {
-            redis.del(...keys).catch(() => {})
-          }
-        }).catch(() => {})
-      })
+    for (const key of pendingRequests.keys()) {
+      if (key.includes(pattern)) {
+        pendingRequests.delete(key)
+      }
     }
   }
 
-  async invalidateKey(key: string): Promise<void> {
-    memoryCache.invalidate(key)
-    
-    if (redis) {
-      redis.del(key).catch(() => {})
-    }
+  // ✅ Safer invalidation for cart operations
+  invalidateAfterCartChange(): void {
+    this.invalidateByPattern('pricing')
+    this.invalidateByPattern('promotions')
+    this.invalidateByPattern('inventory')
+  }
+
+  // Keep existing method for backward compatibility
+  invalidate(pattern: string): void {
+    this.invalidateByPattern(pattern)
   }
 
   clear(): void {
     memoryCache.clear()
+    pendingRequests.clear()
   }
 
   getStats() {
     return {
-      memory: memoryCache.getStats(),
-      redis: redis ? 'connected' : 'disabled'
+      size: memoryCache.size,
+      pending: pendingRequests.size,
+      maxSize: MAX_CACHE_SIZE,
+      userSpecificPrefixes: USER_SPECIFIC_PREFIXES
     }
   }
 }
 
 export const unifiedCache = new UnifiedCache()
 
-// React cache wrapper for request deduplication
-export const getCachedValue = cache(async <T>(
-  key: string,
-  fetchFn: () => Promise<T>,
-  ttl: number = CACHE_TTL.PRODUCT
-): Promise<T> => {
-  return unifiedCache.get(key, fetchFn, ttl)
-})
-
-// Convenience functions
-export const getCachedProduct = cache(async <T>(
-  productId: string,
-  locale: string,
-  fetchFn: () => Promise<T>
-): Promise<T> => {
-  return getCachedValue(`product:${productId}:${locale}`, fetchFn, CACHE_TTL.PRODUCT)
-})
-
-export const getCachedPricing = cache(async <T>(
-  variantId: string,
-  regionId: string,
-  fetchFn: () => Promise<T>
-): Promise<T> => {
-  return getCachedValue(`pricing:${variantId}:${regionId}`, fetchFn, CACHE_TTL.PRICING)
-})
-
-export const getCachedInventory = cache(async <T>(
-  variantId: string,
-  fetchFn: () => Promise<T>
-): Promise<T> => {
-  return getCachedValue(`inventory:${variantId}`, fetchFn, CACHE_TTL.INVENTORY)
-})
-
-export const getCachedMeasurements = cache(async <T>(
-  productId: string,
-  variantId: string | undefined,
-  locale: string,
-  fetchFn: () => Promise<T>
-): Promise<T> => {
-  const key = `measurements:${productId}:${variantId || 'default'}:${locale}`
-  return getCachedValue(key, fetchFn, CACHE_TTL.MEASUREMENTS)
-})
+// Debug helpers
+if (typeof window !== 'undefined') {
+  // @ts-ignore
+  window.__clearCache = () => unifiedCache.clear()
+  // @ts-ignore
+  window.__cacheStats = () => unifiedCache.getStats()
+}

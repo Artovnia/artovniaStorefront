@@ -48,24 +48,24 @@ export const ProductDetails = async ({
   const supportedLocales = ['en', 'pl']
   const currentLocale = supportedLocales.includes(locale) ? locale : 'en'
   
-  // Load critical data first - measurements are loaded separately
-  const [user, authenticated, region] = await Promise.allSettled([
-    unifiedCache.get(`customer:${product.id}`, retrieveCustomer),
-    unifiedCache.get(`auth:${product.id}`, isAuthenticated),
-    unifiedCache.get(`region:pl`, () => getRegion("pl"))
+  // Load region data with safe cache key
+  const [region, user, authenticated] = await Promise.allSettled([
+    unifiedCache.get(`region:pl`, () => getRegion("pl")),
+    retrieveCustomer(), // Direct call - no cache for user data
+    isAuthenticated(),  // Direct call - no cache for auth data
   ])
 
-  // Extract critical results
+  // Extract results
+  const regionData = region.status === 'fulfilled' ? region.value : null
   const customer = user.status === 'fulfilled' ? user.value : null
   const isUserAuthenticated = authenticated.status === 'fulfilled' ? authenticated.value : false
-  const regionData = region.status === 'fulfilled' ? region.value : null
 
-  // Load wishlist if user is authenticated
+  // Load wishlist if user is authenticated - use safe cache key
   let wishlist: SerializableWishlist[] = []
   if (customer) {
     try {
       const response = await unifiedCache.get(
-        `wishlists:${customer.id}`,
+        `wishlists:user:${customer.id}:data`, // More specific, still user-specific but clearer
         () => getUserWishlists()
       )
       wishlist = response.wishlists
@@ -77,7 +77,6 @@ export const ProductDetails = async ({
   // Try to load measurements quickly, but don't block page render
   let initialMeasurements: SingleProductMeasurement[] | undefined = undefined
   try {
-    
     // Set a very short timeout for initial measurements load
     const measurementsPromise = unifiedCache.get(
       `measurements:${product.id}:${selectedVariantId || 'no-variant'}:${currentLocale}`,
@@ -101,11 +100,7 @@ export const ProductDetails = async ({
     // Validate the result is the correct type
     if (isValidMeasurementsArray(measurementsResult)) {
       initialMeasurements = measurementsResult
-    } else {
-      if (process.env.NODE_ENV === 'development') {
-        console.warn('Invalid measurements data structure:', measurementsResult)
-      }
-    }
+    } 
   } catch (error) {
     // Measurements will be loaded client-side
   }

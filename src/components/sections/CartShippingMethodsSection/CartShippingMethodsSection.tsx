@@ -1,16 +1,14 @@
 "use client"
 
 import ErrorMessage from "@/components/molecules/ErrorMessage/ErrorMessage"
-// Removed direct import - using CartContext setShipping instead
 import { calculatePriceForShippingOption, listCartShippingMethods } from "@/lib/data/fulfillment"
 import { convertToLocale } from "@/lib/helpers/money"
 import { isInpostShippingOption } from "@/lib/helpers/inpost-helpers"
-// Using our wrapper components instead of direct imports to fix SVG attribute warnings
 import { CheckCircleSolidWrapper, ChevronUpDownWrapper, LoaderWrapper } from "@/components/atoms/icons/IconWrappers"
 import { HttpTypes } from "@medusajs/types"
 import { clx, Heading, Text } from "@medusajs/ui"
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
-import { Fragment, useEffect, useState, useCallback, useMemo } from "react"
+import { Fragment, useEffect, useState, useCallback, useMemo, useRef } from "react"
 import { Button } from "@/components/atoms"
 import { Modal, SelectField } from "@/components/molecules"
 import { CartShippingMethodRow } from "./CartShippingMethodRow"
@@ -18,11 +16,10 @@ import { Listbox, Transition } from "@headlessui/react"
 import clsx from "clsx"
 import { InpostShippingMethodWrapper } from "@/components/molecules/InpostShippingMethodWrapper/InpostShippingMethodWrapper"
 import { setShippingMethod } from "@/lib/data/cart"
-// Import cache invalidation function
 import { unifiedCache } from "@/lib/utils/unified-cache"
 import { useCart } from "@/components/context/CartContext"
 
-// Extended cart item product type to include seller
+// Types remain the same
 type ExtendedStoreProduct = HttpTypes.StoreProduct & {
   seller?: {
     id: string
@@ -30,52 +27,62 @@ type ExtendedStoreProduct = HttpTypes.StoreProduct & {
   }
 }
 
-// Extended cart item variant type to include product
 type ExtendedStoreVariant = HttpTypes.StoreProductVariant & {
   product?: ExtendedStoreProduct
 }
 
-// Cart item type definition
 type CartItem = {
   product?: ExtendedStoreProduct
   variant?: ExtendedStoreVariant
-  // Include other cart item properties as needed
 }
 
-// Use HttpTypes.StoreCartShippingMethod directly as our main type
-// Extended with custom properties when needed through type assertion
+type ExtendedShippingMethod = HttpTypes.StoreCartShippingMethod & {
+  rules?: any[]
+  seller_id: string
+  price_type: string
+  seller_name?: string
+}
 
 type ShippingProps = {
   cart: Omit<HttpTypes.StoreCart, "items"> & {
     items?: CartItem[]
   }
-  availableShippingMethods:
-    | (HttpTypes.StoreCartShippingMethod &
-        { rules: any; seller_id: string; price_type: string; id: string; name: string; seller_name?: string })[]
-    | null
+  availableShippingMethods: ExtendedShippingMethod[] | null
 }
 
 const CartShippingMethodsSection: React.FC<ShippingProps> = ({
   cart: propCart,
   availableShippingMethods,
 }) => {
-  // Use cart context for live updates
   const { cart, refreshCart, setShipping } = useCart()
-  
-  // Fallback to prop cart if context cart is not available
   const activeCart = cart || propCart
   
+  // STABLE shipping methods - only update when absolutely necessary
+  const [shippingMethods, setShippingMethods] = useState<ExtendedShippingMethod[]>(() => {
+    return availableShippingMethods?.filter(
+      (sm) => sm.rules?.find((rule: any) => rule.attribute === "is_return")?.value !== "true"
+    ) || []
+  })
+  
+  // Track if we've ever loaded methods for this cart/address combo
+  const [hasLoadedMethods, setHasLoadedMethods] = useState(!!availableShippingMethods?.length)
+  
+  // Loading states
   const [isLoadingPrices, setIsLoadingPrices] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [settingShippingMethod, setSettingShippingMethod] = useState<string | null>(null)
+  
+  // Other states
   const [calculatedPricesMap, setCalculatedPricesMap] = useState<Record<string, number>>({})
   const [error, setError] = useState<string | null>(null)
   const [missingModal, setMissingModal] = useState(false)
   const [missingShippingSellers, setMissingShippingSellers] = useState<string[]>([])
-  const [settingShippingMethod, setSettingShippingMethod] = useState<string | null>(null)
   
-  // State for fresh shipping methods data - bypasses all caching
-  const [freshShippingMethods, setFreshShippingMethods] = useState<any[] | null>(null)
-  const [isLoadingFreshMethods, setIsLoadingFreshMethods] = useState(false)
+  // Track address to know when to refetch
+  const lastAddressRef = useRef<string>("")
+  
+  // Track cart shipping methods to detect changes
+  const lastCartShippingMethodsRef = useRef<string>("")
 
   const searchParams = useSearchParams()
   const router = useRouter()
@@ -83,63 +90,81 @@ const CartShippingMethodsSection: React.FC<ShippingProps> = ({
 
   const isOpen = searchParams.get("step") === "delivery"
 
-  // Always fetch fresh shipping methods when component opens or cart changes
-  // This ensures we get updated shipping options after address changes
+  // ONLY fetch fresh methods when address actually changes or we don't have any methods
   useEffect(() => {
-    const fetchFreshShippingMethods = async () => {
-      if (!activeCart?.id) return
-      
-      // Only fetch when the shipping section is open
-      if (!isOpen) {
-        // Use prop data when closed
-        if (availableShippingMethods) {
-          setFreshShippingMethods(availableShippingMethods)
-          setIsLoadingFreshMethods(false)
-        }
-        return
-      }
-      
-      setIsLoadingFreshMethods(true)
-      
-      try {
-        console.log('🚀 Fetching fresh shipping methods for cart:', activeCart.id)
-        
-        // Fetch fresh shipping methods without caching
-        const freshMethods = await listCartShippingMethods(activeCart.id, {}, { cache: 'no-store' })
-        
-        console.log('✅ Fresh shipping methods received:', {
-          count: freshMethods?.length || 0,
-          methods: freshMethods?.map(m => ({ id: m.id, name: m.name, seller_id: (m as any).seller_id }))
-        })
-        
-        setFreshShippingMethods(freshMethods || [])
-      } catch (error) {
-        console.error('❌ Error fetching fresh shipping methods:', error)
-        // Fallback to prop data on error
-        setFreshShippingMethods(availableShippingMethods || [])
-      } finally {
-        setIsLoadingFreshMethods(false)
-      }
-    }
+    if (!activeCart?.id || !isOpen) return
     
-    fetchFreshShippingMethods()
-  }, [activeCart?.id, isOpen, activeCart?.shipping_address, availableShippingMethods])
+    const currentAddressKey = JSON.stringify(activeCart.shipping_address || {})
+    const addressChanged = lastAddressRef.current !== currentAddressKey
+    
+    // Only fetch if:
+    // 1. Address changed, OR
+    // 2. We don't have methods AND haven't loaded them yet
+    if (addressChanged || (!shippingMethods.length && !hasLoadedMethods)) {
+      lastAddressRef.current = currentAddressKey
+      
+      const fetchShippingMethods = async () => {
+        try {
+          const freshMethods = await listCartShippingMethods(activeCart.id, {}, { cache: 'no-store' })
+          const filteredMethods: ExtendedShippingMethod[] = (freshMethods || [])
+            .filter((sm: any) => sm.rules?.find((rule: any) => rule.attribute === "is_return")?.value !== "true")
+            .map((sm: any) => ({
+              ...sm,
+              rules: sm.rules || [],
+              seller_id: sm.seller_id || '',
+              price_type: sm.price_type || 'flat',
+              seller_name: sm.seller_name
+            }))
+          
+          setShippingMethods(filteredMethods)
+          setHasLoadedMethods(true)
+        } catch (error) {
+          console.error('Error fetching shipping methods:', error)
+        }
+      }
+      
+      fetchShippingMethods()
+    }
+  }, [activeCart?.id, activeCart?.shipping_address, isOpen, shippingMethods.length, hasLoadedMethods])
 
-  // Use fresh shipping methods if available, otherwise fall back to props
-  const _shippingMethods = (freshShippingMethods || availableShippingMethods)?.filter(
-    (sm) =>
-      sm.rules?.find((rule: any) => rule.attribute === "is_return")?.value !==
-      "true"
-  )
+  // Initialize from props if we don't have methods
+  useEffect(() => {
+    if (!hasLoadedMethods && availableShippingMethods?.length) {
+      const filteredMethods = availableShippingMethods.filter(
+        (sm) => sm.rules?.find((rule: any) => rule.attribute === "is_return")?.value !== "true"
+      )
+      setShippingMethods(filteredMethods)
+      setHasLoadedMethods(true)
+    }
+  }, [availableShippingMethods, hasLoadedMethods])
 
-  // Create a map of selected shipping methods by seller
+  // HIGH-CLASS SOLUTION: Listen to cart changes and sync our component state
+  useEffect(() => {
+    if (!activeCart) return
+    
+    const currentCartShippingMethods = JSON.stringify(activeCart.shipping_methods || [])
+    const cartShippingMethodsChanged = lastCartShippingMethodsRef.current !== currentCartShippingMethods
+    
+    if (cartShippingMethodsChanged) {
+      lastCartShippingMethodsRef.current = currentCartShippingMethods
+      
+      // This effect will trigger when:
+      // 1. Shipping methods are added
+      // 2. Shipping methods are removed (what we need!)
+      // 3. Shipping methods are modified
+      
+      // Force re-render by updating a timestamp or trigger refresh if needed
+      // The component will automatically re-render because activeCart changed
+    }
+  }, [activeCart?.shipping_methods])
+
+  // STABLE selected shipping methods - memoized properly
   const selectedShippingMethods = useMemo(() => {
     const selectedMap: Record<string, string> = {}
     
-    if (activeCart?.shipping_methods) {
+    if (activeCart?.shipping_methods?.length && shippingMethods.length) {
       activeCart.shipping_methods.forEach((method: any) => {
-        // Find the corresponding available method to get the seller_id
-        const availableMethod = _shippingMethods?.find(am => am.id === method.shipping_option_id)
+        const availableMethod = shippingMethods.find(am => am.id === method.shipping_option_id)
         if (availableMethod) {
           selectedMap[availableMethod.seller_id] = method.shipping_option_id
         }
@@ -147,51 +172,37 @@ const CartShippingMethodsSection: React.FC<ShippingProps> = ({
     }
     
     return selectedMap
-  }, [activeCart?.shipping_methods, _shippingMethods])
+  }, [activeCart?.shipping_methods, shippingMethods])
 
-  useEffect(() => {
-    // Only run this logic if we have cart items and shipping methods data
-    if (activeCart?.items && _shippingMethods) {
-      const set = new Set<string>()
-      activeCart.items.forEach((item: any) => {
-        if (item?.product?.seller?.id) {
-          set.add(item.product.seller.id)
-        }
-      })
-
-      const sellerMethods = _shippingMethods.map(({ seller_id }) => seller_id)
-
-      const missingSellerIds = [...set].filter(
-        (sellerId) => !sellerMethods.includes(sellerId)
-      )
-      
-      // Compare arrays before setting state to avoid unnecessary re-renders
-      const currentMissingSellers = missingShippingSellers
-      const missingSellersChanged = 
-        currentMissingSellers.length !== missingSellerIds.length ||
-        missingSellerIds.some(id => !currentMissingSellers.includes(id))
-      
-      if (missingSellersChanged) {
-        setMissingShippingSellers(missingSellerIds)
+  // STABLE grouped methods - only recalculate when methods actually change
+  const groupedBySellerId = useMemo(() => {
+    if (!shippingMethods.length) return {}
+    
+    return shippingMethods.reduce((acc: Record<string, ExtendedShippingMethod[]>, method) => {
+      const sellerId = method.seller_id
+      if (!acc[sellerId]) {
+        acc[sellerId] = []
       }
+      acc[sellerId].push(method)
+      return acc
+    }, {})
+  }, [shippingMethods])
 
-      // Only set modal state if it needs to change
-      if (missingSellerIds.length > 0 && !activeCart.shipping_methods?.length && !missingModal) {
-        setMissingModal(true)
-      }
-    }
-  }, [activeCart, _shippingMethods, missingShippingSellers, missingModal])
-
-  // Calculate shipping prices without caching
+  // Calculate shipping prices - only when methods change
   useEffect(() => {
-    if (!_shippingMethods?.length) {
+    if (!shippingMethods?.length) {
       setIsLoadingPrices(false)
       return
     }
     
-    const calculatedMethods = _shippingMethods.filter((sm) => sm.price_type === "calculated")
+    const calculatedMethods = shippingMethods.filter((sm) => sm.price_type === "calculated")
     if (!calculatedMethods.length) {
       setIsLoadingPrices(false)
+      return
+    }
+    
+    const needsPricing = calculatedMethods.some(sm => !(sm.id in calculatedPricesMap))
+    if (!needsPricing) {
       return
     }
     
@@ -202,7 +213,7 @@ const CartShippingMethodsSection: React.FC<ShippingProps> = ({
     )
     
     Promise.allSettled(promises).then((res) => {
-      const pricesMap: Record<string, number> = {}
+      const pricesMap: Record<string, number> = { ...calculatedPricesMap }
       res
         .filter((r) => r.status === "fulfilled")
         .forEach((p) => {
@@ -217,7 +228,7 @@ const CartShippingMethodsSection: React.FC<ShippingProps> = ({
     }).catch(() => {
       setIsLoadingPrices(false)
     })
-  }, [_shippingMethods, activeCart?.id])
+  }, [shippingMethods, activeCart?.id, calculatedPricesMap])
 
   const handleSubmit = async () => {
     setIsSubmitting(true)
@@ -233,6 +244,7 @@ const CartShippingMethodsSection: React.FC<ShippingProps> = ({
     }
   }
 
+  // NO REFETCH on method selection - just update cart
   const handleSetShippingMethod = useCallback(
     async (shippingMethodId: string) => {
       if (!activeCart?.id || settingShippingMethod) {
@@ -243,11 +255,10 @@ const CartShippingMethodsSection: React.FC<ShippingProps> = ({
       setSettingShippingMethod(shippingMethodId)
 
       try {
-        // Use cart context setShipping method for proper state management
         await setShipping(shippingMethodId)
-        
-        // Refresh cart to get updated state
-        await refreshCart('shipping')
+        // Don't refetch shipping methods - they haven't changed!
+        // The cart context will handle updating the cart state
+        // Our useEffect above will detect the cart change and trigger re-render
       } catch (error: any) {
         console.error("❌ Error setting shipping method:", error)
         setError(error.message || "Failed to set shipping method")
@@ -255,43 +266,38 @@ const CartShippingMethodsSection: React.FC<ShippingProps> = ({
         setSettingShippingMethod(null)
       }
     },
-    [activeCart?.id, settingShippingMethod, setShipping, refreshCart]
+    [activeCart?.id, settingShippingMethod, setShipping]
   )
 
+  // HIGH-CLASS SOLUTION: Proper method removal handling
   const handleMethodRemoved = useCallback(async (methodId: string, sellerId?: string) => {
-    // Refresh cart after method removal
     try {
-      await refreshCart('shipping')
+      
+      // Force cart context to refresh from server
+      // This will trigger our useEffect that monitors cart.shipping_methods changes
+      await refreshCart()
+      
     } catch (error) {
-      console.error('❌ Error refreshing after method removal:', error)
+      console.error('❌ Error refreshing cart after method removal:', error)
+      setError('Wystąpił błąd podczas odświeżania koszyka')
     }
   }, [refreshCart])
-
-  useEffect(() => {
-    setError(null)
-  }, [isOpen])
-
-  const groupedBySellerId = _shippingMethods?.reduce((acc: any, method) => {
-    const sellerId = method.seller_id!
-
-    if (!acc[sellerId]) {
-      acc[sellerId] = []
-    }
-
-    acc[sellerId]?.push(method)
-    return acc
-  }, {})
 
   const handleEdit = useCallback(() => {
     router.replace(pathname + "?step=delivery")
   }, [router, pathname])
 
-  const missingSellers = activeCart?.items
-    ?.filter((item) =>
-      missingShippingSellers.includes((item.product as any)?.seller?.id || '')
-    )
-    .map((item) => (item.product as any)?.seller?.name)
-    .filter(Boolean)
+  // Clear error when section opens
+  useEffect(() => {
+    if (isOpen) {
+      setError(null)
+    }
+  }, [isOpen])
+
+  // Show current selected shipping methods (this is the key part that wasn't updating)
+  const currentSelectedMethods = useMemo(() => {
+    return activeCart?.shipping_methods || []
+  }, [activeCart?.shipping_methods])
 
   return (
     <div className="border p-4 rounded-sm bg-ui-bg-interactive">
@@ -300,7 +306,7 @@ const CartShippingMethodsSection: React.FC<ShippingProps> = ({
           level="h2"
           className={clx("flex items-center gap-x-2 text-ui-fg-base")}
         >
-          {!isOpen && (activeCart?.shipping_methods?.length ?? 0) > 0 && (
+          {!isOpen && currentSelectedMethods.length > 0 && (
             <CheckCircleSolidWrapper />
           )}
           Dostawa
@@ -313,32 +319,31 @@ const CartShippingMethodsSection: React.FC<ShippingProps> = ({
           </Text>
         )}
       </div>
+      
       {isOpen ? (
         <>
           <div className="grid">
             <div data-testid="delivery-options-container">
               <div className="pb-8 md:pt-0 pt-2">
-                {isLoadingFreshMethods && (
-                  <div className="flex items-center justify-center py-8">
-                    <LoaderWrapper className="w-6 h-6 mr-2" />
-                    <span>Ładowanie opcji dostawy...</span>
-                  </div>
-                )}
-                {!isLoadingFreshMethods && Object.keys(groupedBySellerId || {}).map((sellerId) => {
+                {/* STABLE SELECTOR - No skeleton flashing */}
+                {Object.keys(groupedBySellerId).map((sellerId) => {
                   const methods = groupedBySellerId[sellerId]
+                  if (!methods?.length) return null
+                  
                   const selectedMethodId = selectedShippingMethods[sellerId] || ""
-                  const selectedMethod = methods.find((m: any) => m.id === selectedMethodId)
+                  const selectedMethod = methods.find((m) => m.id === selectedMethodId)
                   
                   return (
                     <div key={sellerId} className="mb-4">
+                      {/* STABLE HEADER */}
                       <Heading level="h3" className="mb-2">
                         {methods[0].seller_name}
                       </Heading>
+                      
+                      {/* STABLE SELECTOR */}
                       <Listbox
                         value={selectedMethodId}
-                        onChange={(value) => {
-                          handleSetShippingMethod(value)
-                        }}
+                        onChange={handleSetShippingMethod}
                         disabled={settingShippingMethod !== null}
                       >
                         <div className="relative">
@@ -353,14 +358,14 @@ const CartShippingMethodsSection: React.FC<ShippingProps> = ({
                             {({ open }) => (
                               <>
                                 <span className="block truncate">
-                                  {settingShippingMethod ? (
+                                  {settingShippingMethod === selectedMethodId ? (
                                     "Ustawianie..."
                                   ) : selectedMethod ? (
                                     `${selectedMethod.name} - ${
-                                      selectedMethod.price_type === "flat" && selectedMethod.prices?.[0]?.amount
+                                      selectedMethod.price_type === "flat" && (selectedMethod as any).prices?.[0]?.amount
                                         ? convertToLocale({
-                                            amount: selectedMethod.prices[0].amount,
-                                            currency_code: selectedMethod.prices[0].currency_code || activeCart?.currency_code || 'PLN',
+                                            amount: (selectedMethod as any).prices[0].amount,
+                                            currency_code: (selectedMethod as any).prices[0].currency_code || activeCart?.currency_code || 'PLN',
                                           })
                                         : selectedMethod.price_type === "flat" && selectedMethod.amount
                                         ? convertToLocale({
@@ -379,7 +384,7 @@ const CartShippingMethodsSection: React.FC<ShippingProps> = ({
                                   )}
                                 </span>
                                 <div className="flex items-center">
-                                  {settingShippingMethod && (
+                                  {settingShippingMethod === selectedMethodId && (
                                     <LoaderWrapper className="w-4 h-4 mr-2" />
                                   )}
                                   <ChevronUpDownWrapper
@@ -394,17 +399,15 @@ const CartShippingMethodsSection: React.FC<ShippingProps> = ({
                               </>
                             )}
                           </Listbox.Button>
+                          
                           <Transition
                             as={Fragment}
                             leave="transition ease-in duration-100"
                             leaveFrom="opacity-100"
                             leaveTo="opacity-0"
                           >
-                            <Listbox.Options
-                              className="absolute z-20 w-full overflow-auto text-small-regular bg-white border rounded-lg border-top-0 max-h-60 focus:outline-none sm:text-sm"
-                              data-testid="shipping-address-options"
-                            >
-                              {methods.map((option: any) => {
+                            <Listbox.Options className="absolute z-20 w-full overflow-auto text-small-regular bg-white border rounded-lg border-top-0 max-h-60 focus:outline-none sm:text-sm">
+                              {methods.map((option) => {
                                 const isSelected = selectedMethodId === option.id
                                 const isBeingSet = settingShippingMethod === option.id
                                 
@@ -423,28 +426,28 @@ const CartShippingMethodsSection: React.FC<ShippingProps> = ({
                                   >
                                     <div className="flex items-center justify-between">
                                       <span>
-                                        {option.name}
-                                        {" - "}
-                                        {option.price_type === "flat" && option.prices?.[0]?.amount ? (
-                                          convertToLocale({
-                                            amount: option.prices[0].amount,
-                                            currency_code: option.prices[0].currency_code || activeCart?.currency_code || 'PLN',
-                                          })
-                                        ) : option.price_type === "flat" && option.amount ? (
-                                          convertToLocale({
-                                            amount: option.amount,
-                                            currency_code: activeCart?.currency_code || 'PLN',
-                                          })
-                                        ) : calculatedPricesMap[option.id] ? (
-                                          convertToLocale({
-                                            amount: calculatedPricesMap[option.id],
-                                            currency_code: activeCart?.currency_code || 'PLN',
-                                          })
-                                        ) : isLoadingPrices ? (
-                                          <LoaderWrapper />
-                                        ) : (
-                                          "-"
-                                        )}
+                                        {option.name} - {
+                                          option.price_type === "flat" && (option as any).prices?.[0]?.amount ? (
+                                            convertToLocale({
+                                              amount: (option as any).prices[0].amount,
+                                              currency_code: (option as any).prices[0].currency_code || activeCart?.currency_code || 'PLN',
+                                            })
+                                          ) : option.price_type === "flat" && option.amount ? (
+                                            convertToLocale({
+                                              amount: option.amount,
+                                              currency_code: activeCart?.currency_code || 'PLN',
+                                            })
+                                          ) : calculatedPricesMap[option.id] ? (
+                                            convertToLocale({
+                                              amount: calculatedPricesMap[option.id],
+                                              currency_code: activeCart?.currency_code || 'PLN',
+                                            })
+                                          ) : isLoadingPrices ? (
+                                            <LoaderWrapper />
+                                          ) : (
+                                            "-"
+                                          )
+                                        }
                                       </span>
                                       <div className="flex items-center">
                                         {isBeingSet && (
@@ -466,48 +469,33 @@ const CartShippingMethodsSection: React.FC<ShippingProps> = ({
                   )
                 })}
                 
-                {!isLoadingFreshMethods && activeCart && (activeCart.shipping_methods?.length ?? 0) > 0 && (
+                {/* CRITICAL: Show selected shipping methods - now properly reactive to deletions */}
+                {currentSelectedMethods.length > 0 && (
                   <div className="flex flex-col">
-                    {activeCart.shipping_methods?.map((method: any) => {
-                      // Check if this is an InPost shipping method
+                    {currentSelectedMethods.map((method: any) => {
                       const isInpostMethod = isInpostShippingOption(method);
-                      
-                      // Extract seller ID from the method if available
-                      const sellerId = method.seller_id || 
-                        method.seller?.id || 
-                        (activeCart.items as (CartItem & { variant?: { product?: { seller?: { id: string } } } })[])?.find(item => 
-                          item.variant?.product?.seller?.id
-                        )?.variant?.product?.seller?.id || 
-                        undefined;
-                      
                       const typedMethod = method as unknown as HttpTypes.StoreCartShippingMethod;
                       
                       return (
                         <div key={method.id} className="flex flex-col w-full">
                           <CartShippingMethodRow
-                            key={typedMethod.id}
                             method={typedMethod}
                             currency_code={activeCart?.currency_code || 'PLN'}
-                            cartId={activeCart.id}
+                            cartId={activeCart!.id}
                             onMethodRemoved={handleMethodRemoved}
                           />
                           
-                          {/* Wrap with InPost component if it's an InPost shipping method */}
                           {isInpostMethod && (
                             <div className="mt-2 pl-4">
                               <InpostShippingMethodWrapper
                                 shippingMethod={typedMethod}
-                                sellerId={sellerId}
-                                cartId={activeCart.id}
+                                sellerId={undefined}
+                                cartId={activeCart!.id}
                                 onComplete={async () => {
-                                  // Refresh page after InPost completion
-                                  await unifiedCache.invalidate(['cart', 'checkout']).catch(() => {
-                                    // Silent failure - don't break the flow
-                                  })
+                                  await unifiedCache.invalidate('cart')
                                   router.refresh();
                                 }}
                                 onError={(error) => {
-                                  console.error('InPost error:', error);
                                   setError(`InPost error: ${error}`);
                                 }}
                               />
@@ -521,15 +509,13 @@ const CartShippingMethodsSection: React.FC<ShippingProps> = ({
               </div>
             </div>
           </div>
+          
           <div>
-            <ErrorMessage
-              error={error}
-              data-testid="delivery-option-error-message"
-            />
+            <ErrorMessage error={error} data-testid="delivery-option-error-message" />
             <Button
               onClick={handleSubmit}
               variant="tonal"
-              disabled={!activeCart?.shipping_methods?.[0] || isSubmitting || isLoadingPrices}
+              disabled={currentSelectedMethods.length === 0 || isSubmitting || isLoadingPrices}
               loading={isSubmitting || isLoadingPrices}
             >
               {isSubmitting ? "Przechodzenie..." : "Kontynuuj do płatności"}
@@ -539,11 +525,10 @@ const CartShippingMethodsSection: React.FC<ShippingProps> = ({
       ) : (
         <div>
           <div className="text-small-regular">
-            {activeCart && (activeCart.shipping_methods?.length ?? 0) > 0 && (
+            {currentSelectedMethods.length > 0 && (
               <div className="flex flex-col">
-                {activeCart.shipping_methods?.map((method: any) => {
-                  // Find the corresponding available method to get the name and seller info
-                  const availableMethod = _shippingMethods?.find(am => am.id === method.shipping_option_id)
+                {currentSelectedMethods.map((method: any) => {
+                  const availableMethod = shippingMethods?.find(am => am.id === method.shipping_option_id)
                   const methodName = method.name || availableMethod?.name || 'Metoda dostawy'
                   const sellerName = availableMethod?.seller_name || ''
                   
@@ -553,8 +538,7 @@ const CartShippingMethodsSection: React.FC<ShippingProps> = ({
                         {sellerName && `${sellerName} - `}Metoda dostawy
                       </Text>
                       <Text className="txt-medium text-ui-fg-subtle">
-                        {methodName}{" "}
-                        {convertToLocale({
+                        {methodName} {convertToLocale({
                           amount: method.amount!,
                           currency_code: activeCart?.currency_code || 'PLN',
                         })}

@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useEffect, useState, useCallback, useMemo } from 'react'
 import { useBatchLowestPrices } from '@/hooks/use-batch-lowest-prices'
 import { LowestPriceData } from '@/types/price-history'
+import { unifiedCache, CACHE_TTL } from '@/lib/utils/unified-cache'
 
 interface BatchPriceContextType {
   registerVariant: (variantId: string) => void
@@ -28,6 +29,20 @@ export const BatchPriceProvider: React.FC<BatchPriceProviderProps> = ({
   days = 30
 }) => {
   const [registeredVariants, setRegisteredVariants] = useState<Set<string>>(new Set())
+  
+  // Cleanup mechanism to prevent memory leaks
+  useEffect(() => {
+    return () => {
+      // Clear all registered variants on unmount
+      setRegisteredVariants(new Set())
+      
+      // 🧹 Clear related cache entries to prevent memory leaks
+      if (process.env.NODE_ENV === 'development') {
+     
+      }
+      unifiedCache.invalidate('price:')
+    }
+  }, [])
   
   // Memoize variant IDs array to prevent unnecessary re-renders
   const variantIds = useMemo(() => Array.from(registeredVariants), [registeredVariants])
@@ -60,8 +75,18 @@ export const BatchPriceProvider: React.FC<BatchPriceProviderProps> = ({
   }, [])
 
   const getPriceData = useCallback((variantId: string): LowestPriceData | null => {
-    return data[variantId] || null
-  }, [data])
+    // Get price data from current batch
+    const priceData = data[variantId]
+    
+    if (priceData) {
+      // 🚀 Cache successful price lookups for future use
+      const cacheKey = `price:${variantId}:${currencyCode}:${regionId || 'default'}:${days}`
+      unifiedCache.set(cacheKey, priceData, CACHE_TTL.PRICING)
+      
+    }
+    
+    return priceData || null
+  }, [data, currencyCode, regionId, days])
 
   // Memoize context value to prevent unnecessary re-renders
   const contextValue: BatchPriceContextType = useMemo(() => ({

@@ -3,7 +3,7 @@
 import { sdk } from "../config"
 import { getAuthHeaders } from "./cookies"
 import { SingleProductMeasurement } from "@/types/product"
-import { getCachedMeasurements } from "../utils/unified-cache"
+import { unifiedCache, CACHE_TTL } from "../utils/unified-cache"
 
 /**
  * Gets a product and its variants by ID with all measurements included
@@ -118,11 +118,8 @@ export const getProductMeasurements = async (
 ): Promise<SingleProductMeasurement[]> => {
   
   // Use unified cache for this operation
-  return getCachedMeasurements(
-    productId,
-    selectedVariantId,
-    locale,
-    async () => {
+  const cacheKey = `measurements:${productId}:${selectedVariantId || 'default'}:${locale}`
+  return unifiedCache.get(cacheKey, async () => {
       try {
         const product = await getProductWithMeasurements(productId)
         if (!product) {

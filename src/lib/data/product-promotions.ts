@@ -52,7 +52,8 @@ export const getProductPromotions = async (
     }>(`/store/products/${productId}/promotions`, {
       method: "GET",
       headers,
-      cache: "no-cache" // Don't cache promotion data as it can change frequently
+      cache: "no-store", // Prevent any caching of promotion data
+      next: { revalidate: 0 } // Force fresh data on every request
     })
 
     const promotions = response.promotions || []

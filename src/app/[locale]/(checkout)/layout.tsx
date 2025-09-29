@@ -2,6 +2,7 @@ import { Button } from "@/components/atoms"
 import { Link } from "@/i18n/routing"
 import { CollapseIcon } from "@/icons"
 import Image from "next/image"
+import { CartProvider } from "@/components/context/CartContext"
 
 export default async function RootLayout({
   children,
@@ -9,7 +10,7 @@ export default async function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <>
+    <CartProvider initialCart={null}>
       <header>
         <div className="relative w-full py-2 lg:px-8 px-4">
           <div className="absolute top-3">
@@ -34,6 +35,6 @@ export default async function RootLayout({
         </div>
       </header>
       {children}
-    </>
+    </CartProvider>
   )
 }

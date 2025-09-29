@@ -383,27 +383,26 @@ export async function getReadyNewsletters(): Promise<Newsletter[]> {
     }
   })
 }
-
 // Utility function to invalidate blog-related caches
 export async function invalidateBlogCache(type?: 'posts' | 'categories' | 'sellers' | 'newsletters') {
   if (!type) {
     // Invalidate all blog caches
-    await unifiedCache.invalidate(['blog'])
+    await unifiedCache.invalidate('blog')
     return
   }
 
   switch (type) {
     case 'posts':
-      await unifiedCache.invalidate(['blog:posts'])
+      unifiedCache.invalidate('blog:posts')
       break
     case 'categories':
-      await unifiedCache.invalidate(['blog:categories'])
+      unifiedCache.invalidate('blog:categories')
       break
     case 'sellers':
-      await unifiedCache.invalidate(['blog:seller'])
+      unifiedCache.invalidate('blog:seller')
       break
     case 'newsletters':
-      await unifiedCache.invalidate(['blog:newsletters'])
+      unifiedCache.invalidate('blog:newsletters')
       break
   }
 }

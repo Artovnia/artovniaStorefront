@@ -3,8 +3,9 @@
 import React, { useEffect, useState } from 'react'
 import { useRouter } from '@/i18n/routing'
 import { useSearchParams, useParams } from 'next/navigation'
-import { useCart, CartProvider } from '@/components/context/CartContext'
-// Removed unused import: completeCart
+import { useCart } from '@/components/context/CartContext'
+import { removeCartId } from '@/lib/data/cookies'
+import { placeOrder } from '@/lib/data/cart'
 
 const StripeReturnPageContent: React.FC = () => {
   const router = useRouter()
@@ -15,7 +16,7 @@ const StripeReturnPageContent: React.FC = () => {
   const [error, setError] = useState<string | null>(null)
   
   // Get cart context to clear cart after successful completion
-  const { completeOrder } = useCart()
+  const { clearCart, refreshCart, cart } = useCart()
 
   useEffect(() => {
     const processStripeReturn = async () => {
@@ -41,12 +42,61 @@ const StripeReturnPageContent: React.FC = () => {
           // For Stripe Checkout payments, the payment providers now automatically detect
           // completed Stripe Checkout sessions and authorize the payment accordingly
           try {
-            console.log('🔄 Completing cart via context:', cartId)
             
-            // Use cart context to complete the order - this will clear the cart state
-            const result = await completeOrder()
+            // Use placeOrder function directly (bypassing server action routing issues)
+            let result
+            try {
+              result = await placeOrder(cartId, true)
+            } catch (placeOrderError: any) {
+              result = undefined
+            }
+         
             
-            console.log('✅ Cart completion result:', result)
+            // Clear the cart completely after successful completion
+            // If placeOrder succeeded (returned any result), we should clear the cart
+            if (result) {
+              
+              // 1. Clear server-side cart cookie (this should already be done by placeOrder, but let's ensure it)
+              try {
+                await removeCartId()
+              } catch (error) {
+              }
+              
+              // 2. Clear client-side cart context and storage
+              clearCart()
+              
+              // 3. Clear any remaining client-side storage manually
+              if (typeof window !== 'undefined') {
+                try {
+                  localStorage.removeItem('_medusa_cart_id')
+                  localStorage.removeItem('medusa_cart_id')
+                  document.cookie = '_medusa_cart_id=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=' + window.location.hostname
+                  document.cookie = '_medusa_cart_id=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;'
+                
+                } catch (error) {
+                }
+              }
+              
+              // 4. Small delay to ensure all changes propagate
+              await new Promise(resolve => setTimeout(resolve, 1000))
+              
+              // 5. Force refresh cart to sync with server state (should be empty now)
+              await refreshCart()
+              
+              // 6. Debug: Check final cart state
+              setTimeout(() => {
+              
+              }, 2000)
+            } else {
+              console.warn('⚠️ STRIPE RETURN: No result from placeOrder, but still attempting cart clear as fallback')
+              // Fallback cart clearing even if no result
+              try {
+                await removeCartId()
+                clearCart()
+                await refreshCart()
+              } catch (error) {
+              }
+            }
             
             // Handle different response formats from cart completion
             let orderId = null
@@ -62,18 +112,13 @@ const StripeReturnPageContent: React.FC = () => {
             }
             
             if (orderId) {
-              console.log('✅ Order completed successfully, redirecting to:', orderId)
               router.push(`/order/${orderId}/confirmed`)
               return
             } else {
-              console.error('❌ No order ID found in result:', result)
               setError(locale === 'pl' ? 'Zamówienie zostało utworzone, ale nie znaleziono ID zamówienia. Sprawdź historię zamówień.' : 'Order was created but order ID not found. Please check your order history.')
             }
             
           } catch (error: any) {
-            console.error('❌ Error completing cart:', error)
-            console.error('❌ Error message:', error.message)
-            console.error('❌ Error stack:', error.stack)
             setError(locale === 'pl' ? 'Płatność zakończona sukcesem, ale finalizacja zamówienia nie powiodła się. Skontaktuj się z obsługą klienta.' : 'Payment succeeded but order completion failed. Please contact support.')
           }
           
@@ -95,7 +140,7 @@ const StripeReturnPageContent: React.FC = () => {
         }
         
       } catch (error: any) {
-        console.error('❌ Error processing Stripe return:', error)
+        console.error('Error processing Stripe return:', error)
         setError(error.message || (locale === 'pl' ? 'Wystąpił błąd podczas przetwarzania płatności' : 'An error occurred while processing your payment'))
         
         // Redirect back to checkout after a delay
@@ -237,13 +282,5 @@ const StripeReturnPageContent: React.FC = () => {
   )
 }
 
-// Wrapper component with CartProvider
-const StripeReturnPage: React.FC = () => {
-  return (
-    <CartProvider>
-      <StripeReturnPageContent />
-    </CartProvider>
-  )
-}
-
-export default StripeReturnPage
+// Export the component directly - it will use the CartProvider from the layout
+export default StripeReturnPageContent

@@ -58,14 +58,11 @@ const CartPaymentSection = ({
     setError(null)
     setSelectedPaymentMethod(method)
     
-    console.log('🔍 Setting payment method (simplified):', { method, cartId: cart.id })
-    
     if (isStripeFunc(method)) {
       try {
         await initiatePaymentSession(cart, {
           provider_id: method,
         })
-        console.log('✅ Payment session initiated successfully')
       } catch (error: any) {
         console.error('❌ Error setting payment method:', error)
         // Don't throw error - backend logs show sessions are created successfully

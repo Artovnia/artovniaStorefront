@@ -4,6 +4,7 @@ import { ProductPageAccordion } from '@/components/molecules';
 import { calculatePriceForShippingOption } from "@/lib/data/fulfillment"
 import { convertToLocale } from "@/lib/helpers/money"
 import { getProductShippingOptions } from "@/lib/data/products"
+import { unifiedCache, CACHE_TTL } from "@/lib/utils/unified-cache"
 import { HttpTypes } from "@medusajs/types"
 import { Text, Heading } from "@medusajs/ui"
 import { useState, useEffect } from "react"
@@ -37,7 +38,12 @@ export const ProductDetailsShipping = ({
         setError(null)
    
 
-        const shippingOptions = await getProductShippingOptions(product.id, region.id)
+        // ✅ FIXED: Use unified cache for shipping options
+        const shippingOptions = await unifiedCache.get(
+          `shipping:options:${product.id}:${region.id}`,
+          () => getProductShippingOptions(product.id, region.id),
+          CACHE_TTL.PRODUCT
+        )
 
         // Don't filter by seller - show all shipping options for the product's shipping profile
         let filteredMethods = shippingOptions

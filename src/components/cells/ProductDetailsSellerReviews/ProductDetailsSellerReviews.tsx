@@ -5,13 +5,18 @@ import { SellerProps } from "@/types/seller"
 import { StarRating } from "@/components/atoms"
 import { SellerAvatar } from "@/components/cells/SellerAvatar/SellerAvatar"
 import { getSellerReviews, Review } from '@/lib/data/reviews';
+import { unifiedCache, CACHE_TTL } from '@/lib/utils/unified-cache';
 import Link from 'next/link';
 
 export const ProductDetailsSellerReviews = async ({ seller }: { seller: SellerProps }) => {
   const { photo, name, handle } = seller
   
-  // Fetch seller reviews separately
-  const { reviews, count } = await getSellerReviews(handle)
+  // ✅ FIXED: Fetch seller reviews with unified cache
+  const { reviews, count } = await unifiedCache.get(
+    `seller:reviews:${handle}`,
+    () => getSellerReviews(handle),
+    CACHE_TTL.PRODUCT
+  )
   
   // Filter out any null reviews
   const filteredReviews = reviews?.filter((r: Review | null): r is Review => r !== null) || []

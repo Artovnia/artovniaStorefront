@@ -18,8 +18,6 @@ export const AlgoliaTrendingListings = () => {
         setLoading(true)
         setError(null)
         
-        console.log('🔍 Fetching best products from Algolia...')
-        
         // Search for products with multiple criteria for "best" products
         const searchResponse = await client.search([
           {
@@ -45,15 +43,10 @@ export const AlgoliaTrendingListings = () => {
           }
         ])
         
-        console.log('📊 Algolia search response:', searchResponse)
-        
         const firstResult = searchResponse.results[0]
         const productHits = (firstResult && 'hits' in firstResult ? firstResult.hits : []) as Hit<HttpTypes.StoreProduct>[]
         
-        console.log('📦 Product hits found:', productHits.length, productHits)
-        
         if (productHits.length === 0) {
-          console.warn('⚠️ No products found in Algolia index')
           setError('No products found in search index')
           return
         }
@@ -75,10 +68,8 @@ export const AlgoliaTrendingListings = () => {
           return dateB - dateA // Newer first
         })
         
-        console.log('🏆 Sorted best products:', sortedProducts.slice(0, 4))
         setProducts(sortedProducts.slice(0, 4)) // Limit to 4 products
       } catch (err) {
-        console.error('❌ Error fetching best products:', err)
         setError('Failed to load best products')
       } finally {
         setLoading(false)

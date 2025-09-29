@@ -89,7 +89,6 @@ const ProductCardComponent = ({
 
   // ✅ SAFETY CHECK: Don't render card if product is invalid
   if (!product?.id || !product?.title) {
-    console.warn('⚠️ ProductCard received invalid product:', product)
     return null
   }
 

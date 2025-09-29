@@ -48,9 +48,7 @@ export const CartShippingMethodRow = ({
       const response = await removeShippingMethod(method.id);
       
       // After successful removal, invalidate the cache using new system
-      await unifiedCache.invalidate(['cart', 'checkout']).catch(() => {
-        // Silent failure - don't break the flow
-      })
+      unifiedCache.invalidate('cart')
       
       // Call the callback if provided to update parent state immediately
       // This is critical for ensuring the UI updates correctly

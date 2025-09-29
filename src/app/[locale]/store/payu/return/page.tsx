@@ -29,15 +29,7 @@ export default function PayUStoreReturnPage() {
     const status = searchParams.get('status')
     const error = searchParams.get('error')
     
-    console.log('PayU store return parameters:', {
-      sessionId,
-      extOrderId,
-      orderId,
-      status,
-      error,
-      allParams: Object.fromEntries(searchParams.entries()),
-      locale
-    })
+    
 
     // Preserve all query parameters
     const queryParams = new URLSearchParams()
@@ -47,7 +39,6 @@ export default function PayUStoreReturnPage() {
     
     // Redirect to the checkout payu return page in the correct locale
     const redirectUrl = `/${locale}/payu/return?${queryParams.toString()}`
-    console.log(`Redirecting from store route to checkout route: ${redirectUrl}`)
     
     // Prevent multiple redirects
     setIsRedirecting(true)

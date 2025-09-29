@@ -77,11 +77,11 @@ export const ProductDetailsPage = async ({
     }
   }
   
-  // Fetch customer, auth status, and reviews data using unified cache
+  // ✅ FIXED: Fetch customer, auth status, and reviews data WITHOUT user-specific cache keys
   const [user, authenticated, reviewsData] = await Promise.allSettled([
-    unifiedCache.get(`customer:${prod.id}`, retrieveCustomer),
-    unifiedCache.get(`auth:${prod.id}`, isAuthenticated),
-    unifiedCache.get(`reviews:${prod.id}`, () => getProductReviews(prod.id)),
+    retrieveCustomer(), // Direct call - no cache for user data
+    isAuthenticated(),  // Direct call - no cache for auth data
+    unifiedCache.get(`reviews:product:${prod.id}`, () => getProductReviews(prod.id)), // Safe cache key
   ])
 
   // Extract results with fallbacks
@@ -171,7 +171,7 @@ export const ProductDetailsPage = async ({
           <Breadcrumbs items={breadcrumbs} />
         </div>
         
-        <PromotionDataProvider countryCode="PL">
+        <PromotionDataProvider countryCode={locale}>
           <BatchPriceProvider currencyCode="PLN" days={30}>
             <VendorAvailabilityProvider
               vendorId={vendorId}

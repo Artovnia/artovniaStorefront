@@ -3,7 +3,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react'
 import { HttpTypes } from "@medusajs/types"
 import { listProductsWithPromotions } from "@/lib/data/products"
-import { unifiedCache } from "@/lib/utils/unified-cache"
+import { unifiedCache, CACHE_TTL } from "@/lib/utils/unified-cache"
 
 interface PromotionDataContextType {
   promotionalProducts: Map<string, HttpTypes.StoreProduct>
@@ -33,16 +33,16 @@ export const PromotionDataProvider: React.FC<PromotionDataProviderProps> = ({
         setIsLoading(true)
         setError(null)
 
-        // ✅ FIXED: Use unified cache for promotional products
-        const cacheKey = `products:promotions:${countryCode}:100`
+        // Simple approach: fetch fresh data with short cache
+        const cacheKey = `promotions:${countryCode}`
         
         const result = await unifiedCache.get(cacheKey, async () => {
           return await listProductsWithPromotions({
             page: 1,
-            limit: 100, // Get more products to cover all possible promotional items
+            limit: 100,
             countryCode,
           })
-        })
+        }, CACHE_TTL.PROMOTIONS)
 
         // Handle case where result is undefined or doesn't have expected structure
         if (!result || !result.response || !result.response.products) {

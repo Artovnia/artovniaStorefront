@@ -53,8 +53,7 @@ export const CartDropdown = ({
         !hasTriedRefresh.current && 
         !cartContext.isLoading &&
         refreshCart) {
-      
-      console.log('🔄 CartDropdown calling refreshCart() - ONCE on mount')
+
       hasTriedRefresh.current = true
       refreshCart()
     }
