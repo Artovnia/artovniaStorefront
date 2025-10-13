@@ -13,7 +13,7 @@ export const ParcelAccordion = ({
   orderDisplayId,
   createdAt,
   total,
-  currency_code = "eur",
+  currency_code = "pln",
   items,
   defaultOpen = false,
 }: {
@@ -28,6 +28,7 @@ export const ParcelAccordion = ({
   const [isOpen, setIsOpen] = useState(defaultOpen)
   const [height, setHeight] = useState(0)
   const contentRef = useRef<HTMLUListElement>(null)
+  
 
   useEffect(() => {
     setTimeout(() => {

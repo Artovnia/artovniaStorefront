@@ -5,7 +5,7 @@ import { UserNavigation } from "@/components/molecules"
 import LocalizedClientLink from "@/components/molecules/LocalizedLink/LocalizedLink"
 import { ArrowLeftIcon } from "@/icons"
 import { ReturnItemsTab } from "./ReturnItemsTab"
-import { useState } from "react"
+import { useState, useRef } from "react"
 import { ReturnSummaryTab } from "./ReturnSummaryTab"
 import { ReturnMethodsTab } from "./ReturnMethodsTab"
 import { StepProgressBar } from "@/components/cells/StepProgressBar/StepProgressBar"
@@ -14,10 +14,12 @@ import { useRouter } from "next/navigation"
 
 export const OrderReturnSection = ({
   order,
+  orderSet,
   returnReasons,
   shippingMethods,
 }: {
   order: any
+  orderSet?: any
   returnReasons: any[]
   shippingMethods: any[]
 }) => {
@@ -25,7 +27,12 @@ export const OrderReturnSection = ({
   const [selectedItems, setSelectedItems] = useState<any[]>([])
   const [error, setError] = useState<boolean>(false)
   const [returnMethod, setReturnMethod] = useState<any>(null)
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false)
   const router = useRouter()
+  
+  // CRITICAL: Use ref for synchronous submission guard
+  // React state updates are async, so a ref prevents double-clicks
+  const isSubmittingRef = useRef(false)
 
   const handleTabChange = (tab: number) => {
     const noReason = selectedItems.filter((item) => !item.reason_id)
@@ -85,20 +92,52 @@ export const OrderReturnSection = ({
   }
 
   const handleSubmit = async () => {
-    const data = {
-      order_id: order.id,
-      customer_note: "",
-      shipping_option_id: returnMethod,
-      line_items: selectedItems,
+    // CRITICAL: Check ref FIRST (synchronous check before any state updates)
+    if (isSubmittingRef.current) {
+      console.log('🚫 Double-click prevented by ref guard')
+      return
     }
-
-    const { order_return_request } = await createReturnRequest(data)
-
-    if (!order_return_request.id) {
-      return console.log("Error creating return request")
+    
+    // Prevent double submission with state check too
+    if (isSubmitting) {
+      console.log('🚫 Double-click prevented by state guard')
+      return
     }
+    
+    try {
+      // IMMEDIATELY set both ref and state to prevent double-clicks
+      isSubmittingRef.current = true
+      setIsSubmitting(true)
+      
+      console.log('✅ Submitting return request...')
+      
+      // CRITICAL: Small delay to ensure loading state renders BEFORE API call
+      // This gives React time to show the spinner to the user
+      await new Promise(resolve => setTimeout(resolve, 100))
+      
+      // CRITICAL: Use individual order.id for return request (not order set ID)
+      // The backend needs the order ID to look up the seller
+      const orderId = order.id
+      
+      const data = {
+        order_id: orderId,
+        customer_note: "",
+        shipping_option_id: returnMethod,
+        line_items: selectedItems,
+      }
 
-    router.push(`/user/orders/${order_return_request.id}/request-success`)
+      const { order_return_request } = await createReturnRequest(data)
+      
+      console.log('✅ Return request created:', order_return_request.id)
+
+      router.push(`/user/orders/${order_return_request.id}/request-success`)
+    } catch (error) {
+      console.error('❌ Return request submission failed:', error)
+      // Reset BOTH ref and state on error so user can retry
+      isSubmittingRef.current = false
+      setIsSubmitting(false)
+    }
+    // Note: Don't reset on success - let the router navigation handle it
   }
 
   return (
@@ -106,7 +145,7 @@ export const OrderReturnSection = ({
       <UserNavigation />
       <div className="md:col-span-3 mb-8 md:mb-0">
         {tab === 0 ? (
-          <LocalizedClientLink href={`/user/orders/${order.id}`}>
+          <LocalizedClientLink href={`/user/orders/${orderSet?.id || order.id}`}>
             <Button
               variant="tonal"
               className="label-md text-action-on-secondary uppercase flex items-center gap-2"
@@ -163,6 +202,7 @@ export const OrderReturnSection = ({
               handleSubmit={handleSubmit}
               originalOrder={order}
               shippingCost={order.shipping_total} // Extract shipping_total from order or use default
+              isSubmitting={isSubmitting}
             />
           </div>
         </div>

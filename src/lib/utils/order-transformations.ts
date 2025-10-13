@@ -150,6 +150,32 @@ export function transformOrderSetToOrder(orderSet: OrderSet): Order & { orders?:
   
   const firstOrder = orders[0]
   
+  console.log('🔄 transformOrderSetToOrder - Processing:', {
+    orderSetId: orderSet.id,
+    ordersCount: orders.length,
+    firstOrderId: firstOrder?.id,
+    firstOrderTotal: firstOrder?.total,
+    firstOrderItemTotal: firstOrder?.item_total,
+    firstOrderItemsCount: firstOrder?.items?.length,
+    paymentAmount: orderSet.payment_collection?.amount,
+    firstItem: firstOrder?.items?.[0] ? {
+      title: firstOrder.items[0].product_title || firstOrder.items[0].title,
+      unit_price: firstOrder.items[0].unit_price,
+      quantity: firstOrder.items[0].quantity,
+      subtotal_backend: firstOrder.items[0].subtotal,
+      total_backend: firstOrder.items[0].total,
+      discount_total: firstOrder.items[0].discount_total
+    } : null,
+    secondItem: firstOrder?.items?.[1] ? {
+      title: firstOrder.items[1].product_title || firstOrder.items[1].title,
+      unit_price: firstOrder.items[1].unit_price,
+      quantity: firstOrder.items[1].quantity,
+      subtotal_backend: firstOrder.items[1].subtotal,
+      total_backend: firstOrder.items[1].total,
+      discount_total: firstOrder.items[1].discount_total
+    } : null
+  })
+  
   // Create the composite order with all linked orders
   const compositeOrder = {
     id: orderSet.id,
@@ -172,15 +198,144 @@ export function transformOrderSetToOrder(orderSet: OrderSet): Order & { orders?:
     order_set_display_id: orderSet.display_id,
     
     // Aggregate items from all orders
-    items: orders.flatMap(order => order.items || []),
+    // Backend divides values incorrectly - use proportional distribution from payment_collections
+    items: orders.flatMap(order => {
+      const items = order.items || []
+      
+      // Get ACTUAL paid amount from payment_collections (source of truth)
+      const paymentAmount = order.payment_collection?.captured_amount || 
+                           orderSet.payment_collection?.amount || 
+                           order.total || 0
+      const shippingAmount = order.shipping_methods?.[0]?.amount || order.shipping_total || 1
+      const actualItemTotal = paymentAmount - shippingAmount
+      
+      // Calculate total base price
+      const totalBasePrice = items.reduce((sum: number, item: any) => 
+        sum + ((item.unit_price || 0) * (item.quantity || 1)), 0
+      )
+      
+      console.log(`📊 Payment: ${paymentAmount}, Shipping: ${shippingAmount}, Item total: ${actualItemTotal}, Base: ${totalBasePrice}`)
+      
+      // SMART APPROACH: Items with discount_total=0 have NO promotion, use full price
+      // Then distribute remaining amount to items WITH discounts
+      
+      // Separate items into no-discount and discounted
+      const noDiscountItems = items.filter((item: any) => !item.discount_total || item.discount_total === 0)
+      const discountedItems = items.filter((item: any) => item.discount_total && item.discount_total > 0)
+      
+      // Calculate total for no-discount items (use full price)
+      const noDiscountTotal = noDiscountItems.reduce((sum: number, item: any) => 
+        sum + ((item.unit_price || 0) * (item.quantity || 1)), 0
+      )
+      
+      // Remaining amount goes to discounted items
+      const remainingForDiscounted = actualItemTotal - noDiscountTotal
+      
+      // Calculate base price for discounted items only
+      const discountedBaseTotal = discountedItems.reduce((sum: number, item: any) => 
+        sum + ((item.unit_price || 0) * (item.quantity || 1)), 0
+      )
+      
+      console.log(`📊 No-discount items: ${noDiscountItems.length}, total: ${noDiscountTotal}`)
+      console.log(`📊 Discounted items: ${discountedItems.length}, remaining: ${remainingForDiscounted}, base: ${discountedBaseTotal}`)
+      
+      return items.map((item: any) => {
+        const baseAmount = (item.unit_price || 0) * (item.quantity || 1)
+        
+        let finalAmount: number
+        let calculatedDiscount: number
+        
+        // If item has no discount, use full price
+        if (!item.discount_total || item.discount_total === 0) {
+          finalAmount = baseAmount
+          calculatedDiscount = 0
+        } else {
+          // Distribute remaining amount proportionally among discounted items
+          finalAmount = discountedBaseTotal > 0
+            ? (baseAmount / discountedBaseTotal) * remainingForDiscounted
+            : baseAmount
+          calculatedDiscount = baseAmount - finalAmount
+        }
+        
+        return {
+          ...item,
+          subtotal: finalAmount,
+          total: finalAmount,
+          discount_total: calculatedDiscount,
+          _original_subtotal: item.subtotal,
+          _original_total: item.total,
+          _original_discount: item.discount_total
+        }
+      })
+    }),
     
     // Use shipping info from first order
     shipping_address: firstOrder?.shipping_address || {},
     shipping_methods: firstOrder?.shipping_methods || [],
     payments: firstOrder?.payments || [],
     
-    // Include the detailed orders array
-    orders: orders,
+    // CRITICAL: Include the detailed orders array with manual calculations
+    // Each order in this array has item_total, shipping_total, discount_total calculated
+    // ALSO apply proportional distribution to items inside each order
+    orders: orders.map(order => {
+      const items = order.items || []
+      
+      // Get ACTUAL paid amount from payment_collections
+      const paymentAmount = order.payment_collection?.captured_amount || 
+                           orderSet.payment_collection?.amount || 
+                           order.total || 0
+      const shippingAmount = order.shipping_methods?.[0]?.amount || order.shipping_total || 1
+      const actualItemTotal = paymentAmount - shippingAmount
+      
+      // Calculate total base price
+      const totalBasePrice = items.reduce((sum: number, item: any) => 
+        sum + ((item.unit_price || 0) * (item.quantity || 1)), 0
+      )
+      
+      // SMART APPROACH: Items with discount_total=0 have NO promotion, use full price
+      const noDiscountItems = items.filter((item: any) => !item.discount_total || item.discount_total === 0)
+      const discountedItems = items.filter((item: any) => item.discount_total && item.discount_total > 0)
+      
+      const noDiscountTotal = noDiscountItems.reduce((sum: number, item: any) => 
+        sum + ((item.unit_price || 0) * (item.quantity || 1)), 0
+      )
+      
+      const remainingForDiscounted = actualItemTotal - noDiscountTotal
+      
+      const discountedBaseTotal = discountedItems.reduce((sum: number, item: any) => 
+        sum + ((item.unit_price || 0) * (item.quantity || 1)), 0
+      )
+      
+      return {
+        ...order,
+        items: items.map((item: any) => {
+          const baseAmount = (item.unit_price || 0) * (item.quantity || 1)
+          
+          let finalAmount: number
+          let calculatedDiscount: number
+          
+          if (!item.discount_total || item.discount_total === 0) {
+            finalAmount = baseAmount
+            calculatedDiscount = 0
+          } else {
+            finalAmount = discountedBaseTotal > 0
+              ? (baseAmount / discountedBaseTotal) * remainingForDiscounted
+              : baseAmount
+            calculatedDiscount = baseAmount - finalAmount
+          }
+          
+          return {
+            ...item,
+            subtotal: finalAmount,
+            total: finalAmount,
+            discount_total: calculatedDiscount,
+            _original_subtotal: item.subtotal,
+            _original_total: item.total,
+            _original_discount: item.discount_total
+          }
+        })
+      }
+    }),
     
     // Payment collection info
     payment_collection: orderSet.payment_collection ? {
@@ -193,6 +348,35 @@ export function transformOrderSetToOrder(orderSet: OrderSet): Order & { orders?:
       status: firstOrder?.payment_status || 'pending'
     }
   }
+  
+  console.log('🔄 transformOrderSetToOrder - Result:', {
+    compositeOrderId: compositeOrder.id,
+    itemsCount: compositeOrder.items.length,
+    ordersCount: compositeOrder.orders.length,
+    method: 'proportional_distribution_from_payment_collections',
+    firstItemAfterFix: compositeOrder.items[0] ? {
+      title: compositeOrder.items[0].product_title || compositeOrder.items[0].title,
+      unit_price: compositeOrder.items[0].unit_price,
+      quantity: compositeOrder.items[0].quantity,
+      base_amount: (compositeOrder.items[0].unit_price || 0) * (compositeOrder.items[0].quantity || 1),
+      subtotal_calculated: compositeOrder.items[0].subtotal,
+      total_calculated: compositeOrder.items[0].total,
+      discount_calculated: compositeOrder.items[0].discount_total,
+      original_backend_total: compositeOrder.items[0]._original_total,
+      original_backend_discount: compositeOrder.items[0]._original_discount
+    } : null,
+    secondItemAfterFix: compositeOrder.items[1] ? {
+      title: compositeOrder.items[1].product_title || compositeOrder.items[1].title,
+      unit_price: compositeOrder.items[1].unit_price,
+      quantity: compositeOrder.items[1].quantity,
+      base_amount: (compositeOrder.items[1].unit_price || 0) * (compositeOrder.items[1].quantity || 1),
+      subtotal_calculated: compositeOrder.items[1].subtotal,
+      total_calculated: compositeOrder.items[1].total,
+      discount_calculated: compositeOrder.items[1].discount_total,
+      original_backend_total: compositeOrder.items[1]._original_total,
+      original_backend_discount: compositeOrder.items[1]._original_discount
+    } : null
+  })
  
   
   return compositeOrder

@@ -84,7 +84,8 @@ export const OrderConfirmedSection = ({
   // Extract order information with fallbacks
   const displayId = order?.display_id || order?.id?.replace('ordset_', '') || 'N/A'
   const orderEmail = order?.email || order?.customer?.email
-  const orderTotal = order?.total || 0
+  // CRITICAL FIX: Use payment_collection.amount (actual paid) as primary source
+  const orderTotal = order?.payment_collection?.amount || order?.total || 0
   const orderCurrency = order?.currency_code || 'PLN'
   const createdAt = order?.created_at ? new Date(order.created_at) : new Date()
   const ordersCount = order?.orders?.length || 0
@@ -224,8 +225,23 @@ export const OrderConfirmedSection = ({
                   const variantTitle = item?.variant_title !== 'Default variant' ? item?.variant_title : ''
                   const quantity = item?.quantity || 1
                   const unitPrice = item?.unit_price || 0
-                  const total = item?.total || 0
+                  
+                  // CRITICAL FIX: Use item.subtotal (actual item value) instead of item.total
+                  // item.subtotal = unit_price * quantity (correct per-item calculation)
+                  // item.total might be incorrectly divided by backend
+                  const itemSubtotal = item?.subtotal || (unitPrice * quantity)
+                  const total = itemSubtotal
                   const thumbnail = item?.thumbnail || item?.product?.thumbnail
+                  
+                  // DEBUG: Log item pricing
+                  console.log(`🛒 Order Item: ${productTitle}`, {
+                    unit_price: unitPrice,
+                    subtotal: item?.subtotal,
+                    total: item?.total,
+                    calculated_total: total,
+                    discount: item?.discount_total,
+                    quantity
+                  })
                   
                   return (
                     <div key={index} className="flex items-start space-x-4 p-4 bg-white rounded border border-stone-100">
@@ -242,7 +258,7 @@ export const OrderConfirmedSection = ({
                       
                       {/* Product Details */}
                       <div className="flex-grow min-w-0">
-                        <div className="flex justify-between items-start">
+                        <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-3">
                           <div>
                             <h4 className="text-sm font-medium text-stone-800 font-instrument-serif">
                               {productTitle}
@@ -261,13 +277,14 @@ export const OrderConfirmedSection = ({
                           </div>
                           
                           {/* Price */}
-                          <div className="text-right">
+                          <div className="text-left md:text-right md:flex-shrink-0">
                             <p className="text-sm font-medium text-stone-800 font-instrument-sans">
                               {formatCurrency(total, orderCurrency)}
                             </p>
                             {quantity > 1 && (
                               <p className="text-xs text-stone-500 font-instrument-sans">
-                                {formatCurrency(unitPrice, orderCurrency)} {t.each}
+                                {/* Show per-unit promotional price, not base price */}
+                                {formatCurrency(total / quantity, orderCurrency)} {t.each}
                               </p>
                             )}
                           </div>

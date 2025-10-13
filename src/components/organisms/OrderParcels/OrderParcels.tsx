@@ -70,7 +70,7 @@ const getFulfillmentStatus = (order: any) => {
   return najbardziejZaawansowanyStatus
 }
 
-export const OrderParcels = async ({ orders }: { orders: any[] }) => {
+export const OrderParcels = async ({ orders, orderSetId }: { orders: any[], orderSetId?: string }) => {
   const user = await retrieveCustomer()
 
   return (
@@ -80,12 +80,13 @@ export const OrderParcels = async ({ orders }: { orders: any[] }) => {
         const statusRealizacji = getFulfillmentStatus(order)
         const aktualnyKrok = parcelStatuses(statusRealizacji)
         
-        // Create enriched order object with calculated status
+        // Create enriched order object with calculated status AND order_set_id for return link
         const enrichedOrder = {
           ...order,
           statusRealizacji,
           aktualnyKrok,
-          ma_realizacje: (order.fulfillments?.length || 0) > 0
+          ma_realizacje: (order.fulfillments?.length || 0) > 0,
+          order_set_id: orderSetId || order.order_set_id  // Pass order set ID for return link
         }
       
         

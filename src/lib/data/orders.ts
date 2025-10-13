@@ -54,6 +54,8 @@ export interface Order {
   shipping_address?: any;
   shipping_methods?: any[];
   payments?: any[];
+  payment_collections?: any[]; // ✅ Payment collections array
+  payment_collection?: any;    // ✅ Payment collection (singular)
   fulfillments?: Array<{
     id: string;
     packed_at?: string | null;
@@ -72,17 +74,16 @@ export interface Order {
  * Retrieve order set data from the backend
  */
 export const retrieveOrderSet = async (id: string): Promise<(OrderSet & { linked_order_ids?: string[] }) | null> => {
-  
   try {
     const headers = await getAuthHeaders()
-    
+        
     const response = await sdk.client.fetch<OrderSetResponse>(
       `/store/order-set/${id}`,
       {
         method: "GET",
         query: {
-          // Make sure to include fulfillment and shipping fields explicitly
-          fields: "*items,+items.metadata,*items.variant,*items.product,*seller,*reviews,*order_set,*customer,*shipping_address,*shipping_methods,*fulfillments,*fulfillments.packed_at,*fulfillments.shipped_at,*fulfillments.delivered_at,*fulfillments.canceled_at,shipping_total,total"
+          // Don't send any fields query - let backend handle it
+          // Backend route already fetches orders with proper calculated totals
         },
         headers,
         cache: "no-cache",
@@ -95,9 +96,14 @@ export const retrieveOrderSet = async (id: string): Promise<(OrderSet & { linked
     
     const orderSet = response.order_set
     
+    // Verify orders data
+    if (!orderSet.orders || orderSet.orders.length === 0) {
+      console.warn(`⚠️ Order set ${id} has no orders attached`)
+    }
+    
     return orderSet
   } catch (error) {
-    console.error(`Failed to fetch order set via API:`, error)
+    console.error(`❌ Failed to fetch order set via API:`, error)
     return null
   }
 }
@@ -108,21 +114,23 @@ export const retrieveIndividualOrder = async (id: string): Promise<Order | null>
     const headers = await getAuthHeaders()
     const next = await getCacheOptions("orders")
     
+    // Fetch order with payment_collections (plural, not singular)
     const response = await sdk.client.fetch<{ order: HttpTypes.StoreOrder & { seller?: SellerProps; reviews?: any[] } }>(
       `/store/orders/${id}`,
       {
         method: "GET",
         query: {
-          // Include fulfillment and shipping fields + seller image fields
-          fields: "*items,+items.metadata,*items.variant,*items.product,*seller,+seller.photo,+seller.avatar,+seller.image,*reviews,*fulfillments,*fulfillments.packed_at,*fulfillments.shipped_at,*fulfillments.delivered_at,*fulfillments.canceled_at,*shipping_methods,+shipping_methods.amount,+shipping_methods.price,+shipping_methods.total,shipping_total,total,currency_code,display_id"
+          // CRITICAL: Use payment_collections (plural) - payment_collection (singular) doesn't exist
+          fields: "*items,+items.metadata,+items.total,+items.subtotal,+items.discount_total,+items.unit_price,+items.quantity,*items.variant,*items.product,*seller,+seller.photo,+seller.avatar,+seller.image,*reviews,*fulfillments,*fulfillments.packed_at,*fulfillments.shipped_at,*fulfillments.delivered_at,*fulfillments.canceled_at,*shipping_methods,+shipping_methods.amount,+shipping_methods.price,+shipping_methods.total,*payment_collections,+payment_collections.amount,+payment_collections.currency_code,shipping_total,total,currency_code,display_id,order_set_id"
         },
         headers,
         next,
-        cache: "no-cache", // Use fresh data for returns
+        cache: "no-cache",
       }
-    )
+    );
     
-    const { order } = response 
+    const { order } = response;
+    
     // Convert HttpTypes.StoreOrder to our Order interface
     return {
       id: order.id,
@@ -148,6 +156,8 @@ export const retrieveIndividualOrder = async (id: string): Promise<Order | null>
       shipping_address: order.shipping_address,
       shipping_methods: order.shipping_methods || [],
       payments: (order as any).payments || [],
+      payment_collections: (order as any).payment_collections || [], // ✅ CRITICAL: Include payment_collections
+      payment_collection: (order as any).payment_collection, // ✅ Include payment_collection (singular)
       fulfillments: (order as any).fulfillments || [], // Include fulfillments
       is_order_set: false
     }
@@ -161,11 +171,9 @@ export const retrieveIndividualOrder = async (id: string): Promise<Order | null>
  * Main function to retrieve either an order or order set by ID
  */
 export const retrieveOrder = async (id: string): Promise<Order | null> => {
-  
   try {
     // Check if this is an order set ID
     if (id.startsWith('ordset_')) {
-      
       // Retrieve order set data
       const orderSet = await retrieveOrderSet(id)
       
@@ -212,15 +220,16 @@ export const listOrders = async (
           limit,
           offset,
           order: "-created_at",
-          // Removed *reviews until backend relation is fixed
-          fields: "*items,+items.metadata,*items.variant,*items.product,*seller,*order_set",
+          // CRITICAL FIX: Include promotional pricing fields for order items
+          // AND order_set.payment_collection for accurate total pricing
+          fields: "*items,+items.metadata,+items.total,+items.subtotal,+items.discount_total,+items.unit_price,+items.quantity,*items.variant,*items.product,*seller,*order_set,*order_set.payment_collection",
           ...filters,
         },
         headers,
         next,
         cache: "no-cache",
       })
-     
+      
       return response.orders || []
     } catch (apiError) {
       console.error("API Error listing orders:", apiError)
@@ -229,6 +238,49 @@ export const listOrders = async (
   } catch (err) {
     console.error("Error in listOrders:", err)
     return []
+  }
+}
+
+/**
+ * List order sets for the current user with pagination
+ */
+export const listOrderSets = async (
+  limit: number = 10,
+  offset: number = 0
+) => {
+  try {
+    const headers = await getAuthHeaders()
+
+    const response = await sdk.client.fetch<{
+      order_sets: Array<OrderSet>
+      count: number
+      offset: number
+      limit: number
+    }>(`/store/order-set`, {
+      method: "GET",
+      query: {
+        limit,
+        offset,
+        order: '-created_at'  // ✅ Newest orders first (string format for validator)
+      },
+      headers,
+      cache: "no-cache",
+    })
+    
+    return {
+      order_sets: response.order_sets || [],
+      count: response.count || 0,
+      offset: response.offset || 0,
+      limit: response.limit || limit
+    }
+  } catch (error) {
+    console.error("Error listing order sets:", error)
+    return {
+      order_sets: [],
+      count: 0,
+      offset: 0,
+      limit: limit
+    }
   }
 }
 
@@ -364,7 +416,6 @@ export const getReturns = async () => {
         const returnRequests = Array.isArray(response.order_return_requests) ? 
           response.order_return_requests : [];
 
-        
         // If we got an empty array, continue to try the other endpoint
         if (returnRequests.length === 0) {
           // Continue to try alternate endpoint
@@ -376,25 +427,44 @@ export const getReturns = async () => {
         
             // Get order ID from either order_id field or order.id field
             const orderId = returnItem.order_id || returnItem.order?.id;
-  
-            
-            // ALWAYS fetch complete order data for return requests since the API doesn't include complete data
-            if (orderId) {
-            } 
-            
+
+            // ALWAYS fetch complete order data for return requests
             if (orderId) {
               try {
-                const fullOrder = await retrieveIndividualOrder(orderId);
+                // CRITICAL: Try to fetch from order_set first (has manual calculations)
+                // Check if this order belongs to an order_set
+                let fullOrder = null;
+                
+                // Try to get order_set_id from the order
+                const orderResponse = await sdk.client.fetch<{ order: any }>(
+                  `/store/orders/${orderId}`,
+                  {
+                    method: "GET",
+                    query: { fields: "id,order_set_id" },
+                    headers: await getAuthHeaders(),
+                    cache: "no-cache"
+                  }
+                );
+                
+                const orderSetId = orderResponse?.order?.order_set_id;
+                
+                if (orderSetId && orderSetId.startsWith('ordset_')) {
+                  const orderSetData = await retrieveOrderSet(orderSetId);
+                  if (orderSetData?.orders?.[0]) {
+                    fullOrder = orderSetData.orders[0];
+                  }
+                } 
+                
+                // Fallback to individual order if no order_set
+                if (!fullOrder) {
+                  fullOrder = await retrieveIndividualOrder(orderId);
+                }
+                
                 if (fullOrder) {
-   
                   completeOrderData = fullOrder;
                 } 
               } catch (error) {
                 console.error(`❌ Error fetching complete order data for return request ${orderId}:`, error);
-                console.error('Error details:', {
-                  message: error instanceof Error ? error.message : 'Unknown error',
-                  stack: error instanceof Error ? error.stack : undefined
-                });
                 // Continue with existing order data
               }
             }
@@ -410,7 +480,6 @@ export const getReturns = async () => {
               order: completeOrderData
             };
           
-            
             return finalReturnItem;
           }));
           
@@ -447,7 +516,6 @@ export const getReturns = async () => {
             try {
               const fullOrder = await retrieveIndividualOrder(returnItem.order_id);
               if (fullOrder) {
-
                 completeOrderData = fullOrder;
               }
             } catch (error) {

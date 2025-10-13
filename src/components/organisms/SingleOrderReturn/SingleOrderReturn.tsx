@@ -60,6 +60,7 @@ export const SingleOrderReturn = ({
   user: any
   defaultOpen: boolean
 }) => {
+  
   // Store return reasons from API
   const [returnReasons, setReturnReasons] = useState<ReturnReason[]>([])
   const [reasonsLoading, setReasonsLoading] = useState<boolean>(true)
@@ -192,26 +193,69 @@ export const SingleOrderReturn = ({
                        'PLN'
 
   // CALCULATE TOTALS - Handle both cases: with line_items and without
+  // CRITICAL: Calculate promotional pricing from payment amount for old orders
   let itemsTotal = 0;
+  
+  // CRITICAL: Get payment amount from payment_collections (what customer actually paid)
+  // DO NOT use order.total as it includes full price without discounts
+  const paymentAmount = item.order?.payment_collections?.[0]?.amount || 
+                       item.order?.payment_collection?.amount || 0;
+  
+  // Fallback: If no payment_collections, try to calculate from order data
+  // This handles old orders that might not have payment_collections
+  const fallbackPaymentAmount = item.order?.total || 0;
+  
+  const finalPaymentAmount = paymentAmount > 0 ? paymentAmount : fallbackPaymentAmount;
+  
+  // Get shipping cost (base amount, not total with tax)
+  const shippingCost = item.order?.shipping_methods?.[0]?.amount || 
+                      item.order?.shipping_total || 0;
+  
+  // Calculate actual items total: payment - shipping
+  const calculatedItemsTotal = finalPaymentAmount - shippingCost;
 
   // Priority 1: Use line_items for accurate calculation (preferred method)
   if (item.line_items && item.line_items.length > 0) {
+    const itemCount = item.line_items.length;
+    
     itemsTotal = item.line_items.reduce((acc: number, lineItem: any) => {
-      // Find the corresponding order item to get the unit price
+      // Find the corresponding order item
       const orderItem = item.order?.items?.find((oi: any) => oi.id === lineItem.line_item_id);
       if (orderItem) {
-        const unitPrice = orderItem.unit_price || 0;
-        const quantity = lineItem.quantity || 1;
-        return acc + (unitPrice * quantity);
+        // CRITICAL: Check if item.total is meaningful (not equal to unit_price)
+        // If item.total === unit_price, it means no promotional calculation was done
+        const hasPromotionalPrice = orderItem.total && orderItem.total !== orderItem.unit_price * (lineItem.quantity || 1);
+        
+        let itemTotal;
+        if (hasPromotionalPrice) {
+          // Use the promotional price from database
+          itemTotal = orderItem.total;
+        } else {
+          // Calculate proportional price from payment amount
+          itemTotal = calculatedItemsTotal / itemCount;
+        }
+        
+        return acc + itemTotal;
       }
       return acc;
     }, 0) || 0;
   } else {
     // FALLBACK: When line_items is empty, calculate total from filtered items
+    const itemCount = itemsToShow.length;
+    
     itemsTotal = itemsToShow.reduce((acc: number, orderItem: any) => {
-      const unitPrice = orderItem?.unit_price || 0;
-      const quantity = orderItem?.quantity || 1; // Default to 1 if quantity not available
-      return acc + (unitPrice * quantity);
+      // Check if item has promotional pricing
+      const hasPromotionalPrice = orderItem?.total && orderItem.total !== orderItem.unit_price * (orderItem.quantity || 1);
+      
+      let itemTotal;
+      if (hasPromotionalPrice) {
+        itemTotal = orderItem.total;
+      } else {
+        // Calculate proportional price from payment amount
+        itemTotal = calculatedItemsTotal / itemCount;
+      }
+      
+      return acc + itemTotal;
     }, 0) || 0;
   }
   
@@ -364,13 +408,17 @@ export const SingleOrderReturn = ({
           <Divider />
           <div className="p-4 flex justify-between w-full">
             <div className="flex flex-col gap-4 w-full">
-              {itemsToShow.map((orderItem: any) => {
+              {itemsToShow.map((orderItem: any, index: number) => {
                 // Find the corresponding line item with the return reason, with null checking
                 const returnLineItem = item?.line_items?.find(
                   (li: any) => li?.line_item_id === orderItem?.id
                 );
                 
-                // getReasonLabel function is now defined at component level
+                // Calculate display price for this item
+                const hasPromotionalPrice = orderItem.total && orderItem.total !== orderItem.unit_price * (orderItem.quantity || 1);
+                const displayPrice = hasPromotionalPrice 
+                  ? orderItem.total 
+                  : (calculatedItemsTotal / itemsToShow.length); // Use calculated proportional price
                 
                 return (
                 <div key={orderItem.id} className="flex items-center gap-2 border-b border-[#3B3634] pb-2">
@@ -416,7 +464,7 @@ export const SingleOrderReturn = ({
                     </p>
                     <p className="label-sm !font-semibold text-primary">
                       {convertToLocale({
-                        amount: orderItem.unit_price,
+                        amount: displayPrice,
                         currency_code,
                       })}
                     </p>

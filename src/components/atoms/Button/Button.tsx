@@ -19,6 +19,9 @@ export function Button({
 }: ButtonProps) {
   const baseClasses =
     "text-md button-text disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
+  
+  // CRITICAL: Disable pointer events when loading to prevent double-clicks
+  const loadingClasses = loading ? "pointer-events-none" : ""
 
   const variantClasses = {
     filled: `bg-[#3B3634] text-white hover:bg-[#2A2522] active:bg-[#1F1B19] ${
@@ -39,11 +42,12 @@ export function Button({
 
   return (
     <button
-      disabled={disabled}
+      disabled={disabled || loading}
       className={cn(
         variantClasses[variant],
         sizeClasses[size],
         baseClasses,
+        loadingClasses,
         className
       )}
       {...props}

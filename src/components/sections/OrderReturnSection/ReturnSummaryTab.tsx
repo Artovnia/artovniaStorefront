@@ -12,6 +12,7 @@ export const ReturnSummaryTab = ({
   handleSubmit,
   originalOrder,
   shippingCost,
+  isSubmitting,
 }: {
   selectedItems: any[]
   items: any[]
@@ -22,16 +23,25 @@ export const ReturnSummaryTab = ({
   handleSubmit: () => void
   originalOrder?: any
   shippingCost?: number
+  isSubmitting?: boolean
 }) => {
   const selected = items.filter((item) =>
     selectedItems.some((i) => i.line_item_id === item.id)
   )
+  
+  
 
   // Calculate the total for selected items (including VAT)
   const itemsTotal = selected.reduce((acc, item) => {
-    // Use total (with tax) instead of subtotal (without tax)
-    // If total doesn't exist, try to calculate from unit_price which typically includes tax
-    const itemTotal = item.total || (item.unit_price * item.quantity) || item.subtotal;
+    // Use item.total (actual paid price with promotions from manual calculation)
+    let itemTotal = item.total || 0;
+    
+    // Fallback: If item.total is 0 or missing, calculate from unit_price
+    if (!itemTotal || itemTotal === 0) {
+      itemTotal = (item.unit_price || 0) * (item.quantity || 1)
+    }
+  
+    
     return acc + itemTotal;
   }, 0)
   
@@ -43,23 +53,23 @@ export const ReturnSummaryTab = ({
   
   // If shippingCost wasn't provided or is zero, try to extract it from originalOrder
   if (!orderShippingCost && originalOrder) {
-    // Try to extract from shipping_methods if available
+    // PRIORITY 1: Use shipping_methods.amount (base amount, tax included in price)
     if (originalOrder.shipping_methods?.length > 0) {
       orderShippingCost = originalOrder.shipping_methods.reduce((shippingAcc: number, method: any) => {
-        return shippingAcc + (method.amount || method.price || method.total || 0)
+        // Use 'amount' (base) not 'total' (with tax)
+        return shippingAcc + (method.amount || 0)
       }, 0)
-    } else {
-      // If no shipping_methods, try other shipping fields
-      orderShippingCost = originalOrder.shipping_total || 
-                        originalOrder.shipping_subtotal || 
-                        originalOrder.delivery_total || 
-                        originalOrder.delivery_cost || 0
     }
     
-    // If still no shipping cost found, calculate as difference between total and items subtotal
+    // PRIORITY 2: Use shipping_total from order (manually calculated base amount)
+    if (orderShippingCost === 0) {
+      orderShippingCost = originalOrder.shipping_total || 0
+    }
+    
+    // PRIORITY 3: Calculate as difference between payment and items
     if (orderShippingCost === 0 && originalOrder.total) {
       const itemsSubtotalOriginal = (originalOrder.items || []).reduce((itemAcc: number, item: any) => {
-        const itemTotal = (item.unit_price || 0) * (item.quantity || 0)
+        const itemTotal = item.total || ((item.unit_price || 0) * (item.quantity || 0))
         return itemAcc + itemTotal
       }, 0)
       
@@ -70,7 +80,7 @@ export const ReturnSummaryTab = ({
   
   // Calculate final return amount - always include shipping cost if all items are selected
   const returnTotal = allItemsSelected ? itemsTotal + orderShippingCost : itemsTotal;
- 
+  
 
   return (
     <div className="mt-20 md:mt-0">
@@ -126,8 +136,11 @@ export const ReturnSummaryTab = ({
         <Button
           className="label-md w-full uppercase"
           disabled={
-            (tab === 0 && !selected.length) || (tab === 1 && !returnMethod)
+            (tab === 0 && !selected.length) || 
+            (tab === 1 && !returnMethod) || 
+            isSubmitting
           }
+          loading={isSubmitting}
           onClick={tab === 0 ? () => handleTabChange(1) : () => handleSubmit()}
         >
           {tab === 0

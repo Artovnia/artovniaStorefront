@@ -9,7 +9,7 @@ export const OrderDetailsSection = ({ orderSet }: { orderSet: any }) => {
   
   return (
     <div>
-      {orderSet.orders && <OrderParcels orders={orderSet.orders} />}
+      {orderSet.orders && <OrderParcels orders={orderSet.orders} orderSetId={orderSet.id} />}
       {orderSet.orders && <OrderTotals orderSet={orderSet} />}
       {orderSet.orders && <OrderAddresses shipping_address={shippingAddress} />}
     </div>

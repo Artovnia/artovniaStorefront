@@ -1,4 +1,3 @@
-// F:\StronyInternetowe\mercur\ArtovniaStorefront\src\components\organisms\OrderTotals\OrderTotals.tsx
 import { Card, Divider } from "@/components/atoms"
 import { convertToLocale } from "@/lib/helpers/money"
 
@@ -9,35 +8,53 @@ export const OrderTotals = ({ orderSet }: { orderSet: any }) => {
                        orderSet.orders?.[0]?.currency_code || 
                        'PLN'
 
+  
+
   // Calculate totals from individual orders
   const totals = (orderSet.orders || []).reduce((acc: any, order: any) => {
     const orderTotal = order.total || 0
     
-    // Calculate item subtotal (without tax and shipping)
-    const itemSubtotal = (order.items || []).reduce((itemAcc: number, item: any) => {
-      // Use unit_price * quantity for items (this should be tax-inclusive price)
-      const itemTotal = (item.unit_price || 0) * (item.quantity || 0)
-      return itemAcc + itemTotal
-    }, 0)
+    // Calculate item subtotal from order.item_total or sum of items
+    let itemSubtotal = 0
     
-    // Calculate shipping from shipping_methods or as difference
-    let shippingCost = 0
-    if (order.shipping_methods?.length > 0) {
-      shippingCost = order.shipping_methods.reduce((shippingAcc: number, method: any) => {
-        return shippingAcc + (method.amount || method.price || method.total || 0)
+    // PRIORITY 1: Use order.item_total if available (most accurate)
+    if (order.item_total !== undefined && order.item_total !== null) {
+      itemSubtotal = order.item_total
+    } 
+    // PRIORITY 2: Use order.subtotal (includes items but not shipping)
+    else if (order.subtotal !== undefined && order.subtotal !== null) {
+      itemSubtotal = order.subtotal
+    }
+    // PRIORITY 3: Calculate from individual items
+    else {
+      itemSubtotal = (order.items || []).reduce((itemAcc: number, item: any) => {
+        // Use item.total (actual price paid with promotions)
+        // item.total already includes promotional discounts and quantity
+        const itemTotal = item.total || ((item.unit_price || 0) * (item.quantity || 0))
+        return itemAcc + itemTotal
       }, 0)
-    } else {
-      // If no shipping_methods, try other shipping fields
-      shippingCost = order.shipping_total || 
-                    order.shipping_subtotal || 
-                    order.delivery_total || 
-                    order.delivery_cost || 0
     }
     
-    // If still no shipping cost found, calculate as difference
-    if (shippingCost === 0) {
+    
+    
+    // Calculate shipping cost
+    let shippingCost = 0
+    
+    // PRIORITY 1: Use order.shipping_total if available
+    if (order.shipping_total !== undefined && order.shipping_total !== null) {
+      shippingCost = order.shipping_total
+    }
+    // PRIORITY 2: Sum shipping_methods
+    else if (order.shipping_methods?.length > 0) {
+      shippingCost = order.shipping_methods.reduce((shippingAcc: number, method: any) => {
+        return shippingAcc + (method.total || method.amount || method.price || 0)
+      }, 0)
+    }
+    // PRIORITY 3: Calculate as difference
+    else if (orderTotal > 0 && itemSubtotal > 0) {
       shippingCost = orderTotal - itemSubtotal
     }
+   
     
     
     return {

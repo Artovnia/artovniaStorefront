@@ -1,8 +1,7 @@
 import { LoginForm, ParcelAccordion, UserPageLayout } from "@/components/molecules"
 import { retrieveCustomer } from "@/lib/data/customer"
 import { OrdersPagination } from "@/components/sections"
-import { isEmpty } from "lodash"
-import { listOrders } from "@/lib/data/orders"
+import { listOrderSets } from "@/lib/data/orders"
 
 const LIMIT = 10
 
@@ -15,12 +14,15 @@ export default async function UserPage({
 
   if (!user) return <LoginForm />
 
-  const orders = await listOrders()
-
   const { page } = await searchParams
+  const currentPage = parseInt(page) || 1
+  const offset = (currentPage - 1) * LIMIT
+
+  // Fetch order sets with server-side pagination
+  const { order_sets, count } = await listOrderSets(LIMIT, offset)
   
-  // Early check for empty orders to prevent errors when processing
-  if (isEmpty(orders)) {
+  // Check for empty order sets
+  if (!order_sets || order_sets.length === 0) {
     return (
       <UserPageLayout title="Zamówienia">
         <div className="text-center">
@@ -34,71 +36,47 @@ export default async function UserPage({
     )
   }
 
-  // Only process orders if they exist
-  const pages = Math.ceil(orders.length / LIMIT)
-  const currentPage = +page || 1
-  const offset = (+currentPage - 1) * LIMIT
+  // Calculate total pages based on count from backend
+  const pages = Math.ceil(count / LIMIT)
 
-  const orderSetsGrouped = orders.reduce((acc, order) => {
-    // Safely access order_set - it should exist but add a check just in case
-    const orderSet = (order as any).order_set
-    if (!orderSet) return acc
+  // Transform order sets to display format
+  const processedOrders = order_sets.map((orderSet: any) => {
+    // Use payment_collection.amount as the authoritative total
+    const orderSetTotal = orderSet.payment_collection?.amount || 
+      (orderSet.orders || []).reduce((sum: number, order: any) => {
+        const orderItemsTotal = (order.items || []).reduce((itemSum: number, item: any) => {
+          return itemSum + (item.total || (item.unit_price * item.quantity))
+        }, 0)
+        const shippingTotal = order.shipping_total || 0
+        return sum + orderItemsTotal + shippingTotal
+      }, 0)
     
-    const orderSetId = orderSet.id
-    if (!acc[orderSetId]) {
-      acc[orderSetId] = []
+    return {
+      id: orderSet.id,
+      orders: orderSet.orders || [],
+      created_at: orderSet.created_at,
+      display_id: orderSet.display_id,
+      total: orderSetTotal,
+      currency_code: orderSet.orders?.[0]?.currency_code || 'PLN',
     }
-    acc[orderSetId].push(order)
-    return acc
-  }, {} as Record<string, typeof orders>)
-
-  const orderSets = Object.entries(orderSetsGrouped).map(
-    ([orderSetId, orders]) => {
-      const firstOrder = orders[0]
-      const orderSet = (firstOrder as any).order_set
-
-      return {
-        id: orderSetId,
-        orders: orders,
-        created_at: orderSet.created_at,
-        display_id: orderSet.display_id,
-        total: orders.reduce((sum, order) => sum + order.total, 0),
-        currency_code: firstOrder.currency_code,
-      }
-    }
-  )
-
-  const processedOrders = orderSets.slice(offset, offset + LIMIT)
+  })
 
   return (
     <UserPageLayout title="Zamówienia">
-      {isEmpty(orders) ? (
-        <div className="text-center">
-          <h3 className="heading-lg text-primary uppercase font-instrument-serif">Brak zamówień</h3>
-          <p className="text-lg text-secondary mt-2">
-            Nie dokonałeś jeszcze żadnego zamówienia. Po dokonaniu zamówienia
-            pojawi się tutaj.
-          </p>
-        </div>
-      ) : (
-        <>
-          <div className="w-full max-w-full">
-            {processedOrders.map((orderSet) => (
-              <ParcelAccordion
-                key={orderSet.id}
-                orderId={orderSet.id}
-                orderDisplayId={`#${orderSet.display_id}`}
-                createdAt={orderSet.created_at}
-                total={orderSet.total}
-                items={orderSet.orders.flatMap(order => order.items || [])}
-                currency_code={orderSet.currency_code}
-              />
-            ))}
-          </div>
-          {/* TODO - pagination */}
-          <OrdersPagination pages={pages} />
-        </>
-      )}
+      <div className="w-full max-w-full">
+        {processedOrders.map((orderSet) => (
+          <ParcelAccordion
+            key={orderSet.id}
+            orderId={orderSet.id}
+            orderDisplayId={`#${orderSet.display_id}`}
+            createdAt={orderSet.created_at}
+            total={orderSet.total}
+            items={orderSet.orders.flatMap((order: any) => order.items || [])}
+            currency_code={orderSet.currency_code}
+          />
+        ))}
+      </div>
+      {pages > 1 && <OrdersPagination pages={pages} />}
     </UserPageLayout>
   )
 }

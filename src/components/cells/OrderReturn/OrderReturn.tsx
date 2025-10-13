@@ -11,6 +11,7 @@ interface OrderReturnProps {
     fulfillment_status?: string;
     items?: Array<any>;
     is_order_set?: boolean;
+    order_set_id?: string;
     // Original parcels property
     parcels?: Array<{
       id: string;
@@ -43,6 +44,8 @@ interface OrderReturnProps {
  * Contains enhanced error prevention for empty order sets and proper eligibility checks
  */
 export const OrderReturn = ({ order }: OrderReturnProps) => {
+ 
+  
   // Check if order can be returned based on multiple criteria
   const isReturnEligible = () => {
    
@@ -210,7 +213,7 @@ export const OrderReturn = ({ order }: OrderReturnProps) => {
           </LocalizedClientLink>.
         </p>
       </div>
-      <LocalizedClientLink href={`/user/orders/${order.id}/return`}>
+      <LocalizedClientLink href={`/user/orders/${order.order_set_id || order.id}/return`}>
         <Button 
           variant="filled" 
           className="uppercase hover:bg-black hover:text-white transition-colors"
