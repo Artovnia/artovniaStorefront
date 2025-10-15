@@ -1,3 +1,4 @@
+"use client"
 import Link from "next/link"
 import Image from "next/image"
 import { SerializableWishlist } from "@/types/wishlist"
@@ -8,42 +9,36 @@ import { getProductPrice } from "@/lib/helpers/get-product-price"
 import { getSellerProductPrice } from "@/lib/helpers/get-seller-product-price"
 import clsx from "clsx"
 
-// Define extended product type with required properties
-type ExtendedStoreProduct = HttpTypes.StoreProduct & {
-  calculated_amount: number
-  currency_code: string
-  handle: string
-  thumbnail: string | null
-  title: string
-  id: string
-}
-
 export const WishlistItem = ({
   product,
   wishlist,
   user,
 }: {
-  product: ExtendedStoreProduct
+  product: any
   wishlist: SerializableWishlist[]
   user?: HttpTypes.StoreCustomer | null
 }) => {
-  // Get the price value - ensuring we always have something to display
-  const price = product.calculated_amount || 0;
-  const currency = product.currency_code || 'PLN';
+  // Use the same price calculation logic as ProductCard
+  const { cheapestPrice } = product?.id ? getProductPrice({
+    product,
+  }) : { cheapestPrice: null }
+
+  const { cheapestPrice: sellerCheapestPrice } = product?.id ? getSellerProductPrice({
+    product,
+  }) : { cheapestPrice: null }
+
+  // Get seller name with multiple fallback patterns (same as ProductCard)
+  const sellerName = 
+    product.seller?.name ||
+    product.seller?.company_name ||
+    (product as any).seller_name ||
+    (product as any).seller?.name ||
+    (product as any)['seller.name']
   
-  // Format price with the currency symbol
-  let formattedPrice = '';
-  
-  if (currency === 'PLN') {
-    formattedPrice = `${price} zł`;
-  } else if (currency === 'USD') {
-    formattedPrice = `$${price}`;
-  } else {
-    formattedPrice = `${price} ${currency}`;
-  }
-  
-  // We won't try to use the complex price helpers since the product structure
-  // from wishlist doesn't have the necessary variant information
+  // Format price for display
+  const displayPrice = (sellerCheapestPrice?.calculated_price || cheapestPrice?.calculated_price)?.replace(/PLN\s+([\d,.]+)/, '$1 zł')
+  const originalPrice = (sellerCheapestPrice?.original_price || cheapestPrice?.original_price)?.replace(/PLN\s+([\d,.]+)/, '$1 zł')
+  const hasDiscount = displayPrice && originalPrice && displayPrice !== originalPrice
 
   return (
     <div
@@ -91,10 +86,28 @@ export const WishlistItem = ({
         <div className="flex justify-between p-4">
           <div className="w-full">
             <h3 className="heading-sm truncate">{product.title}</h3>
-            <div className="flex items-center gap-2 mt-2">
-              <p className="font-instrument-sans font-semibold text-md">
-                {formattedPrice}
+            {/* Seller name below title (same as ProductCard) */}
+            {sellerName && (
+              <p className="font-instrument-sans text-sm mb-1 text-black">
+                {sellerName}
               </p>
+            )}
+            {/* Price display with discount support */}
+            <div className="flex items-center gap-2 mt-2">
+              {hasDiscount ? (
+                <>
+                  <p className="font-instrument-sans font-semibold text-md">
+                    {displayPrice}
+                  </p>
+                  <p className="text-xs text-gray-500 line-through">
+                    {originalPrice}
+                  </p>
+                </>
+              ) : (
+                <p className="font-instrument-sans font-semibold text-md">
+                  {displayPrice || '0 zł'}
+                </p>
+              )}
             </div>
           </div>
         </div>

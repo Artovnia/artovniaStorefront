@@ -1,5 +1,5 @@
 import { Footer, Header } from '@/components/organisms';
-import { CookieConsent } from '@/components/cells';
+import { CookieConsent, ConditionalNewsletter } from '@/components/cells';
 import { CartProvider } from '@/components/context/CartContext';
 import { MobileUserNavigation } from '@/components/molecules';
 
@@ -18,6 +18,7 @@ export default async function RootLayout({
         <div className="flex-grow pb-20 md:pb-0">
           {children}
         </div>
+        <ConditionalNewsletter />
         <Footer />
       </div>
       <MobileUserNavigation />

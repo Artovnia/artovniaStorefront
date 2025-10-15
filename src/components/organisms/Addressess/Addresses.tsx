@@ -73,7 +73,7 @@ export const Addresses = ({
           isEmpty(user.addresses) ? "space-y-8" : "space-y-4"
         )}
       >
-        <h1 className="heading-md uppercase">Adresy</h1>
+     
         {isEmpty(user.addresses) ? (
           <div className="text-center">
             <h3 className="heading-lg text-primary uppercase">

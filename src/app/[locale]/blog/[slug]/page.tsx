@@ -47,13 +47,11 @@ export async function generateMetadata({ params }: BlogPostPageProps): Promise<M
   try {
     const { slug } = await params
     
-    // Try to fetch both blog post and seller post
-    const [blogPost, sellerPost] = await Promise.all([
-      getBlogPost(slug),
-      getSellerPost(slug)
-    ])
-    
-    const post = blogPost || sellerPost
+    // OPTIMIZED: Try blog post first (most common), only try seller post if blog post fails
+    let post = await getBlogPost(slug)
+    if (!post) {
+      post = await getSellerPost(slug)
+    }
 
     if (!post) {
       return {
@@ -61,12 +59,19 @@ export async function generateMetadata({ params }: BlogPostPageProps): Promise<M
       }
     }
 
-    // Handle metadata for both post types
-    const title = post.seo?.metaTitle || post.title
-    const description = post.seo?.metaDescription || 
-      ('excerpt' in post ? post.excerpt : 'shortDescription' in post ? post.shortDescription : '') || ''
+    // Handle metadata for both post types - ensure proper string types
+    const title: string = (post.seo?.metaTitle || post.title || 'Artovnia Blog') as string
     
-    let imageUrl;
+    let description: string = 'Explore our blog posts and seller stories'
+    if (post.seo?.metaDescription) {
+      description = post.seo.metaDescription as string
+    } else if ('excerpt' in post && post.excerpt) {
+      description = post.excerpt as string
+    } else if ('shortDescription' in post && post.shortDescription) {
+      description = post.shortDescription as string
+    }
+    
+    let imageUrl: string | undefined;
     try {
       imageUrl = post.mainImage ? urlFor(post.mainImage).width(1200).height(630).url() : undefined
     } catch (imageError) {
@@ -74,23 +79,30 @@ export async function generateMetadata({ params }: BlogPostPageProps): Promise<M
       imageUrl = undefined;
     }
 
+    // Extract author name ensuring it's a string
+    let authorName: string | undefined
+    if ('author' in post && post.author?.name) {
+      authorName = post.author.name as string
+    } else if ('sellerName' in post && post.sellerName) {
+      authorName = post.sellerName as string
+    }
+
     return {
       title: `${title} - Artovnia Blog`,
-      description,
+      description: description,
       keywords: post.seo?.keywords?.join(', '),
       openGraph: {
-        title,
-        description,
+        title: title,
+        description: description,
         type: 'article',
         publishedTime: post.publishedAt,
-        authors: 'author' in post && post.author?.name ? [post.author.name] : 
-                'sellerName' in post ? [post.sellerName] : undefined,
+        authors: authorName ? [authorName] : undefined,
         images: imageUrl ? [{ url: imageUrl, width: 1200, height: 630 }] : undefined,
       },
       twitter: {
         card: 'summary_large_image',
-        title,
-        description,
+        title: title,
+        description: description,
         images: imageUrl ? [imageUrl] : undefined,
       },
     }

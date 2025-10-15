@@ -30,11 +30,13 @@ export const ReturnMethodsTab = ({
               {shippingMethods.map((method: any) => (
                 <li
                   key={method.id}
-                  onClick={() => handleSetReturnMethod(method.id)}
                   className="flex items-center gap-4 my-2 cursor-pointer"
                 >
-                  <Checkbox checked={returnMethod === method.id} />
-                  <span className="label-lg">{method.name}</span>
+                  <Checkbox 
+                    checked={returnMethod === method.id}
+                    onChange={() => handleSetReturnMethod(method.id)}
+                  />
+                  <span className="label-lg" onClick={() => handleSetReturnMethod(method.id)}>{method.name}</span>
                 </li>
               ))}
             </ul>

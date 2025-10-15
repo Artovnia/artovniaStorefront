@@ -20,6 +20,7 @@ interface LinkedProduct {
 
 // Use the SellerPost type from data.ts to maintain consistency
 import type { SellerPost } from "../lib/data"
+import { NewsletterSection } from "@/components/sections"
 
 interface SellerPostLayoutProps {
   post: SellerPost
@@ -197,6 +198,7 @@ export async function SellerPostLayout({ post }: SellerPostLayoutProps) {
 
 
       </article>
+            <NewsletterSection/>
       
       <Footer />
     </>

@@ -40,6 +40,11 @@ export const getUserWishlists = async (): Promise<WishlistResponse> => {
             title: product.title || '',
             handle: product.handle || '',
             thumbnail: product.thumbnail || null,
+            variants: product.variants || [],
+            seller: product.seller ? {
+              id: product.seller.id || '',
+              name: product.seller.name || '',
+            } : undefined,
           })) || []
         })) || [],
         count: res.count || 0

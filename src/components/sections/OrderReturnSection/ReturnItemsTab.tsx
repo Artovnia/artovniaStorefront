@@ -37,22 +37,15 @@ export const ReturnItemsTab = ({
           {order.items.map((item: any) => (
             <li key={item.id} className="md:flex justify-between gap-2 w-full mb-8">
               <div className="flex items-center gap-2 md:w-2/3 mb-4 md:mb-0">
-                {/* Added preventDefault to avoid message channel error */}
-                <div onClick={(e) => {
-                  e.preventDefault()
-                 
-                  handleSelectItem(item, "")
-                }}>
-                  <Checkbox
-                    checked={selectedItems.some(
-                      (i) => i.line_item_id === item.id
-                    )}
-                    onChange={(e) => {
-                      e.preventDefault()
-                      // Handler moved to parent div to avoid event propagation issues
-                    }}
-                  />
-                </div>
+                <Checkbox
+                  checked={selectedItems.some(
+                    (i) => i.line_item_id === item.id
+                  )}
+                  onChange={(e) => {
+                    e.stopPropagation()
+                    handleSelectItem(item, "")
+                  }}
+                />
                 <div className="flex items-center gap-2">
                   <div className="w-16 rounded-sm border">
                     {item.thumbnail ? (

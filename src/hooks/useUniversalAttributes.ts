@@ -61,8 +61,8 @@ export const useUniversalAttributes = (type?: 'size' | 'dimension' | 'color' | '
         try {
           headers = await getAuthHeaders()
         } catch (authError) {
-          console.warn('Auth headers failed:', authError)
-        }
+          throw authError
+                }
         
         const response = await sdk.client.fetch<{
           attributes: Partial<CategorizedAttributes>
@@ -75,7 +75,6 @@ export const useUniversalAttributes = (type?: 'size' | 'dimension' | 'color' | '
           }
         })
         
-        console.log('[DEBUG][useUniversalAttributes] Fetched attributes:', response.attributes)
         
         // Merge response with default structure, ensuring all properties exist
         setAttributes(prev => ({
@@ -85,7 +84,6 @@ export const useUniversalAttributes = (type?: 'size' | 'dimension' | 'color' | '
         }))
         
       } catch (fetchError) {
-        console.error('useUniversalAttributes fetch error:', fetchError)
         setError(fetchError instanceof Error ? fetchError.message : 'Failed to fetch attributes')
         // Reset to default on error
         setAttributes(defaultAttributes)

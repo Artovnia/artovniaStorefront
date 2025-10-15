@@ -3,12 +3,10 @@ import {
   BlogSection,
   Hero,
   HomePopularBrandsSection,
-  HomeProductSection,
   ShopByStyleSection,
   HomeNewestProductsSection,
   SmartBestProductsSection,
   DesignerOfTheWeekSection,
-  NewsletterSection,
 } from "@/components/sections"
 import { BatchPriceProvider } from "@/components/context/BatchPriceProvider"
 import { PromotionDataProvider } from "@/components/context/PromotionDataProvider"
@@ -62,12 +60,11 @@ export default async function Home({
           <div className="w-full bg-[#3B3634]">
             {/* Content container inside full-width section */}
             <div className="mx-auto max-w-[1920px] w-full min-h-[400px] py-8 font-instrument-sans">
-              <HomeProductSection 
+              <HomeNewestProductsSection 
                 heading="Nowości" 
-                theme="light" 
-                headingFont="font-instrument-serif italic" 
-                headingSpacing="mb-12" 
-                textTransform="normal-case" 
+                locale={locale}
+                limit={8}
+                home={true}
               />
             </div>
           </div>
@@ -86,8 +83,7 @@ export default async function Home({
             </div>
           </div>
 
-          {/* Newsletter Section */}
-          <NewsletterSection />
+    
         </main>
       </BatchPriceProvider>
     </PromotionDataProvider>

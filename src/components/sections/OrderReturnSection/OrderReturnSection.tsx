@@ -94,13 +94,11 @@ export const OrderReturnSection = ({
   const handleSubmit = async () => {
     // CRITICAL: Check ref FIRST (synchronous check before any state updates)
     if (isSubmittingRef.current) {
-      console.log('🚫 Double-click prevented by ref guard')
       return
     }
     
     // Prevent double submission with state check too
     if (isSubmitting) {
-      console.log('🚫 Double-click prevented by state guard')
       return
     }
     
@@ -109,7 +107,6 @@ export const OrderReturnSection = ({
       isSubmittingRef.current = true
       setIsSubmitting(true)
       
-      console.log('✅ Submitting return request...')
       
       // CRITICAL: Small delay to ensure loading state renders BEFORE API call
       // This gives React time to show the spinner to the user
@@ -128,11 +125,8 @@ export const OrderReturnSection = ({
 
       const { order_return_request } = await createReturnRequest(data)
       
-      console.log('✅ Return request created:', order_return_request.id)
-
       router.push(`/user/orders/${order_return_request.id}/request-success`)
     } catch (error) {
-      console.error('❌ Return request submission failed:', error)
       // Reset BOTH ref and state on error so user can retry
       isSubmittingRef.current = false
       setIsSubmitting(false)

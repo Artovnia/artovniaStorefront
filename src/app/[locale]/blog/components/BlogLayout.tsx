@@ -4,6 +4,7 @@ import BlogSearch from './BlogSearch'
 import { Footer } from '@/components/organisms/Footer/Footer'
 import { Header } from '@/components/organisms/Header/Header'
 import { Breadcrumbs } from '@/components/atoms/Breadcrumbs/Breadcrumbs'
+import NewsletterSection from '@/components/sections/NewsletterSection/NewsletterSection'    
 
 interface BlogLayoutProps {
   children: React.ReactNode
@@ -83,6 +84,7 @@ export default async function BlogLayout({ children, title, description, breadcr
         {children}
       </main>
 
+      <NewsletterSection/>
       {/* Footer */}
       <Footer />
     </div>

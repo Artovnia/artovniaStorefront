@@ -13,6 +13,11 @@ export type SerializableWishlist = {
     title: string
     handle: string
     thumbnail: string | null
+    variants?: any[]
+    seller?: {
+      id: string
+      name: string
+    }
   }[]
 }
 

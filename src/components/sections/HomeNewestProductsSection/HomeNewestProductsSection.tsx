@@ -21,7 +21,7 @@ export const HomeNewestProductsSection = async ({
       countryCode: locale,
       queryParams: {
         limit: limit,
-        order: "created_at", // This will get the newest products first
+        order: "-created_at", // Descending order: newest products first (left side of carousel)
       },
     })
     
@@ -29,7 +29,7 @@ export const HomeNewestProductsSection = async ({
     
     return (
       <section className="py-8 w-full">
-        <h2 className="mb-6 heading-lg font-bold tracking-tight uppercase font-instrument-serif">
+        <h2 className="mb-12 heading-lg font-bold tracking-tight font-instrument-serif italic text-white text-center">
           {heading}
         </h2>
 
@@ -37,6 +37,7 @@ export const HomeNewestProductsSection = async ({
           locale={locale}
           sellerProducts={products as unknown as Product[]}
           home={home}
+          theme="light"
         />
       </section>
     )

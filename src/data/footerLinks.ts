@@ -1,6 +1,7 @@
 export const footerLinks = {
   about: [
     { name: "O nas", href: "/o-nas" },
+    { name: "Sprzedawcy", href: "/sellers" },
     { name: "Regulamin", href: "/regulamin" },
     { name: "Polityka prywatności", href: "/polityka-prywatnosci" },
    

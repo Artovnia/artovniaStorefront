@@ -38,6 +38,7 @@ import { StepProgressBar } from "./StepProgressBar/StepProgressBar"
 import { QuantityChanger } from "./QuantityChanger/QuantityChanger"
 import { CookieConsent } from "./CookieConsent/CookieConsent"
 import NewsletterSubscription from "./NewsletterSubscription/NewsletterSubscription"
+import { ConditionalNewsletter } from "./ConditionalNewsletter"
 // ProductGPSRDetails has been moved to molecules/ProductGPSR
 
 export {
@@ -81,4 +82,5 @@ export {
   QuantityChanger,
   CookieConsent,
   NewsletterSubscription,
+  ConditionalNewsletter,
 }

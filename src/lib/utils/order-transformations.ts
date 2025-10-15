@@ -150,31 +150,6 @@ export function transformOrderSetToOrder(orderSet: OrderSet): Order & { orders?:
   
   const firstOrder = orders[0]
   
-  console.log('🔄 transformOrderSetToOrder - Processing:', {
-    orderSetId: orderSet.id,
-    ordersCount: orders.length,
-    firstOrderId: firstOrder?.id,
-    firstOrderTotal: firstOrder?.total,
-    firstOrderItemTotal: firstOrder?.item_total,
-    firstOrderItemsCount: firstOrder?.items?.length,
-    paymentAmount: orderSet.payment_collection?.amount,
-    firstItem: firstOrder?.items?.[0] ? {
-      title: firstOrder.items[0].product_title || firstOrder.items[0].title,
-      unit_price: firstOrder.items[0].unit_price,
-      quantity: firstOrder.items[0].quantity,
-      subtotal_backend: firstOrder.items[0].subtotal,
-      total_backend: firstOrder.items[0].total,
-      discount_total: firstOrder.items[0].discount_total
-    } : null,
-    secondItem: firstOrder?.items?.[1] ? {
-      title: firstOrder.items[1].product_title || firstOrder.items[1].title,
-      unit_price: firstOrder.items[1].unit_price,
-      quantity: firstOrder.items[1].quantity,
-      subtotal_backend: firstOrder.items[1].subtotal,
-      total_backend: firstOrder.items[1].total,
-      discount_total: firstOrder.items[1].discount_total
-    } : null
-  })
   
   // Create the composite order with all linked orders
   const compositeOrder = {
@@ -214,11 +189,6 @@ export function transformOrderSetToOrder(orderSet: OrderSet): Order & { orders?:
         sum + ((item.unit_price || 0) * (item.quantity || 1)), 0
       )
       
-      console.log(`📊 Payment: ${paymentAmount}, Shipping: ${shippingAmount}, Item total: ${actualItemTotal}, Base: ${totalBasePrice}`)
-      
-      // SMART APPROACH: Items with discount_total=0 have NO promotion, use full price
-      // Then distribute remaining amount to items WITH discounts
-      
       // Separate items into no-discount and discounted
       const noDiscountItems = items.filter((item: any) => !item.discount_total || item.discount_total === 0)
       const discountedItems = items.filter((item: any) => item.discount_total && item.discount_total > 0)
@@ -235,9 +205,6 @@ export function transformOrderSetToOrder(orderSet: OrderSet): Order & { orders?:
       const discountedBaseTotal = discountedItems.reduce((sum: number, item: any) => 
         sum + ((item.unit_price || 0) * (item.quantity || 1)), 0
       )
-      
-      console.log(`📊 No-discount items: ${noDiscountItems.length}, total: ${noDiscountTotal}`)
-      console.log(`📊 Discounted items: ${discountedItems.length}, remaining: ${remainingForDiscounted}, base: ${discountedBaseTotal}`)
       
       return items.map((item: any) => {
         const baseAmount = (item.unit_price || 0) * (item.quantity || 1)
@@ -348,35 +315,7 @@ export function transformOrderSetToOrder(orderSet: OrderSet): Order & { orders?:
       status: firstOrder?.payment_status || 'pending'
     }
   }
-  
-  console.log('🔄 transformOrderSetToOrder - Result:', {
-    compositeOrderId: compositeOrder.id,
-    itemsCount: compositeOrder.items.length,
-    ordersCount: compositeOrder.orders.length,
-    method: 'proportional_distribution_from_payment_collections',
-    firstItemAfterFix: compositeOrder.items[0] ? {
-      title: compositeOrder.items[0].product_title || compositeOrder.items[0].title,
-      unit_price: compositeOrder.items[0].unit_price,
-      quantity: compositeOrder.items[0].quantity,
-      base_amount: (compositeOrder.items[0].unit_price || 0) * (compositeOrder.items[0].quantity || 1),
-      subtotal_calculated: compositeOrder.items[0].subtotal,
-      total_calculated: compositeOrder.items[0].total,
-      discount_calculated: compositeOrder.items[0].discount_total,
-      original_backend_total: compositeOrder.items[0]._original_total,
-      original_backend_discount: compositeOrder.items[0]._original_discount
-    } : null,
-    secondItemAfterFix: compositeOrder.items[1] ? {
-      title: compositeOrder.items[1].product_title || compositeOrder.items[1].title,
-      unit_price: compositeOrder.items[1].unit_price,
-      quantity: compositeOrder.items[1].quantity,
-      base_amount: (compositeOrder.items[1].unit_price || 0) * (compositeOrder.items[1].quantity || 1),
-      subtotal_calculated: compositeOrder.items[1].subtotal,
-      total_calculated: compositeOrder.items[1].total,
-      discount_calculated: compositeOrder.items[1].discount_total,
-      original_backend_total: compositeOrder.items[1]._original_total,
-      original_backend_discount: compositeOrder.items[1]._original_discount
-    } : null
-  })
+ 
  
   
   return compositeOrder

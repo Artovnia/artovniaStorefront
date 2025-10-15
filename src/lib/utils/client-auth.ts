@@ -55,7 +55,6 @@ export async function getClientAuthStatus() {
       customer: response?.customer || null
     }
   } catch (error) {
-    console.error('Error checking authentication status:', error)
     return {
       isAuthenticated: false,
       customer: null
@@ -80,7 +79,6 @@ export async function fetchClientMessages(threadId?: string): Promise<MessageRes
     
     return response
   } catch (error) {
-    console.error(`Error fetching messages${threadId ? ` for thread ${threadId}` : ''}:`, error)
     throw error
   }
 }
@@ -102,7 +100,6 @@ export async function sendClientMessage(threadId: string, content: string) {
     
     return response
   } catch (error) {
-    console.error(`Error sending message to thread ${threadId}:`, error)
     throw error
   }
 }
@@ -124,8 +121,7 @@ export async function getClientUnreadCount(): Promise<number> {
         return response.count
       }
     } catch (error) {
-      console.log('Dedicated unread count endpoint failed, falling back to manual calculation')
-      // Fall through to manual calculation
+    throw error
     }
     
     // If the dedicated endpoint fails, calculate manually
@@ -159,7 +155,6 @@ export async function getClientUnreadCount(): Promise<number> {
     
     return unreadCount
   } catch (error) {
-    console.error('Error checking for unread messages:', error)
     return 0
   }
 }

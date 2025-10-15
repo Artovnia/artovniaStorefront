@@ -34,7 +34,7 @@ export const UserDropdown = ({
             </div>
             <NavigationItem href="/user/orders" prefetch={true}>Zamówienia</NavigationItem>
             <NavigationItem href="/user/addresses" prefetch={true}>Adresy</NavigationItem>
-            <NavigationItem href="/user/reviews" prefetch={true}>Opinie</NavigationItem>
+            <NavigationItem href="/user/reviews" prefetch={true}>Recenzje</NavigationItem>
             <NavigationItem href="/user/wishlist" prefetch={true}>Lista życzeń</NavigationItem>
             <NavigationItem href="/user/messages" prefetch={true}>Wiadomości</NavigationItem>
             <Divider />
