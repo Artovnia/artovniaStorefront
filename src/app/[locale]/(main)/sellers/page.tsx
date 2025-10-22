@@ -11,7 +11,7 @@ export default function SellersPage() {
     <div className="min-h-screen bg-primary max-w-[1920px] w-full mx-auto">
       <div className="container mx-auto">
         {/* Page Header */}
-        <div className="bg-primary border-b border-[#3B3634] px-4 sm:px-6 py-8">
+        <div className="bg-primary  px-4 sm:px-6 py-8">
           <div className="mx-auto">
             <h1 className="text-3xl  text-black font-instrument-serif italic  mb-2 text-center">
               Sprzedawcy

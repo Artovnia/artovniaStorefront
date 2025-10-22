@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { HttpTypes } from "@medusajs/types"
 import { ProductCard } from "@/components/organisms"
 import { BatchPriceProvider } from "@/components/context/BatchPriceProvider"
@@ -9,6 +9,9 @@ import { retrieveCustomer } from "@/lib/data/customer"
 import { getUserWishlists } from "@/lib/data/wishlist"
 import { SerializableWishlist } from "@/types/wishlist"
 import { Button } from "@/components/atoms"
+import { useSearchParams } from "next/navigation"
+import { SellerProps } from "@/types/seller"
+import { Pagination } from "@/components/cells/Pagination/Pagination"
 
 // Loading skeleton component
 const PromotionListingSkeleton = () => (
@@ -26,23 +29,96 @@ interface PromotionListingProps {
   initialCount?: number
   initialPage?: number
   countryCode?: string
+  limit?: number
 }
 
 export const PromotionListing = ({
   initialProducts = [],
   initialCount = 0,
   initialPage = 1,
-  countryCode = "PL"
+  countryCode = "PL",
+  limit = 12
 }: PromotionListingProps) => {
   const [products, setProducts] = useState<HttpTypes.StoreProduct[]>(initialProducts)
   const [count, setCount] = useState(initialCount)
   const [currentPage, setCurrentPage] = useState(initialPage)
   const [isLoading, setIsLoading] = useState(false)
-  const [hasNextPage, setHasNextPage] = useState(false)
   const [user, setUser] = useState<HttpTypes.StoreCustomer | null>(null)
   const [wishlist, setWishlist] = useState<SerializableWishlist[]>([])
+  
+  const searchParams = useSearchParams()
+  
+  // Get filter values from URL
+  const promotionFilter = searchParams.get("promotion") || ""
+  const sellerFilter = searchParams.get("seller") || ""
+  const campaignFilter = searchParams.get("campaign") || ""
+  const sortBy = searchParams.get("sortBy") || ""
 
-  // Remove artificial promotion assignment - products now come with real promotions from backend
+  // Client-side filtering of products
+  const filteredProducts = useMemo(() => {
+    let filtered = [...products]
+    
+    // Filter by promotion code
+    if (promotionFilter) {
+      filtered = filtered.filter(product => {
+        const productWithMeta = product as any
+        return productWithMeta.promotions?.some((promo: any) => 
+          promo.code === promotionFilter
+        )
+      })
+    }
+    
+    // Filter by seller
+    if (sellerFilter) {
+      filtered = filtered.filter(product => {
+        const productWithSeller = product as HttpTypes.StoreProduct & { seller?: SellerProps }
+        return productWithSeller.seller?.id === sellerFilter
+      })
+    }
+    
+    // Filter by campaign
+    if (campaignFilter) {
+      filtered = filtered.filter(product => {
+        const productWithMeta = product as any
+        return productWithMeta.promotions?.some((promo: any) => 
+          promo.campaign?.name === campaignFilter
+        )
+      })
+    }
+    
+    // Sort products
+    if (sortBy) {
+      filtered.sort((a, b) => {
+        switch (sortBy) {
+          case "price_asc":
+            const aPrice = Math.min(...(a.variants?.map(v => v.calculated_price?.calculated_amount || 0) || [0]))
+            const bPrice = Math.min(...(b.variants?.map(v => v.calculated_price?.calculated_amount || 0) || [0]))
+            return aPrice - bPrice
+          case "price_desc":
+            const aPriceDesc = Math.min(...(a.variants?.map(v => v.calculated_price?.calculated_amount || 0) || [0]))
+            const bPriceDesc = Math.min(...(b.variants?.map(v => v.calculated_price?.calculated_amount || 0) || [0]))
+            return bPriceDesc - aPriceDesc
+          case "discount_desc":
+            // Calculate discount percentage
+            const getDiscount = (product: HttpTypes.StoreProduct) => {
+              const variant = product.variants?.[0]
+              if (!variant?.calculated_price) return 0
+              const original = variant.calculated_price.original_amount || 0
+              const calculated = variant.calculated_price.calculated_amount || 0
+              if (original === 0) return 0
+              return ((original - calculated) / original) * 100
+            }
+            return getDiscount(b) - getDiscount(a)
+          case "created_at_desc":
+            return new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime()
+          default:
+            return 0
+        }
+      })
+    }
+    
+    return filtered
+  }, [products, promotionFilter, sellerFilter, campaignFilter, sortBy])
 
   // Fetch user and wishlist data
   const fetchUserData = async () => {
@@ -73,28 +149,29 @@ export const PromotionListing = ({
     }
   }
 
-  // Load more products
-  const loadMoreProducts = async () => {
-    if (isLoading || !hasNextPage) return
+  // Fetch products for a specific page
+  const fetchProductsForPage = async (page: number) => {
+    if (isLoading) return
 
     try {
       setIsLoading(true)
       
-      const { response, nextPage } = await listProductsWithPromotions({
-        page: currentPage + 1,
-        limit: 12,
+      const { response } = await listProductsWithPromotions({
+        page,
+        limit,
         countryCode,
       })
 
-      if (response.products.length > 0) {
-        setProducts(prev => [...prev, ...response.products])
-        setCurrentPage(prev => prev + 1)
-        setHasNextPage(nextPage !== null)
-      } else {
-        setHasNextPage(false)
-      }
+      setProducts(response.products || [])
+      setCount(response.count || 0)
+      setCurrentPage(page)
+      
+      // Scroll to top when changing pages
+      window.scrollTo({ top: 0, behavior: 'smooth' })
     } catch (error) {
-      console.error('Error loading more products:', error)
+      console.error('Error fetching products:', error)
+      setProducts([])
+      setCount(0)
     } finally {
       setIsLoading(false)
     }
@@ -105,32 +182,65 @@ export const PromotionListing = ({
     fetchUserData()
   }, [])
 
-  // Set initial pagination state
+  // Set initial products and count
   useEffect(() => {
-    if (initialProducts.length > 0) {
-      setProducts(initialProducts)
-      setHasNextPage(initialProducts.length >= 12) // Assume more if we got full page
+    setProducts(initialProducts)
+    setCount(initialCount)
+    setCurrentPage(initialPage)
+  }, [initialProducts, initialCount, initialPage])
+
+  // Calculate total pages
+  const totalPages = Math.ceil(count / limit)
+
+  // Handle page change
+  const handlePageChange = (page: number) => {
+    if (page >= 1 && page <= totalPages && page !== currentPage) {
+      fetchProductsForPage(page)
     }
-  }, [initialProducts])
+  }
 
   return (
-    <div className="w-full flex justify-center">
-      {/* Products Grid */}
-      <div className="w-full max-w-[1920px] px-4">
-{isLoading ? (
+    <div className="w-full">
+      {/* Results Info */}
+      <div className="px-4 sm:px-6 py-4 bg-primary max-w-[1200px] mx-auto">
+        <div className="flex items-center justify-between">
+          <p className="text-sm text-gray-600 font-instrument-sans">
+            {isLoading ? (
+              "Ładowanie..."
+            ) : (
+              <>
+                Strona {currentPage} z {totalPages} 
+                {filteredProducts.length > 0 && (
+                  <span className="ml-2">
+                    ({filteredProducts.length} {filteredProducts.length === 1 ? "produkt" : "produktów"})
+                  </span>
+                )}
+              </>
+            )}
+          </p>
+        </div>
+      </div>
+
+      {/* Content Area */}
+      <div className="px-4 sm:px-6 py-8 max-w-[1200px] mx-auto">
+        {isLoading ? (
           <PromotionListingSkeleton />
-        ) : !products.length ? (
-          <div className="text-center w-full my-10">
-            <h2 className="uppercase text-primary heading-lg">Brak promocji</h2>
-            <p className="mt-4 text-lg">
-              Obecnie nie ma produktów w promocyjnych cenach
+        ) : filteredProducts.length === 0 ? (
+          <div className="text-center py-12">
+            <h2 className="text-xl font-bold text-gray-800 mb-2 font-instrument-sans">
+              {products.length === 0 ? "Brak promocji" : "Brak wyników"}
+            </h2>
+            <p className="text-gray-600 font-instrument-sans">
+              {products.length === 0 
+                ? "Obecnie nie ma produktów w promocyjnych cenach" 
+                : "Nie znaleziono produktów spełniających wybrane kryteria"}
             </p>
           </div>
         ) : (
           <>
             <BatchPriceProvider currencyCode="PLN" days={30}>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 justify-items-center w-full max-w-[1200px] mb-24 mx-auto">
-                {products.map((product) => (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-4 gap-6 justify-items-center mb-8">
+                {filteredProducts.map((product) => (
                   <div key={product.id} className="relative">
                     <ProductCard
                       product={product}
@@ -138,36 +248,24 @@ export const PromotionListing = ({
                       wishlist={wishlist}
                       onWishlistChange={refreshWishlist}
                     />
-                   
                   </div>
                 ))}
               </div>
             </BatchPriceProvider>
 
-            {/* Load More Button */}
-            {hasNextPage && (
+            {/* Pagination */}
+            {totalPages > 1 && (
               <div className="flex justify-center mt-8">
-                <Button
-                  onClick={loadMoreProducts}
-                  disabled={isLoading}
-                  className="px-8 py-3 bg-red-600 hover:bg-red-700 text-white font-bold uppercase"
-                >
-                  {isLoading ? "Ładowanie..." : "Załaduj więcej"}
-                </Button>
-              </div>
-            )}
-
-            {/* Loading skeleton for load more */}
-            {isLoading && (
-              <div className="mt-6">
-                <PromotionListingSkeleton />
+                <Pagination 
+                  pages={totalPages} 
+                  setPage={handlePageChange} 
+                  currentPage={currentPage} 
+                />
               </div>
             )}
           </>
         )}
       </div>
-
-      
     </div>
   )
 }

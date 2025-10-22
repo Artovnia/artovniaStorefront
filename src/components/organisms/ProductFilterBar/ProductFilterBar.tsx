@@ -68,7 +68,7 @@ const FilterDropdown = ({ label, children, isActive, className }: FilterDropdown
     >
       {/* Scrollable content area */}
       <div className="p-4 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-gray-100 flex-1">
-        {React.cloneElement(children as React.ReactElement, { onClose: () => setIsOpen(false), showbutton: false } as any)}
+        {React.cloneElement(children as React.ReactElement, { onClose: () => setIsOpen(false) } as any)}
       </div>
       
       {/* Fixed button area - show for all filters including price */}
@@ -455,16 +455,19 @@ const SortFilter = () => {
       <div className="space-y-2">
         <h4 className="font-medium text-black mb-3 font-instrument-sans">Sortuj według</h4>
         {sortOptions.map((option) => (
-          <label key={option.value} className="flex items-center gap-2 cursor-pointer">
+          <label key={option.value} className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-2 rounded transition-colors">
             <input
               type="radio"
               name="sort"
               value={option.value}
               checked={currentSort === option.value}
               onChange={() => updateSearchParams("sortBy", option.value)}
-              className="font-instrument-sans focus:ring-primary"
+              className="w-4 h-4 text-[#3B3634] border-[#3B3634] focus:ring-[#3B3634] focus:ring-2 cursor-pointer"
+              style={{
+                accentColor: '#3B3634'
+              }}
             />
-            <span className="text-sm text-black font-instrument-sans">{option.label}</span>
+            <span className="text-sm text-black font-instrument-sans select-none">{option.label}</span>
           </label>
         ))}
       </div>

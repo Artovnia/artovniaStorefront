@@ -37,18 +37,25 @@ export const OptimizedLowestPriceDisplay = ({
     return null
   }
 
-  // Type guard to ensure we have LowestPriceData and it's not null
-  if (!('lowest_30d_amount' in data) || !data.lowest_30d_amount) {
+  // Type guard to ensure we have LowestPriceData
+  if (!('lowest_30d_amount' in data)) {
     return null
   }
 
   const lowestPriceData = data as LowestPriceData
+  
+  // ENHANCED: Fallback to current_amount for first-time promotions
+  const lowestPrice = lowestPriceData.lowest_30d_amount || lowestPriceData.current_amount
+  
+  if (!lowestPrice) {
+    return null
+  }
 
   return (
     <div className={clsx("text-xs text-gray-600", className)}>
       <span>Najniższa cena z {days} dni: </span>
       <span className="font-semibold text-[#3B3634]">
-        {formatPrice(lowestPriceData.lowest_30d_amount!, currencyCode)}
+        {formatPrice(lowestPrice, currencyCode)}
       </span>
       
     </div>

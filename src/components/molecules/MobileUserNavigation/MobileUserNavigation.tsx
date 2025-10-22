@@ -90,6 +90,22 @@ const SearchIcon = ({ className = "" }: { className?: string }) => (
   </svg>
 )
 
+const CartIcon = ({ className = "" }: { className?: string }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+    <circle cx="9" cy="21" r="1"></circle>
+    <circle cx="20" cy="21" r="1"></circle>
+    <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
+  </svg>
+)
+
+const MarketplaceIcon = ({ className = "" }: { className?: string }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+    <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path>
+    <line x1="3" y1="6" x2="21" y2="6"></line>
+    <path d="M16 10a4 4 0 0 1-8 0"></path>
+  </svg>
+)
+
 interface NavigationItem {
   label: string
   href: string
@@ -298,122 +314,237 @@ export const MobileUserNavigation = () => {
         </div>
       )}
 
-      {/* Floating Menu with improved design */}
+      {/* Floating Menu with artistic modern design */}
       {isMenuOpen && (
-        <div className="fixed bottom-24 left-4 right-4 mx-auto max-w-sm bg-primary backdrop-blur-xl rounded-3xl shadow-2xl border border-white/20 z-50 md:hidden overflow-hidden animate-in slide-in-from-bottom-4 duration-300">
-          <div className="p-6">
-            {/* Header */}
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-lg font-semibold text-[#3B3634]">Menu użytkownika</h3>
-              <button 
-                onClick={closeMenu}
-                className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200 transition-colors"
+        <div className="fixed bottom-24 left-4 right-4 mx-auto max-w-sm z-50 md:hidden animate-in slide-in-from-bottom-4 duration-300 max-h-[calc(100vh-8rem)] flex flex-col">
+          {/* Main Container with gradient background */}
+          <div className="relative bg-gradient-to-br from-[#F4F0EB] via-[#F4F0EB] to-[#F4F0EB] backdrop-blur-xl rounded-[32px] shadow-2xl border border-[#3B3634]/40 overflow-hidden flex flex-col max-h-full">
+            {/* Decorative background elements */}
+            <div className="absolute top-0 right-0 w-40 h-40 bg-[#F4F0EB]/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 pointer-events-none" />
+            <div className="absolute bottom-0 left-0 w-32 h-32 bg-[#F4F0EB]/5 rounded-full blur-3xl translate-y-1/2 -translate-x-1/2 pointer-events-none" />
+            
+            {/* Scrollable Content Container */}
+            <div className="relative overflow-y-auto overflow-x-hidden overscroll-contain scrollbar-thin scrollbar-thumb-[#3B3634]/20 scrollbar-track-transparent hover:scrollbar-thumb-[#3B3634]/30 p-6" style={{ WebkitOverflowScrolling: 'touch' }}>
+              {/* Header with artistic touch */}
+              <div className="flex items-center justify-between mb-8">
+                <div>
+                  <h3 className="text-xl font-bold text-[#3B3634] mb-0.5">Twoje Konto</h3>
+                  <div className="h-1 w-16 bg-gradient-to-r from-[#F4F0EB] to-[#3B3634]/30 rounded-full" />
+                </div>
+                <button 
+                  onClick={closeMenu}
+                  className="w-10 h-10 rounded-2xl bg-[#3B3634]/10 hover:bg-[#3B3634]/20 flex items-center justify-center transition-all duration-200 hover:rotate-90"
+                >
+                  <CloseIcon className="w-5 h-5 text-[#3B3634]" />
+                </button>
+              </div>
+
+              {/* Navigation Grid - Main Items */}
+              <div className="space-y-3 mb-6">
+                {mobileNavigationItems.map((item, index) => {
+                  const isActive = pathname === item.href || (item.href === '/user' && pathname === '/user')
+                  const showNotification = item.hasNotification && hasUnreadMessages && item.href === '/user/messages'
+                  const IconComponent = item.icon
+                  
+                  return (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      onClick={closeMenu}
+                      style={{
+                        animationDelay: `${index * 50}ms`,
+                      }}
+                      className={cn(
+                        "flex items-center gap-4 p-4 rounded-2xl transition-all duration-200 group relative overflow-hidden animate-in fade-in slide-in-from-left-4",
+                        isActive 
+                          ? "bg-[#3B3634] text-white shadow-lg shadow-[#3B3634]/20" 
+                          : "bg-white/60 backdrop-blur-sm text-[#3B3634] hover:bg-white hover:shadow-md border border-[#3B3634]/5"
+                      )}
+                    >
+                      {/* Decorative gradient on hover */}
+                      {!isActive && (
+                        <div className="absolute inset-0 bg-gradient-to-r from-[#3B3634]/0 via-[#3B3634]/5 to-[#3B3634]/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                      )}
+                      
+                      <div className={cn(
+                        "relative flex items-center justify-center w-11 h-11 rounded-xl transition-all duration-200",
+                        isActive 
+                          ? "bg-white/20" 
+                          : "bg-[#3B3634]/5 group-hover:bg-[#3B3634]/10 group-hover:scale-110"
+                      )}>
+                        <IconComponent className="w-5 h-5 relative z-10" />
+                        {showNotification && (
+                          <div className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full border-2 border-white animate-pulse" />
+                        )}
+                      </div>
+                      
+                      <span className="font-semibold text-[15px] relative z-10">
+                        {item.label}
+                      </span>
+
+                      {/* Arrow indicator for active */}
+                      {isActive && (
+                        <div className="ml-auto">
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
+                          </svg>
+                        </div>
+                      )}
+                    </Link>
+                  )
+                })}
+              </div>
+
+              {/* Divider with decorative style */}
+              <div className="relative my-6">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-[#3B3634]/10" />
+                </div>
+                <div className="relative flex justify-center">
+                  <span className="bg-primary px-4 text-xs font-medium text-[#3B3634]/90">
+                    WIĘCEJ
+                  </span>
+                </div>
+              </div>
+
+              {/* Secondary Items */}
+              <div className="grid grid-cols-2 gap-3 mb-6">
+                {mobileSecondaryItems.map((item, index) => {
+                  const isActive = pathname === item.href
+                  const IconComponent = item.icon
+                  
+                  return (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      onClick={closeMenu}
+                      style={{
+                        animationDelay: `${(mobileNavigationItems.length + index) * 50}ms`,
+                      }}
+                      className={cn(
+                        "flex flex-col items-center justify-center gap-3 p-5 rounded-2xl transition-all duration-200 group relative overflow-hidden animate-in fade-in zoom-in-95",
+                        isActive 
+                          ? "bg-[#3B3634] text-white shadow-lg shadow-[#3B3634]/20" 
+                          : "bg-white/60 backdrop-blur-sm text-[#3B3634] hover:bg-white hover:shadow-md border border-[#3B3634]/5"
+                      )}
+                    >
+                      {!isActive && (
+                        <div className="absolute inset-0 bg-gradient-to-br from-[#3B3634]/0 to-[#3B3634]/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                      )}
+                      
+                      <div className={cn(
+                        "relative flex items-center justify-center w-12 h-12 rounded-xl transition-all duration-200",
+                        isActive 
+                          ? "bg-white/20" 
+                          : "bg-[#3B3634]/5 group-hover:bg-[#3B3634]/10 group-hover:scale-110"
+                      )}>
+                        <IconComponent className="w-6 h-6" />
+                      </div>
+                      
+                      <span className="text-sm font-semibold text-center relative z-10">
+                        {item.label}
+                      </span>
+                    </Link>
+                  )
+                })}
+              </div>
+              
+              {/* Logout Button with artistic styling */}
+              <button
+                onClick={handleLogout}
+                className="flex items-center justify-center w-full p-4 text-white bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 rounded-2xl transition-all duration-200 font-semibold shadow-lg shadow-red-500/30 hover:shadow-red-600/40 hover:scale-[1.02] active:scale-[0.98] group relative overflow-hidden"
               >
-                <CloseIcon className="w-4 h-4 text-gray-600" />
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-1000" />
+                <LogoutIcon className="w-5 h-5 mr-2 relative z-10" />
+                <span className="relative z-10">Wyloguj się</span>
               </button>
             </div>
-
-            {/* Navigation Grid */}
-            <div className="grid grid-cols-3 gap-4 mb-6">
-              {allItems.map((item) => {
-                const isActive = pathname === item.href || (item.href === '/user' && pathname === '/user')
-                const showNotification = item.hasNotification && hasUnreadMessages && item.href === '/user/messages'
-                const IconComponent = item.icon
-                
-                return (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    onClick={closeMenu}
-                    className={cn(
-                      "flex flex-col items-center p-4 rounded-2xl transition-all duration-200 relative group hover:scale-105",
-                      isActive 
-                        ? "bg-[#3B3634] text-white shadow-lg" 
-                        : "bg-white text-[#3B3634] hover:bg-gray-100"
-                    )}
-                  >
-                    <div className="relative mb-2">
-                      <IconComponent className="w-6 h-6" />
-                      {showNotification && (
-                        <div className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full border-2 border-white animate-pulse" />
-                      )}
-                    </div>
-                    <span className="text-xs font-medium text-center leading-tight">
-                      {item.label}
-                    </span>
-                    {showNotification && (
-                      <div className="absolute top-2 right-2">
-                        <span className="inline-block w-2 h-2 bg-red-500 rounded-full animate-pulse" />
-                      </div>
-                    )}
-                  </Link>
-                )
-              })}
-            </div>
-            
-            {/* Logout Button */}
-            <button
-              onClick={handleLogout}
-              className="flex items-center justify-center w-full p-4 text-red-500 hover:text-red-600 bg-red-50 hover:bg-red-100 rounded-2xl transition-all duration-200 font-medium"
-            >
-              <LogoutIcon className="w-5 h-5 mr-2" />
-              <span>Wyloguj się</span>
-            </button>
           </div>
         </div>
       )}
 
       {/* Bottom Navigation Dock */}
-      <div className="fixed bottom-0 left-0 right-0 z-30 md:hidden">
-        <div className="bg-primary border-t border-gray-200/50">
-          <div className="flex items-center justify-center py-2">
+      <div className="fixed bottom-0 left-0 right-0 z-30 md:hidden ">
+        <div className="bg-transparent">
+          <div className="flex items-end justify-center w-full">
             {/* Navigation Dock Container */}
-            <div className="flex items-center space-x-2 bg-[#3B3634]/90 backdrop-blur-xl rounded-full px-6 py-2 shadow-2xl">
+            <div className="relative flex items-center justify-around bg-white px-6 py-3 shadow-lg w-full" style={{ borderTopLeftRadius: '24px', borderTopRightRadius: '24px' }}>
               {/* Home Button */}
               <Link
                 href="/"
-                className="w-12 h-12 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition-all duration-200 hover:scale-110"
+                className="flex flex-col items-center justify-center gap-1 flex-1 group"
               >
-                <HomeIcon className="w-5 h-5" />
+                <div className="w-10 h-10 rounded-full flex items-center justify-center text-gray-600 transition-all duration-200 group-hover:text-[#3B3634]">
+                  <HomeIcon className="w-5 h-5" />
+                </div>
+                <span className="text-[10px] font-medium text-gray-600 group-hover:text-[#3B3634]">Home</span>
               </Link>
 
               {/* Search Button */}
               <button
                 onClick={toggleSearch}
-                className={cn(
-                  "w-12 h-12 rounded-full flex items-center justify-center transition-all duration-200 hover:scale-110 relative",
-                  isSearchOpen
-                    ? "bg-[#3B3634] text-white shadow-lg scale-110"
-                    : "bg-white/10 hover:bg-white/20 text-white"
-                )}
+                className="flex flex-col items-center justify-center gap-1 flex-1 group"
               >
-                <SearchIcon className="w-5 h-5" />
+                <div className="w-10 h-10 rounded-full flex items-center justify-center text-gray-600 transition-all duration-200 group-hover:text-[#3B3634]">
+                  <SearchIcon className="w-5 h-5" />
+                </div>
+                <span className="text-[10px] font-medium text-gray-600 group-hover:text-[#3B3634]">Szukaj</span>
               </button>
 
-              {/* User Menu Toggle */}
+              {/* Marketplace Button - Elevated Center */}
+              <Link
+                href="/categories"
+                className="flex flex-col items-center justify-center gap-1 -mt-8 flex-1 group"
+              >
+                <div className="relative">
+                  <div className="w-14 h-14 rounded-full flex items-center justify-center transition-all duration-200 shadow-lg ring-4 ring-white bg-[#3B3634] group-hover:scale-105">
+                    <MarketplaceIcon className="w-6 h-6 text-white" />
+                  </div>
+                </div>
+                <span className="text-[10px] font-medium text-gray-600 mt-1">Sklep</span>
+              </Link>
+
+              {/* Cart Button */}
+              <Link
+                href="/cart"
+                className="flex flex-col items-center justify-center gap-1 flex-1 group"
+              >
+                <div className="w-10 h-10 rounded-full flex items-center justify-center text-gray-600 transition-all duration-200 group-hover:text-[#3B3634]">
+                  <CartIcon className="w-5 h-5" />
+                </div>
+                <span className="text-[10px] font-medium text-gray-600 group-hover:text-[#3B3634]">Koszyk</span>
+              </Link>
+
+              {/* Profile Button */}
               <button
                 onClick={toggleMenu}
-                className={cn(
-                  "w-12 h-12 rounded-full flex items-center justify-center transition-all duration-300 relative",
-                  isMenuOpen
-                    ? "bg-[#3B3634] text-white scale-110 rotate-180"
-                    : "bg-white/10 hover:bg-white/20 text-white hover:scale-110"
-                )}
+                className="flex flex-col items-center justify-center gap-1 flex-1 group relative"
               >
-                {isMenuOpen ? (
-                  <CloseIcon className="w-5 h-5" />
-                ) : (
-                  <MenuIcon className="w-5 h-5" />
-                )}
-                {hasUnreadMessages && !isMenuOpen && (
-                  <div className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full border border-gray-900" />
-                )}
+                <div className={cn(
+                  "w-10 h-10 rounded-full flex items-center justify-center transition-all duration-200",
+                  isMenuOpen
+                    ? "text-[#3B3634]"
+                    : "text-gray-600 group-hover:text-[#3B3634]"
+                )}>
+                  {isMenuOpen ? (
+                    <CloseIcon className="w-5 h-5" />
+                  ) : (
+                    <MenuIcon className="w-5 h-5" />
+                  )}
+                  {hasUnreadMessages && !isMenuOpen && (
+                    <div className="absolute top-0 right-2 w-2 h-2 bg-red-500 rounded-full border border-white" />
+                  )}
+                </div>
+                <span className={cn(
+                  "text-[10px] font-medium",
+                  isMenuOpen ? "text-[#3B3634]" : "text-gray-600 group-hover:text-[#3B3634]"
+                )}>Profil</span>
               </button>
             </div>
           </div>
           
           {/* Safe area padding for devices with home indicator */}
-          <div className="h-safe-area-inset-bottom" />
+          <div className="h-safe-area-inset-bottom bg-white" />
         </div>
       </div>
     </>

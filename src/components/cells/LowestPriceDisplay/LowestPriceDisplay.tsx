@@ -32,12 +32,19 @@ export const LowestPriceDisplay = ({
     true
   )
 
-  // Type guard to ensure we have LowestPriceData and it's not null
-  if (loading || error || !data || !('lowest_30d_amount' in data) || !data.lowest_30d_amount) {
+  // Type guard to ensure we have LowestPriceData
+  if (loading || error || !data || !('lowest_30d_amount' in data)) {
     return null
   }
 
   const lowestPriceData = data as LowestPriceData
+  
+  // ENHANCED: Fallback to current_amount for first-time promotions
+  const lowestPrice = lowestPriceData.lowest_30d_amount || lowestPriceData.current_amount
+  
+  if (!lowestPrice) {
+    return null
+  }
 
   const hasValidSavings = lowestPriceData.savings_amount && lowestPriceData.savings_amount > 0
 
@@ -46,7 +53,7 @@ export const LowestPriceDisplay = ({
       <div className={clsx("text-xs text-gray-600", className)}>
         <span>Najniższa cena z {days} dni: </span>
         <span className="font-semibold text-green-600">
-          {formatPrice(lowestPriceData.lowest_30d_amount!, currencyCode)}
+          {formatPrice(lowestPrice, currencyCode)}
         </span>
         {showSavings && hasValidSavings && (
           <span className="text-red-600 ml-1">
@@ -62,7 +69,7 @@ export const LowestPriceDisplay = ({
       <div className="flex items-center gap-2 text-sm">
         <span className="text-gray-600">Najniższa cena z {days} dni:</span>
         <span className="font-semibold text-green-600">
-          {formatPrice(lowestPriceData.lowest_30d_amount!, currencyCode)}
+          {formatPrice(lowestPrice, currencyCode)}
         </span>
       </div>
       

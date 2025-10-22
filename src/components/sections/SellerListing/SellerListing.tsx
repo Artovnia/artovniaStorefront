@@ -157,7 +157,7 @@ export const SellerListing = ({ className }: SellerListingProps) => {
       <SellerFilterBar />
 
       {/* Results Info */}
-      <div className="px-4 sm:px-6 py-4 bg-primary ">
+      <div className="px-4 sm:px-6 py-4 bg-primary max-w-[1200px] mx-auto">
         <div className="flex items-center justify-between">
           <p className="text-sm text-gray-600 font-instrument-sans">
             {loading ? (
@@ -178,7 +178,7 @@ export const SellerListing = ({ className }: SellerListingProps) => {
       </div>
 
       {/* Content Area */}
-      <div className="px-4 sm:px-6 py-8">
+      <div className="px-4 sm:px-6 py-8 max-w-[1200px] mx-auto">
         {loading ? (
           <SellerListingSkeleton />
         ) : sellers.length === 0 ? (
@@ -196,7 +196,7 @@ export const SellerListing = ({ className }: SellerListingProps) => {
         ) : (
           <>
             {/* Sellers Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6 justify-items-center mb-8">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-4 gap-6 justify-items-center mb-8">
               {sellers.map((seller) => (
                 <SellerCard key={seller.id} seller={seller} />
               ))}

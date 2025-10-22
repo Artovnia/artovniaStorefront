@@ -72,8 +72,12 @@ export const BatchLowestPriceDisplay = memo(({
     )
   }
 
-  // Don't render if no price data available
-  if (!priceData || !priceData.lowest_30d_amount) {
+  // ENHANCED: Check for lowest price - now includes fallback to current_amount
+  // This handles first-time promotions where no historical data exists
+  const lowestPrice = priceData?.lowest_30d_amount || priceData?.current_amount
+  
+  // Don't render if no price data available at all
+  if (!priceData || !lowestPrice) {
     return null
   }
 
@@ -81,7 +85,7 @@ export const BatchLowestPriceDisplay = memo(({
     <div className={clsx(themeClasses.container, className)}>
       <span>Najniższa cena z {days} dni: </span>
       <span className={themeClasses.price}>
-        {formatPrice(priceData.lowest_30d_amount, currencyCode)}
+        {formatPrice(lowestPrice, currencyCode)}
       </span>
     
     </div>

@@ -1,0 +1,1 @@
+export { PromotionsFilterBar } from './PromotionsFilterBar'
