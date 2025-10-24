@@ -5,6 +5,7 @@ import { HttpTypes } from "@medusajs/types"
 import { SafeI18nLink as Link } from "@/components/atoms/SafeI18nLink"
 import { useParams } from "next/navigation"
 import { useMemo } from "react"
+import { getCategoryIcon } from '@/const/category-icons'
 
 interface CategoryNavbarProps {
   categories: HttpTypes.StoreProductCategory[]
@@ -27,6 +28,7 @@ const CategoryNavItem = ({ category, isActive, onHover, onClose }: {
   onClose?: () => void
 }) => {
   const { category: currentCategoryHandle } = useParams()
+  // Main categories don't have icons
 
   const handleCategoryClick = () => {
     if (onClose) {
@@ -41,15 +43,13 @@ const CategoryNavItem = ({ category, isActive, onHover, onClose }: {
         onClick={handleCategoryClick}
         className={cn(
           "uppercase px-4 py-2 hover:bg-primary/10 transition-colors text-lg block whitespace-nowrap font-medium",
-          "flex items-center justify-between my-3 md:my-0",
+          "flex items-center my-3 md:my-0",
           category.handle === currentCategoryHandle && "md:border-b-2 md:border-primary text-primary",
           isActive && "bg-primary/5",
           "font-['Instrument_Sans']"
         )}
       >
-        <span className="flex items-center justify-between w-full">
-          {category.name}
-        </span>
+        <span>{category.name}</span>
       </Link>
     </div>
   )
@@ -105,11 +105,15 @@ export const FullWidthDropdown = ({
           href={`/categories/${child.handle}`}
           onClick={handleCategoryClick}
           className={cn(
-            "block text-lg font-semibold text-black hover:text-primary transition-colors hover:underline uppercase",
+            "flex items-center gap-2 text-lg font-semibold text-black hover:text-primary transition-colors hover:underline uppercase",
             child.handle === currentCategoryHandle && "text-primary"
           )}
         >
-          {child.name}
+          {(() => {
+            const IconComponent = getCategoryIcon(child.handle || '')
+            return IconComponent ? <IconComponent className="w-5 h-5 flex-shrink-0" /> : null
+          })()}
+          <span>{child.name}</span>
         </Link>
 
         {child.category_children?.length > 0 && (

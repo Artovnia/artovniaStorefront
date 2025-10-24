@@ -22,6 +22,24 @@ export const HERO_BANNERS: HeroBanner[] = [
     image: "/images/hero/Hero02.png", 
     alt: "Promocje",
     url: "/categories/ona"
+  },
+  {
+    id: "odkrywaj-promocje",
+    image: "/images/hero/Hero03.png", 
+    alt: "Promocje",
+    url: "/promotions"
+  },
+  {
+    id: "sprzedawaj-w-artovnia",
+    image: "/images/hero/Hero04.png", 
+    alt: "Sprzedawaj w Artovnia",
+    url: "https://artovniapanel.netlify.app/login"
+  },
+  {
+    id: "obrazy",
+    image: "/images/hero/Hero05.png", 
+    alt: "Obrazy",
+    url: "/categories/obrazy"
   }
 ]
 
