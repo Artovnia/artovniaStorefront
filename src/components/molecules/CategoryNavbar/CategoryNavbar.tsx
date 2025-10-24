@@ -111,6 +111,7 @@ export const FullWidthDropdown = ({
         >
           {(() => {
             const IconComponent = getCategoryIcon(child.handle || '')
+            console.log('Category handle:', child.handle, 'Icon:', IconComponent ? 'Found' : 'Not found')
             return IconComponent ? <IconComponent className="w-5 h-5 flex-shrink-0" /> : null
           })()}
           <span>{child.name}</span>
