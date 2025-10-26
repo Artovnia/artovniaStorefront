@@ -558,7 +558,7 @@ const TermsOfUseContent = () => {
           <p className="font-medium mb-2">{t("contactInfo.company")}</p>
           <p>{t("contactInfo.address")}</p>
           <p>{t("contactInfo.email")}</p>
-          <p>{t("contactInfo.phone")}</p>
+         
           <p>{t("contactInfo.taxId")}</p>
           <p>{t("contactInfo.regon")}</p>
         </div>

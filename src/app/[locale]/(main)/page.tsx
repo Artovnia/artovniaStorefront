@@ -6,6 +6,7 @@ import {
   ShopByStyleSection,
   HomeNewestProductsSection,
   SmartBestProductsSection,
+  HomeCategories,
   DesignerOfTheWeekSection,
 } from "@/components/sections"
 import { BatchPriceProvider } from "@/components/context/BatchPriceProvider"
@@ -68,20 +69,25 @@ export default async function Home({
               />
             </div>
           </div>
+
+           {/* Categories Section */}
+          <div className="w-full bg-primary py-8">
+            <HomeCategories heading="Kategorie" />
+          </div>
           
           {/* Designer of the Week Section */}
           <div className="w-full bg-[#F4F0EB] min-h-[400px] py-8">
             <DesignerOfTheWeekSection />
           </div>
 
-          {/* Content with max-width container */}
+          {/* Blog Section */}
           <div className="w-full bg-white py-8">
-            <div className="mx-auto max-w-[1920px] w-full  bg-white ">
-              {/*<BannerSection />*/}
-              {/*<ShopByStyleSection />*/}
+            <div className="mx-auto max-w-[1920px] w-full">
               <BlogSection />
             </div>
           </div>
+
+         
 
     
         </main>

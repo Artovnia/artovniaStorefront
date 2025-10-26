@@ -17,12 +17,7 @@ export const HERO_BANNERS: HeroBanner[] = [
     alt: "Odkrywaj nowe produkty w Artovnia",
     url: "/categories"
   },
-  {
-    id: "nowa-kolekcja-ona",
-    image: "/images/hero/Hero02.png", 
-    alt: "Promocje",
-    url: "/categories/ona"
-  },
+  
   {
     id: "odkrywaj-promocje",
     image: "/images/hero/Hero03.png", 

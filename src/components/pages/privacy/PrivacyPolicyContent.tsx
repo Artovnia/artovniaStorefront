@@ -35,7 +35,7 @@ const PrivacyPolicyContent = () => {
       <div className="bg-gray-50 border border-gray-200 rounded-md p-5 mb-10">
         <h2 className="font-medium text-lg mb-2">{t("quickInfo.title")}</h2>
         <ul className="list-disc ml-5 space-y-1 text-sm text-gray-600">
-          <li>Administratorem danych osobowych jest Artovnia sp. z o.o.</li>
+          <li>Administratorem danych osobowych jest Ann Sayuri ART Anna Wawrzyniak</li>
           <li>Gromadzimy tylko dane niezbędne do realizacji zamówień i obsługi klienta</li>
           <li>Twoje dane są bezpieczne i nie udostępniamy ich osobom trzecim bez podstawy prawnej</li>
           <li>Masz prawo do dostępu, poprawiania i usunięcia swoich danych</li>
@@ -62,17 +62,17 @@ const PrivacyPolicyContent = () => {
               </Disclosure.Button>
               <Disclosure.Panel className="pt-4 text-gray-700 space-y-3">
                 <p>
-                  1. Niniejsza Polityka Prywatności określa zasady przetwarzania i ochrony danych osobowych przekazanych przez Użytkowników w związku z korzystaniem przez nich z usług oferowanych przez sklep internetowy Artovnia dostępny pod adresem artovnia.com.
+                  1. Niniejsza Polityka Prywatności określa zasady przetwarzania i ochrony danych osobowych przekazanych przez Użytkowników w związku z korzystaniem przez nich z usług oferowanych przez sklep internetowy Ann Sayuri ART Anna Wawrzyniak dostępny pod adresem artovnia.com.
                 </p>
                 <p>
-                  2. Administratorem danych osobowych jest Artovnia sp. z o.o. z siedzibą w Warszawie (00-123), ul. Przykładowa 1, wpisana do rejestru przedsiębiorców Krajowego Rejestru Sądowego prowadzonego przez Sąd Rejonowy dla m.st. Warszawy w Warszawie, XII Wydział Gospodarczy Krajowego Rejestru Sądowego pod numerem KRS 0000000000, NIP 0000000000, REGON 000000000, zwana dalej &ldquo;Administratorem&rdquo;.
+                  2. Administratorem danych osobowych jest Ann Sayuri ART Anna Wawrzyniak z siedzibą we Wrocławiu (50-078), ul. Leszczyńskiego 4,  NIP 9261642417, REGON 522385177, zwana dalej &ldquo;Administratorem&rdquo;.
                 </p>
                 <p>
                   3. Kontakt z Administratorem odbywa się poprzez:
                   <br />
-                  a) adres poczty elektronicznej: kontakt@artovnia.com
+                  a) adres poczty elektronicznej: sayuri.platform@gmail.com
                   <br />
-                  b) telefonicznie pod numerem: +48 000 000 000
+                  b) telefonicznie pod numerem: +48 501 501 501
                 </p>
                 <p>
                   4. Administrator dokłada szczególnej staranności w celu ochrony interesów osób, których dane dotyczą, a w szczególności zapewnia, że zbierane przez niego dane są przetwarzane zgodnie z prawem, zbierane dla oznaczonych, zgodnych z prawem celów i niepoddawane dalszemu przetwarzaniu niezgodnemu z tymi celami.
@@ -406,7 +406,7 @@ const PrivacyPolicyContent = () => {
           <p className="font-medium mb-2">{t("contactInfo.company")}</p>
           <p>{t("contactInfo.address")}</p>
           <p>{t("contactInfo.email")}</p>
-          <p>{t("contactInfo.phone")}</p>
+          
           <p>{t("contactInfo.taxId")}</p>
           <p>{t("contactInfo.regon")}</p>
         </div>

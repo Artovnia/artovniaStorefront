@@ -1,5 +1,6 @@
 import { Metadata } from "next"
 import { HttpTypes } from "@medusajs/types"
+import Image from "next/image"
 import { listProductsWithPromotions } from "@/lib/data/products"
 import { getPromotionFilterOptions } from "@/lib/data/promotions"
 import { PromotionListing } from "@/components/sections"
@@ -52,42 +53,83 @@ export default async function PromotionsPage({ searchParams }: PromotionsPagePro
     const { products, count } = response
 
     return (
-      <div className="min-h-screen bg-primary max-w-[1920px] w-full mx-auto">
-        <div className="container mx-auto">
-          {/* Page Header */}
-          <div className="bg-primary px-4 sm:px-6 py-8">
-            <div className="mx-auto max-w-[1200px]">
-              <h1 className="text-3xl font-bold text-[#3B3634] mb-2 font-instrument-serif italic text-center">
+      <div className="min-h-screen bg-primary">
+        {/* Hero Section with Image and Overlay */}
+        <section 
+          className="relative w-full h-[300px] sm:h-[350px] md:h-[350px] lg:h-[400px] xl:h-[400px] overflow-hidden"
+          aria-labelledby="promotions-heading"
+        >
+          {/* Background Image */}
+          <div className="absolute inset-0">
+            <Image
+              src="/images/promotions/15.png"
+              alt="Ceramiczne naczynia i dekoracje - promocje Artovnia"
+              fill
+              priority
+              className="object-cover object-center"
+              sizes="100vw"
+              quality={90}
+            />
+            {/* Gradient Overlay for better text readability (WCAG AA contrast) */}
+            <div 
+              className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/50 to-black/70"
+              aria-hidden="true"
+            />
+          </div>
+
+          {/* Content Overlay */}
+          <div className="relative h-full max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex flex-col items-center justify-center h-full text-center">
+              {/* Main Heading with high contrast for accessibility */}
+              <h1 
+                id="promotions-heading"
+                className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-instrument-serif italic font-normal text-white mb-4 sm:mb-6 drop-shadow-2xl"
+              >
                 Promocje
               </h1>
-              <p className="text-[#3B3634] font-instrument-sans text-center">
+              
+              {/* Subtitle with accessible contrast */}
+              <p className="text-md sm:text-lg md:text-xl lg:text-2xl text-white font-instrument-sans max-w-3xl drop-shadow-lg">
                 Najlepsze okazje i promocyjne ceny na wybrane produkty
               </p>
-              {count > 0 && (
-                <p className="text-[#3B3634] mt-2 font-instrument-sans text-sm text-center mb-4">
-                  Znaleziono {count} produktów w promocji
-                </p>
-              )}
+              
+              
             </div>
           </div>
 
+          {/* Skip to content link for keyboard navigation (WCAG 2.4.1) */}
+          <a 
+            href="#promotions-content"
+            className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-white focus:text-[#3B3634] focus:rounded focus:shadow-lg focus:outline-none focus:ring-2 focus:ring-[#3B3634] focus:ring-offset-2"
+          >
+            Przejdź do treści promocji
+          </a>
+        </section>
+
+        {/* Main Content */}
+        <div className="max-w-[1920px] mx-auto" id="promotions-content">
+
           {/* Filter Bar */}
-          <PromotionsFilterBar
-            promotionNames={filterOptions.promotionNames}
-            sellerNames={filterOptions.sellerNames}
-            campaignNames={filterOptions.campaignNames}
-          />
+          <div className="px-4 sm:px-6 lg:px-8 py-6">
+            <PromotionsFilterBar
+              promotionNames={filterOptions.promotionNames}
+              sellerNames={filterOptions.sellerNames}
+              campaignNames={filterOptions.campaignNames}
+            />
+          </div>
 
           {/* Products Listing */}
-          <PromotionDataProvider countryCode={REGION}>
-            <PromotionListing
-              initialProducts={products}
-              initialCount={count}
-              initialPage={page}
-              countryCode={REGION}
-              limit={12}
-            />
-          </PromotionDataProvider>
+          <div className="px-4 sm:px-6 lg:px-8">
+            <PromotionDataProvider countryCode={REGION}>
+              <PromotionListing
+                initialProducts={products}
+                initialCount={count}
+                initialPage={page}
+                countryCode={REGION}
+                limit={12}
+              />
+            </PromotionDataProvider>
+          </div>
         </div>
       </div>
     )
@@ -95,21 +137,38 @@ export default async function PromotionsPage({ searchParams }: PromotionsPagePro
     console.error("Error fetching promotions:", error)
     
     return (
-      <div className="w-full max-w-[1920px] mx-auto px-4 py-6">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-red-600 mb-2 font-serif">
-            Promocje
-          </h1>
-          <p className="text-gray-600 font-sans">
-            Najlepsze okazje i promocyjne ceny na wybrane produkty
-          </p>
-        </div>
+      <div className="min-h-screen bg-primary">
+        {/* Error Hero Section */}
+        <section className="relative w-full h-[300px] sm:h-[350px] md:h-[400px] overflow-hidden">
+          <div className="absolute inset-0">
+            <Image
+              src="/images/promotions/15.png"
+              alt="Ceramiczne naczynia i dekoracje - promocje Artovnia"
+              fill
+              className="object-cover object-center"
+              sizes="100vw"
+            />
+            <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/50 to-black/70" aria-hidden="true" />
+          </div>
+          <div className="relative h-full max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-center">
+            <h1 className="text-4xl sm:text-5xl md:text-6xl font-instrument-serif italic text-white drop-shadow-2xl">
+              Promocje
+            </h1>
+          </div>
+        </section>
         
-        <div className="flex flex-col items-center justify-center min-h-[400px] text-center">
-          <h2 className="text-2xl font-bold mb-4 font-serif">Wystąpił błąd</h2>
-          <p className="text-gray-600 mb-6 font-sans">
-            Nie udało się załadować promocji. Spróbuj ponownie później.
-          </p>
+        {/* Error Message */}
+        <div className="max-w-[1920px] mx-auto px-4 py-12">
+          <div 
+            className="flex flex-col items-center justify-center min-h-[400px] text-center"
+            role="alert"
+            aria-live="assertive"
+          >
+            <h2 className="text-2xl font-bold mb-4 font-instrument-serif text-red-600">Wystąpił błąd</h2>
+            <p className="text-[#3B3634] mb-6 font-instrument-sans">
+              Nie udało się załadować promocji. Spróbuj ponownie później.
+            </p>
+          </div>
         </div>
       </div>
     )

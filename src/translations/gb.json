@@ -46,12 +46,11 @@
     },
     "lastUpdated": "Last updated",
     "contactInfo": {
-      "regon": "REGON: 000000000",
-      "email": "contact@artovnia.com",
-      "company": "Artovnia Ltd.",
-      "address": "1 Example Street, Warsaw 00-123",
-      "phone": "+48 000 000 000",
-      "taxId": "VAT ID: 0000000000"
+      "regon": "REGON: 522385177",
+      "email": "sayuri.platform@gmail.com",
+      "company": "Ann Sayuri ART Anna Wawrzyniak",
+      "address": "Leszczyńskiego 4, 50-078 Wrocław",
+      "taxId": "NIP: 9261642417"
     },
     "quickInfo": {
       "title": "Quick Info:"
@@ -72,12 +71,11 @@
       "title": "Quick Info:"
     },
     "contactInfo": {
-      "company": "Artovnia Ltd.",
-      "address": "1 Example Street, Warsaw 00-123",
-      "email": "contact@artovnia.com",
-      "phone": "+48 000 000 000",
-      "taxId": "VAT ID: 0000000000",
-      "regon": "REGON: 000000000"
+      "company": "Ann Sayuri ART Anna Wawrzyniak",
+      "address": "Leszczyńskiego 4, 50-078 Wrocław",
+      "email": "sayuri.platform@gmail.com",
+      "taxId": "NIP: 9261642417",
+      "regon": "REGON: 522385177"
     },
     "section": {
       "general": "General Provisions",

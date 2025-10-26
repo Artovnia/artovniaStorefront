@@ -5,7 +5,8 @@ import { HttpTypes } from "@medusajs/types"
 import { SafeI18nLink as Link } from "@/components/atoms/SafeI18nLink"
 import { useParams } from "next/navigation"
 import { useMemo } from "react"
-import { getCategoryIcon } from '@/const/category-icons'
+// TODO: Re-enable category icons later
+// import { getCategoryIcon } from '@/const/category-icons'
 
 interface CategoryNavbarProps {
   categories: HttpTypes.StoreProductCategory[]
@@ -109,11 +110,12 @@ export const FullWidthDropdown = ({
             child.handle === currentCategoryHandle && "text-primary"
           )}
         >
-          {(() => {
+          {/* TODO: Re-enable category icons later */}
+          {/* {(() => {
             const IconComponent = getCategoryIcon(child.handle || '')
             console.log('Category handle:', child.handle, 'Icon:', IconComponent ? 'Found' : 'Not found')
             return IconComponent ? <IconComponent className="w-5 h-5 flex-shrink-0" /> : null
-          })()}
+          })()} */}
           <span>{child.name}</span>
         </Link>
 

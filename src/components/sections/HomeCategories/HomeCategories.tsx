@@ -1,45 +1,68 @@
-import { Carousel } from "@/components/cells"
 import { CategoryCard } from "@/components/organisms"
 
-export const categories: { id: number; name: string; handle: string }[] = [
+export const categories: { id: number; name: string; handle: string; featured?: boolean }[] = [
   {
     id: 1,
-    name: "Sneakers",
-    handle: "sneakers",
+    name: "Biżuteria",
+    handle: "Bizuteria",
+    featured: true, // Large featured category
   },
   {
     id: 2,
-    name: "Sandals",
-    handle: "sandals",
+    name: "Dom",
+    handle: "Dom",
   },
   {
     id: 3,
-    name: "Boots",
-    handle: "boots",
+    name: "Dziecko",
+    handle: "Dziecko",
   },
   {
     id: 4,
-    name: "Sport",
-    handle: "sport",
+    name: "Obrazy",
+    handle: "Obrazy",
   },
   {
     id: 5,
-    name: "Accessories",
-    handle: "accessories",
+    name: "On",
+    handle: "On",
   },
 ]
 
 export const HomeCategories = async ({ heading }: { heading: string }) => {
+  const featuredCategory = categories.find(cat => cat.featured) || categories[0]
+  const otherCategories = categories.filter(cat => !cat.featured).slice(0, 4)
+
   return (
-    <section className="bg-primary py-8 w-full">
-      <div className="mb-6">
-        <h2 className="heading-lg text-primary uppercase font-instrument-serif">{heading}</h2>
+    <section className="mx-auto max-w-[1920px] w-full px-4 lg:px-8 py-8 font-instrument-sans">
+      {/* Heading */}
+      <div className="mb-8 lg:mb-12">
+        <h2 className="text-2xl lg:text-3xl xl:text-4xl font-instrument-serif italic  font-normal tracking-tight normal-case text-[#3B3634]  ">
+          {heading}
+        </h2>
       </div>
-      <Carousel
-        items={categories?.map((category) => (
-          <CategoryCard key={category.id} category={category} />
-        ))}
-      />
+
+      {/* Grid Layout: 1 Large + 4 Small */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6 xl:gap-8">
+        {/* Large Featured Category - Left Side */}
+        <div className="w-full">
+          <CategoryCard 
+            category={featuredCategory} 
+            size="large"
+          />
+        </div>
+
+        {/* 4 Smaller Categories - Right Side (2x2 Grid) */}
+        <div className="grid grid-cols-2 gap-4 lg:gap-6 xl:gap-8">
+          {otherCategories.map((category) => (
+            <CategoryCard 
+              key={category.id} 
+              category={category}
+              size="small"
+            />
+          ))}
+        </div>
+      </div>
     </section>
   )
 }
