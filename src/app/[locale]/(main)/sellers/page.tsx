@@ -18,7 +18,7 @@ export default function SellersPage() {
         {/* Background Image */}
         <div className="absolute inset-0">
           <Image
-            src="/images/sprzedawcy/13.png"
+            src="/images/sprzedawcy/sellers.webp"
             alt="Ceramiczne naczynia i dekoracje - sprzedawcy Artovnia"
             fill
             priority

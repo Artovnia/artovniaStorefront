@@ -13,26 +13,26 @@ import type { HeroBanner } from "@/components/sections/Hero/Hero"
 export const HERO_BANNERS: HeroBanner[] = [
   {
     id: "main-odkrywaj",
-    image: "/images/hero/Hero01.png",
+    image: "/images/hero/Hero01.webp",
     alt: "Odkrywaj nowe produkty w Artovnia",
     url: "/categories"
   },
   
   {
     id: "odkrywaj-promocje",
-    image: "/images/hero/Hero03.png", 
+    image: "/images/hero/Hero03.webp", 
     alt: "Promocje",
     url: "/promotions"
   },
   {
     id: "sprzedawaj-w-artovnia",
-    image: "/images/hero/Hero04.png", 
+    image: "/images/hero/Hero04.webp", 
     alt: "Sprzedawaj w Artovnia",
     url: "https://artovniapanel.netlify.app/login"
   },
   {
     id: "obrazy",
-    image: "/images/hero/Hero05.png", 
+    image: "/images/hero/Hero05.webp", 
     alt: "Obrazy",
     url: "/categories/obrazy"
   }

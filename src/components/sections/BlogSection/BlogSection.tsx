@@ -1,3 +1,4 @@
+import { BlogCarousel } from '@/components/organisms/BlogCarousel';
 import { BlogCard } from '@/components/organisms/BlogCard/BlogCard';
 import { getLatestBlogPosts } from '@/app/[locale]/blog/lib/data';
 import Link from 'next/link';
@@ -10,8 +11,8 @@ export async function BlogSection() {
   }
 
   return (
-    <section className='bg-white w-full'>
-      <div className='flex items-center justify-between mb-12'>
+    <section className='bg-white w-full py-8'>
+      <div className='flex items-center justify-between mb-12 px-4'>
         <h2 className='heading-lg text-black font-instrument-serif italic'>
           Bądź na czasie
         </h2>
@@ -22,7 +23,14 @@ export async function BlogSection() {
           Zobacz wszystkie →
         </Link>
       </div>
-      <div className='grid grid-cols-1 lg:grid-cols-3 gap-8'>
+      
+      {/* Mobile: Carousel */}
+      <div className='lg:hidden'>
+        <BlogCarousel posts={blogPosts} />
+      </div>
+      
+      {/* Desktop: Grid */}
+      <div className='hidden lg:grid lg:grid-cols-3 gap-8 px-4'>
         {blogPosts.map((post, index) => (
           <BlogCard
             key={post._id}

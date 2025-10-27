@@ -62,7 +62,7 @@ export default async function PromotionsPage({ searchParams }: PromotionsPagePro
           {/* Background Image */}
           <div className="absolute inset-0">
             <Image
-              src="/images/promotions/15.png"
+              src="/images/promotions/15.webp"
               alt="Ceramiczne naczynia i dekoracje - promocje Artovnia"
               fill
               priority

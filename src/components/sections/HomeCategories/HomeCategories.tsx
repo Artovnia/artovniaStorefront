@@ -29,7 +29,13 @@ export const categories: { id: number; name: string; handle: string; featured?: 
   },
 ]
 
-export const HomeCategories = async ({ heading }: { heading: string }) => {
+export const HomeCategories = async ({ 
+  heading, 
+  headingItalic 
+}: { 
+  heading: string;
+  headingItalic?: string;
+}) => {
   const featuredCategory = categories.find(cat => cat.featured) || categories[0]
   const otherCategories = categories.filter(cat => !cat.featured).slice(0, 4)
 
@@ -37,8 +43,8 @@ export const HomeCategories = async ({ heading }: { heading: string }) => {
     <section className="mx-auto max-w-[1920px] w-full px-4 lg:px-8 py-8 font-instrument-sans">
       {/* Heading */}
       <div className="mb-8 lg:mb-12">
-        <h2 className="text-2xl lg:text-3xl xl:text-4xl font-instrument-serif italic  font-normal tracking-tight normal-case text-[#3B3634]  ">
-          {heading}
+        <h2 className="text-2xl lg:text-3xl xl:text-4xl font-instrument-serif font-normal tracking-tight normal-case text-[#3B3634]">
+          {heading}{headingItalic && <> <span className="italic">{headingItalic}</span></>}
         </h2>
       </div>
 

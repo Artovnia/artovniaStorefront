@@ -4,7 +4,6 @@ import { BlogPost } from "@/app/[locale]/blog/lib/data"
 import { urlFor } from "@/app/[locale]/blog/lib/sanity"
 import { ArrowRightIcon } from "@/icons"
 import tailwindConfig from "../../../../tailwind.config"
-import { cn } from "@/lib/utils"
 import { format } from "date-fns"
 
 interface BlogCardProps {
@@ -24,10 +23,7 @@ export function BlogCard({ post, index }: BlogCardProps) {
   return (
     <Link
       href={`/blog/${post.slug.current}`}
-      className={cn(
-        "group block border border-secondary p-1 rounded-sm relative",
-        index > 0 && "hidden lg:block"
-      )}
+      className="group block border border-secondary p-1 rounded-sm relative"
     >
       <div className="relative overflow-hidden rounded-xs h-full">
         <Image

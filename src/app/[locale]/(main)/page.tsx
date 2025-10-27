@@ -70,10 +70,10 @@ export default async function Home({
             </div>
           </div>
 
-           {/* Categories Section */}
-          <div className="w-full bg-primary py-8">
-            <HomeCategories heading="Kategorie" />
-          </div>
+       {/* Categories Section */}
+<div className="w-full bg-primary py-8">
+  <HomeCategories heading="Wybrane" headingItalic="kategorie" />
+</div>
           
           {/* Designer of the Week Section */}
           <div className="w-full bg-[#F4F0EB] min-h-[400px] py-8">

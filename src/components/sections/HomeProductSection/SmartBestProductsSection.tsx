@@ -39,7 +39,7 @@ export const SmartBestProductsSection = async ({
     if (allProducts.length === 0) {
       return (
         <section className="py-8 w-full">
-          <h2 className="mb-6 ml-12 font-bold tracking-tight normal-case font-instrument-serif italic">
+          <h2 className="mb-6 ml-0 lg:ml-12 font-bold tracking-tight normal-case font-instrument-serif italic">
             {heading}
           </h2>
           <div className="flex justify-center w-full py-8">
@@ -112,7 +112,7 @@ export const SmartBestProductsSection = async ({
     return (
       <BatchPriceProvider currencyCode="PLN" days={30}>
         <section className="py-8 w-full">
-          <h2 className="mb-12 heading-lg font-bold tracking-tight font-instrument-serif italic ml-[68px]">
+          <h2 className="mb-12 heading-lg font-bold tracking-tight font-instrument-serif italic  ml-4 lg:ml-[68px]">
             {heading}
           </h2>
 

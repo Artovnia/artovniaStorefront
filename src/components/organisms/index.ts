@@ -2,6 +2,7 @@ import { ProductCard } from "./ProductCard/ProductCard"
 import { BrandCard } from "./BrandCard/BrandCard"
 import { CategoryCard } from "./CategoryCard/CategoryCard"
 import { BlogCard } from "./BlogCard/BlogCard"
+import { BlogCarousel } from "./BlogCarousel/BlogCarousel"
 import { ProductListingHeader } from "./ProductListingHeader/ProductListingHeader"
 import { ProductsList } from "./ProductsList/ProductsList"
 import { ProductsPagination } from "./ProductsPagination/ProductsPagination"
@@ -35,6 +36,7 @@ export {
   BrandCard,
   CategoryCard,
   BlogCard,
+  BlogCarousel,
   ProductListingHeader,
   ProductsList,
   ProductsPagination,

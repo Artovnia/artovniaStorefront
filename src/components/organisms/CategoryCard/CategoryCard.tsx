@@ -39,7 +39,7 @@ export function CategoryCard({
       {/* Category Image */}
       <div className="relative w-full h-full">
         <Image
-          src={`/images/categories/${category.handle}.png`}
+          src={`/images/categories/${category.handle}.webp`}
           alt={category.name}
           fill
           className="object-cover transition-transform duration-500 group-hover:scale-110"
