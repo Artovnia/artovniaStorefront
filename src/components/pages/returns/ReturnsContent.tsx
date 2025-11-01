@@ -50,8 +50,8 @@ const ReturnsContent = () => {
                 <div className="flex-1">
                   <h3 className="font-instrument-sans font-semibold text-xl mb-3 text-[#3B3634]">Zamówienie dostarczone</h3>
                   <p className="text-gray-600 font-instrument-sans leading-relaxed">
-                    Po dostarczeniu zamówienia przycisk "Zgłoś zwrot" aktywuje się w panelu użytkownika. 
-                    Przejdź do "Moje zamówienia" i wybierz odpowiednie zamówienie.
+                    Po dostarczeniu zamówienia przycisk &quot;Zgłoś zwrot&quot; aktywuje się w panelu użytkownika. 
+                    Przejdź do &quot;Moje zamówienia&quot; i wybierz odpowiednie zamówienie.
                   </p>
                 </div>
               </div>
