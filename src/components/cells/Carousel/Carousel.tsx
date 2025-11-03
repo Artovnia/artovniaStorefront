@@ -108,9 +108,9 @@ export const CustomCarousel = ({
   };
 
   return (
-    <div className='w-full max-w-[1920px] mx-auto '>
+    <div className='w-full max-w-[1920px] mx-auto overflow-hidden'>
       {/* Desktop Layout: Three-column grid with arrows outside content area */}
-      <div className={`${showArrows ? 'grid grid-cols-[auto_1fr_auto] items-center gap-4' : 'block'}`}>
+      <div className={`${showArrows ? 'grid grid-cols-[auto_1fr_auto] items-center gap-2 sm:gap-4' : 'block'}`}>
         
         {/* Left Arrow Column - Only visible on desktop */}
         {/* Arrow positioned at center of product image: 315px height ÷ 2 = 157.5px, minus arrow button height ÷ 2 = ~78px */}

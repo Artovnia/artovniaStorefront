@@ -335,9 +335,12 @@ const ProductsListing = ({
 
   
   
+  // Rating filter - requires average_rating to be searchable (not filterOnly) in Algolia
+  // To get facet counts, configure in Algolia: searchable(average_rating)
   const { items: ratingFacetItems, refine: refineRating } = useRefinementList({
     attribute: 'average_rating',
     limit: 10,
+    sortBy: ['name:desc'], // Sort by rating value descending (5, 4, 3, 2, 1)
   })
 
   // ✅ OPTIMIZED: Memoized user data fetching to prevent re-renders

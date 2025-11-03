@@ -127,16 +127,18 @@ export const getFacedFilters = (filters: ReadonlyURLSearchParams): string => {
       if (key === "max_price") maxPrice = value
 
       // Handle rating filter
+      // Note: Using exact match (=) instead of >= for precise rating filtering
+      // If you want "X stars and above" behavior, change to >=
       if (key === "rating" && value) {
         const ratingField = getOption(key)
         if (ratingField) {
           const splited = value.split(",")
           
           if (splited.length > 1) {
-            const orConditions = splited.map(val => `${ratingField} >= ${val}`)
+            const orConditions = splited.map(val => `${ratingField}:${val}`)
             filterParts.push(`(${orConditions.join(' OR ')})`)
           } else {
-            filterParts.push(`${ratingField} >= ${splited[0]}`)
+            filterParts.push(`${ratingField}:${splited[0]}`)
           }
         }
       }

@@ -117,6 +117,7 @@ export const SELLER_POST_QUERY = `
     content,
     linkedProducts[] {
       productId,
+      productHandle,
       productName,
       productImage
     },
@@ -138,6 +139,12 @@ export const SELLER_POSTS_QUERY = `
     shortDescription,
     sellerHandle,
     mainImage,
+    linkedProducts[] {
+      productId,
+      productHandle,
+      productName,
+      productImage
+    },
     publishedAt
   }
 `

@@ -1,11 +1,12 @@
 "use client"
 
-import React, { useState, useRef, useEffect } from 'react'
+import React, { useState, useRef, useEffect, useCallback } from 'react'
 import { createPortal } from 'react-dom'
 import { cn } from '@/lib/utils'
 import { SellerAlphabetFilter } from '@/components/cells/SellerAlphabetFilter/SellerAlphabetFilter'
 import { useSearchParams } from 'next/navigation'
 import useUpdateSearchParams from '@/hooks/useUpdateSearchParams'
+import { MobileSellerFilterModal } from '@/components/organisms/MobileSellerFilterModal/MobileSellerFilterModal'
 
 interface FilterDropdownProps {
   label: string
@@ -16,23 +17,48 @@ interface FilterDropdownProps {
 
 const FilterDropdown = ({ label, children, isActive, className }: FilterDropdownProps) => {
   const [isOpen, setIsOpen] = useState(false)
+  const [mounted, setMounted] = useState(false)
   const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0, right: 0 })
   const dropdownRef = useRef<HTMLDivElement>(null)
   const buttonRef = useRef<HTMLButtonElement>(null)
 
-  // Calculate dropdown position
   useEffect(() => {
+    setMounted(true)
+  }, [])
+
+  // Calculate dropdown position - updates on scroll and resize
+  const updatePosition = useCallback(() => {
     if (isOpen && buttonRef.current) {
       const rect = buttonRef.current.getBoundingClientRect()
-      const scrollTop = window.pageYOffset || document.documentElement.scrollTop
+      const dropdownWidth = 300 // Approximate dropdown width
+      const screenWidth = window.innerWidth
+      const spaceOnRight = screenWidth - rect.right
+      
+      // If dropdown would overflow on the right, align it to the right edge of button
+      const shouldAlignRight = spaceOnRight < dropdownWidth && rect.left > dropdownWidth
       
       setDropdownPosition({
-        top: rect.bottom + scrollTop + 8, // 8px margin
-        left: rect.left,
+        top: rect.bottom + 8, // 8px margin below button
+        left: shouldAlignRight ? rect.right - dropdownWidth : rect.left,
         right: window.innerWidth - rect.right
       })
     }
   }, [isOpen])
+
+  // Update position on open, scroll, and resize
+  useEffect(() => {
+    if (isOpen) {
+      updatePosition()
+      
+      window.addEventListener('scroll', updatePosition, true) // Use capture phase for all scrolls
+      window.addEventListener('resize', updatePosition)
+      
+      return () => {
+        window.removeEventListener('scroll', updatePosition, true)
+        window.removeEventListener('resize', updatePosition)
+      }
+    }
+  }, [isOpen, updatePosition])
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -55,9 +81,8 @@ const FilterDropdown = ({ label, children, isActive, className }: FilterDropdown
       className="fixed bg-primary border border-[#3B3634] rounded-lg shadow-lg z-[9999] min-w-[250px] max-w-[400px] flex flex-col"
       style={{
         top: `${dropdownPosition.top}px`,
-        left: window.innerWidth >= 640 ? 'auto' : `${dropdownPosition.left}px`,
-        right: window.innerWidth >= 640 ? `${dropdownPosition.right}px` : 'auto',
-        maxHeight: '400px',
+        left: `${dropdownPosition.left}px`,
+        maxHeight: `calc(100vh - ${dropdownPosition.top}px - 20px)`, // Dynamic max height to prevent overflow
       }}
     >
       {/* Scrollable content area */}
@@ -104,7 +129,7 @@ const FilterDropdown = ({ label, children, isActive, className }: FilterDropdown
         </svg>
       </button>
 
-      {typeof window !== 'undefined' && createPortal(
+      {mounted && typeof window !== 'undefined' && createPortal(
         dropdownContent,
         document.body
       )}
@@ -139,12 +164,38 @@ export const SellerFilterBar = ({ className }: SellerFilterBarProps) => {
     return filters
   }
 
+  const handleClearAll = () => {
+    const activeFilters = getActiveFilters()
+    activeFilters.forEach(filter => {
+      if (filter.onRemove) {
+        filter.onRemove()
+      }
+    })
+  }
+
   const activeFilters = getActiveFilters()
 
   return (
-    <div className={cn("w-full bg-primary py-4 px-4 sm:px-6 border-t border-[#3B3634] max-w-[1200px] mx-auto", className)}>
-      {/* Filter Buttons Row */}
-      <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-4 overflow-x-auto scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-gray-100 pb-2">
+    <div className={cn("w-full bg-primary pt-4 px-4 sm:px-6 border-t border-[#3B3634] max-w-[1200px] mx-auto", className)}>
+      {/* Mobile: Single "Filtry" Button - Show only on screens < 768px */}
+      <div className="md:hidden flex items-center gap-3 mb-4">
+        <MobileSellerFilterModal
+          hasActiveFilters={hasActiveFilters}
+          onClearAll={handleClearAll}
+        />
+        
+        {hasActiveFilters && (
+          <button
+            onClick={handleClearAll}
+            className="ml-auto text-sm font-medium text-black underline hover:text-red-600 transition-colors font-instrument-sans"
+          >
+            Wyczyść
+          </button>
+        )}
+      </div>
+
+      {/* Desktop: Filter Buttons Row - Show only on screens >= 768px */}
+      <div className="hidden md:flex flex-wrap items-center gap-2 sm:gap-3 mb-4 overflow-x-auto scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-gray-100 pb-2">
         {/* Sort Filter */}
         <SortFilter />
         
@@ -154,14 +205,7 @@ export const SellerFilterBar = ({ className }: SellerFilterBarProps) => {
         {/* Clear All Filters */}
         {hasActiveFilters && (
           <button
-            onClick={() => {
-              const activeFilters = getActiveFilters()
-              activeFilters.forEach(filter => {
-                if (filter.onRemove) {
-                  filter.onRemove()
-                }
-              })
-            }}
+            onClick={handleClearAll}
             style={{
               marginLeft: 'auto',
               padding: '4px 12px',

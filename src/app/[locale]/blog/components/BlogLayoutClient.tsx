@@ -1,3 +1,5 @@
+'use client'
+
 import Link from 'next/link'
 import BlogSearch from './BlogSearch'
 import { Footer } from '@/components/organisms/Footer/Footer'
@@ -6,7 +8,7 @@ import { Breadcrumbs } from '@/components/atoms/Breadcrumbs/Breadcrumbs'
 import NewsletterSection from '@/components/sections/NewsletterSection/NewsletterSection'
 import type { BlogCategory } from '../lib/data'
 
-interface BlogLayoutProps {
+interface BlogLayoutClientProps {
   children: React.ReactNode
   title?: string
   description?: string
@@ -14,8 +16,13 @@ interface BlogLayoutProps {
   categories: BlogCategory[]
 }
 
-export default function BlogLayout({ children, title, description, breadcrumbs, categories }: BlogLayoutProps) {
-
+export default function BlogLayoutClient({ 
+  children, 
+  title, 
+  description, 
+  breadcrumbs,
+  categories 
+}: BlogLayoutClientProps) {
   return (
     <div className="min-h-screen bg-[#F4F0EB] ">
       {/* Main Site Header */}

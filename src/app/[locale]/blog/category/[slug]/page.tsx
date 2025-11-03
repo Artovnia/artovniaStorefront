@@ -90,6 +90,7 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
 
   return (
     <BlogLayout
+      categories={categories}
       title={category.title}
       description={category.description || `Browse all posts in ${category.title} category`}
     >

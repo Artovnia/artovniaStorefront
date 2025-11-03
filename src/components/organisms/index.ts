@@ -30,6 +30,9 @@ import { OrderTotals } from "./OrderTotals/OrderTotals"
 import { SingleOrderReturn } from "./SingleOrderReturn/SingleOrderReturn"
 import { CategorySidebar } from "./CategorySidebar/CategorySidebar"
 import { ProductFilterBar } from "./ProductFilterBar/ProductFilterBar"
+import { MobileFilterModal } from "./MobileFilterModal/MobileFilterModal"
+import { MobilePromotionsFilterModal } from "./MobilePromotionsFilterModal/MobilePromotionsFilterModal"
+import { MobileSellerFilterModal } from "./MobileSellerFilterModal/MobileSellerFilterModal"
 
 export {
   ProductCard,
@@ -64,4 +67,7 @@ export {
   SingleOrderReturn,
   CategorySidebar,
   ProductFilterBar,
+  MobileFilterModal,
+  MobilePromotionsFilterModal,
+  MobileSellerFilterModal,
 }

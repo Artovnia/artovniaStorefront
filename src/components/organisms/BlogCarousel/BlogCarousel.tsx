@@ -26,7 +26,7 @@ export function BlogCarousel({ posts }: BlogCarouselProps) {
   ));
 
   return (
-    <div className="w-full max-w-full">
+    <div className="w-full max-w-full overflow-hidden">
       <Carousel
         align="start"
         items={blogCards}

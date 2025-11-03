@@ -46,10 +46,11 @@ export const ColorFilter = ({ algoliaFacetItems = [], onClose, showButton = true
   // Get all color families from database
   const { colorTaxonomy, isLoading, error } = useColorTaxonomy();
   
-  // Zustand store for persistent color selection (UI-only)
-  const { selectedColors, addColor, removeColor } = useFilterStore();
+  // Use PENDING state for staging selections (not applied until user clicks Apply)
+  // URL sync is handled by useSyncFiltersFromURL in ProductFilterBar
+  const { pendingColors, addPendingColor, removePendingColor } = useFilterStore();
   
-  // State for processed color filters
+  // State for processed color filters - initialize as empty array
   const [colorFilters, setColorFilters] = useState<ColorFacetItem[]>([]);
   
   // Memoize the Algolia facet map to prevent unnecessary recalculations
@@ -75,8 +76,8 @@ export const ColorFilter = ({ algoliaFacetItems = [], onClose, showButton = true
       // Look up this family in Algolia facets using the family name
       const algoliaData = algoliaFacetMap.get(family.name);
       
-      // Use Zustand store for UI state (persistent across dropdown open/close)
-      const isRefined = selectedColors.includes(family.name);
+      // Use PENDING state for UI (staged selections)
+      const isRefined = pendingColors.includes(family.name);
       
       const item: ColorFacetItem = {
         label: family.display_name,
@@ -84,7 +85,7 @@ export const ColorFilter = ({ algoliaFacetItems = [], onClose, showButton = true
         colorStyle: createColorStyle(family.hex_base || '#d1d5db'),
         value: family.name, // This is the key for filtering
         tooltip: `${family.colors?.length || 0} kolorów w rodzinie ${family.display_name}`,
-        isRefined: isRefined // Use Zustand store state for UI
+        isRefined: isRefined // Use pending state for UI
       };
       
       return item;
@@ -97,7 +98,7 @@ export const ColorFilter = ({ algoliaFacetItems = [], onClose, showButton = true
       }
       return a.label.localeCompare(b.label);
     });
-  }, [colorTaxonomy, selectedColors, algoliaFacetMap]);
+  }, [colorTaxonomy, pendingColors, algoliaFacetMap]);
 
   // Update state only when processed filters change
   useEffect(() => {
@@ -105,13 +106,14 @@ export const ColorFilter = ({ algoliaFacetItems = [], onClose, showButton = true
   }, [processedColorFilters]);
   
   // Memoize the handleSelect function to prevent unnecessary re-renders
+  // Now updates PENDING state only (not applied until Apply button)
   const handleSelect = useCallback((familyName: string): void => {
-    if (selectedColors.includes(familyName)) {
-      removeColor(familyName);
+    if (pendingColors.includes(familyName)) {
+      removePendingColor(familyName);
     } else {
-      addColor(familyName);
+      addPendingColor(familyName);
     }
-  }, [selectedColors, removeColor, addColor]);
+  }, [pendingColors, removePendingColor, addPendingColor]);
 
 
 

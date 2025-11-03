@@ -70,11 +70,7 @@ export default async function PromotionsPage({ searchParams }: PromotionsPagePro
               sizes="100vw"
               quality={90}
             />
-            {/* Gradient Overlay for better text readability (WCAG AA contrast) */}
-            <div 
-              className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/50 to-black/70"
-              aria-hidden="true"
-            />
+            
           </div>
 
           {/* Content Overlay */}
@@ -110,7 +106,7 @@ export default async function PromotionsPage({ searchParams }: PromotionsPagePro
         <div className="max-w-[1920px] mx-auto" id="promotions-content">
 
           {/* Filter Bar */}
-          <div className="px-4 sm:px-6 lg:px-8 py-6">
+          <div className="px-4 sm:px-6 lg:px-8 pt-6">
             <PromotionsFilterBar
               promotionNames={filterOptions.promotionNames}
               sellerNames={filterOptions.sellerNames}

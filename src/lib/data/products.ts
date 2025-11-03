@@ -212,10 +212,18 @@ export const listProductsWithPromotions = async ({
   page = 1,
   limit = 12,
   countryCode = "PL",
+  sortBy,
+  promotion,
+  seller,
+  campaign,
 }: {
   page?: number
   limit?: number
   countryCode?: string
+  sortBy?: string
+  promotion?: string
+  seller?: string
+  campaign?: string
 }): Promise<{
   response: {
     products: (HttpTypes.StoreProduct & { seller?: SellerProps })[]
@@ -223,7 +231,7 @@ export const listProductsWithPromotions = async ({
   }
   nextPage: number | null
 }> => {
-  const cacheKey = `products:promotions:${countryCode}:${page}:${limit}`
+  const cacheKey = `products:promotions:${countryCode}:${page}:${limit}:${sortBy}:${promotion}:${seller}:${campaign}`
   
   return unifiedCache.get(cacheKey, async () => {
     try {
@@ -241,6 +249,18 @@ export const listProductsWithPromotions = async ({
       // Step 1: Get products with promotion module discounts
       let promotionProducts: any[] = []
       try {
+        const queryParams: any = {
+          limit: 50, // Get more to have enough after filtering
+          offset: 0,
+          region_id: region?.id,
+        }
+        
+        // Add filter parameters
+        if (sortBy) queryParams.sortBy = sortBy
+        if (promotion) queryParams.promotion = promotion
+        if (seller) queryParams.seller = seller
+        if (campaign) queryParams.campaign = campaign
+        
         const promotionResponse = await sdk.client.fetch<{
           products: (HttpTypes.StoreProduct & { 
             promotions?: any[]
@@ -252,11 +272,7 @@ export const listProductsWithPromotions = async ({
           applicable_product_ids?: number
         }>(`/store/products/promotions`, {
           method: "GET",
-          query: {
-            limit: 50, // Get more to have enough after filtering
-            offset: 0,
-            region_id: region?.id,
-          },
+          query: queryParams,
           headers,
           cache: "no-cache"
         })

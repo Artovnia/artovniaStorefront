@@ -54,71 +54,8 @@ export const PromotionListing = ({
   const campaignFilter = searchParams.get("campaign") || ""
   const sortBy = searchParams.get("sortBy") || ""
 
-  // Client-side filtering of products
-  const filteredProducts = useMemo(() => {
-    let filtered = [...products]
-    
-    // Filter by promotion code
-    if (promotionFilter) {
-      filtered = filtered.filter(product => {
-        const productWithMeta = product as any
-        return productWithMeta.promotions?.some((promo: any) => 
-          promo.code === promotionFilter
-        )
-      })
-    }
-    
-    // Filter by seller
-    if (sellerFilter) {
-      filtered = filtered.filter(product => {
-        const productWithSeller = product as HttpTypes.StoreProduct & { seller?: SellerProps }
-        return productWithSeller.seller?.id === sellerFilter
-      })
-    }
-    
-    // Filter by campaign
-    if (campaignFilter) {
-      filtered = filtered.filter(product => {
-        const productWithMeta = product as any
-        return productWithMeta.promotions?.some((promo: any) => 
-          promo.campaign?.name === campaignFilter
-        )
-      })
-    }
-    
-    // Sort products
-    if (sortBy) {
-      filtered.sort((a, b) => {
-        switch (sortBy) {
-          case "price_asc":
-            const aPrice = Math.min(...(a.variants?.map(v => v.calculated_price?.calculated_amount || 0) || [0]))
-            const bPrice = Math.min(...(b.variants?.map(v => v.calculated_price?.calculated_amount || 0) || [0]))
-            return aPrice - bPrice
-          case "price_desc":
-            const aPriceDesc = Math.min(...(a.variants?.map(v => v.calculated_price?.calculated_amount || 0) || [0]))
-            const bPriceDesc = Math.min(...(b.variants?.map(v => v.calculated_price?.calculated_amount || 0) || [0]))
-            return bPriceDesc - aPriceDesc
-          case "discount_desc":
-            // Calculate discount percentage
-            const getDiscount = (product: HttpTypes.StoreProduct) => {
-              const variant = product.variants?.[0]
-              if (!variant?.calculated_price) return 0
-              const original = variant.calculated_price.original_amount || 0
-              const calculated = variant.calculated_price.calculated_amount || 0
-              if (original === 0) return 0
-              return ((original - calculated) / original) * 100
-            }
-            return getDiscount(b) - getDiscount(a)
-          case "created_at_desc":
-            return new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime()
-          default:
-            return 0
-        }
-      })
-    }
-    
-    return filtered
-  }, [products, promotionFilter, sellerFilter, campaignFilter, sortBy])
+  // Backend handles filtering and sorting, so we just use products directly
+  const filteredProducts = products
 
   // Fetch user and wishlist data
   const fetchUserData = async () => {
@@ -160,6 +97,10 @@ export const PromotionListing = ({
         page,
         limit,
         countryCode,
+        sortBy: sortBy || undefined,
+        promotion: promotionFilter || undefined,
+        seller: sellerFilter || undefined,
+        campaign: campaignFilter || undefined,
       })
 
       setProducts(response.products || [])
@@ -188,6 +129,14 @@ export const PromotionListing = ({
     setCount(initialCount)
     setCurrentPage(initialPage)
   }, [initialProducts, initialCount, initialPage])
+
+  // Refetch when filters change
+  useEffect(() => {
+    // Skip initial render
+    if (products.length === 0 && initialProducts.length > 0) return
+    
+    fetchProductsForPage(1)
+  }, [promotionFilter, sellerFilter, campaignFilter, sortBy])
 
   // Calculate total pages
   const totalPages = Math.ceil(count / limit)

@@ -9,10 +9,44 @@ import { HERO_BANNERS, HERO_CONFIG } from "@/config/hero-banners"
 export interface HeroBanner {
   id: string
   image: string
+  mobileImage?: string // Optional separate mobile image
   alt: string
   url?: string
+  content?: {
+    heading: {
+      text: string
+      highlightedWord?: string // Word to highlight with different font style
+      highlightedWordIndex?: number // Which word to highlight (0-based)
+      font?: 'regular' | 'italic' // font-instrument-serif (regular) or font-instrument-serif italic
+      highlightFont?: 'regular' | 'italic' // Highlighted word style
+      uppercase?: boolean // Make heading uppercase
+      size?: {
+        mobile: string // e.g., "text-4xl"
+        tablet: string // e.g., "text-6xl"
+        desktop: string // e.g., "text-8xl" - ADJUST SIZES HERE IN hero-banners.ts
+      }
+    }
+    paragraph?: {
+      text: string
+      // Paragraph always uses font-instrument-sans uppercase - no font option needed
+      size?: {
+        mobile: string
+        tablet: string
+        desktop: string
+      }
+    }
+    cta?: {
+      text: string
+      variant?: 'primary' | 'secondary' | 'outline'
+    }
+    textColor?: 'white' | 'black' | 'custom'
+    customTextColor?: string
+    alignment?: 'left' | 'center' | 'right'
+    verticalAlignment?: 'top' | 'center' | 'bottom'
+  }
 }
 
+// Hero component props
 type HeroProps = {
   banners?: HeroBanner[]
   autoSwitchInterval?: number
@@ -29,6 +63,105 @@ export const Hero = ({
   const [currentIndex, setCurrentIndex] = useState(0)
   const [isAutoPlaying, setIsAutoPlaying] = useState(true)
   const [imageLoadStates, setImageLoadStates] = useState<Record<string, boolean>>({})
+
+  // Helper function to render heading with highlighted word
+  const renderHeading = (heading?: NonNullable<HeroBanner['content']>['heading']) => {
+    if (!heading) return null
+    
+    const words = heading.text.split(' ')
+    const baseFont = heading.font === 'italic' ? 'font-instrument-serif italic' : 'font-instrument-serif'
+    const highlightFont = heading.highlightFont === 'italic' ? 'font-instrument-serif italic' : 'font-instrument-serif'
+    const uppercaseClass = heading.uppercase ? 'uppercase' : ''
+    
+    // Map Tailwind classes to rem values for inline styles
+    const sizeMap: Record<string, string> = {
+      'text-4xl': '2.25rem',   // 36px
+      'text-5xl': '3rem',      // 48px
+      'text-6xl': '3.75rem',   // 60px
+      'text-7xl': '4.5rem',    // 72px
+      'text-8xl': '6rem',      // 96px
+      'text-9xl': '8rem',      // 128px
+      'text-10xl': '10rem',    // 160px
+      'text-11xl': '12rem',    // 192px
+      'text-12xl': '14rem',    // 224px
+    }
+    
+    const mobileSize = sizeMap[heading.size?.mobile || 'text-4xl'] || '2.25rem'
+    const tabletSize = sizeMap[heading.size?.tablet || 'text-6xl'] || '3.75rem'
+    const desktopSize = sizeMap[heading.size?.desktop || 'text-9xl'] || '8rem'
+    
+    // Check if word should be highlighted (supports multi-word phrases)
+    const highlightWords = heading.highlightedWord ? heading.highlightedWord.split(' ') : []
+    const isWordHighlighted = (word: string, idx: number) => {
+      // Check by index
+      if (idx === heading.highlightedWordIndex) return true
+      // Check if this word is part of the highlighted phrase
+      if (highlightWords.length > 0) {
+        // Find if current word starts a match for the phrase
+        for (let i = 0; i < highlightWords.length; i++) {
+          if (words[idx + i] === highlightWords[i]) {
+            if (i === highlightWords.length - 1) return true // All words matched
+            continue
+          } else {
+            break
+          }
+        }
+        // Check if word is part of ongoing phrase
+        for (let start = Math.max(0, idx - highlightWords.length + 1); start <= idx; start++) {
+          let matches = true
+          for (let i = 0; i < highlightWords.length; i++) {
+            if (words[start + i] !== highlightWords[i]) {
+              matches = false
+              break
+            }
+          }
+          if (matches && idx >= start && idx < start + highlightWords.length) {
+            return true
+          }
+        }
+      }
+      return false
+    }
+    
+    const renderWords = (words: string[]) => {
+      return words.map((word: string, idx: number) => {
+        const isHighlighted = isWordHighlighted(word, idx)
+        return (
+          <span key={idx} className={isHighlighted ? highlightFont : ''}>
+            {word}{idx < words.length - 1 ? ' ' : ''}
+          </span>
+        )
+      })
+    }
+    
+    return (
+      <>
+        {/* Mobile */}
+        <h1 
+          className={`${baseFont} ${uppercaseClass} mb-4 sm:mb-6 drop-shadow-2xl text-white sm:hidden`}
+          style={{ fontSize: mobileSize }}
+        >
+          {renderWords(words)}
+        </h1>
+        
+        {/* Tablet */}
+        <h1 
+          className={`${baseFont} ${uppercaseClass} mb-4 sm:mb-6 drop-shadow-2xl text-white hidden sm:block lg:hidden`}
+          style={{ fontSize: tabletSize }}
+        >
+          {renderWords(words)}
+        </h1>
+        
+        {/* Desktop */}
+        <h1 
+          className={`${baseFont} ${uppercaseClass} mb-4 sm:mb-6 drop-shadow-2xl text-white hidden lg:block`}
+          style={{ fontSize: desktopSize }}
+        >
+          {renderWords(words)}
+        </h1>
+      </>
+    )
+  }
 
   // Auto-switch functionality
   useEffect(() => {
@@ -80,13 +213,13 @@ export const Hero = ({
 
   return (
     <section 
-      className={`relative w-full h-[40vh] sm:h-[45vh] lg:h-[50vh] min-h-[300px] sm:min-h-[350px] lg:min-h-[400px] max-h-[500px] sm:max-h-[600px] lg:max-h-[800px] overflow-hidden ${className}`}
+      className={`relative w-full h-[20vh] sm:h-[40vh] lg:h-[50vh] min-h-[300px] sm:min-h-[350px] lg:min-h-[400px] overflow-hidden ${className}`}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
     >
       {/* Banner Images */}
       <div className="relative w-full h-full">
-        {banners.map((banner, index) => {
+        {banners.map((banner: HeroBanner, index: number) => {
           const isActive = index === currentIndex
           const isNext = index === (currentIndex + 1) % banners.length
           const isPrev = index === (currentIndex - 1 + banners.length) % banners.length
@@ -128,7 +261,37 @@ export const Hero = ({
                 {/* Overlay for better text readability */}
                 <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
                 
-               
+                {/* Text Content Overlay */}
+                {banner.content && (
+                  <div className={`absolute inset-0 z-10 flex items-${banner.content.verticalAlignment || 'center'} justify-${banner.content.alignment || 'center'} px-4 sm:px-6 lg:px-8`}>
+                    <div className="w-full text-center">
+                      {/* Heading */}
+                      {banner.content.heading && renderHeading(banner.content.heading)}
+                      
+                      {/* Paragraph */}
+                      {banner.content.paragraph && (
+                        <p className={`font-instrument-sans uppercase ${banner.content.paragraph.size?.mobile || 'text-base'} sm:${banner.content.paragraph.size?.tablet || 'text-lg'} lg:${banner.content.paragraph.size?.desktop || 'text-xl'} text-white mb-6 sm:mb-8 drop-shadow-lg max-w-2xl mx-auto`}>
+                          {banner.content.paragraph.text}
+                        </p>
+                      )}
+                      
+                      {/* CTA Button */}
+                      {banner.content.cta && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            if (banner.url) {
+                              window.location.href = banner.url
+                            }
+                          }}
+                          className="px-6 sm:px-8 py-3 sm:py-4 font-instrument-sans font-semibold text-sm sm:text-base lg:text-lg transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl bg-transparent border-2 border-white text-white hover:bg-white hover:text-[#3B3634]"
+                        >
+                          {banner.content.cta.text}
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                )}
                 
                 {/* Hover effect overlay */}
                 {banner.url && (
@@ -144,7 +307,7 @@ export const Hero = ({
       {banners.length > 1 && (
         <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 z-20">
           <div className="flex space-x-3">
-            {banners.map((_, index) => (
+            {banners.map((_: HeroBanner, index: number) => (
               <button
                 key={index}
                 onClick={() => handleDotClick(index)}

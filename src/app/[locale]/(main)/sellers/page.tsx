@@ -22,15 +22,11 @@ export default function SellersPage() {
             alt="Ceramiczne naczynia i dekoracje - sprzedawcy Artovnia"
             fill
             priority
-            className="object-cover object-center"
+            className="object-cover object-[85%] "
             sizes="100vw"
             quality={90}
           />
-          {/* Gradient Overlay for better text readability (WCAG AA contrast) */}
-          <div 
-            className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/50 to-black/70"
-            aria-hidden="true"
-          />
+         
         </div>
 
         {/* Content Overlay */}
@@ -45,7 +41,7 @@ export default function SellersPage() {
             </h1>
             
             {/* Subtitle with accessible contrast */}
-            <p className="text-md sm:text-lg md:text-xl lg:text-2xl text-white font-instrument-sans max-w-3xl drop-shadow-lg">
+            <p className="text-md sm:text-lg md:text-xl lg:text-2xl text-white font-instrument-sans uppercase max-w-3xl drop-shadow-lg">
               Odkryj utalentowanych artystów i sprzedawców na naszej platformie
             </p>
           </div>

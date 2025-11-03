@@ -1,13 +1,13 @@
 // src/components/cells/SizeFilter/SizeFilter.tsx
 "use client"
 
-import { useMemo } from "react"
+import { useMemo, useEffect } from "react"
 import { Chip } from "@/components/atoms"
 import { Accordion } from "@/components/molecules"
-import useUpdateSearchParams from "@/hooks/useUpdateSearchParams"
 import { useSearchParams } from "next/navigation"
 import { useInstantSearch } from "react-instantsearch"
 import { useSizeAttributes } from "../../../hooks/useUniversalAttributes"
+import { useFilterStore } from "@/stores/filterStore"
 
 interface SizeFilterProps {
   onClose?: () => void;
@@ -18,18 +18,15 @@ export const SizeFilter = ({ onClose, showButton = true }: SizeFilterProps = {})
   const { attributes: sizeAttributes, loading, error } = useSizeAttributes()
   const { results } = useInstantSearch()
   const searchParams = useSearchParams()
-  const updateSearchParams = useUpdateSearchParams()
+  
+  // Use PENDING state for staging selections (not applied until Apply button)
+  // URL sync is handled by useSyncFiltersFromURL in ProductFilterBar
+  const { pendingSizes, addPendingSize, removePendingSize } = useFilterStore()
 
   // Auto-detect the primary size attribute (first one found)
   const primarySizeAttribute = useMemo(() => {
     return sizeAttributes.find(attr => attr.is_filterable) || sizeAttributes[0]
   }, [sizeAttributes])
-
-  // State for tracking current filter(s)
-  const currentSizeFilters = useMemo(() => {
-    const sizeParam = searchParams.get("size") || ""
-    return sizeParam ? sizeParam.split(',') : []
-  }, [searchParams])
 
   // SOLUTION 3: Extract sizes from product results instead of using useRefinementList
   // This eliminates additional Algolia queries
@@ -84,31 +81,20 @@ export const SizeFilter = ({ onClose, showButton = true }: SizeFilterProps = {})
     return Array.from(sizeSet).sort()
   }, [primarySizeAttribute, results])
 
-  // Check if a size filter is currently active
+  // Check if a size filter is currently active in PENDING state
   const isFilterActive = (size: string) => {
-    return currentSizeFilters.includes(size)
+    return pendingSizes.includes(size)
   }
 
-  // Handle size selection
+  // Handle size selection - updates PENDING state only
   const handleSizeSelection = (size: string): void => {
-    let newSizes: string[]
-
-    if (currentSizeFilters.includes(size)) {
+    if (pendingSizes.includes(size)) {
       // Remove if already selected
-      newSizes = currentSizeFilters.filter((s: string) => s !== size)
+      removePendingSize(size)
     } else {
       // Add if not selected
-      newSizes = [...currentSizeFilters, size]
+      addPendingSize(size)
     }
-
-    // Update URL param
-    const newSizeParam = newSizes.length > 0 ? newSizes.join(',') : null
-    updateSearchParams('size', newSizeParam)
-  }
-
-  // Clear all size filters
-  const clearSizeFilters = (): void => {
-    updateSearchParams('size', null)
   }
 
   if (loading) {
@@ -144,14 +130,6 @@ export const SizeFilter = ({ onClose, showButton = true }: SizeFilterProps = {})
         ))}
       </div>
 
-      {currentSizeFilters.length > 0 && (
-        <button
-          className="text-sm text-primary hover:text-primary-dark"
-          onClick={clearSizeFilters}
-        >
-          Wyczyść filtry
-        </button>
-      )}
     </Accordion>
   )
 }

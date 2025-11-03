@@ -11,8 +11,8 @@ export async function BlogSection() {
   }
 
   return (
-    <section className='bg-white w-full py-8'>
-      <div className='flex items-center justify-between mb-12 px-4'>
+    <section className='bg-white w-full py-8 overflow-hidden'>
+      <div className='flex items-center justify-between mb-12 px-4 sm:px-6 lg:px-8'>
         <h2 className='heading-lg text-black font-instrument-serif italic'>
           Bądź na czasie
         </h2>
@@ -25,12 +25,12 @@ export async function BlogSection() {
       </div>
       
       {/* Mobile: Carousel */}
-      <div className='lg:hidden'>
+      <div className='lg:hidden px-4 sm:px-6'>
         <BlogCarousel posts={blogPosts} />
       </div>
       
       {/* Desktop: Grid */}
-      <div className='hidden lg:grid lg:grid-cols-3 gap-8 px-4'>
+      <div className='hidden lg:grid lg:grid-cols-3 gap-8 px-4 sm:px-6 lg:px-8'>
         {blogPosts.map((post, index) => (
           <BlogCard
             key={post._id}

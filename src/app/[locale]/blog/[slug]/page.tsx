@@ -3,7 +3,7 @@ import { notFound } from 'next/navigation'
 import Image from 'next/image'
 import Link from 'next/link'
 import { format } from 'date-fns'
-import { getBlogPost, getBlogPosts, getSellerPost, getSellerPosts } from '../lib/data'
+import { getBlogPost, getBlogPosts, getSellerPost, getSellerPosts, getBlogCategories } from '../lib/data'
 import { urlFor } from '../lib/sanity'
 import BlogLayout from '../components/BlogLayout'
 import PortableText from '../components/PortableText'
@@ -149,30 +149,33 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
       // Continue without the image if there's an error
     }
 
-  return (
-    <BlogLayout 
-      breadcrumbs={[
-        { label: 'Strona główna', path: '/' },
-        { label: 'Blog', path: '/blog' },
-        { label: blogPostData.title, path: `/blog/${blogPostData.slug.current}` }
-      ]}
-    >
-      <article className="max-w-4xl mx-auto bg-[#F4F0EB]">
-        {/* Header */}
-        <header className="mb-8">
-          {blogPostData.categories && blogPostData.categories.length > 0 && (
-            <div className="flex flex-wrap gap-2 mb-4">
-              {blogPostData.categories.map((category: any) => (
-                <Link
-                  key={category.slug.current}
-                  href={`/blog/category/${category.slug.current}`}
-                  className="text-xl font-medium text-[#3B3634] hover:text-[#BFB7AD] bg-[#F4F0EB] border border-[#BFB7AD] px-3 py-1 rounded-full font-instrument-sans transition-colors"
-                >
-                  {category.title}
-                </Link>
-              ))}
-            </div>
-          )}
+    const categories = await getBlogCategories()
+  
+    return (
+      <BlogLayout 
+        breadcrumbs={[
+          { label: 'Strona główna', path: '/' },
+          { label: 'Blog', path: '/blog' },
+          { label: blogPostData.title, path: `/blog/${blogPostData.slug.current}` }
+        ]}
+        categories={categories}
+      >
+        <article className="max-w-4xl mx-auto bg-[#F4F0EB]">
+          {/* Header */}
+          <header className="mb-8">
+            {blogPostData.categories && blogPostData.categories.length > 0 && (
+              <div className="flex flex-wrap gap-2 mb-4">
+                {blogPostData.categories.map((category: any) => (
+                  <Link
+                    key={category.slug.current}
+                    href={`/blog/category/${category.slug.current}`}
+                    className="text-xl font-medium text-[#3B3634] hover:text-[#BFB7AD] bg-[#F4F0EB] border border-[#BFB7AD] px-3 py-1 rounded-full font-instrument-sans transition-colors"
+                  >
+                    {category.title}
+                  </Link>
+                ))}
+              </div>
+            )}
           
           <h1 className="text-4xl md:text-5xl font-instrument-serif text-[#3B3634] mb-4 leading-tight">
             {blogPostData.title}

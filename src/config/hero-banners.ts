@@ -13,28 +13,143 @@ import type { HeroBanner } from "@/components/sections/Hero/Hero"
 export const HERO_BANNERS: HeroBanner[] = [
   {
     id: "main-odkrywaj",
-    image: "/images/hero/Hero01.webp",
+    image: "/images/hero/Hero01.webp", // Background only
+    mobileImage: "/images/hero/Hero01-mobile.webp", // Optional mobile version
     alt: "Odkrywaj nowe produkty w Artovnia",
-    url: "/categories"
+    url: "/categories",
+    content: {
+      heading: {
+        text: "ARTOVNIA",
+        highlightedWord: "",
+        font: 'regular', // font-instrument-serif
+        highlightFont: 'italic', // font-instrument-serif italic
+        size: {
+          mobile: "text-4xl",
+          tablet: "text-6xl",
+          desktop: "text-8xl"
+        }
+      },
+      paragraph: {
+        text: "Bliżej rękodzieła. Bliżej Twórców",
+        size: {
+          mobile: "text-md",
+          tablet: "text-lg",
+          desktop: "text-2xl"
+        }
+      },
+      cta: {
+        text: "Zobacz produkty",
+        variant: 'primary'
+      },
+      textColor: 'white',
+      alignment: 'center',
+      verticalAlignment: 'center'
+    }
   },
-  
   {
     id: "odkrywaj-promocje",
-    image: "/images/hero/Hero03.webp", 
+    image: "/images/hero/Hero03.webp",
+    mobileImage: "/images/hero/Hero03-mobile.webp",
     alt: "Promocje",
-    url: "/promotions"
+    url: "/promotions",
+    content: {
+      heading: {
+        text: "Aktualne Promocje",
+        highlightedWord: "Promocje",
+        font: 'regular',
+        highlightFont: 'italic',
+        size: {
+          mobile: "text-4xl",
+          tablet: "text-6xl",
+          desktop: "text-8xl"
+        }
+      },
+      paragraph: {
+        text: "Zobacz aktualne promocje naszych projektantów",
+        size: {
+          mobile: "text-md",
+          tablet: "text-lg",
+          desktop: "text-2xl"
+        }
+      },
+      cta: {
+        text: "Zobacz Oferty",
+        variant: 'secondary'
+      },
+      textColor: 'white',
+      alignment: 'center',
+      verticalAlignment: 'center'
+    }
   },
   {
     id: "sprzedawaj-w-artovnia",
-    image: "/images/hero/Hero04.webp", 
+    image: "/images/hero/Hero04.webp",
+    mobileImage: "/images/hero/Hero04-mobile.webp",
     alt: "Sprzedawaj w Artovnia",
-    url: "https://artovniapanel.netlify.app/login"
+    url: "https://artovniapanel.netlify.app/login",
+    content: {
+      heading: {
+        text: "Dołącz do nas",
+        highlightedWord: "nas",
+        font: 'regular',
+        highlightFont: 'italic',
+        size: {
+          mobile: "text-4xl",
+          tablet: "text-6xl",
+          desktop: "text-8xl"
+        }
+      },
+      paragraph: {
+        text: "Otwórz swój sklep i zacznij sprzedawać swoje rękodzieło",
+        size: {
+          mobile: "text-md",
+          tablet: "text-lg",
+          desktop: "text-2xl"
+        }
+      },
+      cta: {
+        text: "Załóż sklep",
+        variant: 'primary'
+      },
+      textColor: 'white',
+      alignment: 'center',
+      verticalAlignment: 'center'
+    }
   },
   {
     id: "obrazy",
-    image: "/images/hero/Hero05.webp", 
+    image: "/images/hero/Hero05.webp",
+    mobileImage: "/images/hero/Hero05-mobile.webp",
     alt: "Obrazy",
-    url: "/categories/obrazy"
+    url: "/categories/obrazy",
+    content: {
+      heading: {
+        text: "Sztuka w Twoim domu",
+        highlightedWord: "Twoim domu",
+        font: 'regular',
+        highlightFont: 'italic',
+        size: {
+          mobile: "text-4xl",
+          tablet: "text-6xl",
+          desktop: "text-8xl"
+        }
+      },
+      paragraph: {
+        text: "Ręcznie malowane obrazy przez polskich artystów",
+        size: {
+          mobile: "text-md",
+          tablet: "text-lg",
+          desktop: "text-2xl"
+        }
+      },
+      cta: {
+        text: "Zobacz obrazy",
+        variant: 'secondary'
+      },
+      textColor: 'white',
+      alignment: 'center',
+      verticalAlignment: 'center'
+    }
   }
 ]
 

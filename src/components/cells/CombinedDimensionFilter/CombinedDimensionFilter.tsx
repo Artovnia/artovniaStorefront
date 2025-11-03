@@ -2,10 +2,10 @@
 "use client"
 
 import { Accordion } from "@/components/molecules"
-import useUpdateSearchParams from "@/hooks/useUpdateSearchParams"
 import { useSearchParams } from "next/navigation"
 import React, { useEffect, useState, useCallback } from "react"
 import { useHits, useInstantSearch } from "react-instantsearch"
+import { useFilterStore } from "@/stores/filterStore"
 
 // Define TypeScript types for improved type safety
 type DimensionInputs = {
@@ -37,17 +37,10 @@ interface CombinedDimensionFilterProps {
  * Works with both product-level and variant-level dimensions
  */
 export function CombinedDimensionFilter({ onClose, showButton = true }: CombinedDimensionFilterProps = {}): JSX.Element {
-  // State for all dimension values using a single state object
-  const [dimensionInputs, setDimensionInputs] = useState<DimensionInputs>({
-    min_length: "",
-    max_length: "",
-    min_width: "",
-    max_width: "",
-    min_height: "",
-    max_height: "",
-    min_weight: "",
-    max_weight: ""
-  })
+  // Use PENDING state from Zustand for staging (not applied until Apply button)
+  // URL sync is handled by useSyncFiltersFromURL in ProductFilterBar
+  const { pendingDimensionFilters, setPendingDimensionFilter } = useFilterStore()
+  const searchParams = useSearchParams()
   
   // Destructure values for easier access in the component
   const { 
@@ -59,11 +52,7 @@ export function CombinedDimensionFilter({ onClose, showButton = true }: Combined
     max_height: maxHeight,
     min_weight: minWeight,
     max_weight: maxWeight
-  } = dimensionInputs
-  
-  // Get search params and update utility
-  const updateSearchParams = useUpdateSearchParams()
-  const searchParams = useSearchParams()
+  } = pendingDimensionFilters
   
   // Get product hits to analyze dimension ranges
   const { results } = useHits()
@@ -84,20 +73,7 @@ export function CombinedDimensionFilter({ onClose, showButton = true }: Combined
     weight: null
   })
 
-  // Update local state when URL params change
-  useEffect(() => {
-    // Update all dimension inputs in a single state update
-    setDimensionInputs({
-      min_length: searchParams.get("min_length") || "",
-      max_length: searchParams.get("max_length") || "",
-      min_width: searchParams.get("min_width") || "",
-      max_width: searchParams.get("max_width") || "",
-      min_height: searchParams.get("min_height") || "",
-      max_height: searchParams.get("max_height") || "",
-      min_weight: searchParams.get("min_weight") || "",
-      max_weight: searchParams.get("max_weight") || ""
-    })
-  }, [searchParams])
+  // Pending state is managed by Zustand store, no need to sync with URL params here
   
   // Analyze product data to find dimension ranges from variant data
   useEffect(() => {
@@ -212,187 +188,20 @@ export function CombinedDimensionFilter({ onClose, showButton = true }: Combined
       helper.addDisjunctiveFacet('variant_dimensions.width')
       helper.addDisjunctiveFacet('variant_dimensions.height')
       helper.addDisjunctiveFacet('variant_dimensions.weight')
-      
-      helper.search()
     }
   }, [helper])
 
-  // Handle dimension change
+  // Handle dimension change - updates PENDING state only
   const handleDimensionChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target
     
-    // Update local state
-    setDimensionInputs(prev => ({
-      ...prev,
-      [name]: value
-    }))
-    
-    // Apply filter immediately on change
-    applyDimensionFilter(name, value)
+    // Update pending state only (not applied until Apply button)
+    setPendingDimensionFilter(name, value)
   }
 
-  // Apply dimension filter when Enter is pressed or input changes
-  const applyDimensionFilter = (name: string, value: string) => {
-    // Update URL param
-    updateSearchParams(name, value || null)
-    
-    // Apply filter directly to Algolia
-    if (helper) {
-      // Extract the dimension type and min/max from the parameter name
-      const isMin = name.startsWith('min_')
-      const dimensionType = name.replace(/^(min|max)_/, '')
-      
-      // Get the current numeric filters
-      const numericFilters = helper.state.numericFilters || []
-      
-      // Remove any existing filter for this dimension and min/max type
-      const filteredNumericFilters = numericFilters.filter((filter: string) => {
-        // Check if this filter is for the same dimension and operator type
-        const parts = filter.split(/([<>=]+)/)
-        if (parts.length < 2) return true
-        
-        const filterAttribute = parts[0].trim()
-        const filterOperator = parts[1].trim()
-        
-        // Check all possible attribute paths for this dimension
-        const dimensionPaths = [
-          dimensionType, // product-level
-          `variant_${dimensionType}s`, // variant arrays
-          `variants.${dimensionType}`, // individual variants
-          `variant_dimensions.${dimensionType}` // structured variant dimensions
-        ]
-        
-        const isDimensionFilter = dimensionPaths.includes(filterAttribute)
-        const isMatchingOperator = (isMin && filterOperator === '>=') || (!isMin && filterOperator === '<=')
-        
-        return !(isDimensionFilter && isMatchingOperator)
-      })
-      
-      if (value) {
-        // Add new filters for all possible dimension paths
-        const operator = isMin ? '>=' : '<='
-        const newFilters: string[] = []
-        
-        // Add filters for variant dimension arrays (primary)
-        newFilters.push(`variant_${dimensionType}s${operator}${value}`)
-        
-        // Add filters for individual variants
-        newFilters.push(`variants.${dimensionType}${operator}${value}`)
-        
-        // Add filters for structured variant dimensions
-        newFilters.push(`variant_dimensions.${dimensionType}${operator}${value}`)
-        
-        // Add filter for product-level dimensions (fallback)
-        newFilters.push(`${dimensionType}${operator}${value}`)
-        
+  // Removed immediate apply logic - dimensions will be applied when user clicks Apply button
 
-        
-        // Update the helper state and trigger a search
-        helper.setState({
-          ...helper.state,
-          numericFilters: [...filteredNumericFilters, ...newFilters]
-        })
-      } else {
-        // Just remove the filter without adding a new one
-        helper.setState({
-          ...helper.state,
-          numericFilters: filteredNumericFilters
-        })
-      }
-      
-      helper.search()
-    }
-  }
-
-  // Handle dimension apply on Enter key press
-  const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter') {
-      const { name, value } = e.currentTarget
-      applyDimensionFilter(name, value)
-    }
-  }
-
-  // Clear all dimension filters - use useCallback to ensure stable reference
-  const clearAllDimensionFilters = useCallback(() => {
-    console.log('🧽 CombinedDimensionFilter: clearAllDimensionFilters called')
-    
-    // Get all dimension params from search params to clear them
-    const dimensionParams = [
-      'min_length', 'max_length',
-      'min_width', 'max_width',
-      'min_height', 'max_height',
-      'min_weight', 'max_weight'
-    ]
-
-    console.log('📝 CombinedDimensionFilter: Current dimension inputs before clear:', dimensionInputs)
-
-    // Clear inputs
-    setDimensionInputs({
-      min_length: '',
-      max_length: '',
-      min_width: '',
-      max_width: '',
-      min_height: '',
-      max_height: '',
-      min_weight: '',
-      max_weight: ''
-    })
-
-    console.log('🔗 CombinedDimensionFilter: Clearing URL params:', dimensionParams)
-    
-    // Clear URL params
-    dimensionParams.forEach(param => {
-      updateSearchParams(param, null)
-    })
-
-    // Clear all numeric filters from the Algolia helper if available
-    if (helper) {
-      const numericFilters = helper.state.numericFilters || []
-      
-      // Remove dimension-related filters
-      const filteredNumericFilters = numericFilters.filter((filter: string) => {
-        const parts = filter.split(/([<>=]+)/)
-        if (parts.length < 2) return true
-        
-        const filterAttribute = parts[0].trim()
-        
-        // Check if this is a dimension-related filter
-        const dimensionTypes = ['length', 'width', 'height', 'weight']
-        const isDimensionFilter = dimensionTypes.some(dim => 
-          filterAttribute === dim ||
-          filterAttribute === `variant_${dim}s` ||
-          filterAttribute === `variants.${dim}` ||
-          filterAttribute === `variant_dimensions.${dim}`
-        )
-        
-        return !isDimensionFilter
-      })
-      
-      // Update helper state and trigger a search
-      helper.setState({
-        ...helper.state,
-        numericFilters: filteredNumericFilters
-      })
-      
-      helper.search()
-    }
-  }, [updateSearchParams, helper]) // Add dependency array for useCallback
-
-  // Listen for clear all filters event from ProductFilterBar
-  useEffect(() => {
-    const handleClearAllDimensionFilters = () => {
-      console.log('🎯 CombinedDimensionFilter: Received clearAllDimensionFilters event')
-      clearAllDimensionFilters()
-    }
-
-    console.log('🔧 CombinedDimensionFilter: Adding event listener for clearAllDimensionFilters')
-    window.addEventListener('clearAllDimensionFilters', handleClearAllDimensionFilters)
-    
-    return () => {
-      console.log('🧹 CombinedDimensionFilter: Removing event listener for clearAllDimensionFilters')
-      window.removeEventListener('clearAllDimensionFilters', handleClearAllDimensionFilters)
-    }
-  }, []) // Empty dependency array is fine since clearAllDimensionFilters doesn't depend on props/state
+  // Clearing is now handled by the main Apply/Clear buttons in ProductFilterBar
 
   // Check if any dimension filter is active
   const hasActiveFilter = Boolean(
@@ -430,7 +239,6 @@ export function CombinedDimensionFilter({ onClose, showButton = true }: Combined
                 value={minLength}
                 name="min_length"
                 onChange={handleDimensionChange}
-                onKeyDown={handleKeyPress}
               />
               <span className="absolute right-2 top-2 text-xs font-medium text-gray-500">mm</span>
             </div>
@@ -444,7 +252,6 @@ export function CombinedDimensionFilter({ onClose, showButton = true }: Combined
                 value={maxLength}
                 name="max_length"
                 onChange={handleDimensionChange}
-                onKeyDown={handleKeyPress}
               />
               <span className="absolute right-2 top-2 text-xs font-medium text-gray-500">mm</span>
             </div>
@@ -470,7 +277,6 @@ export function CombinedDimensionFilter({ onClose, showButton = true }: Combined
                 value={minWidth}
                 name="min_width"
                 onChange={handleDimensionChange}
-                onKeyDown={handleKeyPress}
               />
               <span className="absolute right-2 top-2 text-xs font-medium text-gray-500">mm</span>
             </div>
@@ -484,7 +290,6 @@ export function CombinedDimensionFilter({ onClose, showButton = true }: Combined
                 value={maxWidth}
                 name="max_width"
                 onChange={handleDimensionChange}
-                onKeyDown={handleKeyPress}
               />
               <span className="absolute right-2 top-2 text-xs font-medium text-gray-500">mm</span>
             </div>
@@ -510,7 +315,6 @@ export function CombinedDimensionFilter({ onClose, showButton = true }: Combined
                 value={minHeight}
                 name="min_height"
                 onChange={handleDimensionChange}
-                onKeyDown={handleKeyPress}
               />
               <span className="absolute right-2 top-2 text-xs font-medium text-gray-500">mm</span>
             </div>
@@ -524,7 +328,6 @@ export function CombinedDimensionFilter({ onClose, showButton = true }: Combined
                 value={maxHeight}
                 name="max_height"
                 onChange={handleDimensionChange}
-                onKeyDown={handleKeyPress}
               />
               <span className="absolute right-2 top-2 text-xs font-medium text-gray-500">mm</span>
             </div>
@@ -550,7 +353,6 @@ export function CombinedDimensionFilter({ onClose, showButton = true }: Combined
                 value={minWeight}
                 name="min_weight"
                 onChange={handleDimensionChange}
-                onKeyDown={handleKeyPress}
               />
               <span className="absolute right-2 top-2 text-xs font-medium text-gray-500">g</span>
             </div>
@@ -564,7 +366,6 @@ export function CombinedDimensionFilter({ onClose, showButton = true }: Combined
                 value={maxWeight}
                 name="max_weight"
                 onChange={handleDimensionChange}
-                onKeyDown={handleKeyPress}
               />
               <span className="absolute right-2 top-2 text-xs font-medium text-gray-500">g</span>
             </div>
@@ -572,17 +373,6 @@ export function CombinedDimensionFilter({ onClose, showButton = true }: Combined
         </div>
       </div>
       
-      {/* Clear filters button */}
-      {hasActiveFilter && (
-        <div className="text-center mb-4">
-          <button 
-            onClick={clearAllDimensionFilters}
-            className="text-sm text-blue-600 hover:text-blue-800"
-          >
-            Wyczyść filtry wymiarów
-          </button>
-        </div>
-      )}
       
      
     </Accordion>

@@ -9,6 +9,7 @@ import { Breadcrumbs } from "@/components/atoms/Breadcrumbs/Breadcrumbs"
 
 interface LinkedProduct {
   productId: string
+  productHandle: string
   productName: string
   productImage?: {
     asset: {
@@ -145,8 +146,9 @@ export async function SellerPostLayout({ post }: SellerPostLayoutProps) {
               
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                 {post.linkedProducts.map((product, index) => (
-                  <div 
+                  <Link
                     key={product.productId}
+                    href={`/products/${product.productHandle}`}
                     className={`group cursor-pointer transform hover:scale-105 transition-all duration-300 ${
                       index % 2 === 0 ? 'rotate-1' : '-rotate-1'
                     } hover:rotate-0`}
@@ -172,7 +174,7 @@ export async function SellerPostLayout({ post }: SellerPostLayoutProps) {
                         </h3>
                       </div>
                     </div>
-                  </div>
+                  </Link>
                 ))}
               </div>
             </div>

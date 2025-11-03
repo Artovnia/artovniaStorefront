@@ -102,6 +102,13 @@ export default defineType({
               description: 'Medusa product ID',
             }),
             defineField({
+              name: 'productHandle',
+              title: 'Product Handle',
+              type: 'string',
+              validation: (Rule) => Rule.required(),
+              description: 'Product URL handle (e.g., "stolik-pod-obraz-1747921701916-9falth")',
+            }),
+            defineField({
               name: 'productName',
               title: 'Product Name',
               type: 'string',

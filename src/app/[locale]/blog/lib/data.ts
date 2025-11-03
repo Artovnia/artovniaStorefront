@@ -78,6 +78,7 @@ export interface SellerPost {
   content?: any
   linkedProducts?: Array<{
     productId: string
+    productHandle: string
     productName: string
     productImage?: any
   }>

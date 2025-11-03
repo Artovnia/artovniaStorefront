@@ -9,6 +9,11 @@ export default {
   ],
   theme: {
     extend: {
+      fontSize: {
+        '10xl': '10rem',    // 160px - Extra large for hero banners
+        '11xl': '12rem',    // 192px - Massive hero text
+        '12xl': '14rem',    // 224px - Ultra massive hero text
+      },
       backgroundColor: {
         primary: "rgba(var(--bg-primary))",
         secondary: "rgba(var(--bg-secondary))",

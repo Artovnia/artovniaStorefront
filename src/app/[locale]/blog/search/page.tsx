@@ -1,6 +1,6 @@
 import { Metadata } from 'next'
 import { Suspense } from 'react'
-import { searchBlogPosts } from '../lib/data'
+import { searchBlogPosts, getBlogCategories } from '../lib/data'
 import BlogLayout from '../components/BlogLayout'
 import BlogPostCard from '../components/BlogPostCard'
 
@@ -81,9 +81,11 @@ async function SearchResults({ query }: { query: string }) {
 export default async function SearchPage({ searchParams }: SearchPageProps) {
   const { q } = await searchParams
   const query = q || ''
+  const categories = await getBlogCategories()
 
   return (
     <BlogLayout
+      categories={categories}
       title="Search Results"
       description={query ? `Search results for &quot;${query}&quot;` : 'Search blog posts'}
     >

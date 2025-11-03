@@ -1,10 +1,12 @@
 import { Suspense } from 'react'
 import { Metadata } from 'next'
-import { getBlogPosts, getFeaturedPosts } from './lib/data'
+import { getBlogPosts, getFeaturedPosts, getSellerPosts, getBlogCategories } from './lib/data'
 import BlogLayout from './components/BlogLayout'
 import BlogPostCard from './components/BlogPostCard'
+import PaginatedBlogPosts from './components/PaginatedBlogPosts'
+import PaginatedSellerPosts from './components/PaginatedSellerPosts'
 
-// OPTIMIZED: Enable ISR for better performance
+// Enable ISR for better performance
 export const revalidate = 600 // 10 minutes
 
 export const metadata: Metadata = {
@@ -62,26 +64,7 @@ async function FeaturedPosts() {
 async function AllPosts() {
   try {
     const posts = await getBlogPosts()
-
-    if (posts.length === 0) {
-      return (
-        <div className="text-center py-12 font-instrument-sans bg-[#F4F0EB]">
-          <h3 className="text-xl font-medium text-[#3B3634] mb-2">Nie ma jeszcze żadnych postów</h3>
-          <p className="text-[#3B3634]">Wróć za jakiś czas!</p>
-        </div>
-      )
-    }
-
-    return (
-      <section className="font-instrument-sans bg-[#F4F0EB]">
-        <h2 className="text-2xl font-semibold text-[#3B3634] mb-6 font-instrument-serif">Wszystkie posty</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {posts.map((post) => (
-            <BlogPostCard key={post._id} post={post} />
-          ))}
-        </div>
-      </section>
-    )
+    return <PaginatedBlogPosts posts={posts} />
   } catch (error) {
     console.error('Error rendering all posts:', error)
     return (
@@ -93,7 +76,19 @@ async function AllPosts() {
   }
 }
 
-export default function BlogPage() {
+async function AllSellerPosts() {
+  try {
+    const posts = await getSellerPosts()
+    return <PaginatedSellerPosts posts={posts} />
+  } catch (error) {
+    console.error('Error rendering seller posts:', error)
+    return null
+  }
+}
+
+export default async function BlogPage() {
+  const categories = await getBlogCategories()
+  
   return (
     <BlogLayout
       title="Witaj w naszym Blogu"
@@ -102,6 +97,7 @@ export default function BlogPage() {
         { label: 'Strona główna', path: '/' },
         { label: 'Blog', path: '/blog' }
       ]}
+      categories={categories}
     >
       <Suspense fallback={<BlogPostsSkeleton />}>
         <FeaturedPosts />
@@ -109,6 +105,10 @@ export default function BlogPage() {
       
       <Suspense fallback={<BlogPostsSkeleton />}>
         <AllPosts />
+      </Suspense>
+
+      <Suspense fallback={<BlogPostsSkeleton />}>
+        <AllSellerPosts />
       </Suspense>
     </BlogLayout>
   )

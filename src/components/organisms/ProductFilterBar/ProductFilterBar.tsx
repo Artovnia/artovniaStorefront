@@ -12,33 +12,57 @@ import useUpdateSearchParams from '@/hooks/useUpdateSearchParams'
 import { useRefinementList } from 'react-instantsearch'
 import { useFilterStore } from '@/stores/filterStore'
 import useFilters from '@/hooks/useFilters'
+import { MobileFilterModal } from '@/components/organisms/MobileFilterModal/MobileFilterModal'
+import { useApplyFilters } from '@/hooks/useApplyFilters'
+import { useSyncFiltersFromURL } from '@/hooks/useSyncFiltersFromURL'
 
 interface FilterDropdownProps {
   label: string
   children: React.ReactNode
   isActive?: boolean
   className?: string
+  onApply?: () => void
 }
 
-const FilterDropdown = ({ label, children, isActive, className }: FilterDropdownProps) => {
+const FilterDropdown = ({ label, children, isActive, className, onApply }: FilterDropdownProps) => {
   const [isOpen, setIsOpen] = useState(false)
   const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0, right: 0 })
   const dropdownRef = useRef<HTMLDivElement>(null)
   const buttonRef = useRef<HTMLButtonElement>(null)
 
-  // Calculate dropdown position
-  useEffect(() => {
+  // Calculate dropdown position - updates on scroll and resize
+  const updatePosition = useCallback(() => {
     if (isOpen && buttonRef.current) {
       const rect = buttonRef.current.getBoundingClientRect()
-      const scrollTop = window.pageYOffset || document.documentElement.scrollTop
+      const dropdownWidth = 300 // Approximate dropdown width
+      const screenWidth = window.innerWidth
+      const spaceOnRight = screenWidth - rect.right
+      
+      // If dropdown would overflow on the right, align it to the right edge of button
+      const shouldAlignRight = spaceOnRight < dropdownWidth && rect.left > dropdownWidth
       
       setDropdownPosition({
-        top: rect.bottom + scrollTop + 8, // 8px margin
-        left: rect.left,
+        top: rect.bottom + 8, // 8px margin below button
+        left: shouldAlignRight ? rect.right - dropdownWidth : rect.left,
         right: window.innerWidth - rect.right
       })
     }
   }, [isOpen])
+
+  // Update position on open, scroll, and resize
+  useEffect(() => {
+    if (isOpen) {
+      updatePosition()
+      
+      window.addEventListener('scroll', updatePosition, true) // Use capture phase for all scrolls
+      window.addEventListener('resize', updatePosition)
+      
+      return () => {
+        window.removeEventListener('scroll', updatePosition, true)
+        window.removeEventListener('resize', updatePosition)
+      }
+    }
+  }, [isOpen, updatePosition])
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -61,9 +85,8 @@ const FilterDropdown = ({ label, children, isActive, className }: FilterDropdown
       className="fixed bg-primary border border-[#3B3634] rounded-lg shadow-lg z-[9999] min-w-[250px] max-w-[400px] flex flex-col"
       style={{
         top: `${dropdownPosition.top}px`,
-        left: window.innerWidth >= 640 ? 'auto' : `${dropdownPosition.left}px`,
-        right: window.innerWidth >= 640 ? `${dropdownPosition.right}px` : 'auto',
-        maxHeight: '400px',
+        left: `${dropdownPosition.left}px`,
+        maxHeight: 'calc(100vh - ' + dropdownPosition.top + 'px - 20px)', // Dynamic max height to prevent overflow
       }}
     >
       {/* Scrollable content area */}
@@ -74,10 +97,15 @@ const FilterDropdown = ({ label, children, isActive, className }: FilterDropdown
       {/* Fixed button area - show for all filters including price */}
       <div className="border-t border-[#3B3634] bg-primary rounded-b-lg">
         <button
-          onClick={() => setIsOpen(false)}
+          onClick={() => {
+            if (onApply) {
+              onApply()
+            }
+            setIsOpen(false)
+          }}
           className="w-full bg-[#3B3634] rounded-b-lg text-white py-2 px-4 font-instrument-sans text-sm hover:bg-opacity-90 transition-colors"
         >
-          Zapisz
+          Zastosuj
         </button>
       </div>
     </div>
@@ -136,6 +164,10 @@ export const ProductFilterBar = ({
 }: ProductFilterBarProps) => {
   const searchParams = useSearchParams()
   const updateSearchParams = useUpdateSearchParams()
+  const applyFilters = useApplyFilters()
+  
+  // Sync store FROM URL (URL is source of truth)
+  useSyncFiltersFromURL()
   
   // Get color and rating selections from Zustand store
   const { selectedColors, clearColors, selectedRating, clearRating } = useFilterStore()
@@ -257,8 +289,16 @@ export const ProductFilterBar = ({
         key: 'price',
         label: `Cena: ${priceLabel}`,
         onRemove: () => {
+          // Clear URL params
           updateSearchParams("min_price", "")
           updateSearchParams("max_price", "")
+          
+          // Clear Zustand store (both active and pending)
+          const { setMinPrice, setMaxPrice, setPendingMinPrice, setPendingMaxPrice } = useFilterStore.getState()
+          setMinPrice('')
+          setMaxPrice('')
+          setPendingMinPrice('')
+          setPendingMaxPrice('')
         }
       })
     }
@@ -296,11 +336,15 @@ export const ProductFilterBar = ({
     if (selectedRating) {
       filters.push({
         key: 'rating',
-        label: `Ocena: ${selectedRating}+`,
+        label: `Ocena: ${selectedRating}★`,
         onRemove: () => {
-          // Remove from Zustand store - this will trigger UI update
-          const { clearRating } = useFilterStore.getState()
-          clearRating()
+          // Clear URL param
+          updateSearchParams("rating", "")
+          
+          // Clear Zustand store (both active and pending)
+          const { setSelectedRating, setPendingRating } = useFilterStore.getState()
+          setSelectedRating(null)
+          setPendingRating(null)
         }
       })
     }
@@ -342,46 +386,64 @@ export const ProductFilterBar = ({
 
   const activeFilters = getActiveFilters()
 
+  // Clear all filters handler
+  const handleClearAll = () => {
+    const activeFilters = getActiveFilters()
+    activeFilters.forEach(filter => {
+      if (filter.onRemove) {
+        filter.onRemove()
+      }
+    })
+  }
+
   return (
     <div className={cn("w-full bg-primary border-b border-[#3B3634] py-4 px-4 sm:px-6", className)}>
-      {/* Filter Buttons Row */}
-      <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-4 overflow-x-auto scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-gray-100 pb-2">
+      {/* Mobile: Single "Filtry" Button - Show only on screens < 768px */}
+      <div className="md:hidden flex items-center gap-3 mb-4">
+        <MobileFilterModal 
+          colorFacetItems={colorFacetItems}
+          ratingFacetItems={ratingFacetItems}
+          hasActiveFilters={hasActiveFilters}
+          onClearAll={handleClearAll}
+        />
+        
+        {/* Clear All Filters - Mobile */}
+        {hasActiveFilters && (
+          <button
+            onClick={handleClearAll}
+            className="text-sm font-medium font-instrument-sans text-black underline hover:text-red-600 transition-colors"
+          >
+            Wyczyść
+          </button>
+        )}
+      </div>
+
+      {/* Desktop: Individual Filter Dropdowns - Show only on screens >= 768px */}
+      <div className="hidden md:flex flex-wrap items-center gap-2 sm:gap-3 mb-4 overflow-x-auto scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-gray-100 pb-2">
         {/* Sort Filter */}
-        <SortFilter />
+        <SortFilter onApply={applyFilters} />
         
         {/* Price Filter */}
-        <PriceFilterDropdown />
+        <PriceFilterDropdown onApply={applyFilters} />
         
         {/* Color Filter */}
-        <ColorFilterDropdown colorFacetItems={colorFacetItems} />
+        <ColorFilterDropdown colorFacetItems={colorFacetItems} onApply={applyFilters} />
         
         {/* Size Filter */}
-        <SizeFilterDropdown />
+        <SizeFilterDropdown onApply={applyFilters} />
         
         {/* Dimensions Filter */}
-        <DimensionsFilterDropdown />
+        <DimensionsFilterDropdown onApply={applyFilters} />
         
         {/* Rating Filter */}
-        <RatingFilterDropdown ratingFacetItems={ratingFacetItems} />
+        <RatingFilterDropdown ratingFacetItems={ratingFacetItems} onApply={applyFilters} />
         
        
 
-        {/* Clear All Filters */}
+        {/* Clear All Filters - Desktop */}
         {hasActiveFilters && (
           <button
-            onClick={() => {
-              // Use the same logic as individual badge removal for consistency
-              // Get all active filters and call their onRemove functions
-              const activeFilters = getActiveFilters()
-              
-              // Call each filter's individual onRemove function
-              // This ensures we use the exact same logic that works for individual badges
-              activeFilters.forEach(filter => {
-                if (filter.onRemove) {
-                  filter.onRemove()
-                }
-              })
-            }}
+            onClick={handleClearAll}
             style={{
               marginLeft: 'auto',
               padding: '4px 12px',
@@ -435,7 +497,7 @@ export const ProductFilterBar = ({
 }
 
 // Sort Filter Component
-const SortFilter = () => {
+const SortFilter = ({ onApply }: { onApply?: () => void }) => {
   const updateSearchParams = useUpdateSearchParams()
   const searchParams = useSearchParams()
   const currentSort = searchParams.get("sortBy") || ""
@@ -451,7 +513,7 @@ const SortFilter = () => {
   const currentSortLabel = sortOptions.find(opt => opt.value === currentSort)?.label || "Domyślne"
 
   return (
-    <FilterDropdown label={`Sortuj według: ${currentSortLabel}`} isActive={Boolean(currentSort)}>
+    <FilterDropdown label={`Sortuj według: ${currentSortLabel}`} isActive={Boolean(currentSort)} onApply={onApply}>
       <div className="space-y-2">
         <h4 className="font-medium text-black mb-3 font-instrument-sans">Sortuj według</h4>
         {sortOptions.map((option) => (
@@ -476,12 +538,12 @@ const SortFilter = () => {
 }
 
 // Price Filter Component
-const PriceFilterDropdown = () => {
+const PriceFilterDropdown = ({ onApply }: { onApply?: () => void }) => {
   const searchParams = useSearchParams()
   const isActive = Boolean(searchParams.get("min_price") || searchParams.get("max_price"))
 
   return (
-    <FilterDropdown label="Cena" isActive={isActive}>
+    <FilterDropdown label="Cena" isActive={isActive} onApply={onApply}>
       <PriceFilterContent />
     </FilterDropdown>
   )
@@ -494,12 +556,12 @@ const PriceFilterContent = ({ onClose }: { onClose?: () => void }) => (
 )
 
 // Color Filter Component
-const ColorFilterDropdown = ({ colorFacetItems }: { colorFacetItems: any[] }) => {
+const ColorFilterDropdown = ({ colorFacetItems, onApply }: { colorFacetItems: any[], onApply?: () => void }) => {
   const { selectedColors } = useFilterStore()
   const isActive = selectedColors.length > 0
 
   return (
-    <FilterDropdown label="Kolor" isActive={isActive}>
+    <FilterDropdown label="Kolor" isActive={isActive} onApply={onApply}>
       <ColorFilterContent colorFacetItems={colorFacetItems} />
     </FilterDropdown>
   )
@@ -513,12 +575,12 @@ const ColorFilterContent = ({ colorFacetItems, onClose }: { colorFacetItems: any
 )
 
 // Size Filter Component
-const SizeFilterDropdown = () => {
+const SizeFilterDropdown = ({ onApply }: { onApply?: () => void }) => {
   const searchParams = useSearchParams()
   const isActive = Boolean(searchParams.get("size"))
 
   return (
-    <FilterDropdown label="Rozmiar" isActive={isActive}>
+    <FilterDropdown label="Rozmiar" isActive={isActive} onApply={onApply}>
       <SizeFilterContent />
     </FilterDropdown>
   )
@@ -532,7 +594,7 @@ const SizeFilterContent = ({ onClose }: { onClose?: () => void }) => (
 )
 
 // Dimensions Filter Component
-const DimensionsFilterDropdown = () => {
+const DimensionsFilterDropdown = ({ onApply }: { onApply?: () => void }) => {
   const searchParams = useSearchParams()
   const isActive = Boolean(
     searchParams.get("width") || 
@@ -541,7 +603,7 @@ const DimensionsFilterDropdown = () => {
   )
 
   return (
-    <FilterDropdown label="Wymiary" isActive={isActive}>
+    <FilterDropdown label="Wymiary" isActive={isActive} onApply={onApply}>
       <DimensionsFilterContent />
     </FilterDropdown>
   )
@@ -555,12 +617,12 @@ const DimensionsFilterContent = ({ onClose }: { onClose?: () => void }) => (
 )
 
 // Rating Filter Component
-const RatingFilterDropdown = ({ ratingFacetItems }: { ratingFacetItems: any[] }) => {
+const RatingFilterDropdown = ({ ratingFacetItems, onApply }: { ratingFacetItems: any[], onApply?: () => void }) => {
   const { selectedRating } = useFilterStore()
   const isActive = Boolean(selectedRating)
 
   return (
-    <FilterDropdown label="Ocena" isActive={isActive}>
+    <FilterDropdown label="Ocena" isActive={isActive} onApply={onApply}>
       <RatingFilterContent ratingFacetItems={ratingFacetItems} />
     </FilterDropdown>
   )
