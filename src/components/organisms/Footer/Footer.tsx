@@ -102,9 +102,7 @@ export async function Footer() {
               <Link href="/przewodnik-sprzedawcy" className="block text-white hover:text-primary transition-colors duration-200 text-sm">
                 Zacznij z nami sprzedawać
               </Link>
-              <Link href="#" className="block text-white hover:text-primary transition-colors duration-200 text-sm">
-                Regulamin dla sprzedawców
-              </Link>
+             
               <Link href="#" className="block text-white hover:text-primary transition-colors duration-200 text-sm">
                 Poradnik
               </Link>

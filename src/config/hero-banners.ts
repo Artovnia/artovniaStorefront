@@ -26,7 +26,7 @@ export const HERO_BANNERS: HeroBanner[] = [
         size: {
           mobile: "text-4xl",
           tablet: "text-6xl",
-          desktop: "text-8xl"
+          desktop: "text-7xl"
         }
       },
       paragraph: {
@@ -61,7 +61,7 @@ export const HERO_BANNERS: HeroBanner[] = [
         size: {
           mobile: "text-4xl",
           tablet: "text-6xl",
-          desktop: "text-8xl"
+          desktop: "text-7xl"
         }
       },
       paragraph: {
@@ -96,7 +96,7 @@ export const HERO_BANNERS: HeroBanner[] = [
         size: {
           mobile: "text-4xl",
           tablet: "text-6xl",
-          desktop: "text-8xl"
+          desktop: "text-7xl"
         }
       },
       paragraph: {
@@ -131,7 +131,7 @@ export const HERO_BANNERS: HeroBanner[] = [
         size: {
           mobile: "text-4xl",
           tablet: "text-6xl",
-          desktop: "text-8xl"
+          desktop: "text-7xl"
         }
       },
       paragraph: {

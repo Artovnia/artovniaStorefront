@@ -66,11 +66,13 @@ export default async function PromotionsPage({ searchParams }: PromotionsPagePro
               alt="Ceramiczne naczynia i dekoracje - promocje Artovnia"
               fill
               priority
-              className="object-cover object-center"
-              sizes="100vw"
-              quality={90}
+              fetchPriority="high"
+              className="object-cover object-[center] 2xl:object-contain"
+              sizes="(max-width: 640px) 100vw, (max-width: 1024px) 100vw, 1920px"
+              quality={85}
+              placeholder="blur"
+              blurDataURL="data:image/webp;base64,UklGRiQAAABXRUJQVlA4IBgAAAAwAQCdASoBAAEAAwA0JaQAA3AA/vuUAAA="
             />
-            
           </div>
 
           {/* Content Overlay */}
@@ -85,7 +87,7 @@ export default async function PromotionsPage({ searchParams }: PromotionsPagePro
               </h1>
               
               {/* Subtitle with accessible contrast */}
-              <p className="text-md sm:text-lg md:text-xl lg:text-2xl text-white font-instrument-sans max-w-3xl drop-shadow-lg">
+              <p className="text-md sm:text-lg md:text-xl lg:text-2xl text-white font-instrument-sans max-w-3xl drop-shadow-lg uppercase">
                 Najlepsze okazje i promocyjne ceny na wybrane produkty
               </p>
               
@@ -138,11 +140,16 @@ export default async function PromotionsPage({ searchParams }: PromotionsPagePro
         <section className="relative w-full h-[300px] sm:h-[350px] md:h-[400px] overflow-hidden">
           <div className="absolute inset-0">
             <Image
-              src="/images/promotions/15.png"
+              src="/images/promotions/15.webp"
               alt="Ceramiczne naczynia i dekoracje - promocje Artovnia"
               fill
-              className="object-cover object-center"
-              sizes="100vw"
+              priority
+              fetchPriority="high"
+              className="object-cover object-center 2xl:object-contain"
+              sizes="(max-width: 640px) 100vw, (max-width: 1024px) 100vw, 1920px"
+              quality={85}
+              placeholder="blur"
+              blurDataURL="data:image/webp;base64,UklGRiQAAABXRUJQVlA4IBgAAAAwAQCdASoBAAEAAwA0JaQAA3AA/vuUAAA="
             />
             <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/50 to-black/70" aria-hidden="true" />
           </div>
