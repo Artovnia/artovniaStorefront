@@ -1,10 +1,11 @@
-import Link from 'next/link'
-import BlogSearch from './BlogSearch'
-import { Footer } from '@/components/organisms/Footer/Footer'
-import { Header } from '@/components/organisms/Header/Header'
-import { Breadcrumbs } from '@/components/atoms/Breadcrumbs/Breadcrumbs'
-import NewsletterSection from '@/components/sections/NewsletterSection/NewsletterSection'
-import type { BlogCategory } from '../lib/data'
+import Link from "next/link"
+import Image from "next/image"
+import BlogSearch from "./BlogSearch"
+import { Footer } from "@/components/organisms/Footer/Footer"
+import { Header } from "@/components/organisms/Header/Header"
+import { Breadcrumbs } from "@/components/atoms/Breadcrumbs/Breadcrumbs"
+import NewsletterSection from "@/components/sections/NewsletterSection/NewsletterSection"
+import type { BlogCategory } from "../lib/data"
 
 interface BlogLayoutProps {
   children: React.ReactNode
@@ -14,84 +15,138 @@ interface BlogLayoutProps {
   categories: BlogCategory[]
 }
 
-export default function BlogLayout({ children, title, description, breadcrumbs, categories }: BlogLayoutProps) {
-
+export default function BlogLayout({
+  children,
+  title,
+  description,
+  breadcrumbs,
+  categories,
+}: BlogLayoutProps) {
   return (
-    <div className="min-h-screen bg-[#F4F0EB] ">
+    <div className="min-h-screen bg-[#F4F0EB]" lang="pl">
       {/* Main Site Header */}
       <Header />
-      
-      {/* Breadcrumbs */}
-      {breadcrumbs && (
-        <div className="bg-[#F4F0EB] px-4 lg:px-8 py-4">
-          <div className="max-w-7xl mx-auto mt-12 xl:mt-20">
-            <Breadcrumbs items={breadcrumbs} />
+
+      {/* Hero Section with Image and Overlay */}
+      <section
+        className="relative w-full h-[300px] sm:h-[350px] md:h-[350px] lg:h-[400px] xl:h-[400px] overflow-hidden bg-[#F4F0EB]"
+        aria-labelledby="blog-heading"
+      >
+        {/* Background Image */}
+        <div className="absolute inset-0 bg-[#F4F0EB]" aria-hidden="true">
+          <Image
+            src="/images/blog/blogHeader.png"
+            alt=""
+            fill
+            priority
+            className="object-cover object-[center] 2xl:object-contain"
+            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 100vw, 1920px"
+            quality={85}
+            placeholder="blur"
+            blurDataURL="data:image/webp;base64,UklGRiQAAABXRUJQVlA4IBgAAAAwAQCdASoBAAEAAwA0JaQAA3AA/vuUAAA="
+          />
+        </div>
+
+        {/* Content Overlay */}
+        <div className="relative h-full max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex flex-col items-center justify-center h-full text-center">
+            {/* Main Heading */}
+            <h1
+              id="blog-heading"
+              className="text-3xl sm:text-4xl md:text-5xl lg:text-5xl xl:text-6xl font-instrument-serif italic font-normal text-white mb-4 sm:mb-6 drop-shadow-2xl"
+            >
+              {title || "Blog"}
+            </h1>
+
+            {/* Subtitle */}
+            {description && (
+              <p className="text-md sm:text-lg md:text-xl lg:text-xl text-white font-instrument-sans max-w-3xl drop-shadow-lg uppercase">
+                {description}
+              </p>
+            )}
           </div>
         </div>
-      )}
 
-      {/* Blog-specific Header */}
-      <div className="bg-[#F4F0EB] shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            
-            <div className="flex-1 max-w-md mx-4">
-              <BlogSearch />
+        {/* Skip to content link for keyboard navigation */}
+        <a
+          href="#blog-content"
+          className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-white focus:text-[#3B3634] focus:rounded focus:shadow-lg focus:outline-none focus:ring-2 focus:ring-[#3B3634] focus:ring-offset-2"
+        >
+          Przejdź do treści bloga
+        </a>
+      </section>
+
+      {/* Main Content Container */}
+      <div className="max-w-[1400px] mx-auto" id="blog-content">
+        {/* Breadcrumbs */}
+        {breadcrumbs && (
+          <nav
+            className="bg-[#F4F0EB] px-4 lg:px-8 py-4"
+            aria-label="Ścieżka nawigacji"
+          >
+            <Breadcrumbs items={breadcrumbs} />
+          </nav>
+        )}
+
+        {/* Search Bar */}
+        <div className="bg-[#F4F0EB]">
+          <div className="px-4 sm:px-6 lg:px-8 ">
+            <div className="flex items-center justify-end">
+              <div className="w-full max-w-md">
+                <BlogSearch />
+              </div>
             </div>
           </div>
         </div>
+
+        {/* Navigation */}
+        <nav
+          className="bg-[#F4F0EB] border-b"
+          aria-label="Kategorie bloga"
+        >
+          <div className="px-4 sm:px-6 lg:px-8">
+            <ul
+              className="flex space-x-8 overflow-x-auto py-4 border-b border-[#3B3634]/50"
+              role="list"
+            >
+              <li>
+                <Link
+                  href="/blog"
+                  className="whitespace-nowrap text-sm font-medium text-[#3B3634] border-b-2 border-transparent hover:bg-[#3B3634] hover:text-white p-2 font-instrument-sans transition-colors duration-200 inline-block"
+                  aria-current="page"
+                >
+                  Wszystkie posty
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/blog#artists"
+                  className="whitespace-nowrap text-sm font-medium text-[#3B3634] border-b-2 border-transparent hover:bg-[#3B3634] hover:text-white p-2 font-instrument-sans transition-colors duration-200 inline-block"
+                >
+                  Poznaj artystów
+                </Link>
+              </li>
+              {categories.map((category) => (
+                <li key={category.slug.current}>
+                  <Link
+                    href={`/blog/category/${category.slug.current}`}
+                    className="whitespace-nowrap text-sm font-medium text-[#3B3634] hover:text-white hover:bg-[#3B3634] border-b-2 border-transparent p-2 font-instrument-sans transition-colors duration-200 inline-block"
+                  >
+                    {category.title}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </nav>
+
+        {/* Main Content */}
+        <main className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          {children}
+        </main>
       </div>
 
-      {/* Navigation */}
-      <nav className="bg-[#F4F0EB] border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex space-x-8 overflow-x-auto py-4">
-            <Link
-              href="/blog"
-              className="whitespace-nowrap text-sm font-medium text-gray-600 hover:text-gray-900 border-b-2 border-transparent hover:border-gray-300 pb-2"
-            >
-              Wszystkie posty
-            </Link>
-            <Link
-              href="/blog#artists"
-              className="whitespace-nowrap text-sm font-medium text-purple-600 hover:text-purple-900 border-b-2 border-transparent hover:border-purple-300 pb-2"
-            >
-              Poznaj artystów
-            </Link>
-            {categories.map((category) => (
-              <Link
-                key={category.slug.current}
-                href={`/blog/category/${category.slug.current}`}
-                className="whitespace-nowrap text-sm font-medium text-gray-600 hover:text-gray-900 border-b-2 border-transparent hover:border-gray-300 pb-2"
-              >
-                {category.title}
-              </Link>
-            ))}
-          </div>
-        </div>
-      </nav>
-
-      {/* Page Header */}
-      {(title || description) && (
-        <div className="bg-[#F4F0EB]">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-            {title && (
-              <h1 className="text-3xl font-bold text-gray-900 mb-2 font-instrument-serif">{title}</h1>
-            )}
-            {description && (
-              <p className="text-lg text-gray-600 font-instrument-sans">{description}</p>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {children}
-      </main>
-
-      <NewsletterSection/>
-      {/* Footer */}
+      <NewsletterSection />
       <Footer />
     </div>
   )

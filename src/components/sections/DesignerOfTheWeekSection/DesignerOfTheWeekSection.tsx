@@ -58,7 +58,7 @@ export function DesignerOfTheWeekSection({ className = "" }: DesignerOfTheWeekSe
   }, [])
 
   return (
-    <section className={`mx-auto max-w-[1920px] w-full px-4 lg:px-8 py-4 lg:py-8 font-instrument-sans ${className}`}>
+    <section className={`mx-auto max-w-[1920px] w-full px-4 lg:px-8 py-2 md:py-8 font-instrument-sans ${className}`}>
       <div className="flex flex-col lg:flex-row items-center gap-8 lg:gap-12 xl:gap-16 2xl:gap-20">
         
         {/* Images - First on mobile, Second on desktop */}
@@ -100,9 +100,9 @@ export function DesignerOfTheWeekSection({ className = "" }: DesignerOfTheWeekSe
         </div>
 
         {/* Text Content - Second on mobile, First on desktop */}
-        <div className="w-full lg:w-1/2 order-2 lg:order-1 flex flex-col justify-center space-y-6 lg:space-y-8 xl:space-y-10 2xl:space-y-12 items-center">
+        <div className="w-full lg:w-1/2 order-2 lg:order-1 flex flex-col justify-center space-y-2 lg:space-y-8 xl:space-y-10 2xl:space-y-12 items-center">
           {/* Header */}
-          <h2 className="text-2xl lg:text-3xl xl:text-4xl font-instrument-serif text-[#3B3634] tracking-wide mb-6">
+          <h2 className="text-2xl lg:text-3xl xl:text-4xl font-instrument-serif text-[#3B3634] tracking-wide mb-3 md:mb-6">
            <span className="font-instrument-serif">Projektant</span> <span className="font-instrument-serif italic">tygodnia</span>
           </h2>
           

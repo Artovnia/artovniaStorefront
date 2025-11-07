@@ -38,13 +38,13 @@ export default function SellersPage() {
             {/* Main Heading with high contrast for accessibility */}
             <h1
               id="sellers-heading"
-              className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-instrument-serif italic font-normal text-white mb-4 sm:mb-6 drop-shadow-2xl"
+              className="text-3xl sm:text-4xl md:text-5xl lg:text-5xl xl:text-6xl font-instrument-serif italic font-normal text-white mb-4 sm:mb-6 drop-shadow-2xl"
             >
               Sprzedawcy
             </h1>
 
             {/* Subtitle with accessible contrast */}
-            <p className="text-md sm:text-lg md:text-xl lg:text-2xl text-white font-instrument-sans uppercase max-w-3xl drop-shadow-lg">
+            <p className="text-md sm:text-lg md:text-xl lg:text-xl text-white font-instrument-sans uppercase max-w-3xl drop-shadow-lg">
               Odkryj utalentowanych artystów i sprzedawców na naszej platformie
             </p>
           </div>

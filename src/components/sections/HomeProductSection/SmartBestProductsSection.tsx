@@ -111,8 +111,8 @@ export const SmartBestProductsSection = async ({
     
     return (
       <BatchPriceProvider currencyCode="PLN" days={30}>
-        <section className="py-8 w-full">
-          <h2 className="mb-12 heading-lg font-bold tracking-tight font-instrument-serif italic  ml-4 lg:ml-[68px]">
+        <section className="py-2 md:py-8 w-full">
+          <h2 className="mb-6 md:mb-12 heading-lg font-bold tracking-tight font-instrument-serif italic  ml-4 lg:ml-[68px]">
             {heading}
           </h2>
 
@@ -127,11 +127,11 @@ export const SmartBestProductsSection = async ({
   } catch (error) {
     console.error("Error in SmartBestProductsSection:", error)
     return (
-      <section className="py-8 w-full">
+      <section className="py-2 md:py-8 w-full">
         <h2 className="mb-12 heading-lg font-bold tracking-tight font-instrument-serif ml-[68px]">
           {heading}
         </h2>
-        <div className="flex justify-center w-full py-8">
+        <div className="flex justify-center w-full py-2 md:py-8">
           <p className="text-red-500">Unable to load best products. Please try again later.</p>
         </div>
       </section>

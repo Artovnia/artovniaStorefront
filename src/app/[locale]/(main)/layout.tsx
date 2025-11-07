@@ -15,7 +15,7 @@ export default async function RootLayout({
     <CartProvider initialCart={initialCart}>
       <div className="flex flex-col min-h-screen ">
         <Header />
-        <div className="flex-grow pb-20 md:pb-0">
+        <div className="flex-grow pb-0">
           {children}
         </div>
         <ConditionalNewsletter />

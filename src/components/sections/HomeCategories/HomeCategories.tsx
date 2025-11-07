@@ -40,9 +40,9 @@ export const HomeCategories = async ({
   const otherCategories = categories.filter(cat => !cat.featured).slice(0, 4)
 
   return (
-    <section className="mx-auto max-w-[1920px] w-full px-4 lg:px-8 py-8 font-instrument-sans">
+    <section className="mx-auto max-w-[1920px] w-full px-4 lg:px-8 py-2 md:py-8 font-instrument-sans">
       {/* Heading */}
-      <div className="mb-8 lg:mb-12">
+      <div className="mb-6 lg:mb-12">
         <h2 className="text-2xl lg:text-3xl xl:text-4xl font-instrument-serif font-normal tracking-tight normal-case text-[#3B3634]">
           {heading}{headingItalic && <> <span className="italic">{headingItalic}</span></>}
         </h2>

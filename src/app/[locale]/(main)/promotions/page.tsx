@@ -56,11 +56,11 @@ export default async function PromotionsPage({ searchParams }: PromotionsPagePro
       <div className="min-h-screen bg-primary">
         {/* Hero Section with Image and Overlay */}
         <section 
-          className="relative w-full h-[300px] sm:h-[350px] md:h-[350px] lg:h-[400px] xl:h-[400px] overflow-hidden"
+          className="relative w-full h-[300px] sm:h-[350px] md:h-[350px] lg:h-[400px] xl:h-[400px] overflow-hidden bg-primary"
           aria-labelledby="promotions-heading"
         >
           {/* Background Image */}
-          <div className="absolute inset-0">
+          <div className="absolute inset-0 bg-primary">
             <Image
               src="/images/promotions/15.webp"
               alt="Ceramiczne naczynia i dekoracje - promocje Artovnia"
@@ -81,13 +81,13 @@ export default async function PromotionsPage({ searchParams }: PromotionsPagePro
               {/* Main Heading with high contrast for accessibility */}
               <h1 
                 id="promotions-heading"
-                className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-instrument-serif italic font-normal text-white mb-4 sm:mb-6 drop-shadow-2xl"
+                className="text-3xl sm:text-4xl md:text-5xl lg:text-5xl xl:text-6xl font-instrument-serif italic font-normal text-white mb-4 sm:mb-6 drop-shadow-2xl"
               >
                 Promocje
               </h1>
               
               {/* Subtitle with accessible contrast */}
-              <p className="text-md sm:text-lg md:text-xl lg:text-2xl text-white font-instrument-sans max-w-3xl drop-shadow-lg uppercase">
+              <p className="text-md sm:text-lg md:text-xl lg:text-xl text-white font-instrument-sans max-w-3xl drop-shadow-lg uppercase">
                 Najlepsze okazje i promocyjne ceny na wybrane produkty
               </p>
               

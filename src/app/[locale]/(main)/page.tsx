@@ -53,14 +53,14 @@ export default async function Home({
           </div>
           
           {/* Smart Best Products Section */}
-          <div className="mx-auto max-w-[1920px] w-full  mb-8 min-h-[400px] py-8">
+          <div className="mx-auto max-w-[1920px] w-full  mb-8 min-h-[400px] py-2 md:py-8">
             <SmartBestProductsSection />
           </div>
          
           {/* Full width dark section */}
           <div className="w-full bg-[#3B3634]">
             {/* Content container inside full-width section */}
-            <div className="mx-auto max-w-[1920px] w-full min-h-[400px] py-8 font-instrument-sans">
+            <div className="mx-auto max-w-[1920px] w-full min-h-[400px] py-2 md:py-8 font-instrument-sans">
               <HomeNewestProductsSection 
                 heading="Nowości" 
                 locale={locale}
@@ -71,17 +71,17 @@ export default async function Home({
           </div>
 
        {/* Categories Section */}
-<div className="w-full bg-primary py-8">
+<div className="w-full bg-primary py-2 md:py-8">
   <HomeCategories heading="Wybrane" headingItalic="kategorie" />
 </div>
           
           {/* Designer of the Week Section */}
-          <div className="w-full bg-[#F4F0EB] min-h-[400px] py-8">
+          <div className="w-full bg-[#F4F0EB] min-h-[400px] py-2 md:py-8">
             <DesignerOfTheWeekSection />
           </div>
 
           {/* Blog Section */}
-          <div className="w-full bg-white py-8">
+          <div className="w-full bg-white py-2 md:py-8">
             <div className="mx-auto max-w-[1920px] w-full">
               <BlogSection />
             </div>

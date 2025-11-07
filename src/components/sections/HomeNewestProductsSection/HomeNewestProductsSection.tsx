@@ -28,8 +28,8 @@ export const HomeNewestProductsSection = async ({
     const products = result?.response?.products || []
     
     return (
-      <section className="py-8 w-full">
-        <h2 className="mb-12 heading-lg font-bold tracking-tight font-instrument-serif italic text-white text-center">
+      <section className="py-2 md:py-8 w-full">
+        <h2 className="mb-6 md:mb-12 heading-lg font-bold tracking-tight font-instrument-serif italic text-white text-center">
           {heading}
         </h2>
 
@@ -44,7 +44,7 @@ export const HomeNewestProductsSection = async ({
   } catch (error) {
     console.error("Error in HomeNewestProductsSection:", error)
     return (
-      <section className="py-8 w-full">
+      <section className="py-2 md:py-8 w-full">
         <h2 className="mb-6 heading-lg font-bold tracking-tight uppercase font-instrument-serif">
           {heading}
         </h2>

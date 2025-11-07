@@ -11,16 +11,22 @@ export async function BlogSection() {
   }
 
   return (
-    <section className='bg-white w-full py-8 overflow-hidden'>
-      <div className='flex items-center justify-between mb-12 px-4 sm:px-6 lg:px-8'>
+    <section className='bg-white w-full py-2 md:py-8 overflow-hidden'>
+      <div className='flex items-center justify-between mb-6 md:mb-12 px-4 sm:px-6 lg:px-8'>
         <h2 className='heading-lg text-black font-instrument-serif italic'>
           Bądź na czasie
         </h2>
         <Link 
           href='/blog'
-          className='text-black hover:text-gray-700 transition-colors duration-200 font-instrument-sans font-medium'
+          className='group relative text-[#3B3634] font-instrument-sans font-medium px-4 py-2  overflow-hidden transition-all duration-300 hover:text-white'
         >
-          Zobacz wszystkie →
+          <span className='absolute inset-0 bg-[#3B3634] transform translate-x-[-100%] group-hover:translate-x-0 transition-transform duration-300 ease-out'></span>
+          <span className='relative flex items-center gap-2'>
+            Zobacz wszystkie
+            <span className='inline-block transition-transform duration-300 group-hover:translate-x-1'>
+              →
+            </span>
+          </span>
         </Link>
       </div>
       

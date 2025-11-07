@@ -24,9 +24,9 @@ export const HERO_BANNERS: HeroBanner[] = [
         font: 'regular', // font-instrument-serif
         highlightFont: 'italic', // font-instrument-serif italic
         size: {
-          mobile: "text-4xl",
-          tablet: "text-6xl",
-          desktop: "text-7xl"
+          mobile: "text-3xl",
+          tablet: "text-5xl",
+          desktop: "text-6xl"
         }
       },
       paragraph: {
@@ -34,7 +34,7 @@ export const HERO_BANNERS: HeroBanner[] = [
         size: {
           mobile: "text-md",
           tablet: "text-lg",
-          desktop: "text-2xl"
+          desktop: "text-xl"
         }
       },
       cta: {
@@ -59,9 +59,9 @@ export const HERO_BANNERS: HeroBanner[] = [
         font: 'regular',
         highlightFont: 'italic',
         size: {
-          mobile: "text-4xl",
-          tablet: "text-6xl",
-          desktop: "text-7xl"
+          mobile: "text-3xl",
+          tablet: "text-5xl",
+          desktop: "text-6xl"
         }
       },
       paragraph: {
@@ -69,7 +69,7 @@ export const HERO_BANNERS: HeroBanner[] = [
         size: {
           mobile: "text-md",
           tablet: "text-lg",
-          desktop: "text-2xl"
+          desktop: "text-xl"
         }
       },
       cta: {
@@ -94,9 +94,9 @@ export const HERO_BANNERS: HeroBanner[] = [
         font: 'regular',
         highlightFont: 'italic',
         size: {
-          mobile: "text-4xl",
-          tablet: "text-6xl",
-          desktop: "text-7xl"
+          mobile: "text-3xl",
+          tablet: "text-5xl",
+          desktop: "text-6xl"
         }
       },
       paragraph: {
@@ -104,7 +104,7 @@ export const HERO_BANNERS: HeroBanner[] = [
         size: {
           mobile: "text-md",
           tablet: "text-lg",
-          desktop: "text-2xl"
+          desktop: "text-xl"
         }
       },
       cta: {
@@ -129,9 +129,9 @@ export const HERO_BANNERS: HeroBanner[] = [
         font: 'regular',
         highlightFont: 'italic',
         size: {
-          mobile: "text-4xl",
-          tablet: "text-6xl",
-          desktop: "text-7xl"
+          mobile: "text-3xl",
+          tablet: "text-5xl",
+          desktop: "text-6xl"
         }
       },
       paragraph: {
@@ -139,7 +139,7 @@ export const HERO_BANNERS: HeroBanner[] = [
         size: {
           mobile: "text-md",
           tablet: "text-lg",
-          desktop: "text-2xl"
+          desktop: "text-xl"
         }
       },
       cta: {
