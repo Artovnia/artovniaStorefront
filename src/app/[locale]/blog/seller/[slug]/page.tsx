@@ -245,6 +245,8 @@ export default async function SellerPostPage({ params }: SellerPostPageProps) {
                           className="object-cover"
                           sizes="(max-width: 768px) 280px, (max-width: 1024px) 350px, 450px"
                           priority
+                          fetchPriority="high"
+                          loading="eager"
                           itemProp="image"
                         />
                       </div>
@@ -261,6 +263,9 @@ export default async function SellerPostPage({ params }: SellerPostPageProps) {
                           fill
                           className="object-cover"
                           sizes="(max-width: 768px) 160px, (max-width: 1024px) 200px, 250px"
+                          priority
+                          fetchPriority="high"
+                          loading="eager"
                         />
                       </div>
                     </figure>

@@ -320,13 +320,15 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
 
           {/* Featured Image */}
           {imageUrl && (
-            <figure className="relative w-full h-64 sm:h-80 md:h-96 lg:h-[500px] mb-8 overflow-hidden rounded-lg">
+            <figure className="relative w-full h-64 sm:h-80 md:h-96 lg:h-[500px] mb-8 overflow-hidden">
               <Image
                 src={imageUrl}
                 alt={blogPost.mainImage?.alt || `Obraz wyróżniający: ${blogPost.title}`}
                 fill
                 className="object-cover"
                 priority
+                fetchPriority="high"
+                loading="eager"
                 sizes="(max-width: 768px) 100vw, (max-width: 1200px) 80vw, 1200px"
                 itemProp="image"
               />
