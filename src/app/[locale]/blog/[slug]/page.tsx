@@ -16,8 +16,8 @@ import BlogLayout from "../components/BlogLayout"
 import PortableText from "../components/PortableText"
 import { redirect } from "next/navigation"
 
-// Use ISR instead of force-dynamic for better performance
-export const revalidate = 600 // 10 minutes
+// Must use force-dynamic because Header component uses cookies() for user authentication
+export const dynamic = 'force-dynamic'
 
 interface BlogPostPageProps {
   params: Promise<{

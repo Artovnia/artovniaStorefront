@@ -10,8 +10,8 @@ import { ArrowRightIcon } from "@/icons"
 import PortableText from "../../components/PortableText"
 import BlogLayout from "../../components/BlogLayout"
 
-// Use ISR for better performance
-export const revalidate = 600 // 10 minutes
+// Must use force-dynamic because Header component uses cookies() for user authentication
+export const dynamic = 'force-dynamic'
 
 interface SellerPostPageProps {
   params: Promise<{

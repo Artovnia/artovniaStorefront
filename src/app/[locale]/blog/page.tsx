@@ -11,8 +11,8 @@ import BlogPostCard from "./components/BlogPostCard"
 import PaginatedBlogPosts from "./components/PaginatedBlogPosts"
 import PaginatedSellerPosts from "./components/PaginatedSellerPosts"
 
-// Enable ISR for better performance
-export const revalidate = 600 // 10 minutes
+// Must use force-dynamic because Header component uses cookies() for user authentication
+export const dynamic = 'force-dynamic'
 
 export const metadata: Metadata = {
   title: "Blog - Artovnia | Inspiracje, Porady i Nowości ze Świata Sztuki",
