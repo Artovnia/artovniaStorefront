@@ -35,13 +35,15 @@ export default function BlogLayout({
         {/* Background Image */}
         <div className="absolute inset-0 bg-[#F4F0EB]" aria-hidden="true">
           <Image
-            src="/images/blog/blogHeader.png"
+            src="/images/blog/blogHeader.webp"
             alt=""
             fill
             priority
+            fetchPriority="high"
+            loading="eager"
             className="object-cover object-[center] 2xl:object-contain"
             sizes="(max-width: 640px) 100vw, (max-width: 1024px) 100vw, 1920px"
-            quality={85}
+            quality={90}
             placeholder="blur"
             blurDataURL="data:image/webp;base64,UklGRiQAAABXRUJQVlA4IBgAAAAwAQCdASoBAAEAAwA0JaQAA3AA/vuUAAA="
           />

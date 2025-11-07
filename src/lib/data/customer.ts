@@ -18,10 +18,11 @@ import { unifiedLogout, unifiedLogin, setAuthToken as unifiedSetAuthToken } from
 
 export const retrieveCustomer =
   async (useCache: boolean = true): Promise<HttpTypes.StoreCustomer | null> => {
-    const authHeaders = await getAuthHeaders()
+    try {
+      const authHeaders = await getAuthHeaders()
 
-    // FIX: Check if authorization header exists, not if authHeaders is truthy
-    if (!('authorization' in authHeaders)) return null
+      // FIX: Check if authorization header exists, not if authHeaders is truthy
+      if (!('authorization' in authHeaders)) return null
 
     const headers = {
       ...authHeaders,
@@ -60,12 +61,22 @@ export const retrieveCustomer =
         .then(({ customer }) => customer)
         .catch(() => null)
     }
+    } catch (error) {
+      // Handle static generation gracefully - cookies() not available during build
+      console.log('retrieveCustomer: Running in static generation mode, skipping auth check')
+      return null
+    }
   }
 
 // ADD: Helper function to check if user is authenticated
 export const isAuthenticated = async (): Promise<boolean> => {
-  const authHeaders = await getAuthHeaders()
-  return 'authorization' in authHeaders
+  try {
+    const authHeaders = await getAuthHeaders()
+    return 'authorization' in authHeaders
+  } catch (error) {
+    // Handle static generation gracefully
+    return false
+  }
 }
 
 // Rest of your existing functions remain the same...
