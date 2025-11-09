@@ -121,29 +121,27 @@ export async function detectUserCountry(): Promise<string> {
   // 2. Try Cloudflare geolocation
   const cfCountry = await getCountryFromCloudflare()
   if (cfCountry) {
-    // Save to cookie for future requests
-    await setCountryCookie(cfCountry)
+    // 🔒 FIX: Don't set cookie in read operation (Server Component)
+    // Cookie will be set when user manually selects country
     return cfCountry
   }
 
   // 3. Try Vercel geolocation
   const vercelCountry = await getCountryFromVercel()
   if (vercelCountry) {
-    // Save to cookie for future requests
-    await setCountryCookie(vercelCountry)
+    // 🔒 FIX: Don't set cookie in read operation (Server Component)
     return vercelCountry
   }
 
   // 4. Try Accept-Language header
   const langCountry = await getCountryFromLanguage()
   if (langCountry) {
-    // Save to cookie for future requests
-    await setCountryCookie(langCountry)
+    // 🔒 FIX: Don't set cookie in read operation (Server Component)
     return langCountry
   }
 
   // 5. Fallback to default
-  await setCountryCookie(DEFAULT_COUNTRY)
+  // 🔒 FIX: Don't set cookie in read operation (Server Component)
   return DEFAULT_COUNTRY
 }
 

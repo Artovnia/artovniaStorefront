@@ -49,19 +49,6 @@ const PaymentButton: React.FC<PaymentButtonProps> = ({
                            paymentSessions[0]?.provider_id || 
                            metadataProviderId
   
-  // DEBUG: Add logging to understand what's happening
-  console.log('🔍 PaymentButton Debug:', {
-    termsAccepted,
-    hasValidPaymentSession,
-    paymentProviderId,
-    metadataProviderId,
-    paymentSessionsCount: paymentSessions.length,
-    activeSession: !!activeSession,
-    isPayU: isPayU(paymentProviderId),
-    isStripe: isStripe(paymentProviderId),
-    isManual: isManual(paymentProviderId),
-    notReady
-  })
   
   // Determine which payment button to show based on the payment provider
   switch (true) {
@@ -133,13 +120,7 @@ const StripePaymentButton: React.FC<StripePaymentButtonProps> = ({
     setErrorMessage(null);
 
     try {
-      console.log('🚨 STRIPE PAYMENT HANDLER CALLED - This should ALWAYS use Stripe Checkout')
-      console.log('🔍 Stripe Payment Debug:', {
-        cartId: cart.id,
-        paymentProviderId,
-        isPaymentReady,
-        termsAccepted
-      })
+     
       
       // CRITICAL: This function should NEVER call placeOrder directly
       // It should ALWAYS create a Stripe Checkout session and redirect
@@ -150,15 +131,9 @@ const StripePaymentButton: React.FC<StripePaymentButtonProps> = ({
         session.provider_id === paymentProviderId && session.status === 'pending'
       )
 
-      console.log('🔍 Payment Session Check:', {
-        paymentSessionsCount: paymentSessions.length,
-        hasValidSession,
-        paymentProviderId,
-        existingSessions: paymentSessions.map((s: any) => ({ id: s.id, provider_id: s.provider_id, status: s.status }))
-      })
-
+     
       if (!hasValidSession) {
-        console.log('🔍 Creating missing payment session...')
+        
         // Import the payment session functions
         const { selectPaymentSession, initiatePaymentSession, retrieveCartForPayment } = await import('@/lib/data/cart')
         
@@ -166,27 +141,19 @@ const StripePaymentButton: React.FC<StripePaymentButtonProps> = ({
           // Try to initiate payment session first
           await initiatePaymentSession(cart, { provider_id: paymentProviderId })
         } catch (initError: any) {
-          console.log('🔍 Payment session initiation result:', initError?.message)
+          
           // Continue if session already exists
         }
         
         // Select the payment session
         await selectPaymentSession(cart.id, paymentProviderId)
-        console.log('🔍 Payment session created/selected successfully')
         
         // CRITICAL FIX: Refresh cart data to get updated payment sessions
         // Wait a bit for backend to process the session creation
         await new Promise(resolve => setTimeout(resolve, 500))
         
         const refreshedCart = await retrieveCartForPayment(cart.id)
-        console.log('🔍 Refreshed cart payment sessions:', {
-          refreshedSessionsCount: refreshedCart?.payment_collection?.payment_sessions?.length || 0,
-          refreshedSessions: refreshedCart?.payment_collection?.payment_sessions?.map((s: any) => ({ 
-            id: s.id, 
-            provider_id: s.provider_id, 
-            status: s.status 
-          })) || []
-        })
+        
         
         // Verify the session now exists in refreshed cart
         const refreshedHasValidSession = refreshedCart?.payment_collection?.payment_sessions?.some((session: any) => 
@@ -197,13 +164,11 @@ const StripePaymentButton: React.FC<StripePaymentButtonProps> = ({
           throw new Error(`Payment session creation failed for provider: ${paymentProviderId}. Session not found in refreshed cart data.`)
         }
         
-        // Update the cart reference to use refreshed data for placeOrder
-        console.log('🔍 Using refreshed cart data for order placement')
+       
       }
 
       // CRITICAL: For ALL Stripe payments, we must use Stripe Checkout - never call placeOrder directly
-      console.log('🔍 STRIPE CHECKOUT FLOW: Creating Stripe Checkout session for payment provider:', paymentProviderId)
-      console.log('🔍 STRIPE CHECKOUT FLOW: This will redirect to Stripe hosted page for security')
+      
       
       // Get the payment session data
       const currentPaymentSessions = cart?.payment_collection?.payment_sessions || []
@@ -214,7 +179,7 @@ const StripePaymentButton: React.FC<StripePaymentButtonProps> = ({
       }
       
       const paymentIntentId = currentSession.data.id
-      console.log('🔍 Using PaymentIntent ID:', paymentIntentId)
+      
       
       // Determine payment method types based on provider
       let paymentMethodTypes = ['card']
@@ -224,18 +189,6 @@ const StripePaymentButton: React.FC<StripePaymentButtonProps> = ({
         paymentMethodTypes = ['p24']
       }
       
-      console.log('🔍 Payment method types:', paymentMethodTypes)
-      
-      // Create Stripe Checkout session
-      console.log('🔍 STRIPE CHECKOUT: Making request to create checkout session')
-      console.log('🔍 STRIPE CHECKOUT: Backend URL:', process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL)
-      console.log('🔍 STRIPE CHECKOUT: Publishable Key:', process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY ? 'Present' : 'Missing')
-      console.log('🔍 STRIPE CHECKOUT: Request payload:', {
-        payment_intent_id: paymentIntentId,
-        cart_id: cart.id,
-        customer_email: cart.email,
-        payment_method_types: paymentMethodTypes
-      })
       
       const checkoutResponse = await fetch(`${process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL}/store/stripe/create-checkout-session`, {
         method: 'POST',
@@ -251,7 +204,6 @@ const StripePaymentButton: React.FC<StripePaymentButtonProps> = ({
         })
       })
       
-      console.log('🔍 STRIPE CHECKOUT: Response status:', checkoutResponse.status, checkoutResponse.statusText)
       
       if (!checkoutResponse.ok) {
         const errorText = await checkoutResponse.text()
@@ -260,10 +212,8 @@ const StripePaymentButton: React.FC<StripePaymentButtonProps> = ({
       }
       
       const checkoutResult = await checkoutResponse.json()
-      console.log('🔍 Checkout session created:', checkoutResult)
       
       if (checkoutResult.checkout_url) {
-        console.log('🔍 Redirecting to Stripe Checkout:', checkoutResult.checkout_url)
         window.location.href = checkoutResult.checkout_url
         return
       }
@@ -271,8 +221,7 @@ const StripePaymentButton: React.FC<StripePaymentButtonProps> = ({
       throw new Error('No checkout URL received from Stripe')
       
     } catch (error: any) {
-      console.error('Stripe payment error:', error)
-      setErrorMessage(error?.message || 'Wystąpił błąd podczas płatności')
+        setErrorMessage(error?.message || 'Wystąpił błąd podczas płatności')
     } finally {
       setSubmitting(false)
     }

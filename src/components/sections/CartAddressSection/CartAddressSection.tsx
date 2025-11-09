@@ -28,13 +28,14 @@ export const CartAddressSection = ({
   const pathname = usePathname()
   
   // Use cart context for live updates
-  const { cart, refreshCart, setAddress } = useCart()
+  const { cart, refreshCart, setAddress, lastUpdated } = useCart()
   
   // Fallback to prop cart if context cart is not available
   const activeCart = cart || propCart
   
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [formResetKey, setFormResetKey] = useState(0)
 
   // Memoize address validation to prevent unnecessary recalculations
   const isAddress = useMemo(() => Boolean(
@@ -93,6 +94,9 @@ export const CartAddressSection = ({
       // Refresh cart to get updated shipping methods
       await refreshCart('address')
       
+      // Force form reset on next render
+      setFormResetKey(prev => prev + 1)
+      
       // Navigate to delivery step
       router.replace(`/checkout?step=delivery`)
     } catch (error: any) {
@@ -111,6 +115,8 @@ export const CartAddressSection = ({
 
   // Memoize handleEdit to prevent unnecessary re-renders
   const handleEdit = useCallback(() => {
+    // Force form reset when editing
+    setFormResetKey(prev => prev + 1)
     router.replace(pathname + "?step=address")
   }, [router, pathname])
 
@@ -137,6 +143,7 @@ export const CartAddressSection = ({
         {isOpen ? (
           <div className="pb-8">
             <ShippingAddress
+              key={`shipping-${activeCart?.id}-${activeCart?.email}-${lastUpdated}-${formResetKey}`}
               customer={customer}
               checked={sameAsBilling}
               onChange={toggleSameAsBilling}

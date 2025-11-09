@@ -51,8 +51,7 @@ export const ProductDetails = async ({
   
   // Detect user's country for region loading
   const userCountry = await detectUserCountry()
-  
-  console.log(`🌍 ProductDetails: Detected country: ${userCountry}`)
+
   
   // Load region data with safe cache key
   const [region, user, authenticated] = await Promise.allSettled([
@@ -64,12 +63,7 @@ export const ProductDetails = async ({
   // Extract results
   const regionData = region.status === 'fulfilled' ? region.value : null
   
-  if (!regionData) {
-    console.error(`❌ ProductDetails: No region found for country: ${userCountry}`)
-    console.error(`💡 Solution: Add ${userCountry.toUpperCase()} to your Medusa region in Admin → Settings → Regions`)
-  } else {
-    console.log(`✅ ProductDetails: Region found:`, regionData.id, regionData.name, 'Countries:', regionData.countries?.map(c => c.iso_2).join(', '))
-  }
+ 
   const customer = user.status === 'fulfilled' ? user.value : null
   const isUserAuthenticated = authenticated.status === 'fulfilled' ? authenticated.value : false
 

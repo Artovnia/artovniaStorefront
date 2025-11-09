@@ -1,22 +1,32 @@
 import { HttpTypes } from "@medusajs/types"
 import { Container } from "@medusajs/ui"
 import { mapKeys } from "lodash"
-import React, { useCallback, useEffect, useMemo, useState } from "react"
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+  useRef,
+  useImperativeHandle,
+  forwardRef,
+} from "react"
 import { Checkbox, Input } from "@/components/atoms"
 import AddressSelect from "@/components/cells/AddressSelect/AddressSelect"
 import CountrySelect from "@/components/cells/CountrySelect/CountrySelect"
 
-const ShippingAddress = ({
-  customer,
-  cart,
-  checked,
-  onChange,
-}: {
-  customer: HttpTypes.StoreCustomer | null
-  cart: HttpTypes.StoreCart | null
-  checked: boolean
-  onChange: () => void
-}) => {
+export interface ShippingAddressRef {
+  getFormData: () => Record<string, any>
+}
+
+const ShippingAddress = forwardRef<
+  ShippingAddressRef,
+  {
+    customer: HttpTypes.StoreCustomer | null
+    cart: HttpTypes.StoreCart | null
+    checked: boolean
+    onChange: () => void
+  }
+>(({ customer, cart, checked, onChange }, ref) => {
   const [formData, setFormData] = useState<Record<string, any>>({
     "shipping_address.first_name": cart?.shipping_address?.first_name || "",
     "shipping_address.last_name": cart?.shipping_address?.last_name || "",
@@ -29,14 +39,29 @@ const ShippingAddress = ({
     "shipping_address.phone": cart?.shipping_address?.phone || "",
     email: cart?.email || "",
   })
+
   const [hasUserInteracted, setHasUserInteracted] = useState(false)
+  const lastCartEmailRef = useRef(cart?.email)
+  const inputRefsMap = useRef<Map<string, HTMLInputElement>>(new Map())
+
+  // Expose method to get current form data from DOM (bypasses React state)
+  useImperativeHandle(ref, () => ({
+    getFormData: () => {
+      const currentData: Record<string, any> = {}
+      inputRefsMap.current.forEach((input, fieldName) => {
+        // Read directly from DOM - this gets Chrome autofill values
+        currentData[fieldName] = input.value
+      })
+      console.log("📋 Getting form data from DOM:", currentData)
+      return currentData
+    },
+  }))
 
   const countriesInRegion = useMemo(
     () => cart?.region?.countries?.map((c) => c.iso_2),
     [cart?.region]
   )
 
-  // check if customer has saved addresses that are in the current region
   const addressesInRegion = useMemo(
     () =>
       customer?.addresses.filter(
@@ -46,10 +71,7 @@ const ShippingAddress = ({
   )
 
   const setFormAddress = useCallback(
-    (
-      address?: HttpTypes.StoreCartAddress,
-      email?: string
-    ) => {
+    (address?: HttpTypes.StoreCartAddress, email?: string) => {
       address &&
         setFormData((prevState: Record<string, any>) => ({
           ...prevState,
@@ -70,53 +92,115 @@ const ShippingAddress = ({
           email: email,
         }))
     },
-    [setFormData]
+    []
   )
 
   useEffect(() => {
-    // 🔒 CRITICAL FIX: Always update email from cart, even after user interaction
-    // This ensures saved email is reflected in the form
-    if (cart && cart.shipping_address) {
-      setFormAddress(cart?.shipping_address, cart?.email)
+    const cartEmailChanged = cart?.email !== lastCartEmailRef.current
+
+    if (cartEmailChanged) {
+      lastCartEmailRef.current = cart?.email
+      setHasUserInteracted(false)
     }
 
-    if (cart && !cart.email && customer?.email) {
-      setFormAddress(undefined, customer.email)
-    }
-    
-    // Reset user interaction flag after cart updates
-    // This allows the form to sync with saved data
-    if (hasUserInteracted && cart?.email) {
-      setHasUserInteracted(false)
+    if (!hasUserInteracted) {
+      if (cart && cart.shipping_address) {
+        setFormAddress(cart?.shipping_address, cart?.email)
+      }
+
+      if (cart && !cart.email && customer?.email) {
+        setFormAddress(undefined, customer.email)
+      }
     }
   }, [cart, setFormAddress, customer, hasUserInteracted])
 
-  const handleChange = (
-    e: React.ChangeEvent<
-      HTMLInputElement | HTMLInputElement | HTMLSelectElement
-    >
-  ) => {
+  const handleInputChange = useCallback((fieldName: string, value: string) => {
+    console.log("📝 Input change:", fieldName, value)
     setHasUserInteracted(true)
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value,
-    })
-  }
+    setFormData((prev) => ({
+      ...prev,
+      [fieldName]: value,
+    }))
+  }, [])
 
-  // Handle autofill detection
-  const handleInput = (
-    e: React.FormEvent<HTMLInputElement>
-  ) => {
-    setHasUserInteracted(true)
-    const target = e.target as HTMLInputElement
-    setFormData({
-      ...formData,
-      [target.name]: target.value,
-    })
-  }
+  // Chrome-specific autofill detection with aggressive polling
+  useEffect(() => {
+    const checkAutofill = () => {
+      let hasChanges = false
+      inputRefsMap.current.forEach((input, fieldName) => {
+        if (input && input.value !== formData[fieldName]) {
+          console.log("🔍 Chrome autofill detected:", fieldName, input.value)
+          hasChanges = true
+          setFormData((prev) => ({
+            ...prev,
+            [fieldName]: input.value,
+          }))
+        }
+      })
+      if (hasChanges) {
+        setHasUserInteracted(true)
+      }
+    }
+
+    // More aggressive polling for Chrome
+    const interval = setInterval(checkAutofill, 100)
+    
+    // Check at multiple intervals after mount (Chrome autofill timing)
+    const timeouts = [
+      setTimeout(checkAutofill, 0),
+      setTimeout(checkAutofill, 50),
+      setTimeout(checkAutofill, 100),
+      setTimeout(checkAutofill, 200),
+      setTimeout(checkAutofill, 300),
+      setTimeout(checkAutofill, 500),
+      setTimeout(checkAutofill, 1000),
+    ]
+
+    return () => {
+      clearInterval(interval)
+      timeouts.forEach(clearTimeout)
+    }
+  }, [formData])
+
+  const registerInputRef = useCallback((fieldName: string) => {
+    return (el: HTMLInputElement | null) => {
+      if (el) {
+        inputRefsMap.current.set(fieldName, el)
+        
+        // Chrome-specific: Check value immediately after ref is set
+        setTimeout(() => {
+          if (el.value && el.value !== formData[fieldName]) {
+            console.log("🔍 Ref mount autofill detected:", fieldName, el.value)
+            setFormData((prev) => ({
+              ...prev,
+              [fieldName]: el.value,
+            }))
+            setHasUserInteracted(true)
+          }
+        }, 100)
+      } else {
+        inputRefsMap.current.delete(fieldName)
+      }
+    }
+  }, [])
 
   return (
     <>
+      <style jsx>{`
+        /* Chrome autofill detection */
+        input:-webkit-autofill {
+          animation-name: onAutoFillStart;
+          animation-duration: 0.001s;
+        }
+        input:not(:-webkit-autofill) {
+          animation-name: onAutoFillCancel;
+          animation-duration: 0.001s;
+        }
+        @keyframes onAutoFillStart {
+        }
+        @keyframes onAutoFillCancel {
+        }
+      `}</style>
       {customer && (addressesInRegion?.length || 0) > 0 && (
         <Container className="mb-6 flex flex-col gap-y-4 p-0 font-instrument-sans">
           <p className="text-small-regular font-instrument-sans">
@@ -139,8 +223,10 @@ const ShippingAddress = ({
           name="shipping_address.first_name"
           autoComplete="given-name"
           value={formData["shipping_address.first_name"]}
-          onChange={handleChange}
-          onInput={handleInput}
+          changeValue={(value) =>
+            handleInputChange("shipping_address.first_name", value)
+          }
+          ref={registerInputRef("shipping_address.first_name")}
           required
           data-testid="shipping-first-name-input"
         />
@@ -149,8 +235,10 @@ const ShippingAddress = ({
           name="shipping_address.last_name"
           autoComplete="family-name"
           value={formData["shipping_address.last_name"]}
-          onChange={handleChange}
-          onInput={handleInput}
+          changeValue={(value) =>
+            handleInputChange("shipping_address.last_name", value)
+          }
+          ref={registerInputRef("shipping_address.last_name")}
           required
           data-testid="shipping-last-name-input"
         />
@@ -159,8 +247,10 @@ const ShippingAddress = ({
           name="shipping_address.address_1"
           autoComplete="address-line1"
           value={formData["shipping_address.address_1"]}
-          onChange={handleChange}
-          onInput={handleInput}
+          changeValue={(value) =>
+            handleInputChange("shipping_address.address_1", value)
+          }
+          ref={registerInputRef("shipping_address.address_1")}
           required
           data-testid="shipping-address-input"
         />
@@ -168,8 +258,10 @@ const ShippingAddress = ({
           label="Firma"
           name="shipping_address.company"
           value={formData["shipping_address.company"]}
-          onChange={handleChange}
-          onInput={handleInput}
+          changeValue={(value) =>
+            handleInputChange("shipping_address.company", value)
+          }
+          ref={registerInputRef("shipping_address.company")}
           autoComplete="organization"
           data-testid="shipping-company-input"
         />
@@ -178,8 +270,10 @@ const ShippingAddress = ({
           name="shipping_address.postal_code"
           autoComplete="postal-code"
           value={formData["shipping_address.postal_code"]}
-          onChange={handleChange}
-          onInput={handleInput}
+          changeValue={(value) =>
+            handleInputChange("shipping_address.postal_code", value)
+          }
+          ref={registerInputRef("shipping_address.postal_code")}
           required
           data-testid="shipping-postal-code-input"
         />
@@ -188,8 +282,10 @@ const ShippingAddress = ({
           name="shipping_address.city"
           autoComplete="address-level2"
           value={formData["shipping_address.city"]}
-          onChange={handleChange}
-          onInput={handleInput}
+          changeValue={(value) =>
+            handleInputChange("shipping_address.city", value)
+          }
+          ref={registerInputRef("shipping_address.city")}
           required
           data-testid="shipping-city-input"
         />
@@ -198,7 +294,12 @@ const ShippingAddress = ({
           autoComplete="country"
           region={cart?.region}
           value={formData["shipping_address.country_code"]}
-          onChange={handleChange}
+          onChange={(e) =>
+            handleInputChange(
+              "shipping_address.country_code",
+              e.target.value
+            )
+          }
           required
           data-testid="shipping-country-select"
         />
@@ -207,8 +308,10 @@ const ShippingAddress = ({
           name="shipping_address.province"
           autoComplete="address-level1"
           value={formData["shipping_address.province"]}
-          onChange={handleChange}
-          onInput={handleInput}
+          changeValue={(value) =>
+            handleInputChange("shipping_address.province", value)
+          }
+          ref={registerInputRef("shipping_address.province")}
           data-testid="shipping-province-input"
         />
       </div>
@@ -220,8 +323,8 @@ const ShippingAddress = ({
           title="Enter a valid email address."
           autoComplete="email"
           value={formData.email}
-          onChange={handleChange}
-          onInput={handleInput}
+          changeValue={(value) => handleInputChange("email", value)}
+          ref={registerInputRef("email")}
           required
           data-testid="shipping-email-input"
         />
@@ -230,13 +333,17 @@ const ShippingAddress = ({
           name="shipping_address.phone"
           autoComplete="tel"
           value={formData["shipping_address.phone"]}
-          onChange={handleChange}
-          onInput={handleInput}
+          changeValue={(value) =>
+            handleInputChange("shipping_address.phone", value)
+          }
+          ref={registerInputRef("shipping_address.phone")}
           data-testid="shipping-phone-input"
         />
       </div>
     </>
   )
-}
+})
+
+ShippingAddress.displayName = "ShippingAddress"
 
 export default ShippingAddress
