@@ -5,6 +5,7 @@ import { CategoryNavbar, NavbarSearch } from "@/components/molecules"
 import { FullWidthDropdown } from "@/components/molecules/CategoryNavbar/CategoryNavbar"
 import { useState, useEffect } from "react"
 import { getTopLevelCategories } from "@/components/molecules/CategoryNavbar/mockCategoryData"
+import { CountrySelector } from "@/components/cells/CountrySelector/CountrySelector"
 
 // Set to true to force using mock data for development
 const USE_MOCK_DATA = false

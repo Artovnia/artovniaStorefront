@@ -4,6 +4,7 @@ import { HttpTypes } from '@medusajs/types';
 import { HamburgerMenuIcon } from '@/icons';
 import { useState } from 'react';
 import { HierarchicalMobileMenu } from '@/components/cells/HierarchicalMobileMenu';
+import { CountrySelector } from '@/components/cells/CountrySelector/CountrySelector';
 
 export const MobileNavbar = ({
   categories,
@@ -21,7 +22,7 @@ export const MobileNavbar = ({
   };
 
   return (
-    <div className='lg:hidden'>
+    <div className='lg:hidden flex items-center gap-2'>
       <button 
         onClick={handleOpenMenu}
         className="p-2 hover:bg-gray-100 rounded-full transition-colors"
@@ -29,6 +30,11 @@ export const MobileNavbar = ({
       >
         <HamburgerMenuIcon />
       </button>
+      
+      {/* Country Selector for Mobile */}
+      <div className="md:hidden">
+        <CountrySelector />
+      </div>
       
       <HierarchicalMobileMenu
         categories={categories}

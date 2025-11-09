@@ -17,6 +17,7 @@ import { retrieveCustomer } from "@/lib/data/customer"
 import { getUserWishlists } from "@/lib/data/wishlist"
 import { SerializableWishlist } from "@/types/wishlist"
 import { Badge } from "@/components/atoms"
+import { CountrySelectorWrapper } from "@/components/cells/CountrySelector/CountrySelectorWrapper"
 
 export const Header = async () => {
   // Cart data will be managed by CartContext instead of fetching here
@@ -65,11 +66,13 @@ export const Header = async () => {
   return (
     <header className="sticky top-0 z-50 bg-primary shadow-sm">
       <div className="flex py-2 max-w-[1920px] mx-auto">
-        <div className="flex items-center lg:w-1/3">
+        <div className="flex items-center gap-2 lg:gap-4 lg:w-1/3 py-4 ml-4">
+          {/* Country Selector - Left side */}
+          <CountrySelectorWrapper />
+          
           <MobileNavbar
             categories={allCategoriesWithTree}
           />
-          
         </div>
         <div className="flex lg:justify-center lg:w-1/3 items-center pl-4 lg:pl-0">
           <Link href="/" className="text-2xl font-bold">

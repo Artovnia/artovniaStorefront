@@ -111,7 +111,7 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children, initialCar
   const operationInProgress = useRef(false)
   
   // Ensure cart exists using server action
-  const ensureCart = useCallback(async (countryCode: string = 'pl') => {
+  const ensureCart = useCallback(async (countryCode?: string) => {
     if (operationInProgress.current) return null
     
     operationInProgress.current = true
@@ -122,6 +122,7 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children, initialCar
       
       if (!cart) {
         // Import and call server action
+        // Country will be auto-detected if not provided
         const { createCartAction } = await import('@/lib/actions/cart-actions')
         cart = await createCartAction(countryCode)
       }

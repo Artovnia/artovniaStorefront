@@ -44,7 +44,6 @@ export const CartItemsProducts = ({
             onCartUpdate(updatedCart)
           }
         } catch (error) {
-          console.warn('⚠️ Non-blocking cart refresh failed:', error)
         }
       }, 1000) // Delay to avoid blocking UI
     }
@@ -131,12 +130,7 @@ export const CartItemsProducts = ({
               <Link href={`/products/${productHandle}`}>
                 <div className="lg:flex justify-between -mt-4 lg:mt-0">
                   <div className="label-md text-secondary">
-                    {options?.map(({ option, id, value }) => (
-                      <p key={id}>
-                        {option?.title || 'Option'}:{" "}
-                        <span className="text-primary">{value || '-'}</span>
-                      </p>
-                    ))}
+                    
                     <div className="flex items-center gap-2">
                       <span className="text-secondary">Ilość:</span>
                       {show_quantity_changer ? (

@@ -3,11 +3,16 @@
 import { sdk } from "@/lib/config"
 import { getAuthHeaders, setCartId } from "@/lib/data/cookies"
 import { getRegion } from "@/lib/data/regions"
+import { detectUserCountry } from "@/lib/helpers/country-detection"
 import { revalidateTag } from "next/cache"
 
 const CART_FIELDS = "*items,*region,*region.countries,*items.product,*items.variant,*items.variant.options,items.variant.options.option.title,*items.thumbnail,*items.metadata,+items.total,+items.unit_price,+items.original_total,+items.original_unit_price,*promotions,*promotions.application_method,*shipping_methods,*items.product.seller,*payment_collection,*payment_collection.payment_sessions,email,*shipping_address,*billing_address,subtotal,total,tax_total,item_total,shipping_total,currency_code"
 
-export async function createCartAction(countryCode: string = 'pl') {
+export async function createCartAction(countryCode?: string) {
+  // Auto-detect country if not provided
+  if (!countryCode) {
+    countryCode = await detectUserCountry()
+  }
   try {
     const region = await getRegion(countryCode)
     

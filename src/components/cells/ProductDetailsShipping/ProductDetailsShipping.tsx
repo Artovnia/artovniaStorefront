@@ -28,6 +28,11 @@ export const ProductDetailsShipping = ({
   useEffect(() => {
     const fetchShippingMethods = async () => {
       if (!product?.id || !region?.id) {
+        console.warn('⚠️ ProductDetailsShipping: Missing product ID or region ID', {
+          productId: product?.id,
+          regionId: region?.id,
+          regionName: region?.name
+        })
         setLoading(false)
         setShippingMethods([])
         return
@@ -36,7 +41,13 @@ export const ProductDetailsShipping = ({
       try {
         setLoading(true)
         setError(null)
-   
+        
+        console.log('🚚 ProductDetailsShipping: Fetching shipping options', {
+          productId: product.id,
+          regionId: region.id,
+          regionName: region.name,
+          regionCountries: region.countries?.map(c => c.iso_2).join(', ')
+        })
 
         // ✅ FIXED: Use unified cache for shipping options
         const shippingOptions = await unifiedCache.get(
@@ -44,6 +55,8 @@ export const ProductDetailsShipping = ({
           () => getProductShippingOptions(product.id, region.id),
           CACHE_TTL.PRODUCT
         )
+
+        console.log(`📦 ProductDetailsShipping: Received ${shippingOptions?.length || 0} shipping options`)
 
         // Don't filter by seller - show all shipping options for the product's shipping profile
         let filteredMethods = shippingOptions

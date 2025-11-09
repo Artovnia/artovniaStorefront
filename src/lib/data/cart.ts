@@ -143,10 +143,64 @@ export async function retrieveCartForPayment(cartId?: string) {
 }
 
 /**
+ * Ensures cart region matches the detected user country
+ * Updates cart region if mismatch detected
+ */
+export async function ensureCartRegionMatches(cart: HttpTypes.StoreCart, countryCode: string): Promise<HttpTypes.StoreCart> {
+  if (!cart || !countryCode) {
+    return cart
+  }
+
+  try {
+    // Get the region for the detected country
+    const region = await getRegion(countryCode)
+    
+    if (!region) {
+      console.warn(`⚠️ No region found for country: ${countryCode}`)
+      return cart
+    }
+
+    // Check if cart's region matches
+    if (cart.region_id === region.id) {
+      console.log(`✅ Cart region matches detected country: ${countryCode}`)
+      return cart
+    }
+
+    // Region mismatch - update cart
+    console.log(`🔄 Updating cart region from ${cart.region_id} to ${region.id} (country: ${countryCode})`)
+    
+    const headers = await getAuthHeaders()
+    const response = await sdk.store.cart.update(
+      cart.id,
+      { region_id: region.id },
+      { fields: CART_FIELDS },
+      headers
+    )
+
+    console.log(`✅ Cart region updated successfully`)
+    return response.cart
+  } catch (error) {
+    console.error('Error ensuring cart region matches:', error)
+    return cart
+  }
+}
+
+/**
  * Retrieves cart with fields optimized for the review section
+ * Also ensures cart region matches detected country
  */
 export async function retrieveCartForReview(cartId?: string) {
-  return retrieveCart(cartId)
+  const cart = await retrieveCart(cartId)
+  
+  if (!cart) {
+    return null
+  }
+
+  // Ensure cart region matches detected country
+  const { detectUserCountry } = await import('@/lib/helpers/country-detection')
+  const userCountry = await detectUserCountry()
+  
+  return ensureCartRegionMatches(cart, userCountry)
 }
 
 export async function getOrSetCart(countryCode: string) {
