@@ -74,16 +74,20 @@ const ShippingAddress = ({
   )
 
   useEffect(() => {
-    // Only update form data from cart if user hasn't interacted with the form yet
-    if (!hasUserInteracted) {
-      // Ensure cart is not null and has a shipping_address before setting form data
-      if (cart && cart.shipping_address) {
-        setFormAddress(cart?.shipping_address, cart?.email)
-      }
+    // 🔒 CRITICAL FIX: Always update email from cart, even after user interaction
+    // This ensures saved email is reflected in the form
+    if (cart && cart.shipping_address) {
+      setFormAddress(cart?.shipping_address, cart?.email)
+    }
 
-      if (cart && !cart.email && customer?.email) {
-        setFormAddress(undefined, customer.email)
-      }
+    if (cart && !cart.email && customer?.email) {
+      setFormAddress(undefined, customer.email)
+    }
+    
+    // Reset user interaction flag after cart updates
+    // This allows the form to sync with saved data
+    if (hasUserInteracted && cart?.email) {
+      setHasUserInteracted(false)
     }
   }, [cart, setFormAddress, customer, hasUserInteracted])
 

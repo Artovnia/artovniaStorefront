@@ -859,11 +859,15 @@ export async function setAddresses(currentState: unknown, formData: FormData) {
       }
 
       await updateCart(data)
+      // 🔒 CRITICAL: Revalidate both cart and checkout pages
       await revalidatePath("/cart")
+      await revalidatePath("/checkout")
     } catch (fetchError: any) {
       // Fall back to the standard updateCart method
       await updateCart(data)
+      // 🔒 CRITICAL: Revalidate both cart and checkout pages
       await revalidatePath("/cart")
+      await revalidatePath("/checkout")
       return `Warning: Customer data may not be fully associated: ${fetchError?.message || 'Unknown error'}`
     }
     return "success"
