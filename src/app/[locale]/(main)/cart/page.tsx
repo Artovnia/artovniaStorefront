@@ -7,6 +7,10 @@ export const metadata: Metadata = {
   description: 'Twój koszyk zakupowy',
 };
 
+// 🔒 CRITICAL: Disable caching for user cart
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+
 export default function CartPage({}) {
   return (
     <main className='container grid grid-cols-12'>

@@ -58,14 +58,13 @@ export const ProductDetailsPage = async ({
           if (handles.length === 0) return []
           
           // Use batch fetch instead of individual API calls
-          console.log(`Batch fetching ${handles.length} seller products for ${prod.seller.name}`)
           const fetchedProducts = await batchFetchProductsByHandles({
             handles,
             countryCode: locale,
             limit: 8
           })
           
-          console.log(`Successfully fetched ${fetchedProducts.length} seller products`)
+          
           return fetchedProducts
         } else {
           return []

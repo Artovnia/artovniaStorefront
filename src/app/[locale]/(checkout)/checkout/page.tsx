@@ -8,6 +8,10 @@ import { Suspense } from "react"
 import Link from "next/link"
 import { CartProvider } from "@/components/context/CartContext"
 
+// 🔒 CRITICAL: Disable all caching for checkout page
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+
 export default async function CheckoutPage() {
   return (
     <Suspense
@@ -24,6 +28,10 @@ export default async function CheckoutPage() {
 
 async function CheckoutPageContent() {
   try {
+    // 🔒 CRITICAL: Set no-cache headers to prevent CDN/proxy caching
+    const { headers } = await import('next/headers')
+    const headersList = headers()
+    
     // Get cart with all review data including payment sessions
     const cart = await retrieveCartForReview().catch(() => null);
     

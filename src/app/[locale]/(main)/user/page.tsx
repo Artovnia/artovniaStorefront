@@ -1,6 +1,10 @@
 import { LoginForm, UserPageLayout } from "@/components/molecules"
 import { retrieveCustomer } from "@/lib/data/customer"
 
+// 🔒 CRITICAL: Disable caching for user-specific data
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+
 export default async function UserPage() {
   const user = await retrieveCustomer()
 
