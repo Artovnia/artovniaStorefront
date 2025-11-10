@@ -3,6 +3,7 @@ import { Link } from "@/i18n/routing"
 import { CollapseIcon } from "@/icons"
 import Image from "next/image"
 import { CartProvider } from "@/components/context/CartContext"
+import { MobileUserNavigation } from "@/components/molecules"
 
 export default async function RootLayout({
   children,
@@ -35,6 +36,7 @@ export default async function RootLayout({
         </div>
       </header>
       {children}
+      <MobileUserNavigation />
     </CartProvider>
   )
 }

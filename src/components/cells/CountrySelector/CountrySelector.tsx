@@ -88,7 +88,7 @@ export const CountrySelector = ({
           "bg-primary hover:bg-[#F4F0EB]/80",
           "border border-[#3B3634]/20 hover:border-[#3B3634]/40",
           "transition-all duration-300 ease-out",
-          "text-sm font-semibold text-[#3B3634]",
+          "text-sm font-semibold text-[#3B3634] hover:text-white",
           "shadow-sm hover:shadow-md",
           "group relative overflow-hidden",
           {
@@ -99,9 +99,9 @@ export const CountrySelector = ({
         aria-label="Select country"
       >
         {/* Decorative gradient on hover */}
-        <div className="absolute inset-0 bg-gradient-to-r from-[#3B3634]/0 via-[#3B3634]/5 to-[#3B3634]/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+        <div className="absolute inset-0 bg-gradient-to-r from-[#3B3634]/0 via-[#3B3634]/5 to-[#3B3634]/0 opacity-0 group-hover:opacity-100 hover:bg-[#3B3634] hover:text-white transition-opacity duration-300" />
         
-        <span className="text-xl relative z-10">{current.flag}</span>
+        <span className="text-xl relative z-10 ">{current.flag}</span>
         <span className="hidden sm:inline relative z-10"></span>
         <svg 
           className={clsx(

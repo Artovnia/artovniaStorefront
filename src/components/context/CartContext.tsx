@@ -110,25 +110,6 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children, initialCar
   // Simple operation locking
   const operationInProgress = useRef(false)
   
-  // ✅ Generate unique browser session ID to prevent cross-browser contamination
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    
-    const sessionId = sessionStorage.getItem('browser_session_id') || 
-      `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    
-    if (!sessionStorage.getItem('browser_session_id')) {
-      sessionStorage.setItem('browser_session_id', sessionId);
-    }
-    
-    console.log('🔑 Browser Session ID:', sessionId);
-    
-    // Log cart ID on mount for debugging
-    if (state.cart?.id) {
-      console.log('🛒 Cart ID:', state.cart.id, 'Session:', sessionId);
-    }
-  }, [state.cart?.id])
-  
   // Ensure cart exists using server action
   const ensureCart = useCallback(async (countryCode?: string) => {
     if (operationInProgress.current) return null
