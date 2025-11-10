@@ -84,8 +84,8 @@ export const CountrySelector = ({
         onClick={() => setIsOpen(!isOpen)}
         disabled={isPending}
         className={clsx(
-          "flex items-center gap-2 px-4 py-2.5 ",
-          "bg-primary hover:bg-[#F4F0EB]/80",
+          "flex items-center gap-2 px-4 py-2.5",
+          "bg-primary hover:bg-[#3B3634]",
           "border border-[#3B3634]/20 hover:border-[#3B3634]/40",
           "transition-all duration-300 ease-out",
           "text-sm font-semibold text-[#3B3634] hover:text-white",
@@ -99,9 +99,9 @@ export const CountrySelector = ({
         aria-label="Select country"
       >
         {/* Decorative gradient on hover */}
-        <div className="absolute inset-0 bg-gradient-to-r from-[#3B3634]/0 via-[#3B3634]/5 to-[#3B3634]/0 opacity-0 group-hover:opacity-100 hover:bg-[#3B3634] hover:text-white transition-opacity duration-300" />
+        <div className="absolute inset-0  duration-300 pointer-events-none" />
         
-        <span className="text-xl relative z-10 ">{current.flag}</span>
+        <span className="text-xl relative z-10">{current.flag}</span>
         <span className="hidden sm:inline relative z-10"></span>
         <svg 
           className={clsx(
@@ -125,13 +125,13 @@ export const CountrySelector = ({
           />
           
           {/* Dropdown with artistic styling */}
-          <div className="absolute left-0 mt-3 min-w-[25rem] bg-primary shadow-2xl border border-[#3B3634]/30 z-50 overflow-hidden animate-in slide-in-from-top-2 duration-300">
+          <div className="absolute left-0 mt-3 w-64 bg-primary shadow-2xl border border-[#3B3634]/30 z-50 overflow-hidden animate-in slide-in-from-top-2 duration-300 rounded-sm">
             {/* Decorative background elements */}
-            <div className="absolute top-0 left-0 w-24 h-24 bg-[#3B3634]/5  blur-3xl -translate-y-1/2 translate-x-1/2 pointer-events-none" />
+            <div className="absolute top-0 left-0 w-24 h-24 bg-[#3B3634]/5 blur-3xl -translate-y-1/2 translate-x-1/2 pointer-events-none" />
             
             {/* Header */}
             <div className="px-4 py-3 border-b border-[#3B3634]/10 relative">
-              <h3 className="text-sm font-bold text-[#3B3634] font-instrument-sans">
+              <h3 className="text-md font-bold text-[#3B3634] font-instrument-sans">
                 Wybierz swój region
               </h3>
             </div>
@@ -146,21 +146,16 @@ export const CountrySelector = ({
                     animationDelay: `${index * 30}ms`,
                   }}
                   className={clsx(
-                    "w-full flex items-center gap-3 px-2 py-2 mx-2 ",
+                    "w-full flex items-center gap-3 px-4 py-2.5",
                     "text-left font-semibold transition-all duration-200",
-                    "group relative overflow-hidden animate-in fade-in slide-in-from-left-2",
+                    "group/item relative overflow-hidden animate-in fade-in slide-in-from-left-2",
                     {
-                      "bg-[#3B3634] text-white shadow-md": country.code === activeCountry,
-                      "text-[#3B3634] hover:bg-white/60 hover:shadow-sm": country.code !== activeCountry,
+                      "bg-[#3B3634] text-white": country.code === activeCountry,
+                      "text-[#3B3634] hover:bg-[#3B3634] hover:text-white": country.code !== activeCountry,
                       "opacity-50 cursor-not-allowed": isPending
                     }
                   )}
                 >
-                  {/* Hover gradient effect */}
-                  {country.code !== activeCountry && (
-                    <div className="absolute inset-0 bg-gradient-to-r from-[#3B3634]/0 via-[#3B3634]/5 to-[#3B3634]/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                  )}
-                  
                   <span className="text-xl relative z-10">{country.flag}</span>
                   <span className="relative z-10">{country.name}</span>
                   {country.code === activeCountry && (
