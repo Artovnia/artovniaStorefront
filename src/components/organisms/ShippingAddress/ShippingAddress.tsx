@@ -1,3 +1,5 @@
+"use client"
+
 import { HttpTypes } from "@medusajs/types"
 import { Container } from "@medusajs/ui"
 import { mapKeys } from "lodash"
@@ -42,14 +44,19 @@ const ShippingAddress = forwardRef<
 
   const [hasUserInteracted, setHasUserInteracted] = useState(false)
   const lastCartEmailRef = useRef(cart?.email)
-  const inputRefsMap = useRef<Map<string, HTMLInputElement>>(new Map())
+  const inputRefsMap = useRef<Map<string, HTMLInputElement | HTMLSelectElement>>(new Map())
+  
+  // ✅ FIXED: Track what we've already detected to prevent infinite loops
+  const detectedValuesRef = useRef<Map<string, string>>(new Map())
+  
+  // ✅ FIXED: Track if autofill check has completed
+  const autofillCheckCompleteRef = useRef(false)
 
-  // Expose method to get current form data from DOM (bypasses React state)
+  // Expose method to get current form data from DOM
   useImperativeHandle(ref, () => ({
     getFormData: () => {
       const currentData: Record<string, any> = {}
       inputRefsMap.current.forEach((input, fieldName) => {
-        // Read directly from DOM - this gets Chrome autofill values
         currentData[fieldName] = input.value
       })
       console.log("📋 Getting form data from DOM:", currentData)
@@ -101,6 +108,9 @@ const ShippingAddress = forwardRef<
     if (cartEmailChanged) {
       lastCartEmailRef.current = cart?.email
       setHasUserInteracted(false)
+      // Reset autofill check when cart changes
+      autofillCheckCompleteRef.current = false
+      detectedValuesRef.current.clear()
     }
 
     if (!hasUserInteracted) {
@@ -123,18 +133,28 @@ const ShippingAddress = forwardRef<
     }))
   }, [])
 
-  // Chrome-specific autofill detection with aggressive polling
+  // ✅ FIXED: Autofill detection with completion flag
   useEffect(() => {
+    // Skip if already completed
+    if (autofillCheckCompleteRef.current) {
+      return
+    }
+
     const checkAutofill = () => {
       let hasChanges = false
       inputRefsMap.current.forEach((input, fieldName) => {
-        if (input && input.value !== formData[fieldName]) {
-          console.log("🔍 Chrome autofill detected:", fieldName, input.value)
-          hasChanges = true
-          setFormData((prev) => ({
-            ...prev,
-            [fieldName]: input.value,
-          }))
+        if (input && input.value) {
+          // Only update if value is different from what we've already detected
+          const previousValue = detectedValuesRef.current.get(fieldName)
+          if (input.value !== previousValue && input.value !== formData[fieldName]) {
+            console.log("🔍 Autofill detected:", fieldName, input.value)
+            detectedValuesRef.current.set(fieldName, input.value)
+            hasChanges = true
+            setFormData((prev) => ({
+              ...prev,
+              [fieldName]: input.value,
+            }))
+          }
         }
       })
       if (hasChanges) {
@@ -142,65 +162,59 @@ const ShippingAddress = forwardRef<
       }
     }
 
-    // More aggressive polling for Chrome
-    const interval = setInterval(checkAutofill, 100)
+    // Check immediately
+    checkAutofill()
     
-    // Check at multiple intervals after mount (Chrome autofill timing)
-    const timeouts = [
-      setTimeout(checkAutofill, 0),
-      setTimeout(checkAutofill, 50),
-      setTimeout(checkAutofill, 100),
-      setTimeout(checkAutofill, 200),
-      setTimeout(checkAutofill, 300),
-      setTimeout(checkAutofill, 500),
-      setTimeout(checkAutofill, 1000),
-    ]
+    // ✅ FIXED: Limited polling (only 10 checks over 2 seconds)
+    const checks = [50, 100, 200, 300, 500, 1000, 1500, 2000]
+    const timeouts = checks.map(delay => 
+      setTimeout(() => {
+        if (!autofillCheckCompleteRef.current) {
+          checkAutofill()
+        }
+      }, delay)
+    )
+    
+    // ✅ Mark as complete after 2 seconds
+    const completeTimeout = setTimeout(() => {
+      autofillCheckCompleteRef.current = true
+      console.log("✅ Autofill detection complete")
+    }, 2000)
 
     return () => {
-      clearInterval(interval)
       timeouts.forEach(clearTimeout)
+      clearTimeout(completeTimeout)
     }
-  }, [formData])
+  }, [formData]) // Only re-run if formData reference changes
 
   const registerInputRef = useCallback((fieldName: string) => {
-    return (el: HTMLInputElement | null) => {
+    return (el: HTMLInputElement | HTMLSelectElement | null) => {
       if (el) {
         inputRefsMap.current.set(fieldName, el)
         
-        // Chrome-specific: Check value immediately after ref is set
+        // Check once on mount
         setTimeout(() => {
-          if (el.value && el.value !== formData[fieldName]) {
-            console.log("🔍 Ref mount autofill detected:", fieldName, el.value)
-            setFormData((prev) => ({
-              ...prev,
-              [fieldName]: el.value,
-            }))
-            setHasUserInteracted(true)
+          if (!autofillCheckCompleteRef.current && el.value) {
+            const previousValue = detectedValuesRef.current.get(fieldName)
+            if (el.value !== previousValue && el.value !== formData[fieldName]) {
+              console.log("🔍 Ref mount autofill:", fieldName, el.value)
+              detectedValuesRef.current.set(fieldName, el.value)
+              setFormData((prev) => ({
+                ...prev,
+                [fieldName]: el.value,
+              }))
+              setHasUserInteracted(true)
+            }
           }
         }, 100)
       } else {
         inputRefsMap.current.delete(fieldName)
       }
     }
-  }, [])
+  }, [formData])
 
   return (
     <>
-      <style jsx>{`
-        /* Chrome autofill detection */
-        input:-webkit-autofill {
-          animation-name: onAutoFillStart;
-          animation-duration: 0.001s;
-        }
-        input:not(:-webkit-autofill) {
-          animation-name: onAutoFillCancel;
-          animation-duration: 0.001s;
-        }
-        @keyframes onAutoFillStart {
-        }
-        @keyframes onAutoFillCancel {
-        }
-      `}</style>
       {customer && (addressesInRegion?.length || 0) > 0 && (
         <Container className="mb-6 flex flex-col gap-y-4 p-0 font-instrument-sans">
           <p className="text-small-regular font-instrument-sans">
@@ -294,12 +308,14 @@ const ShippingAddress = forwardRef<
           autoComplete="country"
           region={cart?.region}
           value={formData["shipping_address.country_code"]}
-          onChange={(e) =>
+          onChange={(e) => {
+            console.log("🌍 Country changed to:", e.target.value)
             handleInputChange(
               "shipping_address.country_code",
               e.target.value
             )
-          }
+          }}
+          ref={registerInputRef("shipping_address.country_code")}
           required
           data-testid="shipping-country-select"
         />

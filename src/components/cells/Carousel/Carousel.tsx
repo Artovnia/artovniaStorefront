@@ -142,7 +142,7 @@ export const CustomCarousel = ({
             {items.map((slide, index) => (
               <div 
                 key={index} 
-                className='flex-none w-[252px]' 
+                className='flex-none w-[160px] sm:w-[252px]' 
               >
                 {slide}
               </div>

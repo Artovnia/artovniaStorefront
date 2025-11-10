@@ -47,7 +47,7 @@ export const ProductCarouselIndicator = ({
   }, [parentEmbla, onSelect])
 
   return (
-    <div className="embla__dots absolute lg:top-3 bottom-3 lg:bottom-auto left-3 w-[calc(100%-24px)] h-[2px]">
+    <div className="embla__dots absolute lg:top-3 bottom-3 lg:bottom-auto left-3 right-3 w-auto max-w-[calc(100%-24px)] h-[2px]">
       <div className="lg:hidden">
         <Indicator
           step={selectedIndex + 1}

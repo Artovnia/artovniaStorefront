@@ -5,6 +5,7 @@ import { Link } from "@/components/atoms"
 import { getUnreadMessagesCount } from "@/lib/data/actions/messages"
 import { signout, retrieveCustomer } from "@/lib/data/customer"
 import { cn } from "@/lib/utils"
+import { MobileRegionModal } from "@/components/cells/MobileRegionModal/MobileRegionModal"
 
 // Icons for mobile navigation
 const OrdersIcon = ({ className = "" }: { className?: string }) => (
@@ -106,6 +107,14 @@ const MarketplaceIcon = ({ className = "" }: { className?: string }) => (
   </svg>
 )
 
+const GlobeIcon = ({ className = "" }: { className?: string }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+    <circle cx="12" cy="12" r="10"></circle>
+    <line x1="2" y1="12" x2="22" y2="12"></line>
+    <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+  </svg>
+)
+
 interface NavigationItem {
   label: string
   href: string
@@ -161,6 +170,7 @@ export const MobileUserNavigation = () => {
   const [hasUnreadMessages, setHasUnreadMessages] = useState<boolean>(false)
   const [isMenuOpen, setIsMenuOpen] = useState<boolean>(false)
   const [isSearchOpen, setIsSearchOpen] = useState<boolean>(false)
+  const [isRegionModalOpen, setIsRegionModalOpen] = useState<boolean>(false)
   const [searchQuery, setSearchQuery] = useState<string>("")
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false)
 
@@ -504,16 +514,16 @@ export const MobileUserNavigation = () => {
                 <span className="text-[10px] font-medium text-gray-600 mt-1">Sklep</span>
               </Link>
 
-              {/* Cart Button */}
-              <Link
-                href="/cart"
+              {/* Region Selector Button */}
+              <button
+                onClick={() => setIsRegionModalOpen(true)}
                 className="flex flex-col items-center justify-center gap-1 flex-1 group"
               >
                 <div className="w-10 h-10 rounded-full flex items-center justify-center text-gray-600 transition-all duration-200 group-hover:text-[#3B3634]">
-                  <CartIcon className="w-5 h-5" />
+                  <GlobeIcon className="w-5 h-5" />
                 </div>
-                <span className="text-[10px] font-medium text-gray-600 group-hover:text-[#3B3634]">Koszyk</span>
-              </Link>
+                <span className="text-[10px] font-medium text-gray-600 group-hover:text-[#3B3634]">Region</span>
+              </button>
 
               {/* Profile Button */}
               <button
@@ -547,6 +557,12 @@ export const MobileUserNavigation = () => {
           <div className="h-safe-area-inset-bottom bg-white" />
         </div>
       </div>
+
+      {/* Region Selection Modal */}
+      <MobileRegionModal 
+        isOpen={isRegionModalOpen}
+        onClose={() => setIsRegionModalOpen(false)}
+      />
     </>
   )
 }

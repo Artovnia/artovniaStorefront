@@ -12,11 +12,12 @@ import {
   getCartId,
   removeCartId,
   setCartId,
+  retrieveCustomer,
 } from "./cookies"
 
 import { getRegion } from "./regions"
 import { getPublishableApiKey } from "../get-publishable-key"
-import { unifiedCache } from "../utils/unified-cache" // ✅ New import
+import { unifiedCache } from "../utils/unified-cache" 
 
 interface ExtendedStoreCart extends HttpTypes.StoreCart {
   completed_at?: string;
@@ -388,13 +389,29 @@ export async function setShippingMethod({
   shippingMethodId: string
   data?: Record<string, any>
 }) {
+  // ✅ SECURITY: Validate cart ownership before modification
+  const { validateCartOwnership } = await import('./cookies');
+  await validateCartOwnership(cartId);
+  
+  // ✅ Generate tracking IDs for debugging and forensics
+  const requestId = `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  const sessionId = typeof window !== 'undefined' 
+    ? sessionStorage.getItem('browser_session_id') || 'unknown'
+    : 'server';
+  
+  console.log('🚢 [setShippingMethod] START', { requestId, sessionId, cartId, shippingMethodId });
+  
   const headers = await getAuthHeaders()
 
   return sdk.client.fetch<{ cart: HttpTypes.StoreCart }>(
     `/store/carts/${cartId}/shipping-methods`,
     {
       method: "POST",
-      headers,
+      headers: {
+        ...headers,
+        'X-Request-ID': requestId,
+        'X-Session-ID': sessionId,
+      },
       body: {
         option_id: shippingMethodId,
         data: data,
@@ -402,6 +419,8 @@ export async function setShippingMethod({
     }
   )
     .then(async (response) => {
+      console.log('✅ [setShippingMethod] SUCCESS', { requestId, cartId });
+      
       const cartCacheTag = await getCacheTag("carts")
       revalidateTag(cartCacheTag)
       
@@ -410,7 +429,10 @@ export async function setShippingMethod({
       
       return response
     })
-    .catch(medusaError)
+    .catch((error) => {
+      console.error('❌ [setShippingMethod] ERROR', { requestId, cartId, error: error.message });
+      return medusaError(error);
+    })
 }
 
 /**
@@ -456,9 +478,28 @@ export async function initiatePaymentSession(
     context?: Record<string, unknown>
   }
 ) {
+  // ✅ SECURITY: Validate cart ownership before initiating payment
+  const { validateCartOwnership } = await import('./cookies');
+  await validateCartOwnership(cart.id);
+  
+  // ✅ Generate tracking IDs for debugging and forensics
+  const requestId = `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  const sessionId = typeof window !== 'undefined' 
+    ? sessionStorage.getItem('browser_session_id') || 'unknown'
+    : 'server';
+  
+  console.log('💳 [initiatePaymentSession] START', { 
+    requestId, 
+    sessionId, 
+    cartId: cart.id, 
+    providerId: data.provider_id 
+  });
+  
   const headers = {
     ...(await getAuthHeaders()),
-    'x-publishable-api-key': await getPublishableApiKey()
+    'x-publishable-api-key': await getPublishableApiKey(),
+    'X-Request-ID': requestId,
+    'X-Session-ID': sessionId,
   }
   
   const isRedirectPayment = data.provider_id.includes('przelewy24') || 
@@ -497,6 +538,8 @@ export async function initiatePaymentSession(
       data: sessionData
     }, {}, headers)
     
+    console.log('✅ [initiatePaymentSession] SUCCESS', { requestId, cartId: cart.id });
+    
     const cartCacheTag = await getCacheTag("carts")
     revalidateTag(cartCacheTag)
     
@@ -504,7 +547,12 @@ export async function initiatePaymentSession(
     unifiedCache.invalidate('cart')
     
     return response
-  } catch (error) {
+  } catch (error: any) {
+    console.error('❌ [initiatePaymentSession] ERROR', { 
+      requestId, 
+      cartId: cart.id, 
+      error: error.message 
+    });
     throw medusaError(error)
   }
 }
@@ -516,9 +564,23 @@ export async function selectPaymentSession(
   cartId: string,
   providerId: string
 ) {
+  // ✅ SECURITY: Validate cart ownership before selecting payment
+  const { validateCartOwnership } = await import('./cookies');
+  await validateCartOwnership(cartId);
+  
+  // ✅ Generate tracking IDs for debugging and forensics
+  const requestId = `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  const sessionId = typeof window !== 'undefined' 
+    ? sessionStorage.getItem('browser_session_id') || 'unknown'
+    : 'server';
+  
+  console.log('✅ [selectPaymentSession] START', { requestId, sessionId, cartId, providerId });
+  
   const headers = {
     ...(await getAuthHeaders()),
-    'x-publishable-api-key': await getPublishableApiKey()
+    'x-publishable-api-key': await getPublishableApiKey(),
+    'X-Request-ID': requestId,
+    'X-Session-ID': sessionId,
   }
   
   try {
@@ -751,14 +813,68 @@ export async function deletePromotionCode(promoId: string) {
 }
 
 export async function setAddresses(currentState: unknown, formData: FormData) {
+  // ✅ Generate unique request ID for tracking
+  const requestId = `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  
+  // ✅ Get session ID from client if available
+  const sessionId = typeof window !== 'undefined' 
+    ? sessionStorage.getItem('browser_session_id') || 'server'
+    : 'server';
+  
+  console.log('🔒 [setAddresses] START', {
+    requestId,
+    sessionId,
+    timestamp: new Date().toISOString()
+  });
+
   try {
     if (!formData) {
       throw new Error("No form data found when setting addresses")
     }
+    
+    // ✅ Get cart ID - NO CACHE (cookies.ts now prevents server-side cache)
     const cartId = await getCartId()
     if (!cartId) {
       throw new Error("No existing cart found when setting addresses")
     }
+    
+    console.log('🛒 [setAddresses] Cart ID:', cartId, 'Request:', requestId);
+    
+    // ✅ Get auth headers first (needed for ownership validation)
+    const headers = await getAuthHeaders();
+    
+    // ✅ Verify cart exists
+    const existingCart = await retrieveCart(cartId)
+    if (!existingCart) {
+      console.error('❌ [setAddresses] Cart not found:', cartId);
+      throw new Error("Cart not found or has been completed")
+    }
+    
+    // ✅ CRITICAL: Validate cart ownership if authenticated
+    if ('authorization' in headers) {
+      try {
+        const customer = await retrieveCustomer();
+        if (customer && existingCart.customer_id && existingCart.customer_id !== customer.id) {
+          console.error('❌ [setAddresses] Cart ownership mismatch!', {
+            cartId,
+            cartCustomerId: existingCart.customer_id,
+            requestCustomerId: customer.id,
+            requestId,
+            sessionId
+          });
+          throw new Error("Cart does not belong to current user");
+        }
+        console.log('✅ [setAddresses] Cart ownership validated:', cartId);
+      } catch (ownershipError) {
+        if (ownershipError instanceof Error && ownershipError.message === "Cart does not belong to current user") {
+          throw ownershipError;
+        }
+        // Log but don't fail for other errors (customer fetch might fail)
+        console.warn('⚠️ [setAddresses] Could not validate ownership:', ownershipError);
+      }
+    }
+    
+    console.log("✅ [setAddresses] Cart verified:", cartId, "Request:", requestId)
 
     const data = {
       shipping_address: {
@@ -776,9 +892,21 @@ export async function setAddresses(currentState: unknown, formData: FormData) {
       email: formData.get("email"),
     } as any
 
-    data.billing_address = data.shipping_address
+    // ✅ Log for debugging (remove in production)
+    console.log("📝 Address data:", JSON.stringify(data, null, 2))
 
-    const headers = await getAuthHeaders()
+    data.billing_address = data.shipping_address
+    
+    // ✅ Log address data for debugging
+    console.log("📝 [setAddresses] Address data:", {
+      requestId,
+      cartId,
+      email: data.email,
+      firstName: data.shipping_address.first_name,
+      lastName: data.shipping_address.last_name,
+      city: data.shipping_address.city
+    })
+    
     const customerInfo = {
       email: formData.get("email"),
       billing_address: {
@@ -797,18 +925,29 @@ export async function setAddresses(currentState: unknown, formData: FormData) {
     }
 
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL}/store/carts/${cartId}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...headers
-        },
-        body: JSON.stringify(customerInfo)
-      })
+      // ✅ Add cache-busting and tracking headers
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL}/store/carts/${cartId}`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+            'Pragma': 'no-cache',
+            'X-Request-ID': requestId,
+            'X-Session-ID': sessionId || '',
+            ...headers
+          },
+          body: JSON.stringify(customerInfo),
+          cache: 'no-store'
+        }
+      )
 
       if (!response.ok) {
         const errorData = await response.json()
-        throw new Error(`Failed to associate customer data: ${errorData.message || response.statusText}`)
+        throw new Error(
+          `Failed to associate customer data: ${errorData.message || response.statusText}`
+        )
       }
 
       // If user is authenticated, try to associate cart with customer ID
@@ -860,18 +999,31 @@ export async function setAddresses(currentState: unknown, formData: FormData) {
 
       await updateCart(data)
       // 🔒 CRITICAL: Revalidate both cart and checkout pages
-      await revalidatePath("/cart")
-      await revalidatePath("/checkout")
+      await revalidatePath("/cart", "page")
+      await revalidatePath("/checkout", "page")
+      
+      console.log('✅ [setAddresses] COMPLETE:', { requestId, cartId, sessionId })
     } catch (fetchError: any) {
-      // Fall back to the standard updateCart method
+      console.error("❌ [setAddresses] Fetch error:", {
+        requestId,
+        cartId,
+        sessionId,
+        error: fetchError.message
+      })
       await updateCart(data)
-      // 🔒 CRITICAL: Revalidate both cart and checkout pages
-      await revalidatePath("/cart")
-      await revalidatePath("/checkout")
+      await revalidatePath("/cart", "page")
+      await revalidatePath("/checkout", "page")
       return `Warning: Customer data may not be fully associated: ${fetchError?.message || 'Unknown error'}`
     }
+    
     return "success"
   } catch (e: any) {
+    console.error("❌ [setAddresses] Fatal error:", {
+      requestId,
+      sessionId,
+      error: e.message,
+      stack: e.stack
+    })
     return e.message
   }
 }
@@ -885,10 +1037,24 @@ export async function placeOrder(cartId?: string, skipRedirectCheck: boolean = f
   if (!id) {
     throw new Error("No existing cart found when placing an order")
   }
+  
+  // ✅ SECURITY: Validate cart ownership before placing order
+  const { validateCartOwnership } = await import('./cookies');
+  await validateCartOwnership(id);
+  
+  // ✅ Generate tracking IDs for debugging and forensics
+  const requestId = `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  const sessionId = typeof window !== 'undefined' 
+    ? sessionStorage.getItem('browser_session_id') || 'unknown'
+    : 'server';
+  
+  console.log('🛍️ [placeOrder] START', { requestId, sessionId, cartId: id, skipRedirectCheck });
 
   const headers = {
     ...(await getAuthHeaders()),
-    'x-publishable-api-key': await getPublishableApiKey()
+    'x-publishable-api-key': await getPublishableApiKey(),
+    'X-Request-ID': requestId,
+    'X-Session-ID': sessionId,
   }
 
   const baseUrl = process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || 'http://localhost:9000'

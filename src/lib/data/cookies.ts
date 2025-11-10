@@ -115,59 +115,78 @@ export const getAuthHeaders = async (): Promise<
   };
 };
 
-// Request deduplication for retrieveCustomer
-let customerRequestPromise: Promise<HttpTypes.StoreCustomer | null> | null = null;
+// ✅ FIXED: Client-only request deduplication for retrieveCustomer
+// Server-side NEVER deduplicates to prevent cross-request contamination
+let clientCustomerRequestPromise: Promise<HttpTypes.StoreCustomer | null> | null = null;
 
-// Add the missing retrieveCustomer function with proper typing and request deduplication
 export const retrieveCustomer = async (): Promise<HttpTypes.StoreCustomer | null> => {
-  // Skip during static generation
   if (process.env.NEXT_PHASE === 'phase-production-build' || 
       process.env.NEXT_PHASE === 'phase-export') {
     return null;
   }
 
-  // CRITICAL FIX: Deduplicate concurrent requests to prevent auth conflicts
-  if (customerRequestPromise) {
-    return customerRequestPromise;
-  }
+  // ✅ Client-side: Use deduplication (safe, isolated per browser tab)
+  if (isBrowser) {
+    if (clientCustomerRequestPromise) {
+      return clientCustomerRequestPromise;
+    }
 
-  customerRequestPromise = (async () => {
-    try {
-      const requestHeaders = await getAuthHeaders();
-      
-      // Return null for guest users (no auth token)
-      if (!('authorization' in requestHeaders)) {
-        return null;
-      }
+    clientCustomerRequestPromise = (async () => {
+      try {
+        const requestHeaders = await getAuthHeaders();
+        
+        if (!('authorization' in requestHeaders)) {
+          return null;
+        }
 
-      // Validate auth header format
-      const authHeader = requestHeaders.authorization;
-      if (!authHeader || !authHeader.startsWith('Bearer ') || authHeader.length < 20) {
-        return null;
-      }
+        const authHeader = requestHeaders.authorization;
+        if (!authHeader || !authHeader.startsWith('Bearer ') || authHeader.length < 20) {
+          return null;
+        }
 
-      const response = await sdk.client.fetch('/store/customers/me', {
-        headers: requestHeaders,
-        method: 'GET'
-      }) as { customer: HttpTypes.StoreCustomer };
-      
-      return response.customer || null;
-    } catch (error) {
-      // Clear token on unauthorized errors
-      if (error instanceof Error && (error.message.includes('Unauthorized') || error.message.includes('401'))) {
-        if (isBrowser) {
+        const response = await sdk.client.fetch('/store/customers/me', {
+          headers: requestHeaders,
+          method: 'GET'
+        }) as { customer: HttpTypes.StoreCustomer };
+        
+        return response.customer || null;
+      } catch (error) {
+        if (error instanceof Error && (error.message.includes('Unauthorized') || error.message.includes('401'))) {
           removeBrowserCookie('_medusa_jwt');
         }
+        
+        return null;
+      } finally {
+        clientCustomerRequestPromise = null;
       }
-      
-      return null;
-    } finally {
-      // Clear the promise after completion to allow future requests
-      customerRequestPromise = null;
-    }
-  })();
+    })();
 
-  return customerRequestPromise;
+    return clientCustomerRequestPromise;
+  }
+
+  // ✅ Server-side: NO deduplication, each request is isolated
+  try {
+    const requestHeaders = await getAuthHeaders();
+    
+    if (!('authorization' in requestHeaders)) {
+      return null;
+    }
+
+    const authHeader = requestHeaders.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ') || authHeader.length < 20) {
+      return null;
+    }
+
+    const response = await sdk.client.fetch('/store/customers/me', {
+      headers: requestHeaders,
+      method: 'GET',
+      cache: 'no-store' // ✅ Never cache customer data
+    }) as { customer: HttpTypes.StoreCustomer };
+    
+    return response.customer || null;
+  } catch (error) {
+    return null;
+  }
 };
 
 // Add helper function to check if user is authenticated
@@ -312,69 +331,81 @@ export const removeAuthToken = async () => {
   }]);
 };
 
-// Ultra-fast cart ID cache to prevent navigation blocking
-let cartIdCache: { id: string | null; timestamp: number } | null = null;
-const CART_ID_CACHE_DURATION = 5000; // Reduced to 5 seconds for production stability
+// ✅ FIXED: Client-only cart ID cache (safe for client-side)
+// Server-side NEVER uses cache to prevent cross-request contamination
+let clientCartIdCache: { id: string | null; timestamp: number } | null = null;
+const CLIENT_CACHE_DURATION = 5000; // 5 seconds, only for client
 
 export const getCartId = async (): Promise<string | null> => {
-  // Fast path: Check cache first
-  if (cartIdCache && (Date.now() - cartIdCache.timestamp) < CART_ID_CACHE_DURATION) {
-    return cartIdCache.id;
-  }
+  const requestId = `getCartId_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
   
-  try {
-    let cartId: string | null = null;
+  // ✅ Client-side: Use cache (safe, isolated per browser tab)
+  if (isBrowser) {
+    // Check cache first
+    if (clientCartIdCache && (Date.now() - clientCartIdCache.timestamp) < CLIENT_CACHE_DURATION) {
+      console.log('🔵 [getCartId] Using client cache:', clientCartIdCache.id, requestId);
+      return clientCartIdCache.id;
+    }
     
-    // Optimized retrieval with timeout protection
-    if (!isBrowser) {
-      // Server-side: Ultra-fast timeout to prevent navigation blocking
+    // Get from cookie
+    let cartId = getBrowserCookie('_medusa_cart_id');
+    
+    // Fallback to localStorage
+    if (!cartId) {
       try {
-        const timeoutPromise = new Promise<null>((_, reject) => 
-          setTimeout(() => reject(new Error('Timeout')), 25) // Ultra-short timeout for production
-        );
-        
-        const cookiePromise = getServerCookies().then(cookies => 
-          cookies?.get('_medusa_cart_id')?.value || null
-        );
-        
-        cartId = await Promise.race([cookiePromise, timeoutPromise]);
+        cartId = localStorage.getItem('_medusa_cart_id');
       } catch {
-        // Immediate fallback - never block navigation
         cartId = null;
-      }
-    } else {
-      // Client-side: Try browser cookies first (fastest)
-      cartId = getBrowserCookie('_medusa_cart_id');
-      
-      // Fallback to localStorage only if browser cookie not found
-      if (!cartId) {
-        try {
-          cartId = localStorage.getItem('_medusa_cart_id');
-        } catch {
-          // Silently fail if localStorage is not available
-          cartId = null;
-        }
       }
     }
     
     // Cache the result
-    cartIdCache = { id: cartId, timestamp: Date.now() };
+    clientCartIdCache = { id: cartId, timestamp: Date.now() };
+    console.log('🔵 [getCartId] Client cart ID:', cartId, requestId);
     return cartId;
+  }
+  
+  // ✅ Server-side: NEVER cache, always read from cookies
+  // This ensures each request gets the correct cart ID
+  try {
+    const serverCookies = await getServerCookies();
+    const cartId = serverCookies?.get('_medusa_cart_id')?.value || null;
     
+    console.log('🟢 [getCartId] Server cart ID:', cartId, requestId);
+    return cartId;
   } catch (error) {
-    // Fast fallback - cache null result to avoid repeated failures
-    cartIdCache = { id: null, timestamp: Date.now() };
+    console.error('❌ [getCartId] Server error:', error, requestId);
     return null;
   }
 };
 
 export const setCartId = async (cartId: string) => {
+  const requestId = `setCartId_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  console.log('🔒 [setCartId] Setting cart ID:', cartId, requestId);
+  
   try {
+    // ✅ Update client cache immediately (only on client)
+    if (isBrowser) {
+      clientCartIdCache = { id: cartId, timestamp: Date.now() };
+      
+      // Set browser cookie
+      setBrowserCookie('_medusa_cart_id', cartId, {
+        maxAge: 60 * 60 * 24 * 7,
+        sameSite: 'strict',
+        secure: process.env.NODE_ENV === 'production',
+      });
+      
+      // Also store in localStorage as backup
+      try {
+        localStorage.setItem('_medusa_cart_id', cartId);
+      } catch (storageError) {
+        console.warn('Could not access localStorage:', storageError);
+      }
+      
+      console.log('✅ [setCartId] Client cart ID set:', cartId, requestId);
+    }
     
-    // Clear cache immediately
-    cartIdCache = { id: cartId, timestamp: Date.now() };
-    
-    // Skip server cookies if we're in a rendering context
+    // ✅ Set server cookie (if available)
     if (!isBrowser) {
       try {
         const serverCookies = await getServerCookies();
@@ -385,50 +416,113 @@ export const setCartId = async (cartId: string) => {
             sameSite: 'strict',
             secure: process.env.NODE_ENV === 'production',
           });
+          console.log('✅ [setCartId] Server cart ID set:', cartId, requestId);
         }
       } catch (error) {
-        // Don't throw - this is expected during rendering
-      }
-    }
-    
-    // Always set client-side storage when available
-    if (isBrowser) {
-      setBrowserCookie('_medusa_cart_id', cartId, {
-        maxAge: 60 * 60 * 24 * 7,
-        sameSite: 'strict',
-        secure: process.env.NODE_ENV === 'production',
-      });
-      
-      // Also store in localStorage as a fallback
-      try {
-        localStorage.setItem('_medusa_cart_id', cartId);
-      } catch (storageError) {
-        console.warn('Could not access localStorage:', storageError);
+        console.warn('⚠️ [setCartId] Could not set server cookie:', error);
       }
     }
   } catch (error) {
-    cartIdCache = { id: cartId, timestamp: Date.now() };
+    console.error('❌ [setCartId] Error:', error, requestId);
   }
 };
 
 export const removeCartId = async () => {
+  const requestId = `removeCartId_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  console.log('🗑️ [removeCartId] Removing cart ID', requestId);
+  
   try {
-    // Clear cart ID cache immediately
-    cartIdCache = null;
-    
-    const serverCookies = await getServerCookies();
-    if (serverCookies) {
-      serverCookies.set('_medusa_cart_id', '', { maxAge: -1 });
-    }
-  } catch (error) {
-    if (typeof window !== 'undefined') {
+    // ✅ Clear client cache immediately
+    if (isBrowser) {
+      clientCartIdCache = null;
+      
       try {
-        localStorage.removeItem('_medusa_cart_id');  // Fixed: added underscore
-        localStorage.removeItem('medusa_cart_id');   // Also remove old key just in case
+        localStorage.removeItem('_medusa_cart_id');
+        localStorage.removeItem('medusa_cart_id'); // Remove legacy key
         document.cookie = '_medusa_cart_id=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+        console.log('✅ [removeCartId] Client cart ID removed', requestId);
       } catch (clientError) {
         console.warn('Could not remove cart ID from client storage:', clientError);
       }
     }
+    
+    // ✅ Clear server cookie
+    if (!isBrowser) {
+      const serverCookies = await getServerCookies();
+      if (serverCookies) {
+        serverCookies.set('_medusa_cart_id', '', { maxAge: -1 });
+        console.log('✅ [removeCartId] Server cart ID removed', requestId);
+      }
+    }
+  } catch (error) {
+    console.error('❌ [removeCartId] Error:', error, requestId);
+  }
+}
+
+/**
+ * ✅ SECURITY: Validates that the cart being accessed belongs to the current user
+ * - For authenticated users: Validates customer_id matches
+ * - For guest users: Validates cart_id matches the one in cookie
+ * - Prevents cart hijacking and cross-user data leakage
+ */
+export async function validateCartOwnership(cartId: string): Promise<void> {
+  const requestId = `validate_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  
+  console.log('🔐 [validateCartOwnership] START', { requestId, cartId });
+  
+  try {
+    // Import retrieveCart dynamically to avoid circular dependency
+    const { retrieveCart } = await import('./cart');
+    
+    // Get current cart
+    const cart = await retrieveCart(cartId);
+    if (!cart) {
+      console.error('❌ [validateCartOwnership] Cart not found', { requestId, cartId });
+      throw new Error(`Cart ${cartId} not found`);
+    }
+    
+    // Check if user is authenticated
+    const headers = await getAuthHeaders();
+    
+    if ('authorization' in headers) {
+      // User is AUTHENTICATED - validate customer_id match
+      const customer = await retrieveCustomer();
+      
+      if (customer && cart.customer_id) {
+        if (cart.customer_id !== customer.id) {
+          console.error('❌ [validateCartOwnership] Customer ID mismatch!', {
+            requestId,
+            cartId,
+            cartCustomerId: cart.customer_id,
+            authenticatedCustomerId: customer.id
+          });
+          throw new Error("Cart does not belong to current user");
+        }
+        console.log('✅ [validateCartOwnership] Authenticated user validated', { requestId });
+      } else if (customer && !cart.customer_id) {
+        // Authenticated user accessing guest cart - this is OK during login transition
+        console.log('⚠️ [validateCartOwnership] Authenticated user accessing guest cart (transition)', { requestId });
+      }
+    } else {
+      // User is GUEST - cart security relies on cookie secrecy
+      // The cart_id from cookie should match the cart being accessed
+      const cookieCartId = await getCartId();
+      
+      if (cookieCartId && cookieCartId !== cartId) {
+        console.error('❌ [validateCartOwnership] Guest cart ID mismatch!', {
+          requestId,
+          cartId,
+          cookieCartId
+        });
+        throw new Error("Cart ID mismatch - possible cart hijacking attempt");
+      }
+      console.log('✅ [validateCartOwnership] Guest cart validated', { requestId });
+    }
+  } catch (error: any) {
+    console.error('❌ [validateCartOwnership] Error:', {
+      requestId,
+      error: error.message
+    });
+    throw error;
   }
 };

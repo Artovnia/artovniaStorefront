@@ -20,6 +20,8 @@ import { NavigationItem } from "./NavigationItem/NavigationItem"
 import { LogoutButton } from "./LogoutButton/LogoutButton"
 import { Loader } from "./Loader/Loader"
 import { SafeI18nLink } from "./SafeI18nLink"
+import { StoreIcon } from "./icons/StoreIcon"
+
 
 export {
   Button,
@@ -43,5 +45,6 @@ export {
   NavigationItem,
   LogoutButton,
   Loader,
-  SafeI18nLink
+  SafeI18nLink,
+  StoreIcon
 }

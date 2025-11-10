@@ -6,11 +6,11 @@ import compareAddresses from "@/lib/helpers/compare-addresses"
 import { HttpTypes } from "@medusajs/types"
 import { usePathname, useRouter } from '@/i18n/routing'
 import { useSearchParams } from 'next/navigation'
-import { useEffect, useCallback, useMemo, useState } from "react"
+import { useEffect, useCallback, useMemo, useState, useRef } from "react"
 import { Button } from "@/components/atoms"
 import ErrorMessage from "@/components/molecules/ErrorMessage/ErrorMessage"
 import Spinner from "@/icons/spinner"
-import ShippingAddress from "@/components/organisms/ShippingAddress/ShippingAddress"
+import ShippingAddress, { ShippingAddressRef } from "@/components/organisms/ShippingAddress/ShippingAddress"
 import CheckCircleSolidFixed from "@/components/atoms/icons/CheckCircleSolidFixed"
 import { CheckCircleSolid } from "@medusajs/icons"
 import { Link } from "@/i18n/routing"
@@ -27,8 +27,11 @@ export const CartAddressSection = ({
   const router = useRouter()
   const pathname = usePathname()
   
-  // Use cart context for live updates
+  // ✅ Use cart context for live updates
   const { cart, refreshCart, setAddress, lastUpdated } = useCart()
+  
+  // ✅ Generate unique session ID to prevent cross-user contamination
+  const sessionId = useRef(`session_${Date.now()}_${Math.random()}`)
   
   // Fallback to prop cart if context cart is not available
   const activeCart = cart || propCart
@@ -36,8 +39,10 @@ export const CartAddressSection = ({
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [formResetKey, setFormResetKey] = useState(0)
+  
+  // ✅ Reference to get form data directly from DOM
+  const shippingAddressRef = useRef<ShippingAddressRef>(null)
 
-  // Memoize address validation to prevent unnecessary recalculations
   const isAddress = useMemo(() => Boolean(
     activeCart?.shipping_address &&
       activeCart?.shipping_address.first_name &&
@@ -47,6 +52,7 @@ export const CartAddressSection = ({
       activeCart?.shipping_address.postal_code &&
       activeCart?.shipping_address.country_code
   ), [activeCart?.shipping_address])
+  
   const isOpen = searchParams.get("step") === "address" || !isAddress
 
   const { state: sameAsBilling, toggle: toggleSameAsBilling } = useToggleState(
@@ -55,57 +61,89 @@ export const CartAddressSection = ({
       : true
   )
 
-  // Handle address form submission
-  const handleAddressSubmit = useCallback(async (formData: FormData) => {
-    if (!activeCart?.id) return
+  // ✅ Handle form submission by reading directly from DOM
+  const handleAddressSubmit = useCallback(async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault()
+    
+    if (!activeCart?.id) {
+      setError("No active cart found")
+      return
+    }
     
     setIsSubmitting(true)
     setError(null)
     
     try {
-      // Extract address data from form
+      // ✅ Get form data directly from DOM to bypass React state
+      const formData = shippingAddressRef.current?.getFormData()
+      
+      if (!formData) {
+        throw new Error("Could not read form data")
+      }
+      
+      // ✅ Validate cart ID matches active cart
+      console.log("📝 Submitting address for cart:", activeCart.id, "Session:", sessionId.current)
+      
+      // ✅ Build address data with validation
       const addressData = {
-        email: formData.get('email') as string,
+        email: formData.email || activeCart.email || '',
         shipping_address: {
-          first_name: formData.get('shipping_address.first_name') as string,
-          last_name: formData.get('shipping_address.last_name') as string,
-          address_1: formData.get('shipping_address.address_1') as string,
-          address_2: formData.get('shipping_address.address_2') as string || '',
-          city: formData.get('shipping_address.city') as string,
-          postal_code: formData.get('shipping_address.postal_code') as string,
-          country_code: formData.get('shipping_address.country_code') as string,
-          phone: formData.get('shipping_address.phone') as string || '',
-        },
-        billing_address: sameAsBilling ? undefined : {
-          first_name: formData.get('billing_address.first_name') as string,
-          last_name: formData.get('billing_address.last_name') as string,
-          address_1: formData.get('billing_address.address_1') as string,
-          address_2: formData.get('billing_address.address_2') as string || '',
-          city: formData.get('billing_address.city') as string,
-          postal_code: formData.get('billing_address.postal_code') as string,
-          country_code: formData.get('billing_address.country_code') as string,
-          phone: formData.get('billing_address.phone') as string || '',
+          first_name: formData["shipping_address.first_name"] || '',
+          last_name: formData["shipping_address.last_name"] || '',
+          address_1: formData["shipping_address.address_1"] || '',
+          address_2: formData["shipping_address.address_2"] || '',
+          company: formData["shipping_address.company"] || '',
+          city: formData["shipping_address.city"] || '',
+          postal_code: formData["shipping_address.postal_code"] || '',
+          country_code: formData["shipping_address.country_code"] || '',
+          province: formData["shipping_address.province"] || '',
+          phone: formData["shipping_address.phone"] || '',
         }
       }
       
-      // Use cart context setAddress method for proper state management
+      console.log("📋 Raw form data:", formData)
+      console.log("🏗️ Built address data:", addressData)
+      
+      // ✅ Validate required fields
+      if (!addressData.email || !addressData.shipping_address.first_name || 
+          !addressData.shipping_address.last_name || !addressData.shipping_address.address_1 ||
+          !addressData.shipping_address.country_code || !addressData.shipping_address.city ||
+          !addressData.shipping_address.postal_code) {
+        throw new Error("Please fill in all required fields (name, address, city, postal code, country, email)")
+      }
+      
+      console.log("📤 Sending address data:", JSON.stringify(addressData, null, 2))
+      
+      // ✅ Use cart context setAddress with proper error handling
       await setAddress(addressData)
       
-      // Refresh cart to get updated shipping methods
+      // ✅ Verify the update by refreshing cart
       await refreshCart('address')
       
-      // Force form reset on next render
+      // ✅ Check if there was an error during save
+      // Wait a tick for state to update
+      await new Promise(resolve => setTimeout(resolve, 100))
+      
+      // ✅ Verify address was actually saved to cart
+      const updatedCart = await import('@/lib/data/cart').then(m => m.retrieveCart(activeCart.id))
+      if (!updatedCart?.shipping_address?.first_name) {
+        throw new Error("Address was not saved. Please ensure all fields are correctly filled.")
+      }
+      
+      console.log("✅ Address successfully saved and verified")
+      
+      // ✅ Force form reset on next render
       setFormResetKey(prev => prev + 1)
       
-      // Navigate to delivery step
+      // ✅ Navigate to delivery step ONLY if save was successful
       router.replace(`/checkout?step=delivery`)
     } catch (error: any) {
-      console.error('Error setting address:', error)
+      console.error('❌ Error setting address:', error)
       setError(error.message || 'Failed to save address')
     } finally {
       setIsSubmitting(false)
     }
-  }, [activeCart?.id, sameAsBilling, router, setAddress, refreshCart])
+  }, [activeCart?.id, activeCart?.email, router, setAddress, refreshCart])
 
   useEffect(() => {
     if (!isAddress && !isSubmitting) {
@@ -113,10 +151,10 @@ export const CartAddressSection = ({
     }
   }, [isAddress, router, pathname, isSubmitting])
 
-  // Memoize handleEdit to prevent unnecessary re-renders
   const handleEdit = useCallback(() => {
-    // Force form reset when editing
+    // ✅ Force form reset when editing
     setFormResetKey(prev => prev + 1)
+    setError(null)
     router.replace(pathname + "?step=address")
   }, [router, pathname])
 
@@ -137,13 +175,12 @@ export const CartAddressSection = ({
           </Text>
         )}
       </div>
-      <form
-        action={handleAddressSubmit}
-      >
+      <form onSubmit={handleAddressSubmit}>
         {isOpen ? (
           <div className="pb-8">
             <ShippingAddress
-              key={`shipping-${activeCart?.id}-${activeCart?.email}-${lastUpdated}-${formResetKey}`}
+              ref={shippingAddressRef}
+              key={`shipping-${activeCart?.id}-${sessionId.current}-${formResetKey}`}
               customer={customer}
               checked={sameAsBilling}
               onChange={toggleSameAsBilling}
@@ -151,6 +188,7 @@ export const CartAddressSection = ({
             />
             <Button
               className="mt-6"
+              type="submit"
               data-testid="submit-address-button"
               variant="tonal"
               loading={isSubmitting}

@@ -69,13 +69,13 @@ export const ProductCarousel = ({
   return (
     <>
       {/* Mobile/Tablet: Carousel Layout */}
-      <div className="lg:hidden">
-        <div className="embla relative">
+      <div className="lg:hidden w-full overflow-hidden">
+        <div className="embla relative w-full">
           <div
             className="embla__viewport overflow-hidden rounded-xs"
             ref={emblaRef}
           >
-            <div className="embla__container h-[350px] flex">
+            <div className="embla__container h-[350px] flex w-full">
               {(slides || []).map((slide) => (
                 <div
                   key={slide.id}

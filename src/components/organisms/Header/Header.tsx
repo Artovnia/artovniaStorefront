@@ -9,9 +9,8 @@ import {
 } from "@/components/cells"
 import { SafeI18nLink as Link } from "@/components/atoms/SafeI18nLink"
 import { HeartIcon } from "@/icons"
+import { StoreIcon } from "@/components/atoms/icons/StoreIcon"
 import { listCategoriesWithProducts } from "@/lib/data/categories"
-// Removed hardcoded PARENT_CATEGORIES import - now using dynamic detection
-// import { retrieveCart } from "@/lib/data/cart" // Removed to use CartContext instead
 import { UserDropdown } from "@/components/cells/UserDropdown/UserDropdown"
 import { retrieveCustomer } from "@/lib/data/customer"
 import { getUserWishlists } from "@/lib/data/wishlist"
@@ -20,9 +19,6 @@ import { Badge } from "@/components/atoms"
 import { CountrySelectorWrapper } from "@/components/cells/CountrySelector/CountrySelectorWrapper"
 
 export const Header = async () => {
-  // Cart data will be managed by CartContext instead of fetching here
-  // const cart = await retrieveCart().catch(() => null)
-  
   // Fetch user data with error handling
   let user = null;
   try {
@@ -34,7 +30,6 @@ export const Header = async () => {
   // Fetch wishlist with error handling
   let wishlist: SerializableWishlist[] = []
   
-  
   if (user) {
     try {
       const response = await getUserWishlists()
@@ -42,7 +37,6 @@ export const Header = async () => {
     } catch (error) {
       console.error("🏠 Header: Error retrieving wishlists:", error)
     }
-  } else {
   }
 
   const wishlistCount = wishlist?.[0]?.products?.length || 0
@@ -52,7 +46,6 @@ export const Header = async () => {
   let allCategoriesWithTree: HttpTypes.StoreProductCategory[] = []
   
   try {
-    // Use listCategoriesWithProducts to show only populated categories
     const categoriesData = await listCategoriesWithProducts()
     
     if (categoriesData && categoriesData.parentCategories) {
@@ -67,8 +60,10 @@ export const Header = async () => {
     <header className="sticky top-0 z-50 bg-primary shadow-sm">
       <div className="flex py-2 max-w-[1920px] mx-auto">
         <div className="flex items-center gap-2 lg:gap-4 lg:w-1/3 py-4 ml-4">
-          {/* Country Selector - Left side */}
-          <CountrySelectorWrapper />
+          {/* Country Selector - Left side - Hide on mobile, show on md and up */}
+          <div className="hidden md:block">
+            <CountrySelectorWrapper />
+          </div>
           
           <MobileNavbar
             categories={allCategoriesWithTree}
@@ -86,7 +81,17 @@ export const Header = async () => {
           </Link>
         </div>
         <div className="flex items-center justify-end gap-2 lg:gap-4 w-full lg:w-1/3 py-4 mr-4">
-          <a href="https://artovniapanel.netlify.app/login" className="text-lg mr-4  font-medium hover:text-action transition-colors hover:underline">ZAŁÓŻ SKLEP</a>
+          {/* Store link - Icon on mobile, text on desktop */}
+          <a 
+            href="https://artovniapanel.netlify.app/login" 
+            className="text-lg font-medium hover:text-action transition-colors hover:underline flex items-center"
+            aria-label="Załóż sklep"
+          >
+            <span className="md:hidden">
+              <StoreIcon size={24} />
+            </span>
+            <span className="hidden md:inline mr-4">ZAŁÓŻ SKLEP</span>
+          </a>
           
           {/* Hide user dropdown and wishlist on mobile - handled by bottom navigation */}
           <div className="hidden md:flex items-center gap-2 lg:gap-4">

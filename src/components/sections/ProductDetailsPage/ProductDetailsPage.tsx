@@ -197,14 +197,14 @@ export const ProductDetailsPage = async ({
               </div>
 
               {/* Desktop Layout: Sticky gallery on left, scrollable details on right */}
-              <div className="hidden md:flex md:flex-row lg:gap-12 max-w-[1920px] mx-auto">
+              <div className="hidden md:flex md:flex-row md:gap-6 lg:gap-12 max-w-[1920px] mx-auto md:px-4 lg:px-0">
                 {/* Left: Sticky Product Gallery */}
-                <div className="md:w-1/2 md:px-2 md:sticky md:top-20 md:self-start">
+                <div className="md:w-1/2 md:max-w-[calc(50%-12px)] lg:max-w-none md:px-0 md:sticky md:top-20 md:self-start">
                   <ProductGallery images={prod?.images || []} />
                 </div>
                 
                 {/* Right: Scrollable Product Details */}
-                <div className="md:w-1/2 md:px-2">
+                <div className="md:w-1/2 md:max-w-[calc(50%-12px)] lg:max-w-none md:px-0">
                   {prod.seller ? (
                     <ProductDetails product={{...prod, seller: prod.seller}} locale={locale} />
                   ) : (

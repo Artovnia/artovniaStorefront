@@ -95,19 +95,19 @@ const ProductCardComponent = ({
   return (
     <div
       className={clsx(
-        "relative group flex flex-col h-full w-[252px]", // CARD SIZE ADJUSTMENT: Reduced from w-[280px] to w-[252px] (10% smaller). Change this value to adjust card width.
+        "relative group flex flex-col h-full",
+        "w-[160px] sm:w-[252px]", // RESPONSIVE: 160px on mobile (fits 2-col grid), 252px on desktop (600px+)
         {
           "p-2": sellerPage,
-          "p-1": !sellerPage
+          "p-0": !sellerPage
         }
       )}
       {...prefetchOnHover(productUrl)}
       onMouseEnter={handleMouseEnter}
     >
-      {/* CARD SIZE ADJUSTMENT: Product card dimensions reduced by 10% for better carousel spacing */}
-      {/* Original size: h-[350px] w-[280px] | New size: h-[315px] w-[252px] */}
-      {/* TO ADJUST CARD SIZE: Modify both width values above and height/width values below */}
-      <div className="relative bg-primary h-[315px] w-[252px] flex-shrink-0">
+      {/* RESPONSIVE CARD SIZE: Mobile optimized for 2-column grid */}
+      {/* Mobile (<640px): h-[200px] w-[160px] | Desktop (640px+): h-[315px] w-[252px] */}
+      <div className="relative bg-primary h-[200px] w-[160px] sm:h-[315px] sm:w-[252px] flex-shrink-0">
         <div className="absolute right-2 top-2 z-10 cursor-pointer">
           <WishlistButton 
             productId={product.id} 

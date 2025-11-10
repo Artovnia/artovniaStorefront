@@ -4,13 +4,10 @@ import createNextIntlPlugin from "next-intl/plugin"
 const nextConfig: NextConfig = {
   trailingSlash: false,
   reactStrictMode: true,
-  
-  // Essential performance optimizations only
   poweredByHeader: false,
   compress: true,
   
   experimental: {
-    // Enhanced performance optimizations
     optimizeCss: true,
     optimizePackageImports: ['lucide-react', '@heroicons/react', 'react-icons'],
     turbo: {
@@ -23,44 +20,26 @@ const nextConfig: NextConfig = {
     },
   },
   
-  // Bundle analysis
   env: {
     ANALYZE: process.env.ANALYZE,
   },
   
-  // Enable bundle analyzer when ANALYZE=true
-  ...(process.env.ANALYZE === 'true' && {
-    webpack: (config, { isServer }) => {
-      if (!isServer) {
-        config.plugins.push(
-          new (require('@next/bundle-analyzer'))({ enabled: true })
-        );
-      }
-      return config;
-    },
-  }),
-  
-  // Bundle analysis and optimization
   productionBrowserSourceMaps: false,
   
-  // Server external packages
   serverExternalPackages: [
     '@medusajs/js-sdk',
     'algoliasearch',
   ],
   
-  // CRITICAL: Enhanced webpack config for bundle optimization
   webpack: (config, { dev, isServer }) => {
     if (!dev && !isServer) {
-      // Aggressive bundle splitting to reduce 4.2 MB bundles
       config.optimization = {
         ...config.optimization,
         splitChunks: {
           chunks: 'all',
           minSize: 20000,
-          maxSize: 200000, // Smaller chunks for faster loading
+          maxSize: 200000,
           cacheGroups: {
-            // Split React and Next.js core
             framework: {
               test: /[\/]node_modules[\/](react|react-dom|next)[\/]/,
               name: 'framework',
@@ -68,7 +47,6 @@ const nextConfig: NextConfig = {
               chunks: 'all',
               enforce: true,
             },
-            // Split Algolia (heavy library)
             algolia: {
               test: /[\/]node_modules[\/](algoliasearch|react-instantsearch)[\/]/,
               name: 'algolia',
@@ -76,14 +54,12 @@ const nextConfig: NextConfig = {
               chunks: 'all',
               enforce: true,
             },
-            // Split MedusaJS
             medusa: {
               test: /[\/]node_modules[\/]@medusajs[\/]/,
               name: 'medusa',
               priority: 25,
               chunks: 'all',
             },
-            // Split other vendor libraries
             vendor: {
               test: /[\/]node_modules[\/]/,
               name: 'vendors',
@@ -91,7 +67,6 @@ const nextConfig: NextConfig = {
               chunks: 'all',
               maxSize: 150000,
             },
-            // Common code
             common: {
               name: 'common',
               minChunks: 2,
@@ -106,28 +81,80 @@ const nextConfig: NextConfig = {
     
     return config;
   },
-  // Simple cache headers for better prefetching
+  
   async headers() {
     return [
-      {
-        source: '/products/:path*',
-        headers: [
-          {
-            key: 'Cache-Control',
-            value: 'public, s-maxage=300, stale-while-revalidate=86400', // 5min cache, 1day stale
-          },
-        ],
-      },
+      // ✅ CACHE: Static assets (JS, CSS, fonts, etc.)
       {
         source: '/_next/static/:path*',
         headers: [
           {
             key: 'Cache-Control',
-            value: 'public, max-age=31536000, immutable', // 1 year cache for static assets
+            value: 'public, max-age=31536000, immutable', // 1 year
           },
         ],
       },
-      // 🔒 CRITICAL: Disable caching for checkout and cart pages
+      
+      // ✅ CACHE: Product images (can be cached publicly)
+      {
+        source: '/_next/image/:path*',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=31536000, stale-while-revalidate=86400', // 1 year
+          },
+        ],
+      },
+      
+      // ✅ CACHE: Product pages (public data, safe to cache)
+      {
+        source: '/products/:path*',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, s-maxage=300, stale-while-revalidate=86400', // 5min CDN, 1day stale
+          },
+          {
+            key: 'CDN-Cache-Control',
+            value: 'public, s-maxage=300, stale-while-revalidate=86400',
+          },
+        ],
+      },
+      
+      // ✅ CACHE: Collections/Browse pages (public data)
+      {
+        source: '/collections/:path*',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, s-maxage=300, stale-while-revalidate=86400', // 5min CDN
+          },
+        ],
+      },
+      
+      // ✅ CACHE: Category pages (public data)
+      {
+        source: '/categories/:path*',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, s-maxage=300, stale-while-revalidate=86400',
+          },
+        ],
+      },
+      
+      // ✅ CACHE: Static content pages
+      {
+        source: '/(about|how-to-buy|delivery|payment|returns|selling-guide|sellers-faq)',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, s-maxage=3600, stale-while-revalidate=86400', // 1hr CDN
+          },
+        ],
+      },
+      
+      // 🔒 NO CACHE: Checkout pages (user-specific data)
       {
         source: '/checkout/:path*',
         headers: [
@@ -136,6 +163,14 @@ const nextConfig: NextConfig = {
             value: 'private, no-cache, no-store, must-revalidate, max-age=0',
           },
           {
+            key: 'Pragma',
+            value: 'no-cache',
+          },
+          {
+            key: 'Expires',
+            value: '0',
+          },
+          {
             key: 'CDN-Cache-Control',
             value: 'no-store',
           },
@@ -143,8 +178,26 @@ const nextConfig: NextConfig = {
             key: 'Vercel-CDN-Cache-Control',
             value: 'no-store',
           },
+          {
+            key: 'Surrogate-Control',
+            value: 'no-store',
+          },
+          {
+            key: 'X-Content-Type-Options',
+            value: 'nosniff',
+          },
+          {
+            key: 'X-Frame-Options',
+            value: 'SAMEORIGIN',
+          },
+          {
+            key: 'Referrer-Policy',
+            value: 'strict-origin-when-cross-origin',
+          },
         ],
       },
+      
+      // 🔒 NO CACHE: Cart page (user-specific data)
       {
         source: '/cart',
         headers: [
@@ -153,6 +206,14 @@ const nextConfig: NextConfig = {
             value: 'private, no-cache, no-store, must-revalidate, max-age=0',
           },
           {
+            key: 'Pragma',
+            value: 'no-cache',
+          },
+          {
+            key: 'Expires',
+            value: '0',
+          },
+          {
             key: 'CDN-Cache-Control',
             value: 'no-store',
           },
@@ -160,10 +221,86 @@ const nextConfig: NextConfig = {
             key: 'Vercel-CDN-Cache-Control',
             value: 'no-store',
           },
+          {
+            key: 'Surrogate-Control',
+            value: 'no-store',
+          },
+          {
+            key: 'X-Content-Type-Options',
+            value: 'nosniff',
+          },
         ],
       },
+      
+      // 🔒 NO CACHE: User/Account pages (user-specific data)
       {
         source: '/user/:path*',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'private, no-cache, no-store, must-revalidate, max-age=0',
+          },
+          {
+            key: 'Pragma',
+            value: 'no-cache',
+          },
+          {
+            key: 'Expires',
+            value: '0',
+          },
+          {
+            key: 'CDN-Cache-Control',
+            value: 'no-store',
+          },
+          {
+            key: 'Vercel-CDN-Cache-Control',
+            value: 'no-store',
+          },
+          {
+            key: 'Surrogate-Control',
+            value: 'no-store',
+          },
+          {
+            key: 'X-Content-Type-Options',
+            value: 'nosniff',
+          },
+        ],
+      },
+      
+      // 🔒 NO CACHE: Account pages (user-specific data)
+      {
+        source: '/account/:path*',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'private, no-cache, no-store, must-revalidate, max-age=0',
+          },
+          {
+            key: 'Pragma',
+            value: 'no-cache',
+          },
+          {
+            key: 'Expires',
+            value: '0',
+          },
+          {
+            key: 'CDN-Cache-Control',
+            value: 'no-store',
+          },
+          {
+            key: 'Vercel-CDN-Cache-Control',
+            value: 'no-store',
+          },
+          {
+            key: 'Surrogate-Control',
+            value: 'no-store',
+          },
+        ],
+      },
+      
+      // 🔒 NO CACHE: API routes (dynamic data, may be user-specific)
+      {
+        source: '/api/:path*',
         headers: [
           {
             key: 'Cache-Control',
@@ -182,7 +319,6 @@ const nextConfig: NextConfig = {
     ]
   },
 
-  // Redirects from Polish URLs to English page directories
   async redirects() {
     return [
       {
@@ -224,9 +360,8 @@ const nextConfig: NextConfig = {
   },
 
   images: {
-    // CRITICAL: Enhanced image optimization for faster loading
     formats: ['image/avif', 'image/webp'],
-    minimumCacheTTL: 31536000, // 1 year cache
+    minimumCacheTTL: 31536000,
     dangerouslyAllowSVG: true,
     contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
     deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048, 3840],
@@ -252,10 +387,6 @@ const nextConfig: NextConfig = {
         protocol: "https",
         hostname: "api-sandbox.mercurjs.com",
         pathname: "/static/**",
-      },
-      {
-        protocol: "https",
-        hostname: "medusa-public-images.s3.eu-west-1.amazonaws.com",
       },
       {
         protocol: "https",
