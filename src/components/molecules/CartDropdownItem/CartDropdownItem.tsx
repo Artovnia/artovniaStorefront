@@ -21,21 +21,6 @@ export const CartDropdownItem = ({
     return 0
   }
 
-  // Debug logging for missing pricing data (only when all pricing fields are missing)
-  if (process.env.NODE_ENV === 'development') {
-    const hasAnyPricing = item.total !== undefined || item.original_total !== undefined || item.unit_price !== undefined
-    if (!hasAnyPricing) {
-      console.warn('CartDropdownItem: Missing all pricing data', {
-        itemId: item.id,
-        original_total: item.original_total,
-        total: item.total,
-        unit_price: item.unit_price,
-        product_title: item.product_title,
-        quantity: item.quantity
-      })
-    }
-  }
-
   const totalAmount = calculateFallbackPrice(item)
   const originalAmount = item.original_total || totalAmount
 
@@ -80,11 +65,7 @@ export const CartDropdownItem = ({
           />
         </div>
         <div className="label-md text-secondary">
-          {item.variant?.options?.map(({ option, id, value }) => (
-            <p key={id}>
-              {option?.title}: <span className="text-primary">{value}</span>
-            </p>
-          ))}
+        
           <p>
             Ilość: <span className="text-primary">{item.quantity}</span>
           </p>
