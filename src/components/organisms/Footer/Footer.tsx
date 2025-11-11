@@ -103,7 +103,7 @@ export async function Footer() {
                 Zacznij z nami sprzedawać
               </Link>
              
-              <Link href="#" className="block text-white hover:text-primary transition-colors duration-200 text-sm">
+              <Link href="https://annawawrzyniak.my.canva.site/przewodnik-artovnia" className="block text-white hover:text-primary transition-colors duration-200 text-sm">
                 Poradnik
               </Link>
               <Link href="/faq-sprzedawcy" className="block text-white hover:text-primary transition-colors duration-200 text-sm">
