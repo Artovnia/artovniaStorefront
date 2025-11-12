@@ -12,7 +12,10 @@ export default async function RequestSuccessPage({
   return (
     <main className="container">
       <div className="grid grid-cols-1 md:grid-cols-4 mt-6 gap-5 md:gap-8">
-        <UserNavigation />
+        {/* Desktop Sidebar Navigation - Hidden on mobile */}
+        <div className="hidden md:block">
+          <UserNavigation />
+        </div>
         <div className="md:col-span-3 text-center">
           <h1 className="heading-md uppercase">Prośba o zwrot złożona</h1>
           <p className="label-md text-secondary w-96 mx-auto my-8">

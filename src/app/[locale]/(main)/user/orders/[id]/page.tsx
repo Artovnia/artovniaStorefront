@@ -48,7 +48,10 @@ export default async function UserPage({
     return (
       <main className="container  ">
         <div className="grid grid-cols-1 md:grid-cols-4 mt-6 gap-5 md:gap-8 ">
-          <UserNavigation />
+          {/* Desktop Sidebar Navigation - Hidden on mobile */}
+          <div className="hidden md:block">
+            <UserNavigation />
+          </div>
           <div className="md:col-span-3 ">
             <LocalizedClientLink href="/user/orders">
               <Button

@@ -136,7 +136,10 @@ export const OrderReturnSection = ({
 
   return (
     <div className="grid grid-cols-1 xl:grid-cols-4 mt-6 gap-5 md:gap-8">
-      <UserNavigation />
+      {/* Desktop Sidebar Navigation - Hidden on mobile */}
+      <div className="hidden md:block">
+        <UserNavigation />
+      </div>
       <div className="md:col-span-3 mb-8 md:mb-0">
         {tab === 0 ? (
           <LocalizedClientLink href={`/user/orders/${orderSet?.id || order.id}`}>

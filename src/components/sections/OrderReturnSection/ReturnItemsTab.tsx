@@ -29,13 +29,17 @@ export const ReturnItemsTab = ({
     <div>
       <Card className="bg-secondary p-4">
         <p className="label-md">
-          Sprzedawca: <span className="font-semibold">{order.seller.name}</span>
+          Sprzedawca:{" "}
+          <span className="font-semibold">{order.seller.name}</span>
         </p>
       </Card>
       <Card className="flex items-center justify-between p-4">
         <ul className="w-full">
           {order.items.map((item: any) => (
-            <li key={item.id} className="md:flex justify-between gap-2 w-full mb-8">
+            <li
+              key={item.id}
+              className="md:flex justify-between gap-2 w-full mb-8"
+            >
               <div className="flex items-center gap-2 md:w-2/3 mb-4 md:mb-0">
                 <Checkbox
                   checked={selectedItems.some(
@@ -67,10 +71,10 @@ export const ReturnItemsTab = ({
                     )}
                   </div>
                   <div>
-                    <p className="label-md font-semibold text-primary truncate w-full">
+                    <p className="label-md font-semibold text-primary line-clamp-2">
                       {item.subtitle}
                     </p>
-                    <p className="label-md truncate w-full">{item.title}</p>
+
                     <p className="label-lg mt-2">
                       {convertToLocale({
                         amount: item.total,
@@ -81,17 +85,16 @@ export const ReturnItemsTab = ({
                 </div>
               </div>
               <div className="md:w-1/3">
-                {/* Added debugging to check if returnReasons is properly populated */}
                 {returnReasons && returnReasons.length > 0 ? (
                   <>
-                    <p className="text-sm mb-2">Dostępne powody zwrotu: {returnReasons.length}</p>
                     <Listbox
                       value={
-                        selectedItems.find((i) => i.line_item_id === item.id)
-                          ?.reason_id || ""
+                        selectedItems.find(
+                          (i) => i.line_item_id === item.id
+                        )?.reason_id || ""
                       }
                       onChange={(value) => {
-                        handleSelectItem(item, value || "")  
+                        handleSelectItem(item, value || "")
                       }}
                     >
                       <div className="relative">
@@ -99,8 +102,9 @@ export const ReturnItemsTab = ({
                           className={cn(
                             "relative w-full flex justify-between items-center px-4 h-12 bg-component-secondary text-left cursor-default focus:outline-none border rounded-lg focus-visible:ring-2 focus-visible:ring-opacity-75 focus-visible:ring-white focus-visible:ring-offset-gray-300 focus-visible:ring-offset-2 focus-visible:border-gray-300 text-md",
                             error &&
-                              !selectedItems.find((i) => i.line_item_id === item.id)
-                                ?.reason_id &&
+                              !selectedItems.find(
+                                (i) => i.line_item_id === item.id
+                              )?.reason_id &&
                               "border-red-700"
                           )}
                         >
@@ -116,9 +120,12 @@ export const ReturnItemsTab = ({
                                 )?.label || "Wybierz powód"}
                               </span>
                               <ChevronUpDown
-                                className={clx("transition-rotate duration-200", {
-                                  "transform rotate-180": open,
-                                })}
+                                className={clx(
+                                  "transition-rotate duration-200",
+                                  {
+                                    "transform rotate-180": open,
+                                  }
+                                )}
                               />
                             </>
                           )}
@@ -135,8 +142,9 @@ export const ReturnItemsTab = ({
                           ))}
                         </ListboxOptions>
                         {error &&
-                          !selectedItems.find((i) => i.line_item_id === item.id)
-                            ?.reason_id && (
+                          !selectedItems.find(
+                            (i) => i.line_item_id === item.id
+                          )?.reason_id && (
                             <p className="absolute -bottom-6 text-red-700 label-md">
                               Proszę wybrać powód zwrotu
                             </p>
@@ -146,8 +154,12 @@ export const ReturnItemsTab = ({
                   </>
                 ) : (
                   <div className="p-4 border rounded-lg bg-gray-50">
-                    <p className="text-red-600">Brak dostępnych powodów zwrotu</p>
-                    <p className="text-sm mt-1">Spróbuj odświeżenia strony</p>
+                    <p className="text-red-600">
+                      Brak dostępnych powodów zwrotu
+                    </p>
+                    <p className="text-sm mt-1">
+                      Spróbuj odświeżenia strony
+                    </p>
                   </div>
                 )}
               </div>
