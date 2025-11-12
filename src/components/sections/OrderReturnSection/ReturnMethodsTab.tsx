@@ -36,7 +36,9 @@ export const ReturnMethodsTab = ({
                     checked={returnMethod === method.id}
                     onChange={() => handleSetReturnMethod(method.id)}
                   />
-                  <span className="label-lg" onClick={() => handleSetReturnMethod(method.id)}>{method.name}</span>
+                  <span className="label-lg" onClick={() => handleSetReturnMethod(method.id)}>
+                    {method.name === 'customer-shipping' ? 'Wysyłka przez klienta' : method.name}
+                  </span>
                 </li>
               ))}
             </ul>

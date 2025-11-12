@@ -56,6 +56,29 @@ export async function verifyGuestOrder(
 }
 
 /**
+ * Get return shipping options for guest order
+ */
+export async function getGuestReturnShippingOptions(
+  order_id: string
+): Promise<{ shipping_options: any[] } | null> {
+  try {
+    const response = await sdk.client.fetch<{ shipping_options: any[] }>(
+      `/store/shipping-options/return?order_id=${order_id}`,
+      {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      }
+    )
+
+    return response
+  } catch (error: any) {
+    return medusaError(error)
+  }
+}
+
+/**
  * Create guest return request
  */
 export async function createGuestReturnRequest(data: {

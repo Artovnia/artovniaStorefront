@@ -19,25 +19,25 @@ export const OrderProductListItem = ({
     <li className={cn("flex items-center", withDivider && "mt-4")}>
       <div className="w-[66px] h-24 relative rounded-xs overflow-hidden">
         {item.thumbnail ? (
-          <Image src={item.thumbnail} alt={item.title || 'Product'} fill objectFit="cover" />
+          <Image src={item.thumbnail} alt={item.title || 'Produkt'} fill objectFit="cover" />
         ) : (
           <div className="w-full h-full bg-gray-100 flex items-center justify-center text-gray-400">Brak zdjęcia</div>
         )}
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-5 w-full px-4 sm:gap-4">
         <div className="sm:col-span-2">
-          <p className="label-md text-secondary">{item.product_title || 'Product'}</p>
+          <p className="label-md text-secondary">{item.product_title || 'Produkt'}</p>
           {item.variant?.product?.handle ? (
             <Link
               href={`/products/${item.variant.product.handle}`}
               target="_blank"
               className="heading-xs text-primary"
             >
-              {item.variant?.product?.title || item.title || 'Product'}
+              {item.variant?.product?.title || item.title || 'Produkt'}
             </Link>
           ) : (
             <span className="heading-xs text-primary">
-              {item.variant?.product?.title || item.title || 'Product'}
+              {item.variant?.product?.title || item.title || 'Produkt'}
             </span>
           )}
         </div>

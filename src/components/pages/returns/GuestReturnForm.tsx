@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { useSearchParams } from "next/navigation"
-import { verifyGuestOrder, createGuestReturnRequest } from "@/lib/data/guest-returns"
+import { verifyGuestOrder, createGuestReturnRequest, getGuestReturnShippingOptions } from "@/lib/data/guest-returns"
 
 interface OrderItem {
   id: string
@@ -42,6 +42,8 @@ const GuestReturnForm = () => {
   const [customerNote, setCustomerNote] = useState("")
   const [submitting, setSubmitting] = useState(false)
   const [success, setSuccess] = useState(false)
+  const [shippingOptions, setShippingOptions] = useState<any[]>([])
+  const [selectedShippingOption, setSelectedShippingOption] = useState<string>("")
 
   // Mock return reasons - in production, fetch from API
   const returnReasons: ReturnReason[] = [
@@ -82,6 +84,16 @@ const GuestReturnForm = () => {
           quantities[item.id] = item.quantity
         })
         setItemQuantities(quantities)
+
+        // Fetch return shipping options
+        const shippingOptionsResult = await getGuestReturnShippingOptions(orderId!)
+        if (shippingOptionsResult && shippingOptionsResult.shipping_options) {
+          setShippingOptions(shippingOptionsResult.shipping_options)
+          // Auto-select first option if available
+          if (shippingOptionsResult.shipping_options.length > 0) {
+            setSelectedShippingOption(shippingOptionsResult.shipping_options[0].id)
+          }
+        }
       } catch (err) {
         setError(err instanceof Error ? err.message : "Wystąpił błąd")
       } finally {
@@ -132,6 +144,12 @@ const GuestReturnForm = () => {
       }
     }
 
+    // Validate shipping option
+    if (!selectedShippingOption) {
+      setError("Wybierz metodę zwrotu")
+      return
+    }
+
     try {
       setSubmitting(true)
       setError(null)
@@ -142,14 +160,11 @@ const GuestReturnForm = () => {
         reason_id: itemReasons[lineItemId],
       }))
 
-      // TODO: Get shipping_option_id from order or allow user to select
-      const shippingOptionId = "default_return_shipping"
-
       const result = await createGuestReturnRequest({
         order_id: orderId!,
         email: email!,
         line_items: lineItems,
-        shipping_option_id: shippingOptionId,
+        shipping_option_id: selectedShippingOption,
         customer_note: customerNote,
       })
 
@@ -364,6 +379,39 @@ const GuestReturnForm = () => {
           </div>
         </div>
 
+        {/* Shipping Method Selection */}
+        <div className="bg-white rounded-lg p-6 md:p-8 shadow-sm border border-gray-200">
+          <h2 className="font-instrument-serif text-2xl mb-6 text-[#3B3634]">
+            Metoda zwrotu
+          </h2>
+          {shippingOptions.length === 0 ? (
+            <p className="text-gray-600 font-instrument-sans">
+              Brak dostępnych metod zwrotu
+            </p>
+          ) : (
+            <div className="space-y-3">
+              {shippingOptions.map((option) => (
+                <label
+                  key={option.id}
+                  className="flex items-center gap-3 p-4 border border-gray-200 rounded-lg cursor-pointer hover:border-[#3B3634] transition-colors"
+                >
+                  <input
+                    type="radio"
+                    name="shipping_option"
+                    value={option.id}
+                    checked={selectedShippingOption === option.id}
+                    onChange={(e) => setSelectedShippingOption(e.target.value)}
+                    className="w-5 h-5 text-[#3B3634] border-gray-300 focus:ring-[#3B3634]"
+                  />
+                  <span className="font-instrument-sans font-medium text-[#3B3634]">
+                    {option.name === 'customer-shipping' ? 'Wysyłka przez klienta' : option.name}
+                  </span>
+                </label>
+              ))}
+            </div>
+          )}
+        </div>
+
         {/* Customer Note */}
         <div className="bg-white rounded-lg p-6 md:p-8 shadow-sm border border-gray-200">
           <h2 className="font-instrument-serif text-2xl mb-4 text-[#3B3634]">
@@ -382,7 +430,7 @@ const GuestReturnForm = () => {
         <div className="flex justify-end gap-4">
           <button
             type="submit"
-            disabled={submitting || selectedItems.size === 0}
+            disabled={submitting || selectedItems.size === 0 || !selectedShippingOption}
             className="px-8 py-3 bg-[#3B3634] text-white rounded-lg font-instrument-sans font-semibold hover:bg-[#2d2a28] disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
           >
             {submitting ? "Wysyłanie..." : "Zgłoś zwrot"}
