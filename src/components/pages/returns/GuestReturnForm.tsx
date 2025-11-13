@@ -2,11 +2,10 @@
 
 import { useState, useEffect } from "react"
 import { useSearchParams } from "next/navigation"
-import { verifyGuestOrder, createGuestReturnRequest, getGuestReturnShippingOptions } from "@/lib/data/guest-returns"
+import { verifyGuestOrder, createGuestReturnRequest, getGuestReturnShippingOptions, getGuestReturnReasons } from "@/lib/data/guest-returns"
 
 interface OrderItem {
   id: string
-  line_item_id: string
   title: string
   variant_title?: string
   thumbnail?: string
@@ -44,15 +43,8 @@ const GuestReturnForm = () => {
   const [success, setSuccess] = useState(false)
   const [shippingOptions, setShippingOptions] = useState<any[]>([])
   const [selectedShippingOption, setSelectedShippingOption] = useState<string>("")
-
-  // Mock return reasons - in production, fetch from API
-  const returnReasons: ReturnReason[] = [
-    { id: "1", label: "Zmiana zdania", value: "changed_mind" },
-    { id: "2", label: "Produkt uszkodzony", value: "damaged" },
-    { id: "3", label: "Niezgodny z opisem", value: "not_as_described" },
-    { id: "4", label: "Zły rozmiar", value: "wrong_size" },
-    { id: "5", label: "Inne", value: "other" },
-  ]
+  const [returnReasons, setReturnReasons] = useState<ReturnReason[]>([])
+  const [reasonsLoading, setReasonsLoading] = useState(true)
 
   useEffect(() => {
     if (!orderId || !email) {
@@ -81,21 +73,41 @@ const GuestReturnForm = () => {
         // Initialize quantities with item quantities
         const quantities: Record<string, number> = {}
         result.order.items.forEach((item: any) => {
-          quantities[item.id] = item.quantity
+          quantities[item.id] = item.quantity || 1
         })
         setItemQuantities(quantities)
+        
+        // Debug log
+        console.log('Order items:', result.order.items)
+        console.log('Initialized quantities:', quantities)
 
-        // Fetch return shipping options
-        const shippingOptionsResult = await getGuestReturnShippingOptions(orderId!)
-        if (shippingOptionsResult && shippingOptionsResult.shipping_options) {
-          setShippingOptions(shippingOptionsResult.shipping_options)
-          // Auto-select first option if available
-          if (shippingOptionsResult.shipping_options.length > 0) {
-            setSelectedShippingOption(shippingOptionsResult.shipping_options[0].id)
+        // Fetch return reasons directly from backend (no auth required)
+        try {
+          const reasons = await getGuestReturnReasons()
+          setReturnReasons(reasons)
+        } catch (err) {
+          console.error('Error fetching return reasons:', err)
+        } finally {
+          setReasonsLoading(false)
+        }
+
+        // Fetch return shipping options directly from backend (no auth required)
+        try {
+          const shippingOpts = await getGuestReturnShippingOptions(orderId!)
+          console.log('Fetched shipping options:', shippingOpts)
+          if (shippingOpts && shippingOpts.length > 0) {
+            setShippingOptions(shippingOpts)
+            setSelectedShippingOption(shippingOpts[0].id)
+          } else {
+            console.warn('No shipping options available for order:', orderId)
           }
+        } catch (err) {
+          console.error('Error fetching shipping options:', err)
         }
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Wystąpił błąd")
+        console.error('Guest return form error:', err)
+        const errorMessage = err instanceof Error ? err.message : "Wystąpił błąd podczas ładowania formularza zwrotu"
+        setError(errorMessage)
       } finally {
         setLoading(false)
       }
@@ -104,27 +116,27 @@ const GuestReturnForm = () => {
     verifyOrder()
   }, [orderId, email])
 
-  const handleItemToggle = (lineItemId: string) => {
+  const handleItemToggle = (itemId: string) => {
     const newSelected = new Set(selectedItems)
-    if (newSelected.has(lineItemId)) {
-      newSelected.delete(lineItemId)
+    if (newSelected.has(itemId)) {
+      newSelected.delete(itemId)
     } else {
-      newSelected.add(lineItemId)
+      newSelected.add(itemId)
     }
     setSelectedItems(newSelected)
   }
 
-  const handleQuantityChange = (lineItemId: string, quantity: number) => {
+  const handleQuantityChange = (itemId: string, quantity: number) => {
     setItemQuantities((prev) => ({
       ...prev,
-      [lineItemId]: quantity,
+      [itemId]: quantity,
     }))
   }
 
-  const handleReasonChange = (lineItemId: string, reasonId: string) => {
+  const handleReasonChange = (itemId: string, reasonId: string) => {
     setItemReasons((prev) => ({
       ...prev,
-      [lineItemId]: reasonId,
+      [itemId]: reasonId,
     }))
   }
 
@@ -212,9 +224,9 @@ const GuestReturnForm = () => {
   if (success) {
     return (
       <div className="max-w-2xl mx-auto">
-        <div className="bg-green-50 border border-green-200 rounded-lg p-8">
+        <div className="bg-[#fff] border border-[#3B3634] rounded-lg p-8">
           <div className="text-center">
-            <div className="w-16 h-16 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-4">
+            <div className="w-16 h-16 bg-[#3B3634] rounded-full flex items-center justify-center mx-auto mb-4">
               <svg
                 className="w-8 h-8 text-white"
                 fill="none"
@@ -229,14 +241,14 @@ const GuestReturnForm = () => {
                 />
               </svg>
             </div>
-            <h2 className="font-instrument-serif text-3xl mb-4 text-green-800">
+            <h2 className="font-instrument-serif text-3xl mb-4 text-[#3B3634]">
               Zwrot zgłoszony!
             </h2>
-            <p className="text-green-700 font-instrument-sans mb-6">
+            <p className="text-[#3B3634] font-instrument-sans mb-6">
               Twój wniosek o zwrot został pomyślnie utworzony. Sprzedawca
               rozpatrzy go w ciągu 2-3 dni roboczych.
             </p>
-            <p className="text-green-600 font-instrument-sans text-sm">
+            <p className="text-[#3B3634] font-instrument-sans text-sm">
               Otrzymasz email z dalszymi instrukcjami.
             </p>
           </div>
@@ -277,21 +289,21 @@ const GuestReturnForm = () => {
           <div className="space-y-4">
             {order.items.map((item) => (
               <div
-                key={item.line_item_id}
+                key={item.id}
                 className="border border-gray-200 rounded-lg p-4 hover:border-[#3B3634] transition-colors"
               >
                 <div className="flex items-start gap-4">
                   <input
                     type="checkbox"
-                    id={`item-${item.line_item_id}`}
-                    checked={selectedItems.has(item.line_item_id)}
-                    onChange={() => handleItemToggle(item.line_item_id)}
+                    id={`item-${item.id}`}
+                    checked={selectedItems.has(item.id)}
+                    onChange={() => handleItemToggle(item.id)}
                     className="mt-1 w-5 h-5 text-[#3B3634] border-gray-300 rounded focus:ring-[#3B3634]"
                   />
 
                   <div className="flex-1">
                     <label
-                      htmlFor={`item-${item.line_item_id}`}
+                      htmlFor={`item-${item.id}`}
                       className="cursor-pointer"
                     >
                       <div className="flex items-center gap-4 mb-3">
@@ -318,7 +330,7 @@ const GuestReturnForm = () => {
                       </div>
                     </label>
 
-                    {selectedItems.has(item.line_item_id) && (
+                    {selectedItems.has(item.id) && (
                       <div className="mt-4 space-y-4 pl-6 border-l-2 border-[#3B3634]">
                         {/* Quantity Selection */}
                         <div>
@@ -326,10 +338,10 @@ const GuestReturnForm = () => {
                             Ilość do zwrotu
                           </label>
                           <select
-                            value={itemQuantities[item.line_item_id]}
+                            value={itemQuantities[item.id] || 1}
                             onChange={(e) =>
                               handleQuantityChange(
-                                item.line_item_id,
+                                item.id,
                                 parseInt(e.target.value)
                               )
                             }
@@ -352,10 +364,10 @@ const GuestReturnForm = () => {
                             Powód zwrotu *
                           </label>
                           <select
-                            value={itemReasons[item.line_item_id] || ""}
+                            value={itemReasons[item.id] || ""}
                             onChange={(e) =>
                               handleReasonChange(
-                                item.line_item_id,
+                                item.id,
                                 e.target.value
                               )
                             }
