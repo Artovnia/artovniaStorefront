@@ -18,11 +18,7 @@ export async function handleStripePaymentReturn(
   paymentIntentClientSecret?: string
 ): Promise<{ success: boolean; orderId?: string; error?: string }> {
   try {
-    console.log('🔍 Handling Stripe payment return:', {
-      cartId,
-      paymentIntentId,
-      paymentIntentClientSecret
-    })
+    
 
     if (!cartId) {
       throw new Error('Missing cart ID in payment return')
@@ -31,7 +27,6 @@ export async function handleStripePaymentReturn(
     // Complete the order with skipRedirectCheck=true since we're handling the return
     const result = await placeOrder(cartId, true)
     
-    console.log('🔍 Stripe payment return result:', result)
     
     // Check if order was created successfully
     if (result.type === 'order' && result.order) {
