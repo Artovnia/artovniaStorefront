@@ -33,7 +33,7 @@ export const ReturnSummaryTab = ({
 
   // Calculate the total for selected items (including VAT)
   const itemsTotal = selected.reduce((acc, item) => {
-    // Use item.total (actual paid price with promotions from manual calculation)
+    // Use item.total (actual paid price with promotions, calculated by data transformation)
     let itemTotal = item.total || 0;
     
     // Fallback: If item.total is 0 or missing, calculate from unit_price

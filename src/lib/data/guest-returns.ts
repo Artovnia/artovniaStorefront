@@ -38,6 +38,11 @@ export interface GuestOrder {
     delivered_at?: string | null
     shipped_at?: string | null
   }>
+  shipping_methods?: Array<{
+    id: string
+    amount: number
+    [key: string]: any
+  }>
   seller?: {
     id: string
     name: string
@@ -49,7 +54,113 @@ export interface GuestOrder {
     postal_code?: string
     country_code?: string
   }
-  shipping_methods?: any[]
+}
+
+/**
+ * Transform guest order to recalculate item prices from order.total
+ * This mirrors the logic from transformOrderSetToOrder() used for registered users
+ * 
+ * The database stores incorrect item.total values, so we calculate the actual
+ * paid amounts based on the order.total and proportional distribution
+ * 
+ * Note: Payment collection is not available in Order entity query, so we use order.total
+ */
+function transformGuestOrder(order: GuestOrder): GuestOrder {
+  const items = order.items || []
+  
+  // Get ACTUAL paid amount from order.total (source of truth for guests)
+  // Payment collection is not available in Order entity query
+  const paymentAmount = order.total || 0
+  
+  const shippingAmount = order.shipping_methods?.[0]?.amount || order.shipping_total || 0
+  const actualItemTotal = paymentAmount - shippingAmount
+  
+  console.log('🔄 Transforming guest order:', {
+    order_id: order.id,
+    display_id: order.display_id,
+    paymentAmount,
+    shippingAmount,
+    actualItemTotal,
+    itemCount: items.length
+  })
+  
+  // Calculate total base price
+  const totalBasePrice = items.reduce((sum: number, item: any) => 
+    sum + ((item.unit_price || 0) * (item.quantity || 1)), 0
+  )
+  
+  // Separate items into no-discount and discounted
+  // Items with discount_total=0 have NO promotion, use full price
+  const noDiscountItems = items.filter((item: any) => !item.discount_total || item.discount_total === 0)
+  const discountedItems = items.filter((item: any) => item.discount_total && item.discount_total > 0)
+  
+  // Calculate total for no-discount items (use full price)
+  const noDiscountTotal = noDiscountItems.reduce((sum: number, item: any) => 
+    sum + ((item.unit_price || 0) * (item.quantity || 1)), 0
+  )
+  
+  // Remaining amount goes to discounted items
+  const remainingForDiscounted = actualItemTotal - noDiscountTotal
+  
+  // Calculate base price for discounted items only
+  const discountedBaseTotal = discountedItems.reduce((sum: number, item: any) => 
+    sum + ((item.unit_price || 0) * (item.quantity || 1)), 0
+  )
+  
+  console.log('📊 Price distribution:', {
+    totalBasePrice,
+    noDiscountItemsCount: noDiscountItems.length,
+    noDiscountTotal,
+    discountedItemsCount: discountedItems.length,
+    discountedBaseTotal,
+    remainingForDiscounted
+  })
+  
+  // Transform items with correct pricing
+  const transformedItems = items.map((item: any) => {
+    const baseAmount = (item.unit_price || 0) * (item.quantity || 1)
+    
+    let finalAmount: number
+    let calculatedDiscount: number
+    
+    // If item has no discount, use full price
+    if (!item.discount_total || item.discount_total === 0) {
+      finalAmount = baseAmount
+      calculatedDiscount = 0
+    } else {
+      // Distribute remaining amount proportionally among discounted items
+      finalAmount = discountedBaseTotal > 0
+        ? (baseAmount / discountedBaseTotal) * remainingForDiscounted
+        : baseAmount
+      calculatedDiscount = baseAmount - finalAmount
+    }
+    
+    console.log('💰 Item transformed:', {
+      subtitle: item.subtitle,
+      unit_price: item.unit_price,
+      quantity: item.quantity,
+      baseAmount,
+      original_total: item.total,
+      original_discount: item.discount_total,
+      finalAmount,
+      calculatedDiscount
+    })
+    
+    return {
+      ...item,
+      subtotal: finalAmount,
+      total: finalAmount,
+      discount_total: calculatedDiscount,
+      _original_subtotal: item.subtotal,
+      _original_total: item.total,
+      _original_discount: item.discount_total
+    }
+  })
+  
+  return {
+    ...order,
+    items: transformedItems
+  }
 }
 
 /**
@@ -100,8 +211,8 @@ export async function retrieveGuestOrder(
       return null
     }
 
-    // The verification response already contains all the data we need
-    // No need for a second API call to /store/orders/:id (which requires auth)
+    // Backend now does manual calculation, so data is already correct
+    // No transformation needed - just return the order
     return verification.order
   } catch (error: any) {
     console.error('Error retrieving guest order:', error)
