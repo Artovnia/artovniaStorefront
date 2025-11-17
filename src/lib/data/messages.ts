@@ -32,7 +32,8 @@ export type Message = {
 
 export type MessageThread = {
   id: string
-  subject: string
+  title?: string // Thread title (renamed from subject in production)
+  subject: string // Legacy field, same as title
   type: string
   user_id: string
   customer_id?: string | null

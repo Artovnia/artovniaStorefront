@@ -5,6 +5,7 @@ import { MessageThread, MessageSender } from "@/types/messages"
 import Link from "next/link"
 import Image from "next/image"
 import { format } from "date-fns"
+import { pl } from "date-fns/locale"
 import { isEmpty } from "lodash"
 import { MessagePagination } from "./message-pagination"
 import { hasUnreadMessages } from "@/lib/utils/message-utils"
@@ -121,12 +122,12 @@ export default async function MessagesPage({ searchParams }: PageProps) {
             <>
               <div className="w-full max-w-full space-y-4">
                 {paginatedThreads.map((thread) => {
-                  // Safe date formatting function
+                  // Safe date formatting function with Polish locale
                   const formatDate = (dateString: string) => {
                     try {
-                      return format(new Date(dateString), 'MMM d, yyyy')
+                      return format(new Date(dateString), 'd MMM yyyy', { locale: pl })
                     } catch (error) {
-                      return 'Unknown date'
+                      return 'Nieznana data'
                     }
                   }
                   
@@ -159,7 +160,10 @@ export default async function MessagesPage({ searchParams }: PageProps) {
                           
                           <div className="flex-1">
                             <div className="flex items-center gap-2">
-                              <h3 className="font-medium text-lg">Rozmowa z {thread.seller?.name || 'Sprzedawca'}</h3>
+                              {/* Show thread title if available, otherwise show seller name */}
+                              <h3 className="font-medium text-lg">
+                                {thread.title || thread.subject || `Rozmowa z ${thread.seller?.name || 'Sprzedawca'}`}
+                              </h3>
                               {/* Bell icon indicator for unread messages - using consistent helper function */}
                               {hasUnreadMessages(thread) ? (
                                 <span className="inline-flex items-center">
@@ -167,9 +171,9 @@ export default async function MessagesPage({ searchParams }: PageProps) {
                                 </span>
                               ) : null}
                             </div>
-                            {thread.subject && (
-                              <h4 className="font-medium text-md text-gray-700">{thread.subject}</h4>
-                            )}
+                            <p className="text-sm text-gray-600 mt-1">
+                              {thread.seller?.name || 'Sprzedawca'}
+                            </p>
                             <p className="text-sm text-gray-500 mt-1">
                               Rozpoczęta {thread.created_at ? formatDate(thread.created_at) : 'Nieznana data'}
                             </p>
