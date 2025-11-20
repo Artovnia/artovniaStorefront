@@ -1,13 +1,15 @@
 import { Metadata } from "next"
 import { HttpTypes } from "@medusajs/types"
 import Image from "next/image"
+import { Suspense } from "react"
 import { listProductsWithPromotions } from "@/lib/data/products"
 import { getPromotionFilterOptions } from "@/lib/data/promotions"
 import { PromotionListing } from "@/components/sections"
 import { PromotionDataProvider } from "@/components/context/PromotionDataProvider"
 import { PromotionsFilterBar } from "@/components/organisms/PromotionsFilterBar"
-
-const REGION = "PL" // Default region for promotions
+import { detectUserCountry } from "@/lib/helpers/country-detection"
+import { retrieveCustomer } from "@/lib/data/customer"
+import { getUserWishlists } from "@/lib/data/wishlist"
 
 export const metadata: Metadata = {
   title: "Promocje | Artovnia",
@@ -34,23 +36,58 @@ interface PromotionsPageProps {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>
 }
 
+// Loading skeleton for promotions
+const PromotionsContentSkeleton = () => (
+  <div className="animate-pulse px-4 sm:px-6 lg:px-8 py-8">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 max-w-[1200px] mx-auto">
+      {Array.from({ length: 12 }).map((_, i) => (
+        <div key={i} className="h-[400px] bg-gray-200 rounded"></div>
+      ))}
+    </div>
+  </div>
+)
+
 export default async function PromotionsPage({ searchParams }: PromotionsPageProps) {
   const resolvedSearchParams = await searchParams
   const page = typeof resolvedSearchParams.page === "string" ? parseInt(resolvedSearchParams.page) : 1
   
   try {
+    // ✅ OPTIMIZATION 1: Use dynamic country detection instead of hardcoded "PL"
+    const countryCode = await detectUserCountry()
+    
+    // ✅ OPTIMIZATION 2: Fetch user data once at page level (eliminate duplicate calls)
+    let user = null
+    let wishlist: any[] = []
+    
+    try {
+      user = await retrieveCustomer()
+      if (user) {
+        const wishlistData = await getUserWishlists()
+        wishlist = wishlistData.wishlists || []
+      }
+    } catch (error) {
+      // User not authenticated - this is normal
+      if ((error as any)?.status !== 401) {
+        console.error("Error fetching user data:", error)
+      }
+    }
+    
     // Fetch products with promotions and filter options in parallel
     const [productsResult, filterOptions] = await Promise.all([
       listProductsWithPromotions({
         page,
         limit: 12,
-        countryCode: REGION,
+        countryCode,  // ✅ Use dynamic country
       }),
       getPromotionFilterOptions()
     ])
 
     const { response, nextPage } = productsResult
     const { products, count } = response
+    
+    // ✅ OPTIMIZATION 3: Extract product IDs for PromotionDataProvider
+    // Only fetch promotion data for displayed products (12 instead of 100)
+    const productIds = products.map(p => p.id)
 
     return (
       <div className="min-h-screen bg-primary">
@@ -68,8 +105,8 @@ export default async function PromotionsPage({ searchParams }: PromotionsPagePro
               priority
               fetchPriority="high"
               className="object-cover object-[center] 2xl:object-contain"
-              sizes="(max-width: 640px) 100vw, (max-width: 1024px) 100vw, 1920px"
-              quality={85}
+              sizes="(max-width: 640px) 640px, (max-width: 1024px) 1024px, 1920px"
+              quality={70}
               placeholder="blur"
               blurDataURL="data:image/webp;base64,UklGRiQAAABXRUJQVlA4IBgAAAAwAQCdASoBAAEAAwA0JaQAA3AA/vuUAAA="
             />
@@ -116,17 +153,24 @@ export default async function PromotionsPage({ searchParams }: PromotionsPagePro
             />
           </div>
 
-          {/* Products Listing */}
+          {/* Products Listing with Suspense */}
           <div className="px-4 sm:px-6 lg:px-8">
-            <PromotionDataProvider countryCode={REGION}>
-              <PromotionListing
-                initialProducts={products}
-                initialCount={count}
-                initialPage={page}
-                countryCode={REGION}
-                limit={12}
-              />
-            </PromotionDataProvider>
+            <Suspense fallback={<PromotionsContentSkeleton />}>
+              <PromotionDataProvider 
+                countryCode={countryCode}
+                productIds={productIds}
+              >
+                <PromotionListing
+                  initialProducts={products}
+                  initialCount={count}
+                  initialPage={page}
+                  countryCode={countryCode}
+                  limit={12}
+                  user={user}
+                  wishlist={wishlist}
+                />
+              </PromotionDataProvider>
+            </Suspense>
           </div>
         </div>
       </div>

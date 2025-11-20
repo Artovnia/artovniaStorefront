@@ -51,7 +51,7 @@ export const getSellers = async (params?: {
 
     const response = await sdk.client
       .fetch<SellerListResponse>(`/store/sellers?${queryParams.toString()}`, {
-        cache: "no-store", // Don't cache seller listings as they may change frequently
+        next: { revalidate: 300 }, // ✅ Cache for 5 minutes (sellers don't change that often)
       });
 
     return response;

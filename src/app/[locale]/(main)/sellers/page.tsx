@@ -1,6 +1,8 @@
 import { Metadata } from 'next'
 import Image from 'next/image'
+import { Suspense } from 'react'
 import { SellerListing } from '@/components/sections/SellerListing/SellerListing'
+import { getSellers } from '@/lib/data/seller'
 
 export const metadata: Metadata = {
   title: 'Sprzedawcy - Artovnia',
@@ -8,7 +10,55 @@ export const metadata: Metadata = {
     'Przeglądaj wszystkich sprzedawców na platformie Artovnia. Znajdź swoich ulubionych artystów i odkryj nowe talenty.',
 }
 
-export default function SellersPage() {
+// Loading skeleton for Suspense
+const SellerListingSkeleton = () => (
+  <div className="w-full px-4 sm:px-6 lg:px-8 py-8">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-4 gap-6 justify-items-center">
+      {Array.from({ length: 12 }).map((_, index) => (
+        <div 
+          key={index} 
+          className="w-[252px] h-[380px] bg-primary shadow-md animate-pulse"
+        >
+          {/* Top 60% - Image skeleton */}
+          <div className="h-[60%] bg-[#F4F0EB]" />
+          
+          {/* Bottom 40% - Content skeleton */}
+          <div className="h-[40%] bg-primary p-4 flex flex-col justify-between">
+            <div className="flex-1 flex flex-col justify-center items-center gap-2">
+              <div className="h-5 bg-[#BFB7AD]/30 rounded w-32" />
+              <div className="h-3 bg-[#BFB7AD]/20 rounded w-40" />
+            </div>
+            <div className="flex justify-center pt-2">
+              <div className="h-2 bg-[#BFB7AD]/15 rounded w-24" />
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+  </div>
+)
+
+export default async function SellersPage({
+  searchParams
+}: {
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>
+}) {
+  const params = await searchParams
+  const page = typeof params.page === 'string' ? parseInt(params.page) : 1
+  const letter = typeof params.letter === 'string' ? params.letter : ''
+  const sortBy = typeof params.sortBy === 'string' ? params.sortBy : ''
+  
+  // ✅ OPTIMIZATION: Fetch sellers on server-side for better SEO and performance
+  const limit = 20
+  const offset = (page - 1) * limit
+  
+  const sellersData = await getSellers({
+    limit,
+    offset,
+    ...(letter && { letter }),
+    ...(sortBy && { sortBy })
+  })
+
   return (
     <div className="min-h-screen bg-primary">
       {/* Hero Section with Image and Overlay */}
@@ -25,8 +75,8 @@ export default function SellersPage() {
             priority
             fetchPriority="high"
             className="object-cover object-center 2xl:object-contain"
-            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 100vw, 1920px"
-            quality={85}
+            sizes="(max-width: 640px) 640px, (max-width: 1024px) 1024px, 1920px"
+            quality={70}
             placeholder="blur"
             blurDataURL="data:image/webp;base64,UklGRiQAAABXRUJQVlA4IBgAAAAwAQCdASoBAAEAAwA0JaQAA3AA/vuUAAA="
           />
@@ -61,9 +111,16 @@ export default function SellersPage() {
 
       {/* Main Content */}
       <div className="max-w-[1920px] mx-auto" id="sellers-content">
-        {/* Seller Listing Component */}
+        {/* Seller Listing Component with Suspense */}
         <div className="px-4 sm:px-6 lg:px-8 py-6">
-          <SellerListing />
+          <Suspense fallback={<SellerListingSkeleton />}>
+            <SellerListing 
+              initialSellers={sellersData.sellers}
+              initialCount={sellersData.count}
+              initialPage={page}
+              limit={limit}
+            />
+          </Suspense>
         </div>
       </div>
     </div>

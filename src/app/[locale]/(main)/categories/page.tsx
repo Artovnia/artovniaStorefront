@@ -40,7 +40,7 @@ async function AllCategories({
   ]
 
   return (
-    <PromotionDataProvider countryCode="PL">
+    <PromotionDataProvider countryCode="PL" limit={50}>
       <BatchPriceProvider currencyCode="PLN">
         <main className="mx-auto max-w-[1920px] pt-24 pb-24">
           <Suspense 

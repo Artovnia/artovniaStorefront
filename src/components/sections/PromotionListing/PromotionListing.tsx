@@ -30,6 +30,8 @@ interface PromotionListingProps {
   initialPage?: number
   countryCode?: string
   limit?: number
+  user?: HttpTypes.StoreCustomer | null
+  wishlist?: SerializableWishlist[]
 }
 
 export const PromotionListing = ({
@@ -37,14 +39,17 @@ export const PromotionListing = ({
   initialCount = 0,
   initialPage = 1,
   countryCode = "PL",
-  limit = 12
+  limit = 12,
+  user: initialUser = null,
+  wishlist: initialWishlist = []
 }: PromotionListingProps) => {
   const [products, setProducts] = useState<HttpTypes.StoreProduct[]>(initialProducts)
   const [count, setCount] = useState(initialCount)
   const [currentPage, setCurrentPage] = useState(initialPage)
   const [isLoading, setIsLoading] = useState(false)
-  const [user, setUser] = useState<HttpTypes.StoreCustomer | null>(null)
-  const [wishlist, setWishlist] = useState<SerializableWishlist[]>([])
+  // ✅ OPTIMIZATION: Use props instead of fetching again
+  const [user, setUser] = useState<HttpTypes.StoreCustomer | null>(initialUser)
+  const [wishlist, setWishlist] = useState<SerializableWishlist[]>(initialWishlist)
   
   const searchParams = useSearchParams()
   
@@ -57,22 +62,7 @@ export const PromotionListing = ({
   // Backend handles filtering and sorting, so we just use products directly
   const filteredProducts = products
 
-  // Fetch user and wishlist data
-  const fetchUserData = async () => {
-    try {
-      const customer = await retrieveCustomer()
-      setUser(customer)
-      
-      if (customer) {
-        const wishlistData = await getUserWishlists()
-        setWishlist(wishlistData.wishlists || [])
-      }
-    } catch (error) {
-      console.error('Error fetching user data:', error)
-      setUser(null)
-      setWishlist([])
-    }
-  }
+  // ✅ REMOVED: fetchUserData - now using props from page level
 
   // Function to refresh wishlist data after wishlist changes
   const refreshWishlist = async () => {
@@ -117,11 +107,6 @@ export const PromotionListing = ({
       setIsLoading(false)
     }
   }
-
-  // Initialize user data on mount
-  useEffect(() => {
-    fetchUserData()
-  }, [])
 
   // Set initial products and count
   useEffect(() => {

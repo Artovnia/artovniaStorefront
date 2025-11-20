@@ -17,54 +17,32 @@ interface SellerListingResponse {
 }
 
 interface SellerListingProps {
+  initialSellers?: SellerProps[]
+  initialCount?: number
+  initialPage?: number
+  limit?: number
   className?: string
 }
 
 const SellerListingSkeleton = () => (
   <div className="w-full">
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6 justify-items-center">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-4 gap-6 justify-items-center">
       {Array.from({ length: 12 }).map((_, index) => (
         <div 
           key={index} 
-          className="bg-gradient-to-br from-[#F4F0EB] via-[#F4F0EB] to-[#F4F0EB]/95 rounded-3xl overflow-hidden w-[240px] h-[320px] border border-[#BFB7AD]/20 shadow-md animate-pulse relative"
+          className="w-[252px] h-[380px] bg-primary shadow-md animate-pulse"
         >
-          {/* Gradient overlay */}
-          <div className="absolute inset-0 bg-gradient-to-br from-white/30 via-transparent to-[#BFB7AD]/5" />
-          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-[#BFB7AD]/20 to-transparent" />
+          {/* Top 60% - Image skeleton */}
+          <div className="h-[60%] bg-[#F4F0EB]" />
           
-          {/* Avatar Section */}
-          <div className="relative flex items-center justify-center pt-8 pb-6 h-[120px]">
-            {/* Container for ring and avatar placeholder */}
-            <div className="relative w-18 h-18">
-              {/* Decorative rings */}
-              <div className="absolute inset-0 w-18 h-18 rounded-md border border-[#BFB7AD]/10" />
-              {/* Avatar placeholder */}
-              <div className="w-18 h-18 rounded-md bg-[#BFB7AD]/20 shadow-xl ring-2 ring-white/50" />
+          {/* Bottom 40% - Content skeleton */}
+          <div className="h-[40%] bg-primary p-4 flex flex-col justify-between">
+            <div className="flex-1 flex flex-col justify-center items-center gap-2">
+              <div className="h-5 bg-[#BFB7AD]/30 rounded w-32" />
+              <div className="h-3 bg-[#BFB7AD]/20 rounded w-40" />
             </div>
-          </div>
-
-          {/* Content Section */}
-          <div className="px-6 pb-6 flex flex-col justify-between h-[200px]">
-            {/* Name placeholder */}
-            <div className="h-[60px] flex items-center justify-center">
-              <div className="h-6 bg-[#BFB7AD]/30 rounded-lg w-32" />
-            </div>
-            
-            {/* Description placeholder */}
-            <div className="h-[60px] flex items-center justify-center flex-col space-y-2">
-              <div className="h-4 bg-[#BFB7AD]/20 rounded w-40" />
-              <div className="h-4 bg-[#BFB7AD]/15 rounded w-32" />
-            </div>
-
-            {/* Badge placeholder */}
-            <div className="flex justify-center">
-              <div className="h-8 bg-[#BFB7AD]/25 rounded-full w-28" />
-            </div>
-
-            {/* Bottom accent */}
-            <div className="absolute bottom-3 left-1/2 transform -translate-x-1/2">
-              <div className="w-16 h-0.5 bg-[#BFB7AD]/30 rounded-full" />
-              <div className="w-8 h-0.5 bg-[#BFB7AD]/20 rounded-full mt-1 mx-auto" />
+            <div className="flex justify-center pt-2">
+              <div className="h-2 bg-[#BFB7AD]/15 rounded w-24" />
             </div>
           </div>
         </div>
@@ -73,15 +51,21 @@ const SellerListingSkeleton = () => (
   </div>
 )
 
-export const SellerListing = ({ className }: SellerListingProps) => {
-  const [sellers, setSellers] = useState<SellerProps[]>([])
-  const [loading, setLoading] = useState(true)
+export const SellerListing = ({ 
+  initialSellers = [],
+  initialCount = 0,
+  initialPage = 1,
+  limit = 20,
+  className 
+}: SellerListingProps) => {
+  // ✅ OPTIMIZATION: Use initial data from server
+  const [sellers, setSellers] = useState<SellerProps[]>(initialSellers)
+  const [loading, setLoading] = useState(false)  // ✅ Start as false
   const [error, setError] = useState<string | null>(null)
-  const [totalCount, setTotalCount] = useState(0)
-  const [currentPage, setCurrentPage] = useState(1)
+  const [totalCount, setTotalCount] = useState(initialCount)
+  const [currentPage, setCurrentPage] = useState(initialPage)
   
   const searchParams = useSearchParams()
-  const limit = 20
 
   // Get filter parameters
   const letter = searchParams.get("letter") || ""
@@ -115,8 +99,18 @@ export const SellerListing = ({ className }: SellerListingProps) => {
     }
   }
 
-  // Fetch sellers when filters change
+  // Set initial data when props change
   useEffect(() => {
+    setSellers(initialSellers)
+    setTotalCount(initialCount)
+    setCurrentPage(initialPage)
+  }, [initialSellers, initialCount, initialPage])
+
+  // Fetch sellers when filters change (client-side navigation)
+  useEffect(() => {
+    // Skip initial render if we have initial data
+    if (sellers.length === 0 && initialSellers.length > 0) return
+    
     setCurrentPage(1)
     fetchSellers(1)
   }, [letter, sortBy])

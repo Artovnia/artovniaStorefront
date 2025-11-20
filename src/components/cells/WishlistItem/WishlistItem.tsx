@@ -1,12 +1,13 @@
 "use client"
+import { useState } from "react"
 import Link from "next/link"
 import Image from "next/image"
 import { SerializableWishlist } from "@/types/wishlist"
 import { HttpTypes } from "@medusajs/types"
-import { Button } from "@/components/atoms"
 import { WishlistButton } from "../WishlistButton/WishlistButton"
 import { getProductPrice } from "@/lib/helpers/get-product-price"
 import { getSellerProductPrice } from "@/lib/helpers/get-seller-product-price"
+import { ArrowRightIcon } from "@/icons"
 import clsx from "clsx"
 
 export const WishlistItem = ({
@@ -18,6 +19,8 @@ export const WishlistItem = ({
   wishlist: SerializableWishlist[]
   user?: HttpTypes.StoreCustomer | null
 }) => {
+  const [isHovered, setIsHovered] = useState(false)
+
   // Use the same price calculation logic as ProductCard
   const { cheapestPrice } = product?.id ? getProductPrice({
     product,
@@ -43,50 +46,107 @@ export const WishlistItem = ({
   return (
     <div
       className={clsx(
-        "relative group border flex flex-col justify-between p-1 w-[250px] lg:w-[370px]"
+        "relative group  p-1 w-[250px] lg:w-[370px]",
+        "transition-all duration-300 ease-out",
+        "hover:shadow-xl hover:-translate-y-1"
       )}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
     >
-      <div className="relative w-full h-full bg-primary aspect-square">
-        <div className="absolute right-3 top-3 z-10 cursor-pointer">
+      {/* Image Section */}
+      <div className="relative w-full bg-primary aspect-square overflow-hidden">
+        {/* Wishlist Button - Always visible */}
+        <div className="absolute right-3 top-3 z-20 cursor-pointer">
           <WishlistButton
             productId={product.id}
             wishlist={wishlist}
             user={user}
           />
         </div>
+
         <Link href={`/products/${product.handle}`}>
-          <div className="overflow-hidden w-full h-full flex justify-center align-center ">
+          <div className="w-full h-full flex justify-center items-center">
             {product.thumbnail ? (
               <Image
                 src={decodeURIComponent(product.thumbnail)}
                 alt={product.title}
-                width={360}
-                height={360}
-                className="object-cover aspect-square w-full object-center h-full lg:group-hover:-mt-14 transition-all duration-300 "
+                fill
+                className="object-cover transition-transform duration-500"
                 priority
               />
             ) : (
               <Image
-                src="/images/placeholder.svg"
+                src="/placeholder.webp"
                 alt="Product placeholder"
                 width={100}
                 height={100}
-                className="flex margin-auto w-[100px] h-auto"
+                className="w-[100px] h-auto"
               />
             )}
           </div>
         </Link>
-        <Link href={`/products/${product.handle}`}>
-          <Button className="absolute bg-action text-action-on-primary h-auto lg:h-[48px] lg:group-hover:block hidden w-full uppercase bottom-1 z-10">
-            Zobacz produkt
-          </Button>
-        </Link>
+
+        {/* Hover Overlay */}
+        <div
+          className={`absolute inset-0 bg-gradient-to-t from-[#3B3634]/95 via-[#3B3634]/70 to-transparent transition-opacity duration-500 flex items-center justify-center ${
+            isHovered ? "opacity-100" : "opacity-0"
+          }`}
+          aria-hidden="true"
+        >
+          <Link href={`/products/${product.handle}`} className="w-full h-full flex items-center justify-center">
+            <div
+              className="text-center px-6 flex flex-col items-center gap-3 transform transition-transform duration-500"
+              style={{
+                transform: isHovered ? "translateY(0)" : "translateY(20px)",
+              }}
+            >
+              {/* Product Details on Hover */}
+              <div className="text-white space-y-2">
+                <h4 className="font-instrument-serif text-xl font-semibold line-clamp-2">
+                  {product.title}
+                </h4>
+                
+                {sellerName && (
+                  <p className="text-sm font-instrument-sans opacity-90">
+                    {sellerName}
+                  </p>
+                )}
+
+                {/* Price on hover */}
+                <div className="flex items-center justify-center gap-2">
+                  {hasDiscount ? (
+                    <>
+                      <p className="font-instrument-sans font-semibold text-lg">
+                        {displayPrice}
+                      </p>
+                      <p className="text-sm line-through opacity-70">
+                        {originalPrice}
+                      </p>
+                    </>
+                  ) : (
+                    <p className="font-instrument-sans font-semibold text-lg">
+                      {displayPrice || '0 zł'}
+                    </p>
+                  )}
+                </div>
+              </div>
+              
+              {/* "Zobacz produkt" CTA */}
+              <span className="text-white font-instrument-serif text-base flex items-center gap-2 mt-2">
+                Zobacz produkt
+                <ArrowRightIcon size={20} color="white" aria-hidden="true" />
+              </span>
+            </div>
+          </Link>
+        </div>
       </div>
+
+      {/* Bottom Info Section */}
       <Link href={`/products/${product.handle}`}>
-        <div className="flex justify-between p-4">
+        <div className="flex justify-between p-4 bg-primary">
           <div className="w-full">
             <h3 className="heading-sm truncate">{product.title}</h3>
-            {/* Seller name below title (same as ProductCard) */}
+            {/* Seller name below title */}
             {sellerName && (
               <p className="font-instrument-sans text-sm mb-1 text-black">
                 {sellerName}

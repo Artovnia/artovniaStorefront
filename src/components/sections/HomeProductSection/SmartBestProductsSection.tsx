@@ -3,31 +3,38 @@ import { listProducts } from "@/lib/data/products"
 import { Product } from "@/types/product"
 import { BatchPriceProvider } from "@/components/context/BatchPriceProvider"
 import { unifiedCache } from "@/lib/utils/unified-cache"
+import { HttpTypes } from "@medusajs/types"
+import { SerializableWishlist } from "@/types/wishlist"
 
 interface SmartBestProductsSectionProps {
   heading?: string
   locale?: string
   limit?: number
   home?: boolean
+  user?: HttpTypes.StoreCustomer | null
+  wishlist?: SerializableWishlist[]
 }
 
 export const SmartBestProductsSection = async ({ 
   heading = "Najlepsze produkty",
- 
   locale = process.env.NEXT_PUBLIC_DEFAULT_REGION || "pl",
   limit = 10,
-  home = false
+  home = false,
+  user = null,
+  wishlist = []
 }: SmartBestProductsSectionProps) => {
   try {
     // Cache the best products with a reasonable TTL
     const cacheKey = `homepage:top:${locale}:${limit}`
     
     const allProducts = await unifiedCache.get(cacheKey, async () => {
-      // Fetch products with expanded data including reviews and wishlists
+      // ✅ PHASE 1.2: REDUCED OVER-FETCHING
+      // Fetch only 15 products instead of 50 (70% less data transfer)
+      // Still provides good selection while improving performance
       const result = await listProducts({
         countryCode: locale,
         queryParams: {
-          limit: 50, // Get more products to have better selection
+          limit: 15, // Optimized from 50 to 15 (only display 10, keep 5 as buffer)
           order: "created_at",
           // Note: expand parameter not supported in this API, but we can still access nested data
         },
@@ -120,6 +127,8 @@ export const SmartBestProductsSection = async ({
             locale={locale}
             sellerProducts={bestProducts as unknown as Product[]}
             home={home}
+            user={user}
+            wishlist={wishlist}
           />
         </section>
       </BatchPriceProvider>

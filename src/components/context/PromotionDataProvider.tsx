@@ -17,29 +17,53 @@ const PromotionDataContext = createContext<PromotionDataContextType | undefined>
 interface PromotionDataProviderProps {
   children: React.ReactNode
   countryCode?: string
+  productIds?: string[]  // ✅ Optional: Fetch only specific products. If undefined, fetch based on limit.
+  limit?: number  // ✅ NEW: How many promotional products to fetch (default: 50)
 }
 
 export const PromotionDataProvider: React.FC<PromotionDataProviderProps> = ({
   children,
-  countryCode = "PL"
+  countryCode = "PL",
+  productIds,  // ✅ undefined = fetch based on limit, [] = fetch none, [ids] = fetch specific
+  limit = 50  // ✅ Default to 50 promotional products (reasonable for most pages)
 }) => {
   const [promotionalProducts, setPromotionalProducts] = useState<Map<string, HttpTypes.StoreProduct>>(new Map())
-  const [isLoading, setIsLoading] = useState(true)
+  const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
+    // ✅ OPTIMIZATION: Skip fetch ONLY if explicitly passed empty array
+    // undefined = fetch based on limit (homepage, categories)
+    // [] = skip fetch (products already have promotion data)
+    // [ids] = fetch specific products (promotions page pagination)
+    if (productIds !== undefined && productIds.length === 0) {
+      setPromotionalProducts(new Map())
+      setIsLoading(false)
+      return
+    }
+
     const fetchPromotionalData = async () => {
       try {
         setIsLoading(true)
         setError(null)
 
-        // Simple approach: fetch fresh data with short cache
-        const cacheKey = `promotions:${countryCode}`
+        // Determine fetch limit and cache key
+        const isSpecificProducts = productIds !== undefined && productIds.length > 0
+        const fetchLimit = isSpecificProducts ? productIds.length : limit
+        
+        // ✅ OPTIMIZATION: Create cache key based on specific product IDs or "all"
+        let cacheKey: string
+        if (isSpecificProducts) {
+          const sortedIds = [...productIds].sort()
+          cacheKey = `promotions:${countryCode}:${sortedIds.slice(0, 10).join(',')}:${sortedIds.length}`
+        } else {
+          cacheKey = `promotions:${countryCode}:all:${fetchLimit}`
+        }
         
         const result = await unifiedCache.get(cacheKey, async () => {
           return await listProductsWithPromotions({
             page: 1,
-            limit: 100,
+            limit: fetchLimit,
             countryCode,
           })
         }, CACHE_TTL.PROMOTIONS)
@@ -50,10 +74,13 @@ export const PromotionDataProvider: React.FC<PromotionDataProviderProps> = ({
           return
         }
 
-        // Create a map for quick lookup by product ID
+        // ✅ OPTIMIZATION: Create map with products
         const productMap = new Map<string, HttpTypes.StoreProduct>()
         result.response.products.forEach(product => {
-          productMap.set(product.id, product)
+          // If specific IDs provided, only include those. Otherwise include all.
+          if (!isSpecificProducts || productIds.includes(product.id)) {
+            productMap.set(product.id, product)
+          }
         })
 
         setPromotionalProducts(productMap)
@@ -66,7 +93,7 @@ export const PromotionDataProvider: React.FC<PromotionDataProviderProps> = ({
     }
 
     fetchPromotionalData()
-  }, [countryCode])
+  }, [countryCode, productIds?.join(',') || 'all', limit])  // ✅ Re-fetch when product IDs or limit changes
 
   const getProductWithPromotions = (productId: string): HttpTypes.StoreProduct | null => {
     return promotionalProducts.get(productId) || null

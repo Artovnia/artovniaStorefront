@@ -1,19 +1,25 @@
 import { HomeProductsCarousel } from "@/components/organisms"
 import { listProducts } from "@/lib/data/products"
 import { Product } from "@/types/product"
+import { HttpTypes } from "@medusajs/types"
+import { SerializableWishlist } from "@/types/wishlist"
 
 interface HomeNewestProductsSectionProps {
   heading?: string
   locale?: string
   limit?: number
   home?: boolean
+  user?: HttpTypes.StoreCustomer | null
+  wishlist?: SerializableWishlist[]
 }
 
 export const HomeNewestProductsSection = async ({ 
   heading = "Najnowsze produkty",
   locale = process.env.NEXT_PUBLIC_DEFAULT_REGION || "pl",
   limit = 4,
-  home = false
+  home = false,
+  user = null,
+  wishlist = []
 }: HomeNewestProductsSectionProps) => {
   try {
     // Fetch newest products using the existing listProducts function
@@ -38,6 +44,8 @@ export const HomeNewestProductsSection = async ({
           sellerProducts={products as unknown as Product[]}
           home={home}
           theme="light"
+          user={user}
+          wishlist={wishlist}
         />
       </section>
     )

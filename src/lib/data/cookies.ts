@@ -343,7 +343,7 @@ export const getCartId = async (): Promise<string | null> => {
   if (isBrowser) {
     // Check cache first
     if (clientCartIdCache && (Date.now() - clientCartIdCache.timestamp) < CLIENT_CACHE_DURATION) {
-      console.log('🔵 [getCartId] Using client cache:', clientCartIdCache.id, requestId);
+     
       return clientCartIdCache.id;
     }
     
@@ -361,7 +361,7 @@ export const getCartId = async (): Promise<string | null> => {
     
     // Cache the result
     clientCartIdCache = { id: cartId, timestamp: Date.now() };
-    console.log('🔵 [getCartId] Client cart ID:', cartId, requestId);
+    
     return cartId;
   }
   
@@ -371,7 +371,7 @@ export const getCartId = async (): Promise<string | null> => {
     const serverCookies = await getServerCookies();
     const cartId = serverCookies?.get('_medusa_cart_id')?.value || null;
     
-    console.log('🟢 [getCartId] Server cart ID:', cartId, requestId);
+    
     return cartId;
   } catch (error) {
     console.error('❌ [getCartId] Server error:', error, requestId);
@@ -381,7 +381,6 @@ export const getCartId = async (): Promise<string | null> => {
 
 export const setCartId = async (cartId: string) => {
   const requestId = `setCartId_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-  console.log('🔒 [setCartId] Setting cart ID:', cartId, requestId);
   
   try {
     // ✅ Update client cache immediately (only on client)
@@ -401,8 +400,6 @@ export const setCartId = async (cartId: string) => {
       } catch (storageError) {
         console.warn('Could not access localStorage:', storageError);
       }
-      
-      console.log('✅ [setCartId] Client cart ID set:', cartId, requestId);
     }
     
     // ✅ Set server cookie (if available)
@@ -416,7 +413,6 @@ export const setCartId = async (cartId: string) => {
             sameSite: 'strict',
             secure: process.env.NODE_ENV === 'production',
           });
-          console.log('✅ [setCartId] Server cart ID set:', cartId, requestId);
         }
       } catch (error) {
         console.warn('⚠️ [setCartId] Could not set server cookie:', error);
@@ -429,7 +425,6 @@ export const setCartId = async (cartId: string) => {
 
 export const removeCartId = async () => {
   const requestId = `removeCartId_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-  console.log('🗑️ [removeCartId] Removing cart ID', requestId);
   
   try {
     // ✅ Clear client cache immediately
@@ -440,7 +435,6 @@ export const removeCartId = async () => {
         localStorage.removeItem('_medusa_cart_id');
         localStorage.removeItem('medusa_cart_id'); // Remove legacy key
         document.cookie = '_medusa_cart_id=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
-        console.log('✅ [removeCartId] Client cart ID removed', requestId);
       } catch (clientError) {
         console.warn('Could not remove cart ID from client storage:', clientError);
       }
@@ -468,7 +462,6 @@ export const removeCartId = async () => {
 export async function validateCartOwnership(cartId: string): Promise<void> {
   const requestId = `validate_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
   
-  console.log('🔐 [validateCartOwnership] START', { requestId, cartId });
   
   try {
     // Import retrieveCart dynamically to avoid circular dependency
@@ -498,10 +491,8 @@ export async function validateCartOwnership(cartId: string): Promise<void> {
           });
           throw new Error("Cart does not belong to current user");
         }
-        console.log('✅ [validateCartOwnership] Authenticated user validated', { requestId });
       } else if (customer && !cart.customer_id) {
         // Authenticated user accessing guest cart - this is OK during login transition
-        console.log('⚠️ [validateCartOwnership] Authenticated user accessing guest cart (transition)', { requestId });
       }
     } else {
       // User is GUEST - cart security relies on cookie secrecy
@@ -516,7 +507,6 @@ export async function validateCartOwnership(cartId: string): Promise<void> {
         });
         throw new Error("Cart ID mismatch - possible cart hijacking attempt");
       }
-      console.log('✅ [validateCartOwnership] Guest cart validated', { requestId });
     }
   } catch (error: any) {
     console.error('❌ [validateCartOwnership] Error:', {

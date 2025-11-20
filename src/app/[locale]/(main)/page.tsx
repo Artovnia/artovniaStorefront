@@ -11,8 +11,30 @@ import {
 } from "@/components/sections"
 import { BatchPriceProvider } from "@/components/context/BatchPriceProvider"
 import { PromotionDataProvider } from "@/components/context/PromotionDataProvider"
-
+import { Suspense } from "react"
+import { retrieveCustomer } from "@/lib/data/customer"
+import { getUserWishlists } from "@/lib/data/wishlist"
 import type { Metadata } from "next"
+
+// Blog loading skeleton for Suspense fallback
+const BlogSkeleton = () => (
+  <div className="w-full bg-white py-2 md:py-8">
+    <div className="mx-auto max-w-[1920px] w-full px-4 sm:px-6 lg:px-8">
+      <div className="animate-pulse">
+        <div className="h-8 bg-gray-200 rounded w-48 mb-6"></div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          {[1, 2, 3].map(i => (
+            <div key={i} className="space-y-4">
+              <div className="h-48 bg-gray-200 rounded"></div>
+              <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+              <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  </div>
+)
 
 export const metadata: Metadata = {
   title: "Home",
@@ -36,6 +58,26 @@ export const metadata: Metadata = {
   },
 }
 
+// Loading skeleton components for Suspense fallbacks
+const HeroSkeleton = () => (
+  <div className="w-full h-[20vh] sm:h-[40vh] lg:h-[50vh] min-h-[300px] sm:min-h-[350px] lg:min-h-[400px] bg-gray-200 animate-pulse" />
+)
+
+const ProductsSkeleton = () => (
+  <div className="py-2 md:py-8 w-full">
+    <div className="h-8 bg-gray-200 rounded w-48 mb-6 md:mb-12 ml-4 lg:ml-[68px] animate-pulse"></div>
+    <div className="flex gap-4 overflow-hidden px-4">
+      {[1, 2, 3, 4].map(i => (
+        <div key={i} className="flex-shrink-0 w-[252px]">
+          <div className="h-[315px] bg-gray-200 rounded animate-pulse mb-2"></div>
+          <div className="h-4 bg-gray-200 rounded w-3/4 animate-pulse mb-2"></div>
+          <div className="h-4 bg-gray-200 rounded w-1/2 animate-pulse"></div>
+        </div>
+      ))}
+    </div>
+  </div>
+)
+
 export default async function Home({
   params,
 }: {
@@ -43,47 +85,77 @@ export default async function Home({
 }) {
   const { locale } = await params
 
+  // ✅ PHASE 1.3: FETCH USER DATA ONCE AT PAGE LEVEL
+  // This eliminates duplicate API calls in Header and HomeProductsCarousel
+  let user = null
+  let wishlist: any[] = []
+  
+  try {
+    user = await retrieveCustomer()
+    if (user) {
+      const wishlistData = await getUserWishlists()
+      wishlist = wishlistData.wishlists || []
+    }
+  } catch (error) {
+    // User not authenticated - this is normal
+    if ((error as any)?.status !== 401) {
+      console.error("Error fetching user data:", error)
+    }
+  }
+
   return (
-    <PromotionDataProvider countryCode="PL">
+    <PromotionDataProvider countryCode="PL" limit={30}>
       <BatchPriceProvider currencyCode="PLN">
         <main className="flex flex-col text-primary">
-          {/* Content with max-width container */}
+          {/* ✅ PHASE 1.4: SUSPENSE BOUNDARIES FOR STREAMING */}
+          {/* Hero section with Suspense for faster initial paint */}
           <div className="mx-auto max-w-[1920px] w-full">
-            <Hero />
+            <Suspense fallback={<HeroSkeleton />}>
+              <Hero />
+            </Suspense>
           </div>
           
-          {/* Smart Best Products Section */}
-          <div className="mx-auto max-w-[1920px] w-full  mb-8 min-h-[400px] py-2 md:py-8">
-            <SmartBestProductsSection />
+          {/* Smart Best Products Section with Suspense */}
+          <div className="mx-auto max-w-[1920px] w-full mb-8 min-h-[400px] py-2 md:py-8">
+            <Suspense fallback={<ProductsSkeleton />}>
+              <SmartBestProductsSection user={user} wishlist={wishlist} />
+            </Suspense>
           </div>
          
           {/* Full width dark section */}
           <div className="w-full bg-[#3B3634]">
             {/* Content container inside full-width section */}
             <div className="mx-auto max-w-[1920px] w-full min-h-[400px] py-2 md:py-8 font-instrument-sans">
-              <HomeNewestProductsSection 
-                heading="Nowości" 
-                locale={locale}
-                limit={8}
-                home={true}
-              />
+              <Suspense fallback={<ProductsSkeleton />}>
+                <HomeNewestProductsSection 
+                  heading="Nowości" 
+                  locale={locale}
+                  limit={8}
+                  home={true}
+                  user={user}
+                  wishlist={wishlist}
+                />
+              </Suspense>
             </div>
           </div>
 
-       {/* Categories Section */}
-<div className="w-full bg-primary py-2 md:py-8">
-  <HomeCategories heading="Wybrane" headingItalic="kategorie" />
-</div>
+          {/* Categories Section - Static, no Suspense needed */}
+          <div className="w-full bg-primary py-2 md:py-8">
+            <HomeCategories heading="Wybrane" headingItalic="kategorie" />
+          </div>
           
-          {/* Designer of the Week Section */}
+          {/* Designer of the Week Section - Client component, no Suspense needed */}
           <div className="w-full bg-[#F4F0EB] min-h-[400px] py-2 md:py-8">
             <DesignerOfTheWeekSection />
           </div>
 
-          {/* Blog Section */}
+          {/* ✅ PHASE 1.4: BLOG SECTION WITH SUSPENSE (Below fold) */}
+          {/* Note: In Next.js 15, Suspense with async components provides lazy loading */}
           <div className="w-full bg-white py-2 md:py-8">
             <div className="mx-auto max-w-[1920px] w-full">
-              <BlogSection />
+              <Suspense fallback={<BlogSkeleton />}>
+                <BlogSection />
+              </Suspense>
             </div>
           </div>
 

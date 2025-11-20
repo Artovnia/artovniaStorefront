@@ -1,10 +1,10 @@
 "use client"
 
-import React from 'react'
+import React, { useState } from 'react'
+import Image from 'next/image'
 import Link from 'next/link'
 import { cn } from '@/lib/utils'
-import { SellerAvatar } from '@/components/cells/SellerAvatar/SellerAvatar'
-
+import { ArrowRightIcon } from '@/icons'
 import { SellerProps } from '@/types/seller'
 
 interface SellerCardProps {
@@ -13,6 +13,8 @@ interface SellerCardProps {
 }
 
 export const SellerCard = ({ seller, className }: SellerCardProps) => {
+  const [isHovered, setIsHovered] = useState(false)
+
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('pl-PL', {
       year: 'numeric',
@@ -20,82 +22,113 @@ export const SellerCard = ({ seller, className }: SellerCardProps) => {
     })
   }
 
+  // Use seller photo or logo_url, fallback to placeholder
+  const sellerImage = seller.photo || seller.logo_url || '/placeholder.webp'
+
   return (
     <Link 
       href={`/sellers/${seller.handle}`}
       className={cn(
-        "group block bg-gradient-to-br from-[#F4F0EB] via-[#F4F0EB] to-[#F4F0EB]/95",
-        "rounded-3xl overflow-hidden w-[240px] h-[320px]",
-        "border border-[#BFB7AD]/20 shadow-md",
-        "hover:shadow-2xl hover:shadow-[#3B3634]/15 hover:border-[#BFB7AD]/50",
-        "hover:-translate-y-2 hover:scale-[1.02] transition-all duration-500 ease-out",
-        "focus:outline-none focus:ring-2 focus:ring-[#BFB7AD] focus:ring-offset-2",
-        "relative backdrop-blur-sm",
+        "group block relative w-[252px] h-[380px]",
+        "transition-all duration-300 ease-out",
+        "hover:shadow-xl hover:-translate-y-1",
+        "focus:outline-none focus:ring-2 focus:ring-[#3B3634] focus:ring-offset-2",
         className
       )}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+      aria-label={`View seller: ${seller.name}`}
     >
-      {/* Subtle gradient overlays and accents */}
-      <div className="absolute inset-0 bg-gradient-to-br from-white/30 via-transparent to-[#BFB7AD]/5 pointer-events-none" />
-      <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-[#BFB7AD]/30 to-transparent" />
-      
-      {/* Avatar Section - Fixed height */}
-      <div className="relative flex items-center justify-center pt-8 pb-6 h-[120px]">
-        {/* Container for ring and avatar - same size */}
-        <div className="relative w-18 h-18">
-          {/* Decorative rings - same size as avatar container */}
-          <div className="absolute inset-0 w-18 h-18 rounded-md border border-[#BFB7AD]/15" />
-          <div className="absolute inset-0 w-18 h-18 rounded-md border border-[#BFB7AD]/25 animate-pulse" 
-               style={{ animationDuration: '3s' }} />
+      <article className="relative overflow-hidden h-full bg-primary shadow-md">
+        {/* Top Section - Seller Image (60%) - Expands to 100% on hover */}
+        <div className={`relative w-full overflow-hidden bg-[#F4F0EB] transition-all duration-500 ${
+          isHovered ? 'h-full' : 'h-[60%]'
+        }`}>
+          <Image
+            src={sellerImage}
+            alt={`${seller.name} - sprzedawca`}
+            fill
+            className="object-cover object-center transition-transform duration-500"
+            sizes="252px"
+          />
           
-          {/* Avatar container - same size as rings */}
-          <div className="relative w-18 h-18 rounded-md overflow-hidden bg-gradient-to-br from-white/60 to-[#BFB7AD]/20 flex items-center justify-center group-hover:scale-110 transition-transform duration-500 shadow-xl ring-2 ring-white/50">
-            <SellerAvatar 
-              photo={seller.photo}  
-              size={72}   
-              alt={`${seller.name} avatar`}
-            />
+          {/* Subtle gradient overlay on image for depth */}
+          <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-black/10" />
+        </div>
+
+        {/* Bottom Section - Content (40%) - Hides on hover */}
+        <div className={`relative bg-primary p-4 flex flex-col justify-between transition-all duration-500 ${
+          isHovered ? 'h-0 opacity-0' : 'h-[40%] opacity-100'
+        }`}>
+          {/* Decorative line at top */}
+          <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#3B3634]/20 to-transparent" />
+          
+          <div className="flex-1 flex flex-col justify-center">
+            {/* Seller Name */}
+            <h3 className="font-instrument-serif text-lg font-semibold text-[#3B3634] mb-1.5 text-center leading-tight line-clamp-2">
+              {seller.name}
+            </h3>
+            
+            {/* Short Description */}
+            {seller.description && (
+              <p className="font-instrument-sans text-xs text-[#3B3634]/70 text-center line-clamp-2 leading-relaxed">
+                {seller.description}
+              </p>
+            )}
+          </div>
+
+          {/* Date Badge at bottom */}
+          <div className="flex justify-center pt-2">
+            <time
+              dateTime={seller.created_at}
+              className="font-instrument-sans text-[10px] text-[#3B3634]/60 uppercase tracking-wider"
+            >
+              Od {formatDate(seller.created_at)}
+            </time>
           </div>
         </div>
-      </div>
 
-      {/* Content Section - Fixed positioning */}
-      <div className="px-6 pb-6 flex flex-col justify-between h-[200px]">
-        {/* Seller Name - Fixed height */}
-        <div className="h-[60px] flex items-center justify-center">
-          <h3 className="font-instrument-serif text-xl font-semibold text-[#3B3634] group-hover:text-[#3B3634] transition-colors text-center leading-tight">
-            {seller.name}
-          </h3>
-        </div>
-        
-        {/* Description - Fixed height */}
-        <div className="h-[60px] flex items-center justify-center">
-          {seller.description ? (
-            <p className="font-instrument-sans text-sm text-[#3B3634]/90 line-clamp-3 text-center leading-relaxed">
-              {seller.description}
-            </p>
-          ) : (
-            <p className="font-instrument-sans text-sm text-[#3B3634]/90 italic text-center">
-              Artysta rękodzieła
-            </p>
-          )}
-        </div>
-
-        {/* Date Badge - Fixed position */}
-        <div className="flex justify-center">
-          <div className="inline-flex items-center px-4 py-2 rounded-full bg-gradient-to-r from-[#BFB7AD]/10 to-[#BFB7AD]/20 border border-[#BFB7AD]/30 shadow-sm">
-            <div className="w-2 h-2 rounded-full bg-[#BFB7AD]/50 mr-2 group-hover:bg-[#BFB7AD] transition-colors" />
-            <span className="font-instrument-sans text-xs text-[#3B3634]/90 font-medium">
-              Od {formatDate(seller.created_at)}
+        {/* Hover Overlay - Full Content */}
+        <div
+          className={`absolute inset-0 bg-gradient-to-t from-[#3B3634]/95 via-[#3B3634]/70 to-transparent transition-opacity duration-500 flex items-center justify-center ${
+            isHovered ? "opacity-100" : "opacity-0"
+          }`}
+          aria-hidden="true"
+        >
+          <div
+            className="text-center px-6 flex flex-col items-center gap-3 transform transition-transform duration-500"
+            style={{
+              transform: isHovered ? "translateY(0)" : "translateY(20px)",
+            }}
+          >
+            {/* Seller Details on Hover */}
+            <div className="text-white space-y-2">
+              <h4 className="font-instrument-serif text-xl font-semibold">
+                {seller.name}
+              </h4>
+              
+              {seller.description && (
+                <p className="text-sm line-clamp-4 font-instrument-sans opacity-90">
+                  {seller.description}
+                </p>
+              )}
+              
+              <div className="flex flex-col gap-1 text-xs font-instrument-sans opacity-80">
+                {seller.city && (
+                  <p>📍 {seller.city}</p>
+                )}
+                <p>Od {formatDate(seller.created_at)}</p>
+              </div>
+            </div>
+            
+            {/* "Zobacz więcej" CTA */}
+            <span className="text-white font-instrument-serif text-lg flex items-center gap-2 mt-2">
+              Zobacz więcej
+              <ArrowRightIcon size={20} color="white" aria-hidden="true" />
             </span>
           </div>
         </div>
-
-        {/* Bottom decorative accent */}
-        <div className="absolute bottom-3 left-1/2 transform -translate-x-1/2">
-          <div className="w-16 h-0.5 bg-gradient-to-r from-transparent via-[#BFB7AD]/50 to-transparent rounded-full" />
-          <div className="w-8 h-0.5 bg-gradient-to-r from-transparent via-[#BFB7AD]/30 to-transparent rounded-full mt-1 mx-auto" />
-        </div>
-      </div>
+      </article>
     </Link>
   )
 }

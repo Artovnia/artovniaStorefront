@@ -51,8 +51,8 @@ export function BlogCard({ post, index }: BlogCardProps) {
           </span>
         </div>
 
-        {/* Date badge */}
-        <div className="absolute top-4 right-4">
+        {/* Date badge - Hidden on small screens to prevent overlap */}
+        <div className="absolute top-4 right-4 hidden sm:block">
           <time
             dateTime={post.publishedAt}
             className="bg-white/90 text-black px-3 py-1 rounded-full text-xs font-medium block"
