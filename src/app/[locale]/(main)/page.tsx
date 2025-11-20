@@ -14,6 +14,7 @@ import { PromotionDataProvider } from "@/components/context/PromotionDataProvide
 import { Suspense } from "react"
 import { retrieveCustomer } from "@/lib/data/customer"
 import { getUserWishlists } from "@/lib/data/wishlist"
+import { listProductsWithPromotions } from "@/lib/data/products"
 import type { Metadata } from "next"
 
 // Blog loading skeleton for Suspense fallback
@@ -85,26 +86,57 @@ export default async function Home({
 }) {
   const { locale } = await params
 
-  // ✅ PHASE 1.3: FETCH USER DATA ONCE AT PAGE LEVEL
-  // This eliminates duplicate API calls in Header and HomeProductsCarousel
-  let user = null
-  let wishlist: any[] = []
+  // ✅ OPTIMIZATION: PARALLEL DATA FETCHING ON SERVER
+  // Fetch user data and promotional products simultaneously to eliminate waterfall
+  const [userResult, promotionalDataResult] = await Promise.allSettled([
+    // Fetch user and wishlist
+    retrieveCustomer()
+      .then(async (user) => {
+        if (user) {
+          const wishlistData = await getUserWishlists()
+          return { user, wishlist: wishlistData.wishlists || [] }
+        }
+        return { user: null, wishlist: [] }
+      })
+      .catch((error) => {
+        // User not authenticated - this is normal
+        if ((error as any)?.status !== 401) {
+          console.error("Error fetching user data:", error)
+        }
+        return { user: null, wishlist: [] }
+      }),
+    
+    // ✅ NEW: Fetch promotional products on server (eliminates 3.3s client-side delay)
+    listProductsWithPromotions({
+      page: 1,
+      limit: 30,
+      countryCode: 'PL'
+    }).catch((error) => {
+      console.error("Error fetching promotional data:", error)
+      return { response: { products: [], count: 0 }, nextPage: null }
+    })
+  ])
+
+  // Extract results
+  const { user, wishlist } = userResult.status === 'fulfilled' 
+    ? userResult.value 
+    : { user: null, wishlist: [] }
   
-  try {
-    user = await retrieveCustomer()
-    if (user) {
-      const wishlistData = await getUserWishlists()
-      wishlist = wishlistData.wishlists || []
-    }
-  } catch (error) {
-    // User not authenticated - this is normal
-    if ((error as any)?.status !== 401) {
-      console.error("Error fetching user data:", error)
-    }
-  }
+  const promotionalData = promotionalDataResult.status === 'fulfilled'
+    ? promotionalDataResult.value
+    : { response: { products: [], count: 0 }, nextPage: null }
+
+  // ✅ Convert products array to Map for PromotionDataProvider
+  const promotionalProductsMap = new Map(
+    promotionalData.response.products.map(p => [p.id, p])
+  )
 
   return (
-    <PromotionDataProvider countryCode="PL" limit={30}>
+    <PromotionDataProvider 
+      countryCode="PL" 
+      limit={30}
+      initialData={promotionalProductsMap}
+    >
       <BatchPriceProvider currencyCode="PLN">
         <main className="flex flex-col text-primary">
           {/* ✅ PHASE 1.4: SUSPENSE BOUNDARIES FOR STREAMING */}

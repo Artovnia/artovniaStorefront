@@ -88,7 +88,7 @@ export const CartDropdown = ({
       onMouseOver={() => setOpen(true)}
       onMouseLeave={() => setOpen(false)}
     >
-      <Link href="/cart" className="relative">
+      <Link href="/cart" className="relative" aria-label={`Koszyk${cartItemsCount ? ` - ${cartItemsCount} ${cartItemsCount === 1 ? 'produkt' : 'produkty'}` : ' - pusty'}`}>
         <CartIcon size={20} />
         {Boolean(cartItemsCount) && (
           <Badge className="absolute -top-2 -right-2 w-4 h-4 p-2">
@@ -119,7 +119,7 @@ export const CartDropdown = ({
                   <div className="text-secondary flex justify-between items-center">
                     Suma <p className="label-xl text-primary">{total}</p>
                   </div>
-                  <Link href="/cart">
+                  <Link href="/cart" aria-label="Przejdź do strony koszyka">
                     <Button className="w-full mt-4 py-3">Przejdź do koszyka</Button>
                   </Link>
                 </div>

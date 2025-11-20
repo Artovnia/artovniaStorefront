@@ -57,8 +57,29 @@ export default async function RootLayout({
   const messages = await getMessages()
 
   const { locale } = await params
+  
+  // Get backend URL for preconnect
+  const backendUrl = process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || 'http://localhost:9000'
+  
   return (
     <html lang={locale} className={`${instrumentSans.variable} ${instrumentSerif.variable}`}>
+      <head>
+        {/* ✅ PRECONNECT: Backend API - Highest Priority (saves 200-400ms) */}
+        <link rel="preconnect" href={backendUrl} crossOrigin="anonymous" />
+        <link rel="dns-prefetch" href={backendUrl} />
+        
+        {/* ✅ PRECONNECT: AWS S3 Image CDN - High Priority */}
+        <link rel="preconnect" href="https://artovnia-medusa.s3.eu-north-1.amazonaws.com" crossOrigin="anonymous" />
+        <link rel="dns-prefetch" href="https://artovnia-medusa.s3.eu-north-1.amazonaws.com" />
+        
+        {/* ✅ PRECONNECT: Sanity CDN for Blog Images - Medium Priority */}
+        <link rel="preconnect" href="https://cdn.sanity.io" crossOrigin="anonymous" />
+        <link rel="dns-prefetch" href="https://cdn.sanity.io" />
+        
+        {/* ✅ PRECONNECT: Google Fonts - Low Priority (already optimized by Next.js) */}
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+      </head>
       <NextIntlClientProvider messages={messages}>
         <body
           className={`${instrumentSans.className} antialiased bg-primary text-primary`}

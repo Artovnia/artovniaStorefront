@@ -42,6 +42,7 @@ export function BlogCard({ post, index }: BlogCardProps) {
           height={472}
           className="object-cover max-h-[472px] h-full w-full"
           priority={index === 0}
+          sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, 33vw"
         />
 
         {/* Category badge */}

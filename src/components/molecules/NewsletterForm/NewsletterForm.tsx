@@ -116,6 +116,7 @@ export default function NewsletterForm({ onSubmit, className = '' }: NewsletterF
           type="submit"
           disabled={isLoading}
           className="absolute right-0 top-0 h-full px-4 text-[#3B3634] font-instrument-sans text-sm transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center hover:text-white hover:bg-[#3B3634]"
+          aria-label="Zapisz się do newslettera"
         >
           {isLoading ? (
             <span>...</span>

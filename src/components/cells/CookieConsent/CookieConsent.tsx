@@ -125,7 +125,7 @@ export const CookieConsent: React.FC<CookieConsentProps> = ({
           <button
             onClick={handleRejectAll}
             className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-            aria-label="Close"
+            aria-label="Zamknij i odrzuć wszystkie opcjonalne pliki cookie"
           >
             <CloseIcon size={20} color="#6B7280" />
           </button>
@@ -166,6 +166,8 @@ export const CookieConsent: React.FC<CookieConsentProps> = ({
                           onChange={() => handleCategoryToggle(categoryId)}
                           disabled={category.required}
                           className="sr-only peer"
+                          aria-label={`${t(`categories.${categoryId}.title`)} - ${category.enabled ? 'włączone' : 'wyłączone'}${category.required ? ' (wymagane)' : ''}`}
+                          id={`cookie-${categoryId}`}
                         />
                         <div className={`
                           relative w-11 h-6 rounded-full transition-colors duration-200 ease-in-out
@@ -199,6 +201,7 @@ export const CookieConsent: React.FC<CookieConsentProps> = ({
             <button
               onClick={handleAcceptAll}
               className="flex-1 bg-[#3B3634] text-white px-6 py-3 rounded-xl font-medium hover:bg-[#3B3634]/90 transition-colors focus:outline-none focus:ring-2 focus:ring-[#3B3634]/50"
+              aria-label="Zaakceptuj wszystkie pliki cookie"
             >
               {t('acceptAll')}
             </button>
@@ -206,6 +209,7 @@ export const CookieConsent: React.FC<CookieConsentProps> = ({
             <button
               onClick={handleSavePreferences}
               className="flex-1 bg-primary text-[#3B3634] px-6 py-3 rounded-xl font-medium hover:bg-primary/90 transition-colors focus:outline-none focus:ring-2 focus:ring-primary/50"
+              aria-label="Zapisz wybrane preferencje dotyczące plików cookie"
             >
               {t('savePreferences')}
             </button>
@@ -213,6 +217,7 @@ export const CookieConsent: React.FC<CookieConsentProps> = ({
             <button
               onClick={handleRejectAll}
               className="flex-1 border-2 border-[#3B3634] text-[#3B3634] px-6 py-3 rounded-xl font-medium hover:bg-[#3B3634]/5 transition-colors focus:outline-none focus:ring-2 focus:ring-[#3B3634]/50"
+              aria-label="Odrzuć wszystkie opcjonalne pliki cookie"
             >
               {t('rejectAll')}
             </button>
@@ -223,6 +228,7 @@ export const CookieConsent: React.FC<CookieConsentProps> = ({
             <Link
               href="/privacy-policy"
               className="text-sm text-gray-500 hover:text-[#3B3634] transition-colors underline"
+              aria-label="Przejdź do polityki prywatności"
             >
               {t('privacyPolicy')}
             </Link>

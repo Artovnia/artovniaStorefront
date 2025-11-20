@@ -19,19 +19,28 @@ interface PromotionDataProviderProps {
   countryCode?: string
   productIds?: string[]  // ✅ Optional: Fetch only specific products. If undefined, fetch based on limit.
   limit?: number  // ✅ NEW: How many promotional products to fetch (default: 50)
+  initialData?: Map<string, HttpTypes.StoreProduct> | null  // ✅ NEW: Server-fetched data
 }
 
 export const PromotionDataProvider: React.FC<PromotionDataProviderProps> = ({
   children,
   countryCode = "PL",
   productIds,  // ✅ undefined = fetch based on limit, [] = fetch none, [ids] = fetch specific
-  limit = 50  // ✅ Default to 50 promotional products (reasonable for most pages)
+  limit = 50,  // ✅ Default to 50 promotional products (reasonable for most pages)
+  initialData = null  // ✅ NEW: Accept server-fetched data
 }) => {
-  const [promotionalProducts, setPromotionalProducts] = useState<Map<string, HttpTypes.StoreProduct>>(new Map())
-  const [isLoading, setIsLoading] = useState(false)
+  const [promotionalProducts, setPromotionalProducts] = useState<Map<string, HttpTypes.StoreProduct>>(
+    initialData || new Map()  // ✅ Use initial data if provided
+  )
+  const [isLoading, setIsLoading] = useState(!initialData)  // ✅ No loading if we have data
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
+    // ✅ OPTIMIZATION: Skip fetch if we already have server data
+    if (initialData) {
+      return
+    }
+    
     // ✅ OPTIMIZATION: Skip fetch ONLY if explicitly passed empty array
     // undefined = fetch based on limit (homepage, categories)
     // [] = skip fetch (products already have promotion data)
@@ -93,7 +102,7 @@ export const PromotionDataProvider: React.FC<PromotionDataProviderProps> = ({
     }
 
     fetchPromotionalData()
-  }, [countryCode, productIds?.join(',') || 'all', limit])  // ✅ Re-fetch when product IDs or limit changes
+  }, [countryCode, productIds?.join(',') || 'all', limit, initialData])  // ✅ Re-fetch when product IDs or limit changes
 
   const getProductWithPromotions = (productId: string): HttpTypes.StoreProduct | null => {
     return promotionalProducts.get(productId) || null

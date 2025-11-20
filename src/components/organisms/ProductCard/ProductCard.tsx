@@ -24,6 +24,7 @@ const ProductCardComponent = ({
   user = null,
   wishlist = [],
   onWishlistChange,
+  index = 999,
 }: {
   product: Hit<HttpTypes.StoreProduct> | Partial<Hit<BaseHit>>
   sellerPage?: boolean
@@ -31,6 +32,7 @@ const ProductCardComponent = ({
   user?: HttpTypes.StoreCustomer | null
   wishlist?: SerializableWishlist[]
   onWishlistChange?: () => void
+  index?: number  // ✅ NEW: For priority loading first 4 products
 }) => {
   const { prefetchOnHover } = useHoverPrefetch()
   const router = useRouter()
@@ -124,7 +126,7 @@ const ProductCardComponent = ({
     </div>
   </div>
 )}
-        <Link href={productUrl} prefetch={true}>
+        <Link href={productUrl} prefetch={true} aria-label={`Zobacz produkt: ${product.title}`}>
           <div className="overflow-hidden w-full h-full flex justify-center items-center">
             {product.thumbnail ? (
               <Image
@@ -133,7 +135,9 @@ const ProductCardComponent = ({
                 width={320}
                 height={320}
                 className="object-cover w-full object-center h-full lg:group-hover:scale-105 transition-all duration-300"
-                priority
+                priority={index < 4}  // ✅ Only first 4 products get priority
+                loading={index < 4 ? "eager" : "lazy"}  // ✅ Lazy load rest
+                sizes="(max-width: 640px) 160px, 252px"  // ✅ Responsive sizes
               />
             ) : (
               <Image
@@ -146,13 +150,13 @@ const ProductCardComponent = ({
             )}
           </div>
         </Link>
-        <Link href={productUrl} prefetch={true}>
+        <Link href={productUrl} prefetch={true} aria-label={`Zobacz więcej o produkcie: ${product.title}`}>
           <Button className="absolute bg-[#3B3634] opacity-90    text-white h-auto lg:h-[48px] lg:group-hover:block hidden w-full uppercase bottom-0 z-10 overflow-hidden">
             Zobacz więcej
           </Button>
         </Link>
       </div>
-      <Link href={`/products/${product.handle}`}>
+      <Link href={`/products/${product.handle}`} aria-label={`Szczegóły produktu: ${product.title}`}>
         <div className="flex justify-between flex-grow mt-2">
           <div className="w-full font-instrument-sans">
             <h3 className={`text-md font-instrument-sans truncate mb-1 leading-tight font-bold ${themeMode === 'light' ? 'text-white' : ''}`}>

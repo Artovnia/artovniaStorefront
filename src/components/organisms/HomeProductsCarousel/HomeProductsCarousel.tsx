@@ -63,7 +63,7 @@ export const HomeProductsCarousel = async ({
     // Optimize product card creation with better type safety
     const productCards = displayProducts
       .slice(0, home ? 16 : 19) // Limit displayed products
-      .map(product => {
+      .map((product, index) => {  // ✅ Add index parameter
         if (!product?.id) return null;
         
         const typedProduct = {
@@ -81,6 +81,7 @@ export const HomeProductsCarousel = async ({
             themeMode={theme === 'light' ? 'light' : 'default'}
             user={user}
             wishlist={wishlist}
+            index={index}  // ✅ Pass index for priority loading
           />
         );
       })
