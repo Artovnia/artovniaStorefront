@@ -93,27 +93,26 @@ export default async function PromotionsPage({ searchParams }: PromotionsPagePro
       <div className="min-h-screen bg-primary">
         {/* Hero Section with Image and Overlay */}
         <section 
-          className="relative w-full h-[300px] sm:h-[350px] md:h-[350px] lg:h-[400px] xl:h-[400px] overflow-hidden bg-primary"
+          className="relative w-full h-[300px] sm:h-[350px] md:h-[350px] lg:h-[400px] xl:h-[400px] overflow-hidden"
           aria-labelledby="promotions-heading"
         >
-          {/* Background Image */}
-          <div className="absolute inset-0 bg-primary">
-            <Image
-              src="/images/promotions/15.webp"
-              alt="Ceramiczne naczynia i dekoracje - promocje Artovnia"
-              fill
-              priority
-              fetchPriority="high"
-              className="object-cover object-[center] 2xl:object-contain"
-              sizes="(max-width: 640px) 640px, (max-width: 1024px) 1024px, 1920px"
-              quality={70}
-              placeholder="blur"
-              blurDataURL="data:image/webp;base64,UklGRiQAAABXRUJQVlA4IBgAAAAwAQCdASoBAAEAAwA0JaQAA3AA/vuUAAA="
-            />
-          </div>
+          {/* Background Image - Optimized for immediate loading */}
+          <Image
+            src="/images/promotions/15.webp"
+            alt="Ceramiczne naczynia i dekoracje - promocje Artovnia"
+            fill
+            priority
+            loading="eager"
+            fetchPriority="high"
+            className="object-cover object-[center] 2xl:object-contain"
+            sizes="100vw"
+            quality={75}
+            unoptimized={false}
+          />
 
+         
           {/* Content Overlay */}
-          <div className="relative h-full max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="relative h-full max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8 z-10">
             <div className="flex flex-col items-center justify-center h-full text-center">
               {/* Main Heading with high contrast for accessibility */}
               <h1 
@@ -182,22 +181,19 @@ export default async function PromotionsPage({ searchParams }: PromotionsPagePro
       <div className="min-h-screen bg-primary">
         {/* Error Hero Section */}
         <section className="relative w-full h-[300px] sm:h-[350px] md:h-[400px] overflow-hidden">
-          <div className="absolute inset-0">
-            <Image
-              src="/images/promotions/15.webp"
-              alt="Ceramiczne naczynia i dekoracje - promocje Artovnia"
-              fill
-              priority
-              fetchPriority="high"
-              className="object-cover object-center 2xl:object-contain"
-              sizes="(max-width: 640px) 100vw, (max-width: 1024px) 100vw, 1920px"
-              quality={85}
-              placeholder="blur"
-              blurDataURL="data:image/webp;base64,UklGRiQAAABXRUJQVlA4IBgAAAAwAQCdASoBAAEAAwA0JaQAA3AA/vuUAAA="
-            />
-            <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/50 to-black/70" aria-hidden="true" />
-          </div>
-          <div className="relative h-full max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-center">
+          <Image
+            src="/images/promotions/15.webp"
+            alt="Ceramiczne naczynia i dekoracje - promocje Artovnia"
+            fill
+            priority
+            loading="eager"
+            fetchPriority="high"
+            className="object-cover object-center 2xl:object-contain"
+            sizes="100vw"
+            quality={75}
+          />
+          <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/50 to-black/70" aria-hidden="true" />
+          <div className="relative h-full max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-center z-10">
             <h1 className="text-4xl sm:text-5xl md:text-6xl font-instrument-serif italic text-white drop-shadow-2xl">
               Promocje
             </h1>

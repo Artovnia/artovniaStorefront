@@ -29,7 +29,7 @@ export const SellerCard = ({ seller, className }: SellerCardProps) => {
     <Link 
       href={`/sellers/${seller.handle}`}
       className={cn(
-        "group block relative w-[252px] h-[380px]",
+        "group block relative w-[270px] h-[380px]",
         "transition-all duration-300 ease-out",
         "hover:shadow-xl hover:-translate-y-1",
         "focus:outline-none focus:ring-2 focus:ring-[#3B3634] focus:ring-offset-2",
@@ -44,16 +44,21 @@ export const SellerCard = ({ seller, className }: SellerCardProps) => {
         <div className={`relative w-full overflow-hidden bg-[#F4F0EB] transition-all duration-500 ${
           isHovered ? 'h-full' : 'h-[60%]'
         }`}>
-          <Image
-            src={sellerImage}
-            alt={`${seller.name} - sprzedawca`}
-            fill
-            className="object-cover object-center transition-transform duration-500"
-            sizes="252px"
-          />
+          {/* Inner container with padding to prevent logo cropping */}
+          <div className="absolute inset-0 p-2 flex items-center justify-center">
+            <div className="relative w-full h-full">
+              <Image
+                src={sellerImage}
+                alt={`${seller.name} - sprzedawca`}
+                fill
+                className="object-contain transition-transform duration-500 group-hover:scale-105"
+                sizes="(max-width: 270px) 100vw, 270px"
+              />
+            </div>
+          </div>
           
           {/* Subtle gradient overlay on image for depth */}
-          <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-black/10" />
+          <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-black/10 pointer-events-none" />
         </div>
 
         {/* Bottom Section - Content (40%) - Hides on hover */}

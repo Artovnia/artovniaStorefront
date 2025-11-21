@@ -131,7 +131,7 @@ export const ProductListing = ({
 
       console.log('ProductListing: Fetching products with filters:', queryParams)
 
-      const { response } = await listProductsWithSort({
+      const result = await listProductsWithSort({
         seller_id,
         category_id,
         collection_id,
@@ -140,8 +140,18 @@ export const ProductListing = ({
         queryParams,
       })
 
-      setProducts(response.products)
-      setCount(response.products.length)
+      // ✅ SAFETY CHECK: Handle undefined or invalid result
+      if (!result || !result.response) {
+        console.warn('listProductsWithSort returned invalid result')
+        setProducts([])
+        setCount(0)
+        return
+      }
+
+      const { response } = result
+
+      setProducts(response.products || [])
+      setCount(response.products?.length || 0)
     } catch (error) {
       console.error('Error fetching products:', error)
       setProducts([])

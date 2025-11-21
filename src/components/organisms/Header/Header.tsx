@@ -19,6 +19,7 @@ import { Badge } from "@/components/atoms"
 import { CountrySelectorWrapper } from "@/components/cells/CountrySelector/CountrySelectorWrapper"
 
 export const Header = async () => {
+  
   // ✅ PHASE 1.1: PARALLEL DATA FETCHING
   // Fetch user and categories in parallel (66% faster than sequential)
   const [user, categoriesData] = await Promise.all([
@@ -43,7 +44,7 @@ export const Header = async () => {
       const response = await getUserWishlists()
       wishlist = response?.wishlists || []
     } catch (error) {
-      console.error("🏠 Header: Error retrieving wishlists:", error)
+      console.error("❌ [HEADER DEBUG] Error retrieving wishlists:", error)
     }
   }
 

@@ -166,10 +166,7 @@ export const listProductsWithSort = async ({
   const limit = queryParams?.limit || 12
 
   // Use direct pagination instead of over-fetching
-  const {
-    response: { products, count },
-    nextPage
-  } = await listProducts({
+  const result = await listProducts({
     pageParam: page,
     queryParams: {
       ...queryParams,
@@ -183,6 +180,24 @@ export const listProductsWithSort = async ({
     collection_id,
     countryCode,
   })
+
+  // ✅ SAFETY CHECK: Handle undefined result from cache
+  if (!result || !result.response) {
+    console.warn('listProducts returned undefined or invalid result, returning empty data')
+    return {
+      response: {
+        products: [],
+        count: 0,
+      },
+      nextPage: null,
+      queryParams,
+    }
+  }
+
+  const {
+    response: { products, count },
+    nextPage
+  } = result
 
   // Filter by seller_id client-side since server doesn't support it
   const filteredProducts = seller_id 

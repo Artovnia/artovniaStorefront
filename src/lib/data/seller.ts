@@ -9,7 +9,7 @@ export const getSellerByHandle = async (handle: string): Promise<SellerProps | n
           fields:
             "+created_at,+rating,+email", // Removed *reviews references
         },
-        cache: "force-cache",
+        next: { revalidate: 300 }, // ✅ Cache for 5 minutes (matches getSellers duration)
       });
       
     if (!seller) return null;

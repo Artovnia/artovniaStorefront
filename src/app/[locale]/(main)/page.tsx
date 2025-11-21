@@ -86,6 +86,7 @@ export default async function Home({
 }) {
   const { locale } = await params
 
+
   // ✅ OPTIMIZATION: PARALLEL DATA FETCHING ON SERVER
   // Fetch user data and promotional products simultaneously to eliminate waterfall
   const [userResult, promotionalDataResult] = await Promise.allSettled([
@@ -101,7 +102,7 @@ export default async function Home({
       .catch((error) => {
         // User not authenticated - this is normal
         if ((error as any)?.status !== 401) {
-          console.error("Error fetching user data:", error)
+          console.error("❌ [PAGE DEBUG] Error fetching user data:", error)
         }
         return { user: null, wishlist: [] }
       }),

@@ -253,10 +253,20 @@ const ProductCardComponent = ({
 // ✅ OPTIMIZED: Memoize ProductCard to prevent unnecessary re-renders
 export const ProductCard = memo(ProductCardComponent, (prevProps, nextProps) => {
   // Custom comparison to prevent re-renders when props haven't meaningfully changed
+  
+  // Check if this specific product is in the wishlist
+  const prevInWishlist = prevProps.wishlist?.some(w => 
+    w.products?.some(p => p.id === prevProps.product.id)
+  ) || false
+  
+  const nextInWishlist = nextProps.wishlist?.some(w => 
+    w.products?.some(p => p.id === nextProps.product.id)
+  ) || false
+  
   return (
     prevProps.product.id === nextProps.product.id &&
     prevProps.user?.id === nextProps.user?.id &&
-    (prevProps.wishlist?.length || 0) === (nextProps.wishlist?.length || 0) &&
+    prevInWishlist === nextInWishlist && // ✅ Check if THIS product's wishlist status changed
     prevProps.sellerPage === nextProps.sellerPage &&
     prevProps.themeMode === nextProps.themeMode
   )

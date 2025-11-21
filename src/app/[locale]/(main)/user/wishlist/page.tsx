@@ -35,7 +35,7 @@ export default async function Wishlist() {
             Twoja lista życzeń jest aktualnie pusta.
           </p>
           <Link href="/categories" className="w-full">
-            <Button className="w-full">Explore</Button>
+            <Button className="w-full">Eksploruj</Button>
           </Link>
         </div>
       ) : (

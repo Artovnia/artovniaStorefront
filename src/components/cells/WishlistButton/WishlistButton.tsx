@@ -6,6 +6,7 @@ import { addWishlistItem, removeWishlistItem } from "@/lib/data/wishlist"
 import { SerializableWishlist } from "@/types/wishlist"
 import { useEffect, useState } from "react"
 import { HttpTypes } from "@medusajs/types"
+import { useRouter } from "next/navigation"
 
 export const WishlistButton = ({
   productId,
@@ -18,7 +19,7 @@ export const WishlistButton = ({
   user?: HttpTypes.StoreCustomer | null
   onWishlistChange?: () => void
 }) => {
-  
+  const router = useRouter()
   
   const [isWishlistAdding, setIsWishlistAdding] = useState(false)
   const initialWishlisted = wishlist?.[0]?.products?.some((item) => item.id === productId)
@@ -28,7 +29,7 @@ export const WishlistButton = ({
     const newIsWishlisted = wishlist?.[0]?.products?.some((item) => item.id === productId)
   
     setIsWishlisted(newIsWishlisted)
-  }, [wishlist, productId, isWishlisted])
+  }, [wishlist, productId]) // Removed isWishlisted from dependencies to prevent loops
 
   if (!user) {
     return null
@@ -49,6 +50,12 @@ export const WishlistButton = ({
       if (onWishlistChange) {
         onWishlistChange()
       }
+      
+      // Force router refresh to update Header and other components
+      // Use setTimeout to ensure state updates are processed first
+      setTimeout(() => {
+        router.refresh()
+      }, 100)
     } catch (error) {
       console.error('❌ Error adding to wishlist:', error)
       // For genuine errors, don't update the state
@@ -72,6 +79,12 @@ export const WishlistButton = ({
       if (onWishlistChange) {
         onWishlistChange()
       }
+      
+      // Force router refresh to update Header and other components
+      // Use setTimeout to ensure state updates are processed first
+      setTimeout(() => {
+        router.refresh()
+      }, 100)
     } catch (error) {
       console.error('Error removing from wishlist:', error)
       

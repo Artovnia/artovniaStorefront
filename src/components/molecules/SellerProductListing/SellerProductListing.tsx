@@ -74,7 +74,7 @@ export const SellerProductListing = ({
       const DEFAULT_REGION = process.env.NEXT_PUBLIC_DEFAULT_REGION || "pl"
       const offset = (page - 1) * PRODUCT_LIMIT
 
-      const { response } = await listProductsWithSort({
+      const result = await listProductsWithSort({
         seller_id,
         countryCode: DEFAULT_REGION,
         sortBy: "created_at",
@@ -83,8 +83,19 @@ export const SellerProductListing = ({
           offset
         },
       })
+
+      // ✅ SAFETY CHECK: Handle undefined or invalid result
+      if (!result || !result.response) {
+        console.warn('listProductsWithSort returned invalid result')
+        setProducts([])
+        setCount(0)
+        setTotalCount(0)
+        return
+      }
+
+      const { response } = result
       
-      setProducts(response.products)
+      setProducts(response.products || [])
       setCount(response.count || 0)
       setTotalCount(response.count || 0)
       setCurrentPage(page)

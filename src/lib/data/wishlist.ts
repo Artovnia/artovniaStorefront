@@ -7,9 +7,7 @@ import { Wishlist, SerializableWishlist, WishlistResponse } from "@/types/wishli
 export const getUserWishlists = async (): Promise<WishlistResponse> => {
   const authHeaders = await getAuthHeaders()
   
-  // Debug: Check if we have authorization
   if (!('authorization' in authHeaders)) {
-    console.log('🔒 No authorization header found for wishlist request')
     return { wishlists: [], count: 0 }
   }
   
@@ -19,9 +17,7 @@ export const getUserWishlists = async (): Promise<WishlistResponse> => {
     "x-publishable-api-key": process.env
       .NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY as string,
   }
-
-  
-  
+    
   return sdk.client
     .fetch<{ wishlists: Wishlist[]; count: number }>(`/store/wishlist`, {
       cache: "no-cache",
@@ -29,8 +25,6 @@ export const getUserWishlists = async (): Promise<WishlistResponse> => {
       method: "GET",
     })
     .then((res) => {
-     
-      
       // Ensure data is serializable for client components
       const serializedData: WishlistResponse = {
         wishlists: res.wishlists?.map(wishlist => ({
@@ -53,7 +47,7 @@ export const getUserWishlists = async (): Promise<WishlistResponse> => {
       return serializedData
     })
     .catch((error) => {
-      console.error('❌ Error fetching wishlist:', error)
+    
       return { wishlists: [], count: 0 }
     })
 }
@@ -107,6 +101,8 @@ export const addWishlistItem = async ({
       throw new Error(`Failed to add item to wishlist: ${response.status} ${response.statusText}`)
     }
     
+    // Revalidate all pages that might display wishlist data
+    revalidatePath("/", "layout") // Revalidate entire site (Header is in layout)
     revalidatePath("/wishlist")
     return { success: true, alreadyExists: false }
   } catch (error) {
@@ -157,7 +153,8 @@ export const removeWishlistItem = async ({
       throw new Error(`Failed to remove item from wishlist: ${response.status} ${response.statusText}`)
     }
     
-
+    // Revalidate all pages that might display wishlist data
+    revalidatePath("/", "layout") // Revalidate entire site (Header is in layout)
     revalidatePath("/wishlist")
     return { success: true }
   } catch (error) {
