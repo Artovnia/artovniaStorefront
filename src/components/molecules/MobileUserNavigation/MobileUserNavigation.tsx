@@ -326,17 +326,18 @@ export const MobileUserNavigation = () => {
 
       {/* Floating Menu with artistic modern design */}
       {isMenuOpen && (
-        <div className="fixed bottom-24 left-4 right-4 mx-auto max-w-sm z-50 md:hidden animate-in slide-in-from-bottom-4 duration-300 max-h-[calc(100vh-8rem)] flex flex-col">
-          {/* Main Container with gradient background */}
-          <div className="relative bg-gradient-to-br from-[#F4F0EB] via-[#F4F0EB] to-[#F4F0EB] backdrop-blur-xl rounded-[32px] shadow-2xl border border-[#3B3634]/40 overflow-hidden flex flex-col max-h-full">
+        <div className="fixed inset-0 z-50 md:hidden flex items-start justify-center pt-4 pb-24 px-4">
+          <div className="w-full max-w-sm max-h-[calc(100vh-7rem)] animate-in slide-in-from-bottom-4 duration-300 flex flex-col">
+            {/* Main Container with gradient background */}
+            <div className="relative bg-gradient-to-br from-[#F4F0EB] via-[#F4F0EB] to-[#F4F0EB] backdrop-blur-xl rounded-[32px] shadow-2xl border border-[#3B3634]/40 overflow-hidden flex flex-col h-full">
             {/* Decorative background elements */}
             <div className="absolute top-0 right-0 w-40 h-40 bg-[#F4F0EB]/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 pointer-events-none" />
             <div className="absolute bottom-0 left-0 w-32 h-32 bg-[#F4F0EB]/5 rounded-full blur-3xl translate-y-1/2 -translate-x-1/2 pointer-events-none" />
             
             {/* Scrollable Content Container */}
-            <div className="relative overflow-y-auto overflow-x-hidden overscroll-contain scrollbar-thin scrollbar-thumb-[#3B3634]/20 scrollbar-track-transparent hover:scrollbar-thumb-[#3B3634]/30 p-6" style={{ WebkitOverflowScrolling: 'touch' }}>
+            <div className="relative overflow-y-auto overflow-x-hidden overscroll-contain scrollbar-thin scrollbar-thumb-[#3B3634]/20 scrollbar-track-transparent hover:scrollbar-thumb-[#3B3634]/30 p-4" style={{ WebkitOverflowScrolling: 'touch' }}>
               {/* Header with artistic touch */}
-              <div className="flex items-center justify-between mb-8">
+              <div className="flex items-center justify-between mb-4">
                 <div>
                   <h3 className="text-xl font-bold text-[#3B3634] mb-0.5">Twoje Konto</h3>
                   <div className="h-1 w-16 bg-gradient-to-r from-[#F4F0EB] to-[#3B3634]/30 rounded-full" />
@@ -350,7 +351,7 @@ export const MobileUserNavigation = () => {
               </div>
 
               {/* Navigation Grid - Main Items */}
-              <div className="space-y-3 mb-6">
+              <div className="space-y-2 mb-4">
                 {mobileNavigationItems.map((item, index) => {
                   const isActive = pathname === item.href || (item.href === '/user' && pathname === '/user')
                   const showNotification = item.hasNotification && hasUnreadMessages && item.href === '/user/messages'
@@ -365,7 +366,7 @@ export const MobileUserNavigation = () => {
                         animationDelay: `${index * 50}ms`,
                       }}
                       className={cn(
-                        "flex items-center gap-4 p-4 rounded-2xl transition-all duration-200 group relative overflow-hidden animate-in fade-in slide-in-from-left-4",
+                        "flex items-center gap-3 p-3 rounded-2xl transition-all duration-200 group relative overflow-hidden animate-in fade-in slide-in-from-left-4",
                         isActive 
                           ? "bg-[#3B3634] text-white shadow-lg shadow-[#3B3634]/20" 
                           : "bg-white/60 backdrop-blur-sm text-[#3B3634] hover:bg-white hover:shadow-md border border-[#3B3634]/5"
@@ -462,12 +463,13 @@ export const MobileUserNavigation = () => {
               {/* Logout Button with artistic styling */}
               <button
                 onClick={handleLogout}
-                className="flex items-center justify-center w-full p-4 text-white bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 rounded-2xl transition-all duration-200 font-semibold shadow-lg shadow-red-500/30 hover:shadow-red-600/40 hover:scale-[1.02] active:scale-[0.98] group relative overflow-hidden"
+                className="flex items-center justify-center w-full p-3 text-white bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 rounded-2xl transition-all duration-200 font-semibold shadow-lg shadow-red-500/30 hover:shadow-red-600/40 hover:scale-[1.02] active:scale-[0.98] group relative overflow-hidden"
               >
                 <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-1000" />
                 <LogoutIcon className="w-5 h-5 mr-2 relative z-10" />
                 <span className="relative z-10">Wyloguj się</span>
               </button>
+            </div>
             </div>
           </div>
         </div>

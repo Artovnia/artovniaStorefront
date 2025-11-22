@@ -84,7 +84,7 @@ export const MobileRegionModal = ({ isOpen, onClose, currentCountry }: MobileReg
       <div className="fixed inset-x-0 bottom-0 z-50 animate-in slide-in-from-bottom duration-300">
         <div className="bg-primary rounded-t-3xl shadow-2xl border-t border-[#3B3634]/20 max-h-[80vh] overflow-hidden">
           {/* Header */}
-          <div className="sticky top-0 bg-primary border-b border-[#3B3634]/10 px-6 py-4">
+          <div className="sticky top-0 bg-primary border-b border-[#3B3634]/10 px-4 py-3">
             <div className="flex items-center justify-between">
               <h2 className="text-xl font-bold text-[#3B3634] font-instrument-sans">
                 Wybierz swój region
@@ -102,7 +102,7 @@ export const MobileRegionModal = ({ isOpen, onClose, currentCountry }: MobileReg
           </div>
 
           {/* Country List */}
-          <div className="overflow-y-auto max-h-[calc(80vh-80px)] px-4 py-4">
+          <div className="overflow-y-auto max-h-[calc(80vh-80px)] px-4 py-3">
             <div className="space-y-2">
               {SUPPORTED_COUNTRIES.map((country, index) => (
                 <button
@@ -113,7 +113,7 @@ export const MobileRegionModal = ({ isOpen, onClose, currentCountry }: MobileReg
                     animationDelay: `${index * 50}ms`,
                   }}
                   className={clsx(
-                    "w-full flex items-center gap-4 px-5 py-4 rounded-2xl",
+                    "w-full flex items-center gap-3 px-4 py-3 rounded-2xl",
                     "text-left font-semibold transition-all duration-200",
                     "group relative overflow-hidden animate-in fade-in slide-in-from-bottom-2",
                     "font-instrument-sans",
@@ -129,8 +129,8 @@ export const MobileRegionModal = ({ isOpen, onClose, currentCountry }: MobileReg
                     <div className="absolute inset-0 bg-gradient-to-r from-[#3B3634]/0 via-[#3B3634]/5 to-[#3B3634]/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                   )}
                   
-                  <span className="text-3xl relative z-10">{country.flag}</span>
-                  <span className="text-lg relative z-10 flex-1">{country.name}</span>
+                  <span className="text-2xl relative z-10">{country.flag}</span>
+                  <span className="text-base relative z-10 flex-1">{country.name}</span>
                   
                   {country.code === activeCountry && (
                     <svg className="w-6 h-6 relative z-10" fill="currentColor" viewBox="0 0 20 20">
@@ -143,7 +143,7 @@ export const MobileRegionModal = ({ isOpen, onClose, currentCountry }: MobileReg
           </div>
 
           {/* Bottom Safe Area */}
-          <div className="h-8 bg-primary" />
+          <div className="h-6 bg-primary" />
         </div>
       </div>
     </>
