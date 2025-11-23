@@ -377,6 +377,7 @@ export const getProductShippingOptions = async (
 ) => {
   const cacheKey = `shipping:options:${productId}:${regionId}`
   
+
   return unifiedCache.get(cacheKey, async () => {
     try {
       const authHeaders = {
@@ -388,6 +389,7 @@ export const getProductShippingOptions = async (
         cache: "no-cache", // Always fresh for shipping options
         ...next
       }
+
 
       const response = await sdk.client.fetch<{
         shipping_options: any[]
@@ -403,7 +405,7 @@ export const getProductShippingOptions = async (
 
       return response.shipping_options || []
     } catch (error) {
-      console.error(`getProductShippingOptions: Error fetching shipping options for product ${productId}:`, error)
+      console.error(`❌ Frontend: Error fetching shipping options for product ${productId}:`, error)
       return []
     }
   }, CACHE_TTL.PRODUCT)

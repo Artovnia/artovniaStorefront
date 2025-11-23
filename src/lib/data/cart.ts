@@ -161,15 +161,8 @@ export async function ensureCartRegionMatches(cart: HttpTypes.StoreCart, country
       return cart
     }
 
-    // Check if cart's region matches
-    if (cart.region_id === region.id) {
-      console.log(`✅ Cart region matches detected country: ${countryCode}`)
-      return cart
-    }
-
-    // Region mismatch - update cart
-    console.log(`🔄 Updating cart region from ${cart.region_id} to ${region.id} (country: ${countryCode})`)
     
+
     const headers = await getAuthHeaders()
     const response = await sdk.store.cart.update(
       cart.id,
@@ -178,7 +171,6 @@ export async function ensureCartRegionMatches(cart: HttpTypes.StoreCart, country
       headers
     )
 
-    console.log(`✅ Cart region updated successfully`)
     return response.cart
   } catch (error) {
     console.error('Error ensuring cart region matches:', error)
@@ -399,7 +391,6 @@ export async function setShippingMethod({
     ? sessionStorage.getItem('browser_session_id') || 'unknown'
     : 'server';
   
-  console.log('🚢 [setShippingMethod] START', { requestId, sessionId, cartId, shippingMethodId });
   
   const headers = await getAuthHeaders()
 
@@ -419,7 +410,6 @@ export async function setShippingMethod({
     }
   )
     .then(async (response) => {
-      console.log('✅ [setShippingMethod] SUCCESS', { requestId, cartId });
       
       const cartCacheTag = await getCacheTag("carts")
       revalidateTag(cartCacheTag)
@@ -488,12 +478,7 @@ export async function initiatePaymentSession(
     ? sessionStorage.getItem('browser_session_id') || 'unknown'
     : 'server';
   
-  console.log('💳 [initiatePaymentSession] START', { 
-    requestId, 
-    sessionId, 
-    cartId: cart.id, 
-    providerId: data.provider_id 
-  });
+
   
   const headers = {
     ...(await getAuthHeaders()),
@@ -538,7 +523,6 @@ export async function initiatePaymentSession(
       data: sessionData
     }, {}, headers)
     
-    console.log('✅ [initiatePaymentSession] SUCCESS', { requestId, cartId: cart.id });
     
     const cartCacheTag = await getCacheTag("carts")
     revalidateTag(cartCacheTag)
@@ -573,8 +557,6 @@ export async function selectPaymentSession(
   const sessionId = typeof window !== 'undefined' 
     ? sessionStorage.getItem('browser_session_id') || 'unknown'
     : 'server';
-  
-  console.log('✅ [selectPaymentSession] START', { requestId, sessionId, cartId, providerId });
   
   const headers = {
     ...(await getAuthHeaders()),
@@ -820,12 +802,6 @@ export async function setAddresses(currentState: unknown, formData: FormData) {
   const sessionId = typeof window !== 'undefined' 
     ? sessionStorage.getItem('browser_session_id') || 'server'
     : 'server';
-  
-  console.log('🔒 [setAddresses] START', {
-    requestId,
-    sessionId,
-    timestamp: new Date().toISOString()
-  });
 
   try {
     if (!formData) {
@@ -837,8 +813,6 @@ export async function setAddresses(currentState: unknown, formData: FormData) {
     if (!cartId) {
       throw new Error("No existing cart found when setting addresses")
     }
-    
-    console.log('🛒 [setAddresses] Cart ID:', cartId, 'Request:', requestId);
     
     // ✅ Get auth headers first (needed for ownership validation)
     const headers = await getAuthHeaders();
@@ -864,7 +838,6 @@ export async function setAddresses(currentState: unknown, formData: FormData) {
           });
           throw new Error("Cart does not belong to current user");
         }
-        console.log('✅ [setAddresses] Cart ownership validated:', cartId);
       } catch (ownershipError) {
         if (ownershipError instanceof Error && ownershipError.message === "Cart does not belong to current user") {
           throw ownershipError;
@@ -874,8 +847,6 @@ export async function setAddresses(currentState: unknown, formData: FormData) {
       }
     }
     
-    console.log("✅ [setAddresses] Cart verified:", cartId, "Request:", requestId)
-
     const data = {
       shipping_address: {
         first_name: formData.get("shipping_address.first_name"),
@@ -892,20 +863,9 @@ export async function setAddresses(currentState: unknown, formData: FormData) {
       email: formData.get("email"),
     } as any
 
-    // ✅ Log for debugging (remove in production)
-    console.log("📝 Address data:", JSON.stringify(data, null, 2))
-
     data.billing_address = data.shipping_address
     
-    // ✅ Log address data for debugging
-    console.log("📝 [setAddresses] Address data:", {
-      requestId,
-      cartId,
-      email: data.email,
-      firstName: data.shipping_address.first_name,
-      lastName: data.shipping_address.last_name,
-      city: data.shipping_address.city
-    })
+
     
     const customerInfo = {
       email: formData.get("email"),
@@ -1002,7 +962,6 @@ export async function setAddresses(currentState: unknown, formData: FormData) {
       await revalidatePath("/cart", "page")
       await revalidatePath("/checkout", "page")
       
-      console.log('✅ [setAddresses] COMPLETE:', { requestId, cartId, sessionId })
     } catch (fetchError: any) {
       console.error("❌ [setAddresses] Fetch error:", {
         requestId,
@@ -1048,8 +1007,6 @@ export async function placeOrder(cartId?: string, skipRedirectCheck: boolean = f
     ? sessionStorage.getItem('browser_session_id') || 'unknown'
     : 'server';
   
-  console.log('🛍️ [placeOrder] START', { requestId, sessionId, cartId: id, skipRedirectCheck });
-
   const headers = {
     ...(await getAuthHeaders()),
     'x-publishable-api-key': await getPublishableApiKey(),
@@ -1174,6 +1131,7 @@ export async function placeOrder(cartId?: string, skipRedirectCheck: boolean = f
 
 /**
  * Updates the countrycode param and revalidates the regions cache
+ * @deprecated Use updateCartRegion instead
  */
 export async function updateRegion(countryCode: string, currentPath: string) {
   const cartId = await getCartId()
@@ -1196,6 +1154,48 @@ export async function updateRegion(countryCode: string, currentPath: string) {
   revalidateTag(productsCacheTag)
 
   redirect(`/${countryCode}${currentPath}`)
+}
+
+/**
+ * Updates cart region by region ID
+ * This is the correct way to handle region changes in Medusa
+ */
+export async function updateCartRegion(regionId: string) {
+  try {
+    const cartId = await getCartId()
+    const headers = await getAuthHeaders()
+
+    if (cartId) {
+      // Update existing cart's region
+      await updateCart({ region_id: regionId })
+    } else {
+      // No cart exists yet - create a new one with the selected region
+      const cartResp = await sdk.store.cart.create(
+        { region_id: regionId },
+        { fields: CART_FIELDS },
+        headers
+      )
+      
+      if (cartResp?.cart) {
+        await setCartId(cartResp.cart.id)
+      }
+    }
+
+    // Revalidate caches
+    const cartCacheTag = await getCacheTag("carts")
+    revalidateTag(cartCacheTag)
+
+    const regionCacheTag = await getCacheTag("regions")
+    revalidateTag(regionCacheTag)
+
+    const productsCacheTag = await getCacheTag("products")
+    revalidateTag(productsCacheTag)
+
+    return { success: true }
+  } catch (error: any) {
+    console.error('Error updating cart region:', error)
+    throw error
+  }
 }
 
 export async function listCartOptions() {

@@ -17,7 +17,7 @@ import { getUserWishlists } from "@/lib/data/wishlist"
 import { listProductsWithPromotions } from "@/lib/data/products"
 import type { Metadata } from "next"
 
-// Blog loading skeleton for Suspense fallback
+// Loading skeletons for initial load - unified cache prevents these on navigation
 const BlogSkeleton = () => (
   <div className="w-full bg-white py-2 md:py-8">
     <div className="mx-auto max-w-[1920px] w-full px-4 sm:px-6 lg:px-8">
@@ -59,7 +59,11 @@ export const metadata: Metadata = {
   },
 }
 
-// Loading skeleton components for Suspense fallbacks
+// ✅ Enable ISR (Incremental Static Regeneration) for CDN caching
+export const revalidate = 300 // Revalidate every 5 minutes
+
+// Loading skeletons for Suspense - only shown on initial load
+// Unified cache prevents skeleton loading on navigation back to homepage
 const HeroSkeleton = () => (
   <div className="w-full h-[20vh] sm:h-[40vh] lg:h-[50vh] min-h-[300px] sm:min-h-[350px] lg:min-h-[400px] bg-gray-200 animate-pulse" />
 )
@@ -140,15 +144,15 @@ export default async function Home({
     >
       <BatchPriceProvider currencyCode="PLN">
         <main className="flex flex-col text-primary">
-          {/* ✅ PHASE 1.4: SUSPENSE BOUNDARIES FOR STREAMING */}
-          {/* Hero section with Suspense for faster initial paint */}
+          {/* ✅ OPTIMIZED: Unified cache prevents skeleton loading on navigation */}
+          {/* Suspense provides better UX on initial load, cache makes navigation instant */}
           <div className="mx-auto max-w-[1920px] w-full">
             <Suspense fallback={<HeroSkeleton />}>
               <Hero />
             </Suspense>
           </div>
           
-          {/* Smart Best Products Section with Suspense */}
+          {/* Smart Best Products - cached for 10 minutes with unified cache */}
           <div className="mx-auto max-w-[1920px] w-full mb-8 min-h-[400px] py-2 md:py-8">
             <Suspense fallback={<ProductsSkeleton />}>
               <SmartBestProductsSection user={user} wishlist={wishlist} />
@@ -182,8 +186,7 @@ export default async function Home({
             <DesignerOfTheWeekSection />
           </div>
 
-          {/* ✅ PHASE 1.4: BLOG SECTION WITH SUSPENSE (Below fold) */}
-          {/* Note: In Next.js 15, Suspense with async components provides lazy loading */}
+          {/* Blog Section - cached for 10 minutes with unified cache */}
           <div className="w-full bg-white py-2 md:py-8">
             <div className="mx-auto max-w-[1920px] w-full">
               <Suspense fallback={<BlogSkeleton />}>

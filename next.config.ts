@@ -84,7 +84,22 @@ const nextConfig: NextConfig = {
   
   async headers() {
     return [
-      // ✅ CACHE: Static assets (JS, CSS, fonts, etc.)
+      // CACHE: Homepage (public data, safe to cache)
+      {
+        source: '/',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, s-maxage=300, stale-while-revalidate=3600', // 5min CDN, 1hr stale
+          },
+          {
+            key: 'CDN-Cache-Control',
+            value: 'public, s-maxage=300, stale-while-revalidate=3600',
+          },
+        ],
+      },
+      
+      // CACHE: Static assets (JS, CSS, fonts, etc.)
       {
         source: '/_next/static/:path*',
         headers: [
@@ -95,7 +110,7 @@ const nextConfig: NextConfig = {
         ],
       },
       
-      // ✅ CACHE: Product images (can be cached publicly)
+      // CACHE: Product images (can be cached publicly)
       {
         source: '/_next/image/:path*',
         headers: [

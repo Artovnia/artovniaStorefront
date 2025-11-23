@@ -2,9 +2,22 @@ import { BlogCarousel } from '@/components/organisms/BlogCarousel';
 import { BlogCard } from '@/components/organisms/BlogCard/BlogCard';
 import { getLatestBlogPosts } from '@/app/[locale]/blog/lib/data';
 import Link from 'next/link';
+import { unstable_cache } from 'next/cache';
 
 export async function BlogSection() {
-  const blogPosts = await getLatestBlogPosts();
+  // ✅ Use Next.js server-side cache to prevent skeleton loading on navigation
+  const getCachedBlogPosts = unstable_cache(
+    async () => {
+      return await getLatestBlogPosts();
+    },
+    ['homepage-blog-latest'], // Cache key
+    {
+      revalidate: 600, // 10 minutes
+      tags: ['homepage-blog', 'blog']
+    }
+  )
+  
+  const blogPosts = await getCachedBlogPosts();
 
   if (!blogPosts || blogPosts.length === 0) {
     return null;

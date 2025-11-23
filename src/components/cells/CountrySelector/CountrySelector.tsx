@@ -1,78 +1,83 @@
 "use client"
 
 import { useState, useTransition, useEffect } from 'react'
-import { updateUserCountry } from '@/lib/helpers/country-detection'
-import { getSupportedCountries } from '@/lib/helpers/country-utils'
 import { useRouter } from 'next/navigation'
 import clsx from 'clsx'
+import { HttpTypes } from '@medusajs/types'
 
-interface Country {
-  code: string
+interface RegionDisplay {
+  id: string
   name: string
   flag: string
+  countries: string[] // ISO codes
 }
 
-const SUPPORTED_COUNTRIES: Country[] = [
-  { code: 'pl', name: 'Polska', flag: '🇵🇱' },
-  { code: 'de', name: 'Deutschland', flag: '🇩🇪' },
-  { code: 'cz', name: 'Česko', flag: '🇨🇿' },
-  { code: 'sk', name: 'Slovensko', flag: '🇸🇰' },
-  { code: 'at', name: 'Österreich', flag: '🇦🇹' },
-]
-
 interface CountrySelectorProps {
-  currentCountry?: string
+  regions: HttpTypes.StoreRegion[]
+  currentRegionId?: string
   className?: string
 }
 
+// Map region names to display info
+const getRegionDisplay = (region: HttpTypes.StoreRegion): RegionDisplay => {
+  const name = region.name || 'Unknown'
+  
+  // Map region names to flags and display info
+  const displayMap: Record<string, { flag: string; displayName?: string }> = {
+    'Polska': { flag: '🇵🇱' },
+    'Poland': { flag: '🇵🇱' },
+    'EU': { flag: '🇪🇺', displayName: 'Europa' },
+    'Europe': { flag: '🇪🇺', displayName: 'Europa' },
+    'USA': { flag: '🇺🇸', displayName: 'Stany Zjednoczone' },
+    'United States': { flag: '🇺🇸', displayName: 'Stany Zjednoczone' },
+    'US': { flag: '🇺🇸', displayName: 'Stany Zjednoczone' },
+    'Canada': { flag: '🇨🇦', displayName: 'Kanada' },
+    'Kanada': { flag: '🇨🇦', displayName: 'Kanada' },
+    'CA': { flag: '🇨🇦', displayName: 'Kanada' },
+  }
+  
+  const display = displayMap[name] || { flag: '🌍' }
+  
+  return {
+    id: region.id,
+    name: display.displayName || name,
+    flag: display.flag,
+    countries: region.countries?.map(c => c.iso_2 || '') || []
+  }
+}
+
 export const CountrySelector = ({ 
-  currentCountry,
+  regions,
+  currentRegionId,
   className 
 }: CountrySelectorProps) => {
   const [isOpen, setIsOpen] = useState(false)
   const [isPending, startTransition] = useTransition()
-  const [detectedCountry, setDetectedCountry] = useState<string>(currentCountry || 'pl')
   const router = useRouter()
 
-  // Client-side country detection if not provided via props
-  useEffect(() => {
-    if (!currentCountry) {
-      // Try to get from cookie using document.cookie
-      const getCookie = (name: string) => {
-        const value = `; ${document.cookie}`
-        const parts = value.split(`; ${name}=`)
-        if (parts.length === 2) return parts.pop()?.split(';').shift()
-        return undefined
-      }
-      
-      const cookieCountry = getCookie('user_country')
-      if (cookieCountry && SUPPORTED_COUNTRIES.find(c => c.code === cookieCountry)) {
-        setDetectedCountry(cookieCountry)
-      }
-    }
-  }, [currentCountry])
+  // Convert regions to display format
+  const regionDisplays = regions.map(getRegionDisplay)
+  
+  // Find current region or default to first (Poland)
+  const current = currentRegionId 
+    ? regionDisplays.find(r => r.id === currentRegionId) || regionDisplays[0]
+    : regionDisplays[0]
 
-  const activeCountry = currentCountry || detectedCountry
-  const current = SUPPORTED_COUNTRIES.find(c => c.code === activeCountry) || SUPPORTED_COUNTRIES[0]
-
-  const handleCountryChange = async (countryCode: string) => {
+  const handleRegionChange = async (regionId: string) => {
     setIsOpen(false)
     
-    // Update country preference and cart region
+    // Update cart region
     startTransition(async () => {
       try {
-        // Update user's country preference in cookie
-        await updateUserCountry(countryCode)
-        
-        // Update existing cart's region if cart exists
-        const { updateRegion } = await import('@/lib/data/cart')
-        await updateRegion(countryCode, window.location.pathname)
+        // Update existing cart's region or create new cart with selected region
+        const { updateCartRegion } = await import('@/lib/data/cart')
+        await updateCartRegion(regionId)
         
         // Refresh the page to reload with new region
         router.refresh()
       } catch (error) {
-        console.error('Error updating country:', error)
-        // Still refresh to show the new country
+        console.error('Error updating region:', error)
+        // Still refresh to show the new region
         router.refresh()
       }
     })
@@ -137,11 +142,11 @@ export const CountrySelector = ({
             </div>
             
             <div className="py-2 relative">
-              {SUPPORTED_COUNTRIES.map((country, index) => (
+              {regionDisplays.map((region, index) => (
                 <button
-                  key={country.code}
-                  onClick={() => handleCountryChange(country.code)}
-                  disabled={isPending || country.code === activeCountry}
+                  key={region.id}
+                  onClick={() => handleRegionChange(region.id)}
+                  disabled={isPending || region.id === current.id}
                   style={{
                     animationDelay: `${index * 30}ms`,
                   }}
@@ -150,15 +155,15 @@ export const CountrySelector = ({
                     "text-left font-semibold transition-all duration-200",
                     "group/item relative overflow-hidden animate-in fade-in slide-in-from-left-2",
                     {
-                      "bg-[#3B3634] text-white": country.code === activeCountry,
-                      "text-[#3B3634] hover:bg-[#3B3634] hover:text-white": country.code !== activeCountry,
+                      "bg-[#3B3634] text-white": region.id === current.id,
+                      "text-[#3B3634] hover:bg-[#3B3634] hover:text-white": region.id !== current.id,
                       "opacity-50 cursor-not-allowed": isPending
                     }
                   )}
                 >
-                  <span className="text-xl relative z-10">{country.flag}</span>
-                  <span className="relative z-10">{country.name}</span>
-                  {country.code === activeCountry && (
+                  <span className="text-xl relative z-10">{region.flag}</span>
+                  <span className="relative z-10">{region.name}</span>
+                  {region.id === current.id && (
                     <svg className="w-4 h-4 ml-auto relative z-10" fill="currentColor" viewBox="0 0 20 20">
                       <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                     </svg>

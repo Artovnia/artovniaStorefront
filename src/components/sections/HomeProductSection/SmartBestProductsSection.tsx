@@ -2,9 +2,9 @@ import { HomeProductsCarousel } from "@/components/organisms"
 import { listProducts } from "@/lib/data/products"
 import { Product } from "@/types/product"
 import { BatchPriceProvider } from "@/components/context/BatchPriceProvider"
-import { unifiedCache } from "@/lib/utils/unified-cache"
 import { HttpTypes } from "@medusajs/types"
 import { SerializableWishlist } from "@/types/wishlist"
+import { unstable_cache } from 'next/cache'
 
 interface SmartBestProductsSectionProps {
   heading?: string
@@ -24,24 +24,32 @@ export const SmartBestProductsSection = async ({
   wishlist = []
 }: SmartBestProductsSectionProps) => {
   try {
-    // Cache the best products with a reasonable TTL
-    const cacheKey = `homepage:top:${locale}:${limit}`
+    // ✅ Use Next.js server-side cache to prevent skeleton loading on navigation
+    // This caches on the server, so it persists between page navigations
+    const getCachedProducts = unstable_cache(
+      async () => {
+        // ✅ PHASE 1.2: REDUCED OVER-FETCHING
+        // Fetch only 15 products instead of 50 (70% less data transfer)
+        // Still provides good selection while improving performance
+        const result = await listProducts({
+          countryCode: locale,
+          queryParams: {
+            limit: 15, // Optimized from 50 to 15 (only display 10, keep 5 as buffer)
+            order: "created_at",
+            // Note: expand parameter not supported in this API, but we can still access nested data
+          },
+        })
+        
+        return result?.response?.products || []
+      },
+      [`homepage-top-${locale}-${limit}`], // Cache key
+      {
+        revalidate: 600, // 10 minutes
+        tags: ['homepage-products', 'products']
+      }
+    )
     
-    const allProducts = await unifiedCache.get(cacheKey, async () => {
-      // ✅ PHASE 1.2: REDUCED OVER-FETCHING
-      // Fetch only 15 products instead of 50 (70% less data transfer)
-      // Still provides good selection while improving performance
-      const result = await listProducts({
-        countryCode: locale,
-        queryParams: {
-          limit: 15, // Optimized from 50 to 15 (only display 10, keep 5 as buffer)
-          order: "created_at",
-          // Note: expand parameter not supported in this API, but we can still access nested data
-        },
-      })
-      
-      return result?.response?.products || []
-    })
+    const allProducts = await getCachedProducts()
     
     if (allProducts.length === 0) {
       return (

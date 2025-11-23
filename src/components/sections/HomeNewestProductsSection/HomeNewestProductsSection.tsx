@@ -3,6 +3,7 @@ import { listProducts } from "@/lib/data/products"
 import { Product } from "@/types/product"
 import { HttpTypes } from "@medusajs/types"
 import { SerializableWishlist } from "@/types/wishlist"
+import { unstable_cache } from 'next/cache'
 
 interface HomeNewestProductsSectionProps {
   heading?: string
@@ -22,16 +23,26 @@ export const HomeNewestProductsSection = async ({
   wishlist = []
 }: HomeNewestProductsSectionProps) => {
   try {
-    // Fetch newest products using the existing listProducts function
-    const result = await listProducts({
-      countryCode: locale,
-      queryParams: {
-        limit: limit,
-        order: "-created_at", // Descending order: newest products first (left side of carousel)
+    // ✅ Use Next.js server-side cache to prevent skeleton loading on navigation
+    const getCachedProducts = unstable_cache(
+      async () => {
+        const result = await listProducts({
+          countryCode: locale,
+          queryParams: {
+            limit: limit,
+            order: "-created_at", // Descending order: newest products first (left side of carousel)
+          },
+        })
+        return result?.response?.products || []
       },
-    })
+      [`homepage-newest-${locale}-${limit}`], // Cache key
+      {
+        revalidate: 600, // 10 minutes
+        tags: ['homepage-products', 'products']
+      }
+    )
     
-    const products = result?.response?.products || []
+    const products = await getCachedProducts()
     
     return (
       <section className="py-2 md:py-8 w-full">

@@ -10,8 +10,7 @@ import {
 import { getProductMeasurements } from "@/lib/data/measurements"
 import { retrieveCustomer, isAuthenticated } from "@/lib/data/customer"
 import { getUserWishlists } from "@/lib/data/wishlist"
-import { getRegion } from "@/lib/data/regions"
-import { detectUserCountry } from "@/lib/helpers/country-detection"
+import { retrieveCart } from "@/lib/data/cart"
 import { unifiedCache } from "@/lib/utils/unified-cache"
 import { SellerProps } from "@/types/seller"
 import { Wishlist, SerializableWishlist } from "@/types/wishlist"
@@ -49,19 +48,16 @@ export const ProductDetails = async ({
   const supportedLocales = ['en', 'pl']
   const currentLocale = supportedLocales.includes(locale) ? locale : 'en'
   
-  // Detect user's country for region loading
-  const userCountry = await detectUserCountry()
-
-  
-  // Load region data with safe cache key
-  const [region, user, authenticated] = await Promise.allSettled([
-    unifiedCache.get(`region:${userCountry}`, () => getRegion(userCountry)),
+  // Get region from cart (respects user's selection in CountrySelector)
+  const [cart, user, authenticated] = await Promise.allSettled([
+    retrieveCart(), // Get cart with user-selected region
     retrieveCustomer(), // Direct call - no cache for user data
     isAuthenticated(),  // Direct call - no cache for auth data
   ])
 
   // Extract results
-  const regionData = region.status === 'fulfilled' ? region.value : null
+  const cartData = cart.status === 'fulfilled' ? cart.value : null
+  const regionData = cartData?.region || null
   
  
   const customer = user.status === 'fulfilled' ? user.value : null

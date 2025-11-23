@@ -1,5 +1,5 @@
 import CheckoutWrapper from "@/components/sections/CheckoutWrapper/CheckoutWrapper"
-import { retrieveCartForReview } from "@/lib/data/cart"
+import { retrieveCart } from "@/lib/data/cart"
 import { listCartShippingMethods } from "@/lib/data/fulfillment"
 import { listCartPaymentMethods } from "@/lib/data/payment"
 import { retrieveCustomer } from "@/lib/data/cookies"
@@ -32,8 +32,8 @@ async function CheckoutPageContent() {
     const { headers } = await import('next/headers')
     const headersList = headers()
     
-    // Get cart with all review data including payment sessions
-    const cart = await retrieveCartForReview().catch(() => null);
+    // Get cart - DO NOT auto-detect country to preserve user's region selection
+    const cart = await retrieveCart().catch(() => null);
     
     if (!cart) {
       return notFound()
