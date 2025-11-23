@@ -6,6 +6,9 @@ import { getUnreadMessagesCount } from "@/lib/data/actions/messages"
 import { signout, retrieveCustomer } from "@/lib/data/customer"
 import { cn } from "@/lib/utils"
 import { MobileRegionModal } from "@/components/cells/MobileRegionModal/MobileRegionModal"
+import { listRegions } from "@/lib/data/regions"
+import { retrieveCart } from "@/lib/data/cart"
+import { HttpTypes } from "@medusajs/types"
 
 // Icons for mobile navigation
 const OrdersIcon = ({ className = "" }: { className?: string }) => (
@@ -173,8 +176,10 @@ export const MobileUserNavigation = () => {
   const [isRegionModalOpen, setIsRegionModalOpen] = useState<boolean>(false)
   const [searchQuery, setSearchQuery] = useState<string>("")
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false)
+  const [regions, setRegions] = useState<HttpTypes.StoreRegion[]>([])
+  const [currentRegionId, setCurrentRegionId] = useState<string | undefined>()
 
-  // Check authentication status
+  // Check authentication status and fetch regions
   useEffect(() => {
     const checkAuth = async () => {
       try {
@@ -185,7 +190,23 @@ export const MobileUserNavigation = () => {
       }
     }
     
+    const fetchRegions = async () => {
+      try {
+        const regionsData = await listRegions()
+        setRegions(regionsData || [])
+        
+        // Get current region from cart
+        const cart = await retrieveCart().catch(() => null)
+        if (cart?.region_id) {
+          setCurrentRegionId(cart.region_id)
+        }
+      } catch (error) {
+        console.error('Error fetching regions:', error)
+      }
+    }
+    
     checkAuth()
+    fetchRegions()
   }, [])
 
   // Fetch unread messages count - only for authenticated users
@@ -564,6 +585,8 @@ export const MobileUserNavigation = () => {
       <MobileRegionModal 
         isOpen={isRegionModalOpen}
         onClose={() => setIsRegionModalOpen(false)}
+        regions={regions}
+        currentRegionId={currentRegionId}
       />
     </>
   )

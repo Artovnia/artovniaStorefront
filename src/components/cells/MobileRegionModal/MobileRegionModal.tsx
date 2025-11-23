@@ -1,70 +1,79 @@
 "use client"
 
 import { useState, useTransition } from 'react'
-import { updateUserCountry } from '@/lib/helpers/country-detection'
 import { useRouter } from 'next/navigation'
 import clsx from 'clsx'
+import { HttpTypes } from '@medusajs/types'
 
-interface Country {
-  code: string
+interface RegionDisplay {
+  id: string
   name: string
   flag: string
+  countries: string[] // ISO codes
 }
-
-const SUPPORTED_COUNTRIES: Country[] = [
-  { code: 'pl', name: 'Polska', flag: '🇵🇱' },
-  { code: 'de', name: 'Deutschland', flag: '🇩🇪' },
-  { code: 'cz', name: 'Česko', flag: '🇨🇿' },
-  { code: 'sk', name: 'Slovensko', flag: '🇸🇰' },
-  { code: 'at', name: 'Österreich', flag: '🇦🇹' },
-]
 
 interface MobileRegionModalProps {
   isOpen: boolean
   onClose: () => void
-  currentCountry?: string
+  regions: HttpTypes.StoreRegion[]
+  currentRegionId?: string
 }
 
-export const MobileRegionModal = ({ isOpen, onClose, currentCountry }: MobileRegionModalProps) => {
+// Map region names to display info (same as CountrySelector)
+const getRegionDisplay = (region: HttpTypes.StoreRegion): RegionDisplay => {
+  const name = region.name || 'Unknown'
+  
+  // Map region names to flags and display info
+  const displayMap: Record<string, { flag: string; displayName?: string }> = {
+    'Polska': { flag: '🇵🇱' },
+    'Poland': { flag: '🇵🇱' },
+    'EU': { flag: '🇪🇺', displayName: 'Europa' },
+    'Europe': { flag: '🇪🇺', displayName: 'Europa' },
+    'USA': { flag: '🇺🇸', displayName: 'Stany Zjednoczone' },
+    'United States': { flag: '🇺🇸', displayName: 'Stany Zjednoczone' },
+    'US': { flag: '🇺🇸', displayName: 'Stany Zjednoczone' },
+    'Canada': { flag: '🇨🇦', displayName: 'Kanada' },
+    'Kanada': { flag: '🇨🇦', displayName: 'Kanada' },
+    'CA': { flag: '🇨🇦', displayName: 'Kanada' },
+  }
+  
+  const display = displayMap[name] || { flag: '🌍' }
+  
+  return {
+    id: region.id,
+    name: display.displayName || name,
+    flag: display.flag,
+    countries: region.countries?.map(c => c.iso_2 || '') || []
+  }
+}
+
+export const MobileRegionModal = ({ isOpen, onClose, regions, currentRegionId }: MobileRegionModalProps) => {
   const [isPending, startTransition] = useTransition()
   const router = useRouter()
 
-  // Detect current country from cookie if not provided
-  const [detectedCountry, setDetectedCountry] = useState<string>(() => {
-    if (currentCountry) return currentCountry
-    
-    // Try to get from cookie
-    const getCookie = (name: string) => {
-      if (typeof document === 'undefined') return undefined
-      const value = `; ${document.cookie}`
-      const parts = value.split(`; ${name}=`)
-      if (parts.length === 2) return parts.pop()?.split(';').shift()
-      return undefined
-    }
-    
-    return getCookie('user_country') || 'pl'
-  })
+  // Convert regions to display format
+  const regionDisplays = regions.map(getRegionDisplay)
+  
+  // Find current region or default to first
+  const currentRegion = currentRegionId 
+    ? regionDisplays.find(r => r.id === currentRegionId) || regionDisplays[0]
+    : regionDisplays[0]
 
-  const activeCountry = currentCountry || detectedCountry
-
-  const handleCountryChange = async (countryCode: string) => {
+  const handleRegionChange = async (regionId: string) => {
     onClose()
     
-    // Update country preference and cart region
+    // Update cart region
     startTransition(async () => {
       try {
-        // Update user's country preference in cookie
-        await updateUserCountry(countryCode)
-        
-        // Update existing cart's region if cart exists
-        const { updateRegion } = await import('@/lib/data/cart')
-        await updateRegion(countryCode, window.location.pathname)
+        // Update existing cart's region or create new cart with selected region
+        const { updateCartRegion } = await import('@/lib/data/cart')
+        await updateCartRegion(regionId)
         
         // Refresh the page to reload with new region
         router.refresh()
       } catch (error) {
-        console.error('Error updating country:', error)
-        // Still refresh to show the new country
+        console.error('Error updating region:', error)
+        // Still refresh to show the new region
         router.refresh()
       }
     })
@@ -101,14 +110,14 @@ export const MobileRegionModal = ({ isOpen, onClose, currentCountry }: MobileReg
             </div>
           </div>
 
-          {/* Country List */}
+          {/* Region List */}
           <div className="overflow-y-auto max-h-[calc(80vh-80px)] px-4 py-3">
             <div className="space-y-2">
-              {SUPPORTED_COUNTRIES.map((country, index) => (
+              {regionDisplays.map((region, index) => (
                 <button
-                  key={country.code}
-                  onClick={() => handleCountryChange(country.code)}
-                  disabled={isPending || country.code === activeCountry}
+                  key={region.id}
+                  onClick={() => handleRegionChange(region.id)}
+                  disabled={isPending || region.id === currentRegion?.id}
                   style={{
                     animationDelay: `${index * 50}ms`,
                   }}
@@ -118,21 +127,21 @@ export const MobileRegionModal = ({ isOpen, onClose, currentCountry }: MobileReg
                     "group relative overflow-hidden animate-in fade-in slide-in-from-bottom-2",
                     "font-instrument-sans",
                     {
-                      "bg-[#3B3634] text-white shadow-lg": country.code === activeCountry,
-                      "bg-white/60 text-[#3B3634] hover:bg-white hover:shadow-md active:scale-[0.98]": country.code !== activeCountry,
+                      "bg-[#3B3634] text-white shadow-lg": region.id === currentRegion?.id,
+                      "bg-white/60 text-[#3B3634] hover:bg-white hover:shadow-md active:scale-[0.98]": region.id !== currentRegion?.id,
                       "opacity-50 cursor-not-allowed": isPending
                     }
                   )}
                 >
                   {/* Hover gradient effect */}
-                  {country.code !== activeCountry && (
+                  {region.id !== currentRegion?.id && (
                     <div className="absolute inset-0 bg-gradient-to-r from-[#3B3634]/0 via-[#3B3634]/5 to-[#3B3634]/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                   )}
                   
-                  <span className="text-2xl relative z-10">{country.flag}</span>
-                  <span className="text-base relative z-10 flex-1">{country.name}</span>
+                  <span className="text-2xl relative z-10">{region.flag}</span>
+                  <span className="text-base relative z-10 flex-1">{region.name}</span>
                   
-                  {country.code === activeCountry && (
+                  {region.id === currentRegion?.id && (
                     <svg className="w-6 h-6 relative z-10" fill="currentColor" viewBox="0 0 20 20">
                       <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                     </svg>

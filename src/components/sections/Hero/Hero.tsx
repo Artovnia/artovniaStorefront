@@ -4,6 +4,7 @@ import { Link } from "@/i18n/routing"
 import Image from "next/image"
 import { useState, useEffect, useCallback } from "react"
 import { HERO_BANNERS, HERO_CONFIG } from "@/config/hero-banners"
+import { ArrowLeftIcon, ArrowRightIcon } from "@/icons"
 
 // Banner configuration interface
 export interface HeroBanner {
@@ -63,6 +64,12 @@ export const Hero = ({
   const [currentIndex, setCurrentIndex] = useState(0)
   const [isAutoPlaying, setIsAutoPlaying] = useState(true)
   const [imageLoadStates, setImageLoadStates] = useState<Record<string, boolean>>({})
+  const [touchStart, setTouchStart] = useState<number | null>(null)
+  const [touchEnd, setTouchEnd] = useState<number | null>(null)
+  const [isHovered, setIsHovered] = useState(false)
+
+  // Minimum swipe distance (in px) to trigger slide change
+  const minSwipeDistance = 50
 
   // Helper function to render heading with highlighted word
   const renderHeading = (heading?: NonNullable<HeroBanner['content']>['heading']) => {
@@ -182,14 +189,53 @@ export const Hero = ({
     setTimeout(() => setIsAutoPlaying(true), HERO_CONFIG.resumeAfterManualNavigation)
   }, [])
 
+  // Handle arrow navigation
+  const handlePrevious = useCallback(() => {
+    setCurrentIndex((prev) => (prev - 1 + banners.length) % banners.length)
+    setIsAutoPlaying(false)
+    setTimeout(() => setIsAutoPlaying(true), HERO_CONFIG.resumeAfterManualNavigation)
+  }, [banners.length])
+
+  const handleNext = useCallback(() => {
+    setCurrentIndex((prev) => (prev + 1) % banners.length)
+    setIsAutoPlaying(false)
+    setTimeout(() => setIsAutoPlaying(true), HERO_CONFIG.resumeAfterManualNavigation)
+  }, [banners.length])
+
+  // Touch handlers for mobile swipe
+  const onTouchStart = useCallback((e: React.TouchEvent) => {
+    setTouchEnd(null)
+    setTouchStart(e.targetTouches[0].clientX)
+  }, [])
+
+  const onTouchMove = useCallback((e: React.TouchEvent) => {
+    setTouchEnd(e.targetTouches[0].clientX)
+  }, [])
+
+  const onTouchEnd = useCallback(() => {
+    if (!touchStart || !touchEnd) return
+    
+    const distance = touchStart - touchEnd
+    const isLeftSwipe = distance > minSwipeDistance
+    const isRightSwipe = distance < -minSwipeDistance
+    
+    if (isLeftSwipe) {
+      handleNext()
+    } else if (isRightSwipe) {
+      handlePrevious()
+    }
+  }, [touchStart, touchEnd, handleNext, handlePrevious, minSwipeDistance])
+
   // Handle hover pause/resume
   const handleMouseEnter = useCallback(() => {
+    setIsHovered(true)
     if (pauseOnHover) {
       setIsAutoPlaying(false)
     }
   }, [pauseOnHover])
 
   const handleMouseLeave = useCallback(() => {
+    setIsHovered(false)
     if (pauseOnHover) {
       setIsAutoPlaying(true)
     }
@@ -216,6 +262,9 @@ export const Hero = ({
       className={`relative w-full h-[20vh] sm:h-[40vh] lg:h-[50vh] min-h-[300px] sm:min-h-[350px] lg:min-h-[400px] overflow-hidden ${className}`}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
+      onTouchStart={onTouchStart}
+      onTouchMove={onTouchMove}
+      onTouchEnd={onTouchEnd}
     >
       {/* Banner Images */}
       <div className="relative w-full h-full">
@@ -303,6 +352,33 @@ export const Hero = ({
           )
         })}
       </div>
+
+      {/* Navigation Arrows - Desktop only, visible on hover */}
+      {banners.length > 1 && (
+        <>
+          {/* Previous Arrow */}
+          <button
+            onClick={handlePrevious}
+            className={`hidden md:flex absolute left-4 top-1/2 -translate-y-1/2 z-20 items-center justify-center w-12 h-12 rounded-full bg-white/20 backdrop-blur-sm hover:bg-white/30 transition-all duration-300 ${
+              isHovered ? 'opacity-100' : 'opacity-0'
+            }`}
+            aria-label="Previous slide"
+          >
+            <ArrowLeftIcon color="white" size={25} />
+          </button>
+
+          {/* Next Arrow */}
+          <button
+            onClick={handleNext}
+            className={`hidden md:flex absolute right-4 top-1/2 -translate-y-1/2 z-20 items-center justify-center w-12 h-12 rounded-full bg-white/20 backdrop-blur-sm hover:bg-white/30 transition-all duration-300 ${
+              isHovered ? 'opacity-100' : 'opacity-0'
+            }`}
+            aria-label="Next slide"
+          >
+            <ArrowRightIcon color="white" size={25} />
+          </button>
+        </>
+      )}
 
       {/* Navigation Dots */}
       {banners.length > 1 && (
