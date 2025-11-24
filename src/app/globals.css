@@ -10,19 +10,18 @@ FONT CONFIGURATION NOTE:
 Font is now configured in layout.tsx using Next.js font optimization.
 To change the font, modify the import in src/app/layout.tsx
 */
-
 /* Typography */
 .text-xl {
-    @apply font-light tracking-normal;
+  @apply font-light tracking-normal;
 }
 .text-lg {
-    @apply text-base font-light tracking-normal;
+  @apply text-base font-light tracking-normal max-md:text-[14px] max-md:leading-[22px];
 }
 .text-md {
-    @apply text-[14px] leading-[22px] font-light tracking-normal;
+  @apply text-[14px] leading-[22px] font-light tracking-normal max-md:text-[13px] max-md:leading-[20px];
 }
 .text-sm {
-    @apply text-[12px] font-light tracking-normal;
+  @apply text-[12px] font-light tracking-normal;
 }
 
 .label-sm {

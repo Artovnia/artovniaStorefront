@@ -7,8 +7,8 @@ export const footerLinks = {
    
   ],
   support: [
-    { name: "Centrum pomocy", href: "#" },
-    { name: "Kontakt", href: "#" },
+    { name: "Centrum pomocy", href: "/support" },
+    { name: "Kontakt", href: "/support" },
   ],
   customerServices: [
     { name: "Jak kupować?", href: "/jak-kupowac" },

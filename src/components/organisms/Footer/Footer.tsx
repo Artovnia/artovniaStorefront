@@ -76,6 +76,12 @@ export async function Footer() {
                   {name}
                 </Link>
               ))}
+              <Link 
+                href="/support" 
+                className="block text-white hover:text-primary transition-colors duration-200 text-sm"
+              >
+                Kontakt
+              </Link>
             </nav>
           </div>
 
