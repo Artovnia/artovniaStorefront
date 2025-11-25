@@ -38,7 +38,7 @@ export async function generateMetadata({
       }
     }
 
-    return generateProductMetadata(product)
+    return generateProductMetadata(product, locale)
   } catch (error) {
     console.error("Error generating product metadata:", error)
     return {

@@ -3,12 +3,50 @@ import Image from 'next/image'
 import { Suspense } from 'react'
 import { SellerListing } from '@/components/sections/SellerListing/SellerListing'
 import { getSellers } from '@/lib/data/seller'
+import { generateBreadcrumbJsonLd, generateCollectionPageJsonLd } from '@/lib/helpers/seo'
 
 export const metadata: Metadata = {
-  title: 'Sprzedawcy - Artovnia',
+  title: 'Sprzedawcy - Artovnia | Poznaj Polskich Artystów i Twórców',
   description:
-    'Przeglądaj wszystkich sprzedawców na platformie Artovnia. Znajdź swoich ulubionych artystów i odkryj nowe talenty.',
+    'Przeglądaj wszystkich sprzedawców na platformie Artovnia. Znajdź swoich ulubionych artystów, odkryj nowe talenty i kup unikalne dzieła sztuki bezpośrednio od twórców.',
+  keywords: [
+    'polscy artyści',
+    'sprzedawcy sztuki',
+    'twórcy rękodzieła',
+    'artyści marketplace',
+    'galeria artystów',
+  ].join(', '),
+  alternates: {
+    canonical: `${process.env.NEXT_PUBLIC_BASE_URL}/sellers`,
+    languages: {
+      'pl': `${process.env.NEXT_PUBLIC_BASE_URL}/pl/sellers`,
+      'en': `${process.env.NEXT_PUBLIC_BASE_URL}/en/sellers`,
+      'x-default': `${process.env.NEXT_PUBLIC_BASE_URL}/sellers`,
+    },
+  },
+  openGraph: {
+    title: 'Sprzedawcy - Artovnia | Poznaj Polskich Artystów',
+    description:
+      'Przeglądaj wszystkich sprzedawców na platformie Artovnia. Znajdź swoich ulubionych artystów i odkryj nowe talenty.',
+    url: `${process.env.NEXT_PUBLIC_BASE_URL}/sellers`,
+    siteName: 'Artovnia',
+    type: 'website',
+    locale: 'pl_PL',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    site: '@artovnia',
+    creator: '@artovnia',
+    title: 'Sprzedawcy - Artovnia',
+    description: 'Poznaj polskich artystów i twórców na Artovnia',
+  },
+  robots: {
+    index: true,
+    follow: true,
+  },
 }
+
+export const revalidate = 300 // Revalidate every 5 minutes
 
 // Loading skeleton for Suspense
 const SellerListingSkeleton = () => (
@@ -59,7 +97,29 @@ export default async function SellersPage({
     ...(sortBy && { sortBy })
   })
 
+  // Generate structured data
+  const breadcrumbJsonLd = await generateBreadcrumbJsonLd([
+    { label: "Strona główna", path: "/" },
+    { label: "Sprzedawcy", path: "/sellers" },
+  ])
+  const collectionJsonLd = await generateCollectionPageJsonLd(
+    "Sprzedawcy - Polscy Artyści",
+    "Przeglądaj wszystkich sprzedawców na platformie Artovnia. Znajdź swoich ulubionych artystów i odkryj nowe talenty.",
+    `${process.env.NEXT_PUBLIC_BASE_URL}/sellers`
+  )
+
   return (
+    <>
+      {/* Structured Data (JSON-LD) for SEO */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(collectionJsonLd) }}
+      />
+      
     <div className="min-h-screen bg-primary">
       {/* Hero Section with Image and Overlay */}
       <section
@@ -124,5 +184,6 @@ export default async function SellersPage({
         </div>
       </div>
     </div>
+    </>
   )
 }

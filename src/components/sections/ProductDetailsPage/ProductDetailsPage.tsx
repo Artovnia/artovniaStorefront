@@ -14,6 +14,7 @@ import { buildProductBreadcrumbs } from "@/lib/utils/breadcrumbs"
 import Head from "next/head"
 import { retrieveCustomer, isAuthenticated } from "@/lib/data/customer"
 import { getProductReviews } from "@/lib/data/reviews"
+import { generateProductJsonLd, generateBreadcrumbJsonLd } from "@/lib/helpers/seo"
 
 export const ProductDetailsPage = async ({
   handle,
@@ -149,8 +150,23 @@ export const ProductDetailsPage = async ({
     () => buildProductBreadcrumbs(prod, locale)
   )
 
+  // Generate structured data for SEO
+  const productPrice = (prod as any).calculated_price?.calculated_amount
+  const productJsonLd = await generateProductJsonLd(prod, productPrice, 'PLN', locale)
+  const breadcrumbJsonLd = await generateBreadcrumbJsonLd(breadcrumbs)
+
   return (
     <>
+      {/* Structured Data (JSON-LD) for SEO */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(productJsonLd) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
+      />
+      
       {/* CRITICAL: Preload main product image */}
       <Head>
         {prod.images?.[0] && (

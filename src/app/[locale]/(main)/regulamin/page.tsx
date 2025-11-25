@@ -17,6 +17,13 @@ export async function generateMetadata({
   return {
     title: t("meta.title"),
     description: t("meta.description"),
+    alternates: {
+      canonical: `${process.env.NEXT_PUBLIC_BASE_URL}/regulamin`,
+    },
+    robots: {
+      index: false,
+      follow: true,
+    },
   } as Metadata
 }
 

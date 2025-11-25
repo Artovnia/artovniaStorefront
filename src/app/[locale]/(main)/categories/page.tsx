@@ -6,6 +6,53 @@ import { isServerSideBot } from "@/lib/utils/server-bot-detection"
 import { SmartProductsListing } from "@/components/sections/ProductListing/SmartProductsListing"
 import { PromotionDataProvider } from "@/components/context/PromotionDataProvider"
 import { BatchPriceProvider } from "@/components/context/BatchPriceProvider"
+import type { Metadata } from "next"
+import { generateBreadcrumbJsonLd, generateCollectionPageJsonLd } from "@/lib/helpers/seo"
+
+export const metadata: Metadata = {
+  title: "Wszystkie Kategorie - Artovnia | Przeglądaj Sztukę i Rękodzieło",
+  description:
+    "Przeglądaj wszystkie kategorie sztuki i rękodzieła na Artovnia. Znajdź unikalne dzieła w kategoriach: ceramika, malarstwo, rzeźba, biżuteria i więcej.",
+  keywords: [
+    'kategorie sztuki',
+    'przeglądaj sztukę',
+    'kategorie rękodzieła',
+    'ceramika',
+    'malarstwo',
+    'rzeźba',
+    'biżuteria artystyczna',
+  ].join(', '),
+  alternates: {
+    canonical: `${process.env.NEXT_PUBLIC_BASE_URL}/categories`,
+    languages: {
+      'pl': `${process.env.NEXT_PUBLIC_BASE_URL}/pl/categories`,
+      'en': `${process.env.NEXT_PUBLIC_BASE_URL}/en/categories`,
+      'x-default': `${process.env.NEXT_PUBLIC_BASE_URL}/categories`,
+    },
+  },
+  openGraph: {
+    title: "Wszystkie Kategorie - Artovnia",
+    description:
+      "Przeglądaj wszystkie kategorie sztuki i rękodzieła. Znajdź unikalne dzieła od polskich artystów.",
+    url: `${process.env.NEXT_PUBLIC_BASE_URL}/categories`,
+    siteName: "Artovnia",
+    type: "website",
+    locale: "pl_PL",
+  },
+  twitter: {
+    card: "summary_large_image",
+    site: "@artovnia",
+    creator: "@artovnia",
+    title: "Wszystkie Kategorie - Artovnia",
+    description: "Przeglądaj wszystkie kategorie sztuki i rękodzieła",
+  },
+  robots: {
+    index: true,
+    follow: true,
+  },
+}
+
+export const revalidate = 300 // Revalidate every 5 minutes
 
 async function AllCategories({
   params,
@@ -35,11 +82,34 @@ async function AllCategories({
   const breadcrumbsItems = [
     {
       path: "/",
-      label: "Wszystkie produkty",
+      label: "Strona główna",
+    },
+    {
+      path: "/categories",
+      label: "Kategorie",
     },
   ]
 
+  // Generate structured data
+  const breadcrumbJsonLd = await generateBreadcrumbJsonLd(breadcrumbsItems)
+  const collectionJsonLd = await generateCollectionPageJsonLd(
+    "Wszystkie Kategorie",
+    "Przeglądaj wszystkie kategorie sztuki i rękodzieła na Artovnia",
+    `${process.env.NEXT_PUBLIC_BASE_URL}/categories`
+  )
+
   return (
+    <>
+      {/* Structured Data (JSON-LD) for SEO */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(collectionJsonLd) }}
+      />
+      
     <PromotionDataProvider countryCode="PL" limit={50}>
       <BatchPriceProvider currencyCode="PLN">
         <main className="mx-auto max-w-[1920px] pt-24 pb-24">
@@ -69,6 +139,7 @@ async function AllCategories({
         </main>
       </BatchPriceProvider>
     </PromotionDataProvider>
+    </>
   )
 }
 

@@ -1,5 +1,6 @@
 import { Suspense } from "react"
 import { Metadata } from "next"
+import { generateBreadcrumbJsonLd } from "@/lib/helpers/seo"
 import {
   getBlogPosts,
   getFeaturedPosts,
@@ -11,8 +12,9 @@ import BlogPostCard from "./components/BlogPostCard"
 import PaginatedBlogPosts from "./components/PaginatedBlogPosts"
 import PaginatedSellerPosts from "./components/PaginatedSellerPosts"
 
-// Must use force-dynamic because Header component uses cookies() for user authentication
-export const dynamic = 'force-dynamic'
+// Use ISR instead of force-dynamic for better performance and SEO
+// User-specific data (auth) can be fetched client-side if needed
+export const revalidate = 300 // Revalidate every 5 minutes
 
 export const metadata: Metadata = {
   title: "Blog - Artovnia | Inspiracje, Porady i Nowości ze Świata Sztuki",
@@ -21,6 +23,14 @@ export const metadata: Metadata = {
   keywords:
     "blog artystyczny, inspiracje artystyczne, porady dla artystów, sztuka współczesna, artyści, galeria",
   authors: [{ name: "Artovnia" }],
+  alternates: {
+    canonical: `${process.env.NEXT_PUBLIC_BASE_URL}/blog`,
+    languages: {
+      'pl': `${process.env.NEXT_PUBLIC_BASE_URL}/pl/blog`,
+      'en': `${process.env.NEXT_PUBLIC_BASE_URL}/en/blog`,
+      'x-default': `${process.env.NEXT_PUBLIC_BASE_URL}/blog`,
+    },
+  },
   openGraph: {
     title: "Blog - Artovnia | Inspiracje, Porady i Nowości ze Świata Sztuki",
     description:
@@ -28,15 +38,19 @@ export const metadata: Metadata = {
     type: "website",
     locale: "pl_PL",
     siteName: "Artovnia",
+    url: `${process.env.NEXT_PUBLIC_BASE_URL}/blog`,
   },
   twitter: {
     card: "summary_large_image",
+    site: "@artovnia",
+    creator: "@artovnia",
     title: "Blog - Artovnia",
     description:
       "Odkryj najnowsze wpisy blogowe, inspiracje artystyczne i poznaj naszych artystów.",
   },
-  alternates: {
-    canonical: "/blog",
+  robots: {
+    index: true,
+    follow: true,
   },
 }
 
@@ -137,9 +151,22 @@ async function AllSellerPosts() {
 
 export default async function BlogPage() {
   const categories = await getBlogCategories()
+  
+  // Generate breadcrumb structured data
+  const breadcrumbJsonLd = await generateBreadcrumbJsonLd([
+    { label: "Strona główna", path: "/" },
+    { label: "Blog", path: "/blog" },
+  ])
 
   return (
-    <BlogLayout
+    <>
+      {/* Structured Data (JSON-LD) for SEO */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
+      />
+      
+      <BlogLayout
       title="Witaj w naszym Blogu"
       description="Odkryj najnowsze informacje, porady i wiedzę z naszego zespołu."
       breadcrumbs={[
@@ -160,5 +187,6 @@ export default async function BlogPage() {
         <AllSellerPosts />
       </Suspense>
     </BlogLayout>
+    </>
   )
 }

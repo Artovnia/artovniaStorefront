@@ -3,17 +3,67 @@ import React, { Suspense } from "react"
 import DeliveryContent from "@/components/pages/delivery/DeliveryContent"
 import { Link } from "@/i18n/routing"
 import { ArrowLeftIcon } from "@/icons"
+import { generateBreadcrumbJsonLd } from "@/lib/helpers/seo"
 
 export async function generateMetadata(): Promise<Metadata> {
   return {
-    title: "Formy dostawy | Artovnia",
-    description: "Poznaj dostępne metody dostawy na platformie Artovnia - paczkomaty, kurier, poczta.",
+    title: "Formy Dostawy - Paczkomaty, Kurier, Poczta | Artovnia",
+    description: "Poznaj dostępne metody dostawy na platformie Artovnia - paczkomaty InPost, kurier DPD/DHL, Poczta Polska. Szybka i bezpieczna dostawa dzieł sztuki.",
+    keywords: [
+      'dostawa',
+      'paczkomaty',
+      'kurier',
+      'InPost',
+      'DPD',
+      'DHL',
+      'Poczta Polska',
+      'wysyłka',
+    ].join(', '),
+    alternates: {
+      canonical: `${process.env.NEXT_PUBLIC_BASE_URL}/delivery`,
+      languages: {
+        'pl': `${process.env.NEXT_PUBLIC_BASE_URL}/pl/delivery`,
+        'en': `${process.env.NEXT_PUBLIC_BASE_URL}/en/delivery`,
+        'x-default': `${process.env.NEXT_PUBLIC_BASE_URL}/delivery`,
+      },
+    },
+    openGraph: {
+      title: "Formy Dostawy - Paczkomaty, Kurier, Poczta | Artovnia",
+      description: "Poznaj dostępne metody dostawy - paczkomaty InPost, kurier DPD/DHL, Poczta Polska.",
+      url: `${process.env.NEXT_PUBLIC_BASE_URL}/delivery`,
+      siteName: "Artovnia",
+      type: "website",
+      locale: "pl_PL",
+    },
+    twitter: {
+      card: 'summary',
+      site: '@artovnia',
+      creator: '@artovnia',
+      title: 'Formy Dostawy - Artovnia',
+      description: 'Paczkomaty, kurier, poczta - wybierz najlepszą opcję',
+    },
+    robots: {
+      index: true,
+      follow: true,
+    },
   }
 }
 
+export const revalidate = 86400 // Revalidate once per day
+
 export default async function DeliveryPage() {
+  const breadcrumbJsonLd = await generateBreadcrumbJsonLd([
+    { label: "Strona główna", path: "/" },
+    { label: "Dostawa", path: "/delivery" },
+  ])
+
   return (
-    <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
+      />
+      <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <Suspense fallback={
         <div className="flex items-center justify-center min-h-[400px]">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#3B3634]"></div>
@@ -35,5 +85,6 @@ export default async function DeliveryPage() {
         </div>
       </Suspense>
     </main>
+    </>
   )
 }

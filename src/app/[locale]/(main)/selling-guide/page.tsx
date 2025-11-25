@@ -3,17 +3,65 @@ import React, { Suspense } from "react"
 import SellingGuideContent from "@/components/pages/selling-guide/SellingGuideContent"
 import { Link } from "@/i18n/routing"
 import { ArrowLeftIcon } from "@/icons"
+import { generateBreadcrumbJsonLd } from "@/lib/helpers/seo"
 
 export async function generateMetadata(): Promise<Metadata> {
   return {
-    title: "Jak sprzedawać na Artovni? | Artovnia",
-    description: "Dowiedz się jak zacząć sprzedawać na platformie Artovnia. Przewodnik dla artystów, projektantów i rękodzielników.",
+    title: "Jak Sprzedawać na Artovnia? - Przewodnik dla Artystów | Artovnia",
+    description: "Dowiedz się jak zacząć sprzedawać na platformie Artovnia. Kompletny przewodnik dla artystów, projektantów i rękodzielników. Zarejestruj się, dodaj produkty i zacznij zarabiać.",
+    keywords: [
+      'jak sprzedawać',
+      'przewodnik sprzedawcy',
+      'dla artystów',
+      'marketplace',
+      'sprzedaż sztuki online',
+      'zostań sprzedawcą',
+    ].join(', '),
+    alternates: {
+      canonical: `${process.env.NEXT_PUBLIC_BASE_URL}/selling-guide`,
+      languages: {
+        'pl': `${process.env.NEXT_PUBLIC_BASE_URL}/pl/selling-guide`,
+        'en': `${process.env.NEXT_PUBLIC_BASE_URL}/en/selling-guide`,
+        'x-default': `${process.env.NEXT_PUBLIC_BASE_URL}/selling-guide`,
+      },
+    },
+    openGraph: {
+      title: "Jak Sprzedawać na Artovnia? - Przewodnik dla Artystów",
+      description: "Kompletny przewodnik dla artystów, projektantów i rękodzielników. Zacznij sprzedawać na Artovnia.",
+      url: `${process.env.NEXT_PUBLIC_BASE_URL}/selling-guide`,
+      siteName: "Artovnia",
+      type: "website",
+      locale: "pl_PL",
+    },
+    twitter: {
+      card: 'summary',
+      site: '@artovnia',
+      creator: '@artovnia',
+      title: 'Jak Sprzedawać na Artovnia?',
+      description: 'Przewodnik dla artystów i twórców',
+    },
+    robots: {
+      index: true,
+      follow: true,
+    },
   }
 }
 
+export const revalidate = 86400 // Revalidate once per day
+
 export default async function SellingGuidePage() {
+  const breadcrumbJsonLd = await generateBreadcrumbJsonLd([
+    { label: "Strona główna", path: "/" },
+    { label: "Jak sprzedawać", path: "/selling-guide" },
+  ])
+
   return (
-    <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
+      />
+      <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <Suspense fallback={
         <div className="flex items-center justify-center min-h-[400px]">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#3B3634]"></div>
@@ -35,5 +83,6 @@ export default async function SellingGuidePage() {
         </div>
       </Suspense>
     </main>
+    </>
   )
 }

@@ -10,18 +10,35 @@ import { PromotionsFilterBar } from "@/components/organisms/PromotionsFilterBar"
 import { detectUserCountry } from "@/lib/helpers/country-detection"
 import { retrieveCustomer } from "@/lib/data/customer"
 import { getUserWishlists } from "@/lib/data/wishlist"
+import { generateBreadcrumbJsonLd, generateCollectionPageJsonLd } from "@/lib/helpers/seo"
 
 export const metadata: Metadata = {
-  title: "Promocje | Artovnia",
-  description: "Odkryj najlepsze promocje i okazje w Artovnia. Produkty w obniżonych cenach.",
+  title: "Promocje - Artovnia | Najlepsze Okazje na Sztukę i Rękodzieło",
+  description: "Odkryj najlepsze promocje i wyprzedaże na Artovnia. Unikalne dzieła sztuki i rękodzieła w obniżonych cenach. Limitowane okazje od polskich artystów.",
+  keywords: [
+    'promocje sztuki',
+    'wyprzedaż rękodzieła',
+    'okazje artystyczne',
+    'obniżki',
+    'tanie dzieła sztuki',
+    'promocje marketplace',
+  ].join(', '),
+  alternates: {
+    canonical: `${process.env.NEXT_PUBLIC_BASE_URL}/promotions`,
+    languages: {
+      'pl': `${process.env.NEXT_PUBLIC_BASE_URL}/pl/promotions`,
+      'en': `${process.env.NEXT_PUBLIC_BASE_URL}/en/promotions`,
+      'x-default': `${process.env.NEXT_PUBLIC_BASE_URL}/promotions`,
+    },
+  },
   openGraph: {
-    title: "Promocje | Artovnia",
-    description: "Odkryj najlepsze promocje i okazje w Artovnia. Produkty w obniżonych cenach.",
+    title: "Promocje - Artovnia | Najlepsze Okazje na Sztukę",
+    description: "Odkryj najlepsze promocje i wyprzedaże. Unikalne dzieła sztuki i rękodzieła w obniżonych cenach.",
     url: `${process.env.NEXT_PUBLIC_BASE_URL}/promotions`,
     siteName: "Artovnia",
     images: [
       {
-        url: `${process.env.NEXT_PUBLIC_BASE_URL}/B2C_Storefront_Open_Graph.png`,
+        url: `${process.env.NEXT_PUBLIC_BASE_URL}/ArtovniaOgImage.png`,
         width: 1200,
         height: 630,
         alt: "Artovnia - Promocje",
@@ -30,7 +47,21 @@ export const metadata: Metadata = {
     locale: "pl_PL",
     type: "website",
   },
+  twitter: {
+    card: 'summary_large_image',
+    site: '@artovnia',
+    creator: '@artovnia',
+    title: 'Promocje - Artovnia',
+    description: 'Najlepsze okazje na sztukę i rękodzieło w obniżonych cenach',
+    images: [`${process.env.NEXT_PUBLIC_BASE_URL}/ArtovniaOgImage.png`],
+  },
+  robots: {
+    index: true,
+    follow: true,
+  },
 }
+
+export const revalidate = 300 // Revalidate every 5 minutes
 
 interface PromotionsPageProps {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>
@@ -89,7 +120,29 @@ export default async function PromotionsPage({ searchParams }: PromotionsPagePro
     // Only fetch promotion data for displayed products (12 instead of 100)
     const productIds = products.map(p => p.id)
 
+    // Generate structured data for SEO
+    const breadcrumbJsonLd = await generateBreadcrumbJsonLd([
+      { label: "Strona główna", path: "/" },
+      { label: "Promocje", path: "/promotions" },
+    ])
+    const collectionJsonLd = await generateCollectionPageJsonLd(
+      "Promocje - Najlepsze Okazje",
+      "Odkryj najlepsze promocje i wyprzedaże na Artovnia. Unikalne dzieła sztuki i rękodzieła w obniżonych cenach.",
+      `${process.env.NEXT_PUBLIC_BASE_URL}/promotions`
+    )
+
     return (
+      <>
+        {/* Structured Data (JSON-LD) for SEO */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(collectionJsonLd) }}
+        />
+        
       <div className="min-h-screen bg-primary">
         {/* Hero Section with Image and Overlay */}
         <section 
@@ -173,6 +226,7 @@ export default async function PromotionsPage({ searchParams }: PromotionsPagePro
           </div>
         </div>
       </div>
+      </>
     )
   } catch (error) {
     console.error("Error fetching promotions:", error)

@@ -16,6 +16,7 @@ import { retrieveCustomer } from "@/lib/data/customer"
 import { getUserWishlists } from "@/lib/data/wishlist"
 import { listProductsWithPromotions } from "@/lib/data/products"
 import type { Metadata } from "next"
+import { generateOrganizationJsonLd, generateWebsiteJsonLd } from "@/lib/helpers/seo"
 
 // Loading skeletons for initial load - unified cache prevents these on navigation
 const BlogSkeleton = () => (
@@ -38,24 +39,62 @@ const BlogSkeleton = () => (
 )
 
 export const metadata: Metadata = {
-  title: "Home",
+  title: "Artovnia - Marketplace Sztuki i Rękodzieła Artystycznego | Unikalne Dzieła",
   description:
-    "Artovnia - market sztuki i rękodzieła",
+    "Odkryj unikalne dzieła sztuki i rękodzieła od polskich artystów. Ceramika, malarstwo, rzeźba i więcej. Kup oryginalną sztukę bezpośrednio od twórców na Artovnia.",
+  keywords: [
+    'marketplace sztuki',
+    'rękodzieło artystyczne',
+    'polska sztuka',
+    'ceramika artystyczna',
+    'unikalne dzieła sztuki',
+    'polscy artyści',
+    'oryginalna sztuka',
+    'marketplace rękodzieła',
+  ].join(', '),
+  alternates: {
+    canonical: process.env.NEXT_PUBLIC_BASE_URL,
+    languages: {
+      'pl': `${process.env.NEXT_PUBLIC_BASE_URL}/pl`,
+      'en': `${process.env.NEXT_PUBLIC_BASE_URL}/en`,
+      'x-default': process.env.NEXT_PUBLIC_BASE_URL,
+    },
+  },
   openGraph: {
-    title: "Artovnia - market sztuki i rękodzieła",
+    title: "Artovnia - Marketplace Sztuki i Rękodzieła Artystycznego",
     description:
-      "Artovnia - market sztuki i rękodzieła",
+      "Odkryj unikalne dzieła sztuki i rękodzieła od polskich artystów. Kup oryginalną sztukę bezpośrednio od twórców.",
     url: process.env.NEXT_PUBLIC_BASE_URL,
-    siteName: "Artovnia - market sztuki i rękodzieła",
+    siteName: "Artovnia",
     type: "website",
+    locale: "pl_PL",
     images: [
       {
-        url: "/B2C_Storefront_Open_Graph.png",
+        url: `${process.env.NEXT_PUBLIC_BASE_URL}/ArtovniaOgImage.png`,
         width: 1200,
         height: 630,
-        alt: "Artovnia - market sztuki i rękodzieła",
+        alt: "Artovnia - Marketplace Sztuki i Rękodzieła",
       },
     ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    site: '@artovnia',
+    creator: '@artovnia',
+    title: 'Artovnia - Marketplace Sztuki',
+    description: 'Odkryj unikalne dzieła sztuki i rękodzieła od polskich artystów',
+    images: [`${process.env.NEXT_PUBLIC_BASE_URL}/ArtovniaOgImage.png`],
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-video-preview': -1,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+    },
   },
 }
 
@@ -89,6 +128,10 @@ export default async function Home({
   params: Promise<{ locale: string }>
 }) {
   const { locale } = await params
+
+  // Generate structured data for SEO
+  const organizationJsonLd = await generateOrganizationJsonLd()
+  const websiteJsonLd = await generateWebsiteJsonLd()
 
 
   // ✅ OPTIMIZATION: PARALLEL DATA FETCHING ON SERVER
@@ -137,7 +180,18 @@ export default async function Home({
   )
 
   return (
-    <PromotionDataProvider 
+    <>
+      {/* Structured Data (JSON-LD) for SEO */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteJsonLd) }}
+      />
+      
+      <PromotionDataProvider 
       countryCode="PL" 
       limit={30}
       initialData={promotionalProductsMap}
@@ -201,5 +255,6 @@ export default async function Home({
         </main>
       </BatchPriceProvider>
     </PromotionDataProvider>
+    </>
   )
 }

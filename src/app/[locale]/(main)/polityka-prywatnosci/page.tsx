@@ -17,6 +17,13 @@ export async function generateMetadata({
   return {
     title: t("meta.title") || "Polityka Prywatności | Artovnia",
     description: t("meta.description") || "Polityka Prywatności sklepu internetowego Artovnia",
+    alternates: {
+      canonical: `${process.env.NEXT_PUBLIC_BASE_URL}/polityka-prywatnosci`,
+    },
+    robots: {
+      index: false,
+      follow: true,
+    },
   } as Metadata
 }
 

@@ -3,17 +3,73 @@ import React, { Suspense } from "react"
 import AboutUsContent from "@/components/pages/about/AboutUsContent"
 import { Link } from "@/i18n/routing"
 import { ArrowLeftIcon } from "@/icons"
+import { generateBreadcrumbJsonLd, generateOrganizationJsonLd } from "@/lib/helpers/seo"
 
 export async function generateMetadata(): Promise<Metadata> {
   return {
-    title: "O nas | Artovnia",
-    description: "Poznaj historię Artovni - rodzinnej inicjatywy stworzonej z pasji do sztuki, designu i rękodzieła.",
+    title: "O Nas - Artovnia | Poznaj Naszą Historię i Misję",
+    description: "Poznaj historię Artovni - rodzinnej inicjatywy stworzonej z pasji do sztuki, designu i rękodzieła. Łączymy artystów z miłośnikami sztuki od 2024 roku.",
+    keywords: [
+      'o nas',
+      'historia Artovnia',
+      'misja',
+      'marketplace sztuki',
+      'polscy artyści',
+      'o firmie',
+    ].join(', '),
+    alternates: {
+      canonical: `${process.env.NEXT_PUBLIC_BASE_URL}/about`,
+      languages: {
+        'pl': `${process.env.NEXT_PUBLIC_BASE_URL}/pl/about`,
+        'en': `${process.env.NEXT_PUBLIC_BASE_URL}/en/about`,
+        'x-default': `${process.env.NEXT_PUBLIC_BASE_URL}/about`,
+      },
+    },
+    openGraph: {
+      title: "O Nas - Artovnia | Poznaj Naszą Historię",
+      description: "Poznaj historię Artovni - rodzinnej inicjatywy stworzonej z pasji do sztuki, designu i rękodzieła.",
+      url: `${process.env.NEXT_PUBLIC_BASE_URL}/about`,
+      siteName: "Artovnia",
+      type: "website",
+      locale: "pl_PL",
+    },
+    twitter: {
+      card: 'summary',
+      site: '@artovnia',
+      creator: '@artovnia',
+      title: 'O Nas - Artovnia',
+      description: 'Poznaj naszą historię i misję',
+    },
+    robots: {
+      index: true,
+      follow: true,
+    },
   }
 }
 
+export const revalidate = 86400 // Revalidate once per day
+
 export default async function AboutPage() {
+  // Generate structured data
+  const breadcrumbJsonLd = await generateBreadcrumbJsonLd([
+    { label: "Strona główna", path: "/" },
+    { label: "O nas", path: "/about" },
+  ])
+  const organizationJsonLd = await generateOrganizationJsonLd()
+
   return (
-    <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <>
+      {/* Structured Data (JSON-LD) for SEO */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd) }}
+      />
+      
+      <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <Suspense fallback={
         <div className="flex items-center justify-center min-h-[400px]">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#3B3634]"></div>
@@ -35,5 +91,6 @@ export default async function AboutPage() {
         </div>
       </Suspense>
     </main>
+    </>
   )
 }
