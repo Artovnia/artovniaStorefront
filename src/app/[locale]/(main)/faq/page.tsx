@@ -52,7 +52,7 @@ export const revalidate = 3600 // Revalidate every hour
 
 export default async function FAQPage() {
   // Generate structured data
-  const breadcrumbJsonLd = await generateBreadcrumbJsonLd([
+  const breadcrumbJsonLd = generateBreadcrumbJsonLd([
     { label: "Strona główna", path: "/" },
     { label: "FAQ", path: "/faq" },
   ])

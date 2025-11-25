@@ -48,7 +48,7 @@ export const revalidate = 3600 // Revalidate every hour
 export default async function SupportPage() {
   const customer = await retrieveCustomer()
   
-  const breadcrumbJsonLd = await generateBreadcrumbJsonLd([
+  const breadcrumbJsonLd = generateBreadcrumbJsonLd([
     { label: "Strona główna", path: "/" },
     { label: "Wsparcie", path: "/support" },
   ])

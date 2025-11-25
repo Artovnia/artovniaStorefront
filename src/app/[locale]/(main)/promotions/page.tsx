@@ -61,7 +61,7 @@ export const metadata: Metadata = {
   },
 }
 
-export const revalidate = 300 // Revalidate every 5 minutes
+
 
 interface PromotionsPageProps {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>
@@ -121,11 +121,11 @@ export default async function PromotionsPage({ searchParams }: PromotionsPagePro
     const productIds = products.map(p => p.id)
 
     // Generate structured data for SEO
-    const breadcrumbJsonLd = await generateBreadcrumbJsonLd([
+    const breadcrumbJsonLd = generateBreadcrumbJsonLd([
       { label: "Strona główna", path: "/" },
       { label: "Promocje", path: "/promotions" },
     ])
-    const collectionJsonLd = await generateCollectionPageJsonLd(
+    const collectionJsonLd = generateCollectionPageJsonLd(
       "Promocje - Najlepsze Okazje",
       "Odkryj najlepsze promocje i wyprzedaże na Artovnia. Unikalne dzieła sztuki i rękodzieła w obniżonych cenach.",
       `${process.env.NEXT_PUBLIC_BASE_URL}/promotions`

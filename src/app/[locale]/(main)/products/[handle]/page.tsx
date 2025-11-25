@@ -35,10 +35,39 @@ export async function generateMetadata({
       return {
         title: "Product Not Found",
         description: "The requested product could not be found.",
+        robots: {
+          index: false,
+          follow: false,
+        },
       }
     }
 
-    return generateProductMetadata(product, locale)
+    const baseMetadata = generateProductMetadata(product, locale)
+    
+    // ✅ Enhanced metadata with canonical URLs and Open Graph
+    return {
+      ...baseMetadata,
+      alternates: {
+        canonical: `${process.env.NEXT_PUBLIC_BASE_URL}/${locale}/products/${product.handle}`,
+        languages: {
+          'pl': `${process.env.NEXT_PUBLIC_BASE_URL}/pl/products/${product.handle}`,
+          'en': `${process.env.NEXT_PUBLIC_BASE_URL}/en/products/${product.handle}`,
+          'x-default': `${process.env.NEXT_PUBLIC_BASE_URL}/products/${product.handle}`,
+        },
+      },
+      openGraph: {
+        ...baseMetadata.openGraph,
+        images: product.images?.[0] ? [
+          {
+            url: product.images[0].url,
+            width: 1200,
+            height: 630,
+            alt: product.title,
+            type: 'image/webp'
+          }
+        ] : [],
+      },
+    }
   } catch (error) {
     console.error("Error generating product metadata:", error)
     return {
@@ -55,9 +84,29 @@ export default async function ProductPage({
 }) {
   const { handle, locale } = await params
 
+  // ✅ Fetch product ONCE and pass it down (avoid double fetch)
+  const { response } = await listProducts({
+    countryCode: locale,
+    queryParams: { handle },
+  })
+  const product = response.products[0]
+
   return (
-    <main className="container">
-      <ProductDetailsPage handle={handle} locale={locale} />
-    </main>
+    <>
+      {/* ✅ Preload main product image (App Router way) */}
+      {product?.images?.[0] && (
+        <link
+          rel="preload"
+          as="image"
+          href={product.images[0].url}
+          // @ts-ignore - fetchPriority is valid but not in types
+          fetchPriority="high"
+        />
+      )}
+      
+      <main className="container">
+        <ProductDetailsPage handle={handle} locale={locale} product={product} />
+      </main>
+    </>
   )
 }

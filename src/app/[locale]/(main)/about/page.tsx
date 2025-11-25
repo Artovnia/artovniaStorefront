@@ -51,11 +51,11 @@ export const revalidate = 86400 // Revalidate once per day
 
 export default async function AboutPage() {
   // Generate structured data
-  const breadcrumbJsonLd = await generateBreadcrumbJsonLd([
+  const breadcrumbJsonLd = generateBreadcrumbJsonLd([
     { label: "Strona główna", path: "/" },
     { label: "O nas", path: "/about" },
   ])
-  const organizationJsonLd = await generateOrganizationJsonLd()
+  const organizationJsonLd = generateOrganizationJsonLd()
 
   return (
     <>

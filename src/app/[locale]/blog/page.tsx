@@ -153,7 +153,7 @@ export default async function BlogPage() {
   const categories = await getBlogCategories()
   
   // Generate breadcrumb structured data
-  const breadcrumbJsonLd = await generateBreadcrumbJsonLd([
+  const breadcrumbJsonLd = generateBreadcrumbJsonLd([
     { label: "Strona główna", path: "/" },
     { label: "Blog", path: "/blog" },
   ])

@@ -1,26 +1,70 @@
 import { HttpTypes } from "@medusajs/types"
 import { Metadata } from "next"
-import { headers } from "next/headers"
 
-// Helper to get base URL from headers or environment
-export const getBaseUrl = async (): Promise<string> => {
-  const headersList = await headers()
-  const host = headersList.get("host")
-  const protocol = headersList.get("x-forwarded-proto") || "https"
-  return process.env.NEXT_PUBLIC_BASE_URL || `${protocol}://${host}`
+// ============================================
+// TYPES
+// ============================================
+
+interface JsonLdBase {
+  "@context": string
+  "@type": string
 }
 
-export const generateProductMetadata = async (
+// ============================================
+// HELPERS
+// ============================================
+
+const getBaseUrl = (): string => {
+  return process.env.NEXT_PUBLIC_BASE_URL || 'https://artovnia.com'
+}
+
+const generateDescription = (
+  text: string | undefined,
+  fallback: string,
+  maxLength: number = 155
+): string => {
+  if (!text) return fallback
+
+  if (text.length <= maxLength) return text
+
+  const truncated = text.substring(0, maxLength)
+  const lastSpace = truncated.lastIndexOf(' ')
+
+  return lastSpace > 0 
+    ? `${truncated.substring(0, lastSpace)}...`
+    : `${truncated}...`
+}
+
+const getProductAvailability = (product: HttpTypes.StoreProduct): string => {
+  const totalInventory = product.variants?.reduce((sum, variant) => {
+    return sum + (variant.inventory_quantity || 0)
+  }, 0) || 0
+
+  if (totalInventory === 0) return "https://schema.org/OutOfStock"
+  if (totalInventory < 5) return "https://schema.org/LimitedAvailability"
+  return "https://schema.org/InStock"
+}
+
+// ============================================
+// METADATA GENERATORS
+// ============================================
+
+export const generateProductMetadata = (
   product: HttpTypes.StoreProduct,
   locale: string = 'pl'
-): Promise<Metadata> => {
-  const baseUrl = await getBaseUrl()
-  const productUrl = `${baseUrl}/products/${product?.handle}`
-  
-  // Enhanced description with product details
-  const description = product?.description 
-    ? `${product.description.substring(0, 155)}...` 
-    : `${product?.title} - Unikalne dzieło sztuki dostępne na ${process.env.NEXT_PUBLIC_SITE_NAME}`
+): Metadata => {
+  if (!product?.handle || !product?.title) {
+    throw new Error('Product must have handle and title')
+  }
+
+  const baseUrl = getBaseUrl()
+  const productUrl = `${baseUrl}/products/${product.handle}`
+
+  const description = generateDescription(
+    product?.description,
+    `${product?.title} - Unikalne dzieło sztuki dostępne na ${process.env.NEXT_PUBLIC_SITE_NAME}`,
+    155
+  )
 
   return {
     title: `${product?.title} | ${process.env.NEXT_PUBLIC_SITE_NAME}`,
@@ -32,7 +76,7 @@ export const generateProductMetadata = async (
       'marketplace',
       'polski artysta',
       ...(product?.tags?.map(t => t.value) || [])
-    ].join(', '),
+    ].slice(0, 10).join(', '),
     robots: "index, follow",
     metadataBase: new URL(baseUrl),
     alternates: {
@@ -43,7 +87,6 @@ export const generateProductMetadata = async (
         'x-default': productUrl,
       },
     },
-
     openGraph: {
       title: product?.title,
       description,
@@ -71,16 +114,28 @@ export const generateProductMetadata = async (
   }
 }
 
-export const generateCategoryMetadata = async (
+export const generateCategoryMetadata = (
   category: HttpTypes.StoreProductCategory,
   locale: string = 'pl'
-) => {
-  const baseUrl = await getBaseUrl()
+): Metadata => {
+  const baseUrl = getBaseUrl()
   const categoryUrl = `${baseUrl}/categories/${category.handle}`
-  
-  const description = category.description 
-    ? category.description 
-    : `Przeglądaj ${category.name} - unikalne dzieła sztuki i rękodzieła od polskich artystów na ${process.env.NEXT_PUBLIC_SITE_NAME}`
+
+  const description = generateDescription(
+    category.description,
+    `Przeglądaj ${category.name} - unikalne dzieła sztuki i rękodzieła od polskich artystów na ${process.env.NEXT_PUBLIC_SITE_NAME}`,
+    155
+  )
+
+  // ✅ FIX: Proper image handling for categories
+  const getCategoryImage = (): string => {
+    if (category.metadata?.image) {
+      return category.metadata.image as string
+    }
+    return `${baseUrl}/images/categories/${category.handle}.png`
+  }
+
+  const categoryImage = getCategoryImage()
 
   return {
     robots: "index, follow",
@@ -102,7 +157,6 @@ export const generateCategoryMetadata = async (
         'x-default': categoryUrl,
       },
     },
-
     openGraph: {
       title: `${category.name} - Kategoria`,
       description,
@@ -110,7 +164,7 @@ export const generateCategoryMetadata = async (
       siteName: process.env.NEXT_PUBLIC_SITE_NAME,
       images: [
         {
-          url: `${baseUrl}/images/categories/${category.handle}.png` || `${baseUrl}/placeholder.webp`,
+          url: categoryImage,
           width: 1200,
           height: 630,
           alt: category.name,
@@ -125,9 +179,7 @@ export const generateCategoryMetadata = async (
       creator: "@artovnia",
       title: `${category.name} - Kategoria`,
       description,
-      images: [
-        `${baseUrl}/images/categories/${category.handle}.png` || `${baseUrl}/placeholder.webp`,
-      ],
+      images: [categoryImage],
     },
   }
 }
@@ -136,18 +188,13 @@ export const generateCategoryMetadata = async (
 // STRUCTURED DATA (JSON-LD) GENERATORS
 // ============================================
 
-/**
- * Generate Product JSON-LD structured data
- * Includes complete schema.org/Product markup with offers, brand, and availability
- */
-export const generateProductJsonLd = async (
+export const generateProductJsonLd = (
   product: HttpTypes.StoreProduct,
   price?: number,
   currency: string = 'PLN',
-  locale: string = 'pl'
-) => {
-  const baseUrl = await getBaseUrl()
-  
+): JsonLdBase & Record<string, any> => {
+  const baseUrl = getBaseUrl()
+
   return {
     "@context": "https://schema.org",
     "@type": "Product",
@@ -159,12 +206,15 @@ export const generateProductJsonLd = async (
       "@type": "Brand",
       "name": (product as any).seller?.name || product.metadata?.brand || "Artovnia"
     },
-    ...(price && {
+    ...(price && price > 0 && {
       "offers": {
         "@type": "Offer",
-        "price": (price / 100).toFixed(2), // Convert from cents
+        "price": (price / 100).toFixed(2),
         "priceCurrency": currency,
-        "availability": "https://schema.org/InStock", // Default to in stock for published products
+        "priceValidUntil": new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+          .toISOString()
+          .split('T')[0],
+        "availability": getProductAvailability(product),
         "url": `${baseUrl}/products/${product.handle}`,
         "seller": {
           "@type": "Organization",
@@ -172,23 +222,12 @@ export const generateProductJsonLd = async (
         }
       }
     }),
-    ...(product.metadata?.rating && {
-      "aggregateRating": {
-        "@type": "AggregateRating",
-        "ratingValue": product.metadata.rating,
-        "reviewCount": product.metadata.reviewCount || 1
-      }
-    })
   }
 }
 
-/**
- * Generate Organization JSON-LD structured data
- * For homepage and main layout
- */
-export const generateOrganizationJsonLd = async () => {
-  const baseUrl = await getBaseUrl()
-  
+export const generateOrganizationJsonLd = (): JsonLdBase & Record<string, any> => {
+  const baseUrl = getBaseUrl()
+
   return {
     "@context": "https://schema.org",
     "@type": "Organization",
@@ -209,13 +248,9 @@ export const generateOrganizationJsonLd = async () => {
   }
 }
 
-/**
- * Generate WebSite JSON-LD structured data with search action
- * For homepage
- */
-export const generateWebsiteJsonLd = async () => {
-  const baseUrl = await getBaseUrl()
-  
+export const generateWebsiteJsonLd = (): JsonLdBase & Record<string, any> => {
+  const baseUrl = getBaseUrl()
+
   return {
     "@context": "https://schema.org",
     "@type": "WebSite",
@@ -226,21 +261,18 @@ export const generateWebsiteJsonLd = async () => {
       "@type": "SearchAction",
       "target": {
         "@type": "EntryPoint",
-        "urlTemplate": `${baseUrl}/categories?q={search_term_string}`
+        "urlTemplate": `${baseUrl}/search?q={search_term_string}`
       },
       "query-input": "required name=search_term_string"
     }
   }
 }
 
-/**
- * Generate BreadcrumbList JSON-LD structured data
- */
-export const generateBreadcrumbJsonLd = async (
+export const generateBreadcrumbJsonLd = (
   items: Array<{ label: string; path: string }>
-) => {
-  const baseUrl = await getBaseUrl()
-  
+): JsonLdBase & Record<string, any> => {
+  const baseUrl = getBaseUrl()
+
   return {
     "@context": "https://schema.org",
     "@type": "BreadcrumbList",
@@ -253,14 +285,11 @@ export const generateBreadcrumbJsonLd = async (
   }
 }
 
-/**
- * Generate CollectionPage JSON-LD for category/collection pages
- */
-export const generateCollectionPageJsonLd = async (
+export const generateCollectionPageJsonLd = (
   name: string,
   description: string,
   url: string
-) => {
+): JsonLdBase & Record<string, any> => {
   return {
     "@context": "https://schema.org",
     "@type": "CollectionPage",
@@ -270,15 +299,12 @@ export const generateCollectionPageJsonLd = async (
   }
 }
 
-/**
- * Generate ItemList JSON-LD for product listings
- */
-export const generateItemListJsonLd = async (
+export const generateItemListJsonLd = (
   products: HttpTypes.StoreProduct[],
   listName: string = "Products"
-) => {
-  const baseUrl = await getBaseUrl()
-  
+): JsonLdBase & Record<string, any> => {
+  const baseUrl = getBaseUrl()
+
   return {
     "@context": "https://schema.org",
     "@type": "ItemList",

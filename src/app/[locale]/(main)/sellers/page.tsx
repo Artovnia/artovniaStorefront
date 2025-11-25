@@ -97,12 +97,12 @@ export default async function SellersPage({
     ...(sortBy && { sortBy })
   })
 
-  // Generate structured data
-  const breadcrumbJsonLd = await generateBreadcrumbJsonLd([
+  // Generate structured data for SEO
+  const breadcrumbJsonLd = generateBreadcrumbJsonLd([
     { label: "Strona główna", path: "/" },
     { label: "Sprzedawcy", path: "/sellers" },
   ])
-  const collectionJsonLd = await generateCollectionPageJsonLd(
+  const collectionJsonLd = generateCollectionPageJsonLd(
     "Sprzedawcy - Polscy Artyści",
     "Przeglądaj wszystkich sprzedawców na platformie Artovnia. Znajdź swoich ulubionych artystów i odkryj nowe talenty.",
     `${process.env.NEXT_PUBLIC_BASE_URL}/sellers`

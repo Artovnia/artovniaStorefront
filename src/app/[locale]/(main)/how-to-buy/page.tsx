@@ -50,7 +50,7 @@ export async function generateMetadata(): Promise<Metadata> {
 export const revalidate = 86400 // Revalidate once per day
 
 export default async function HowToBuyPage() {
-  const breadcrumbJsonLd = await generateBreadcrumbJsonLd([
+  const breadcrumbJsonLd = generateBreadcrumbJsonLd([
     { label: "Strona główna", path: "/" },
     { label: "Jak kupować", path: "/how-to-buy" },
   ])

@@ -9,9 +9,9 @@ import {
   HomeCategories,
   DesignerOfTheWeekSection,
 } from "@/components/sections"
-import { BatchPriceProvider } from "@/components/context/BatchPriceProvider"
-import { PromotionDataProvider } from "@/components/context/PromotionDataProvider"
 import { Suspense } from "react"
+import { PromotionDataProvider } from "@/components/context/PromotionDataProvider"
+import { BatchPriceProvider } from "@/components/context/BatchPriceProvider"
 import { retrieveCustomer } from "@/lib/data/customer"
 import { getUserWishlists } from "@/lib/data/wishlist"
 import { listProductsWithPromotions } from "@/lib/data/products"
@@ -37,6 +37,9 @@ const BlogSkeleton = () => (
     </div>
   </div>
 )
+
+// ❌ ISR REMOVED: Cannot cache user-specific data (wishlist)
+// export const revalidate = 300
 
 export const metadata: Metadata = {
   title: "Artovnia - Marketplace Sztuki i Rękodzieła Artystycznego | Unikalne Dzieła",
@@ -98,9 +101,6 @@ export const metadata: Metadata = {
   },
 }
 
-// ✅ Enable ISR (Incremental Static Regeneration) for CDN caching
-export const revalidate = 300 // Revalidate every 5 minutes
-
 // Loading skeletons for Suspense - only shown on initial load
 // Unified cache prevents skeleton loading on navigation back to homepage
 const HeroSkeleton = () => (
@@ -130,8 +130,8 @@ export default async function Home({
   const { locale } = await params
 
   // Generate structured data for SEO
-  const organizationJsonLd = await generateOrganizationJsonLd()
-  const websiteJsonLd = await generateWebsiteJsonLd()
+  const organizationJsonLd = generateOrganizationJsonLd()
+  const websiteJsonLd = generateWebsiteJsonLd()
 
 
   // ✅ OPTIMIZATION: PARALLEL DATA FETCHING ON SERVER
@@ -154,7 +154,7 @@ export default async function Home({
         return { user: null, wishlist: [] }
       }),
     
-    // ✅ NEW: Fetch promotional products on server (eliminates 3.3s client-side delay)
+    // ✅ Fetch promotional products on server (eliminates client-side delay)
     listProductsWithPromotions({
       page: 1,
       limit: 30,
@@ -198,19 +198,14 @@ export default async function Home({
     >
       <BatchPriceProvider currencyCode="PLN">
         <main className="flex flex-col text-primary">
-          {/* ✅ OPTIMIZED: Unified cache prevents skeleton loading on navigation */}
-          {/* Suspense provides better UX on initial load, cache makes navigation instant */}
+          {/* ✅ Hero renders immediately - no async dependencies */}
           <div className="mx-auto max-w-[1920px] w-full">
-            <Suspense fallback={<HeroSkeleton />}>
-              <Hero />
-            </Suspense>
+            <Hero />
           </div>
           
           {/* Smart Best Products - cached for 10 minutes with unified cache */}
           <div className="mx-auto max-w-[1920px] w-full mb-8 min-h-[400px] py-2 md:py-8">
-            <Suspense fallback={<ProductsSkeleton />}>
-              <SmartBestProductsSection user={user} wishlist={wishlist} />
-            </Suspense>
+            <SmartBestProductsSection user={user} wishlist={wishlist} />
           </div>
          
           {/* Full width dark section */}

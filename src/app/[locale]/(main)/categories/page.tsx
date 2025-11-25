@@ -52,7 +52,6 @@ export const metadata: Metadata = {
   },
 }
 
-export const revalidate = 300 // Revalidate every 5 minutes
 
 async function AllCategories({
   params,
@@ -90,13 +89,16 @@ async function AllCategories({
     },
   ]
 
-  // Generate structured data
-  const breadcrumbJsonLd = await generateBreadcrumbJsonLd(breadcrumbsItems)
-  const collectionJsonLd = await generateCollectionPageJsonLd(
-    "Wszystkie Kategorie",
-    "Przeglądaj wszystkie kategorie sztuki i rękodzieła na Artovnia",
-    `${process.env.NEXT_PUBLIC_BASE_URL}/categories`
-  )
+    // Generate structured data for SEO
+    const breadcrumbJsonLd = generateBreadcrumbJsonLd([
+      { label: "Strona główna", path: "/" },
+      { label: "Kategorie", path: "/categories" },
+    ])
+    const collectionJsonLd = generateCollectionPageJsonLd(
+      "Kategorie Produktów",
+      "Przeglądaj wszystkie kategorie produktów na Artovnia - sztuka, rękodzieło, design i więcej.",
+      `${process.env.NEXT_PUBLIC_BASE_URL}/categories`
+    )
 
   return (
     <>

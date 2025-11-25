@@ -7,153 +7,134 @@ import { PromotionDataProvider } from "@/components/context/PromotionDataProvide
 import { listProducts, batchFetchProductsByHandles } from "../../../lib/data/products"
 import { getVendorAvailability, getVendorHolidayMode, getVendorSuspension } from "../../../lib/data/vendor-availability"
 import { HomeProductSection } from "../HomeProductSection/HomeProductSection"
-import { unifiedCache } from "@/lib/utils/unified-cache"
 import ProductErrorBoundary from "@/components/molecules/ProductErrorBoundary/ProductErrorBoundary"
 import { Breadcrumbs } from "@/components/atoms/Breadcrumbs/Breadcrumbs"
 import { buildProductBreadcrumbs } from "@/lib/utils/breadcrumbs"
-import Head from "next/head"
 import { retrieveCustomer, isAuthenticated } from "@/lib/data/customer"
 import { getProductReviews } from "@/lib/data/reviews"
 import { generateProductJsonLd, generateBreadcrumbJsonLd } from "@/lib/helpers/seo"
+import { getUserWishlists } from "@/lib/data/wishlist"
 
 export const ProductDetailsPage = async ({
   handle,
   locale,
+  product: productProp,
 }: {
   handle: string
   locale: string
+  product?: any // Optional: if passed from page.tsx, skip fetch
 }) => {
- 
-  // Use unified cache for product data
-  const productCacheKey = `product:details:${handle}:${locale}`;
+  // ✅ OPTIMIZATION: Use passed product or fetch if not provided
+  let prod = productProp
   
-  const prod = await unifiedCache.get(
-    productCacheKey,
-    async () => {
-      const { response } = await listProducts({
-        countryCode: locale,
-        queryParams: { handle },
-      })
-      return response.products[0]
-    }
-  )
+  if (!prod) {
+    const { response } = await listProducts({
+      countryCode: locale,
+      queryParams: { handle },
+    })
+    prod = response.products[0]
+  }
 
   if (!prod) return null
-  
-  // Fetch seller's products with optimized batch processing
-  let sellerProducts: any[] = []
-  if (prod.seller?.id) {
-    try {
-      const sellerProductsCacheKey = `seller:products:${prod.seller.id}:${locale}`
-      
-      sellerProducts = await unifiedCache.get(sellerProductsCacheKey, async () => {
-        // Check if seller products are available in the API response
-        if (prod.seller?.products && prod.seller.products.length > 0) {
-          
-          // Extract handles for batch fetching (limit to 8 for performance)
-          const handles = prod.seller.products
+
+  // ✅ OPTIMIZATION: Step 2 - Parallel fetch EVERYTHING else (saves ~300-450ms)
+  const [
+    sellerProductsResult,
+    userResult,
+    reviewsResult,
+    vendorAvailabilityResult,
+    vendorHolidayResult,
+    vendorSuspensionResult,
+    breadcrumbsResult
+  ] = await Promise.allSettled([
+    // Seller products
+    prod.seller?.id && prod.seller.products && prod.seller.products.length > 0
+      ? batchFetchProductsByHandles({
+          handles: (prod.seller.products as any[])
             .slice(0, 8)
-            .map((sellerProduct: any) => sellerProduct.handle)
-            .filter(Boolean)
-          
-          if (handles.length === 0) return []
-          
-          // Use batch fetch instead of individual API calls
-          const fetchedProducts = await batchFetchProductsByHandles({
-            handles,
-            countryCode: locale,
-            limit: 8
-          })
-          
-          
-          return fetchedProducts
-        } else {
-          return []
+            .map((p: any) => p.handle)
+            .filter(Boolean),
+          countryCode: locale,
+          limit: 8
+        })
+      : Promise.resolve([]),
+    
+    // User data (customer + wishlist)
+    retrieveCustomer()
+      .then(async (user) => {
+        if (user) {
+          const wishlistData = await getUserWishlists()
+          const authenticated = await isAuthenticated()
+          return { user, wishlist: wishlistData.wishlists || [], authenticated }
         }
+        return { user: null, wishlist: [], authenticated: false }
       })
-    } catch (error) {
-      console.error('Error fetching seller products:', error)
-      sellerProducts = []
-    }
-  }
-  
-  // ✅ FIXED: Fetch customer, auth status, and reviews data WITHOUT user-specific cache keys
-  const [user, authenticated, reviewsData] = await Promise.allSettled([
-    retrieveCustomer(), // Direct call - no cache for user data
-    isAuthenticated(),  // Direct call - no cache for auth data
-    unifiedCache.get(`reviews:product:${prod.id}`, () => getProductReviews(prod.id)), // Safe cache key
+      .catch(() => ({ user: null, wishlist: [], authenticated: false })),
+    
+    // Reviews
+    getProductReviews(prod.id).catch(() => ({ reviews: [] })),
+    
+    // Vendor availability (with timeout)
+    prod.seller?.id
+      ? Promise.race([
+          getVendorAvailability(prod.seller.id),
+          new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 500))
+        ]).catch(() => undefined)
+      : Promise.resolve(undefined),
+    
+    // Vendor holiday mode (with timeout)
+    prod.seller?.id
+      ? Promise.race([
+          getVendorHolidayMode(prod.seller.id),
+          new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 500))
+        ]).catch(() => undefined)
+      : Promise.resolve(undefined),
+    
+    // Vendor suspension (with timeout)
+    prod.seller?.id
+      ? Promise.race([
+          getVendorSuspension(prod.seller.id),
+          new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 500))
+        ]).catch(() => undefined)
+      : Promise.resolve(undefined),
+    
+    // Breadcrumbs
+    buildProductBreadcrumbs(prod, locale)
   ])
 
   // Extract results with fallbacks
-  const customer = user.status === 'fulfilled' ? user.value : null
-  const isUserAuthenticated = authenticated.status === 'fulfilled' ? authenticated.value : false
-  const reviews = reviewsData.status === 'fulfilled' ? reviewsData.value?.reviews || [] : []
-
-  // Optimized vendor data fetching with unified cache and timeout protection
-  const vendorId = prod.seller?.id
+  const sellerProducts = sellerProductsResult.status === 'fulfilled' 
+    ? sellerProductsResult.value 
+    : []
   
-  let availability: any = undefined
-  let holidayMode: any = undefined
-  let suspension: any = undefined
+  const { user: customer, wishlist, authenticated: isUserAuthenticated } = userResult.status === 'fulfilled' 
+    ? userResult.value 
+    : { user: null, wishlist: [], authenticated: false }
   
-  if (vendorId) {
-    try {
-      // Use unified cache for vendor data with shorter TTL due to dynamic nature
-      const vendorDataPromises = [
-        unifiedCache.get(`vendor:availability:${vendorId}`, async () => {
-          return Promise.race([
-            getVendorAvailability(vendorId),
-            new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 500))
-          ])
-        }),
-        unifiedCache.get(`vendor:holiday:${vendorId}`, async () => {
-          return Promise.race([
-            getVendorHolidayMode(vendorId),
-            new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 500))
-          ])
-        }),
-        unifiedCache.get(`vendor:suspension:${vendorId}`, async () => {
-          return Promise.race([
-            getVendorSuspension(vendorId),
-            new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 500))
-          ])
-        })
-      ]
-      
-      const [availabilityResult, holidayModeResult, suspensionResult] = await Promise.allSettled(vendorDataPromises)
-      
-      availability = availabilityResult.status === 'fulfilled' ? availabilityResult.value : undefined
-      holidayMode = holidayModeResult.status === 'fulfilled' ? holidayModeResult.value : undefined
-      suspension = suspensionResult.status === 'fulfilled' ? suspensionResult.value : undefined
-      
-      if (process.env.NODE_ENV === 'development') {
-        if (availabilityResult.status === 'rejected' && !availabilityResult.reason?.message?.includes('Timeout')) {
-          console.warn('Vendor availability fetch failed:', availabilityResult.reason)
-        }
-        if (holidayModeResult.status === 'rejected' && !holidayModeResult.reason?.message?.includes('Timeout')) {
-          console.warn('Holiday mode fetch failed:', holidayModeResult.reason)
-        }
-        if (suspensionResult.status === 'rejected' && !suspensionResult.reason?.message?.includes('Timeout')) {
-          console.warn('Suspension fetch failed:', suspensionResult.reason)
-        }
-      }
-    } catch (error) {
-      if (process.env.NODE_ENV === 'development') {
-        console.error(`Unexpected error in vendor data fetching: ${error instanceof Error ? error.message : 'Unknown error'}`)
-      }
-    }
-  }
-
-  // Generate breadcrumbs using unified cache
-  const breadcrumbs = await unifiedCache.get(
-    `breadcrumbs:product:${handle}:${locale}`, 
-    () => buildProductBreadcrumbs(prod, locale)
-  )
+  const reviews = reviewsResult.status === 'fulfilled' 
+    ? reviewsResult.value?.reviews || [] 
+    : []
+  
+  const availability = vendorAvailabilityResult.status === 'fulfilled' 
+    ? (vendorAvailabilityResult.value as any)
+    : undefined
+  
+  const holidayMode = vendorHolidayResult.status === 'fulfilled' 
+    ? (vendorHolidayResult.value as any)
+    : undefined
+  
+  const suspension = vendorSuspensionResult.status === 'fulfilled' 
+    ? (vendorSuspensionResult.value as any)
+    : undefined
+  
+  const breadcrumbs = breadcrumbsResult.status === 'fulfilled'
+    ? breadcrumbsResult.value
+    : []
 
   // Generate structured data for SEO
   const productPrice = (prod as any).calculated_price?.calculated_amount
-  const productJsonLd = await generateProductJsonLd(prod, productPrice, 'PLN', locale)
-  const breadcrumbJsonLd = await generateBreadcrumbJsonLd(breadcrumbs)
+  const productJsonLd = generateProductJsonLd(prod, productPrice, 'PLN')
+  const breadcrumbJsonLd = generateBreadcrumbJsonLd(breadcrumbs)
 
   return (
     <>
@@ -167,19 +148,6 @@ export const ProductDetailsPage = async ({
         dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
       />
       
-      {/* CRITICAL: Preload main product image */}
-      <Head>
-        {prod.images?.[0] && (
-          <link
-            rel="preload"
-            as="image"
-            href={decodeURIComponent(prod.images[0].url)}
-            type="image/webp"
-            fetchPriority="high"
-          />
-        )}
-      </Head>
-      
       <ProductErrorBoundary>
         {/* Breadcrumbs */}
         <div className="max-w-[1920px] mx-auto px-4 lg:px-12 py-6 mb-4 text-xl">
@@ -189,7 +157,7 @@ export const ProductDetailsPage = async ({
         <PromotionDataProvider countryCode={locale}>
           <BatchPriceProvider currencyCode="PLN" days={30}>
             <VendorAvailabilityProvider
-              vendorId={vendorId}
+              vendorId={prod.seller?.id}
               vendorName={prod.seller?.name}
               availability={availability}
               holidayMode={holidayMode}
@@ -245,7 +213,7 @@ export const ProductDetailsPage = async ({
                   heading="" 
                   headingSpacing="mb-0" 
                   theme="dark"
-                  products={sellerProducts}
+                  products={sellerProducts as any}
                   isSellerSection={true}
                 />
               </div>
