@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useTransition, useEffect } from 'react'
+import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import clsx from 'clsx'
 import { HttpTypes } from '@medusajs/types'
@@ -58,10 +58,18 @@ export const CountrySelector = ({
   // Convert regions to display format
   const regionDisplays = regions.map(getRegionDisplay)
   
-  // Find current region or default to first (Poland)
+  // Find Poland as default region
+  const polandRegion = regionDisplays.find(r => 
+    r.name === 'Poland' || 
+    r.name === 'Polska' || 
+    regions.find(reg => reg.id === r.id)?.name === 'Poland' ||
+    regions.find(reg => reg.id === r.id)?.name === 'Polska'
+  ) || regionDisplays[0]
+  
+  // Find current region or default to Poland
   const current = currentRegionId 
-    ? regionDisplays.find(r => r.id === currentRegionId) || regionDisplays[0]
-    : regionDisplays[0]
+    ? regionDisplays.find(r => r.id === currentRegionId) || polandRegion
+    : polandRegion
 
   const handleRegionChange = async (regionId: string) => {
     setIsOpen(false)

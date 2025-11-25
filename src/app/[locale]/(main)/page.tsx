@@ -180,6 +180,19 @@ export default async function Home({
 
   return (
     <>
+      {/* ✅ Preload first hero image - Eliminates 1820ms Resource Load Delay on mobile */}
+      {/* Hero is a Client Component, so browser doesn't discover image until JS executes */}
+      {/* Preload starts download immediately when HTML loads, before JS runs */}
+      <link
+        rel="preload"
+        as="image"
+        href="/images/hero/Hero01.webp"
+        // @ts-ignore - imageSrcSet is valid but not in types
+        imageSrcSet="/_next/image?url=%2Fimages%2Fhero%2FHero01.webp&w=640&q=90 640w, /_next/image?url=%2Fimages%2Fhero%2FHero01.webp&w=750&q=90 750w, /_next/image?url=%2Fimages%2Fhero%2FHero01.webp&w=828&q=90 828w, /_next/image?url=%2Fimages%2Fhero%2FHero01.webp&w=1080&q=90 1080w, /_next/image?url=%2Fimages%2Fhero%2FHero01.webp&w=1200&q=90 1200w, /_next/image?url=%2Fimages%2Fhero%2FHero01.webp&w=1920&q=90 1920w, /_next/image?url=%2Fimages%2Fhero%2FHero01.webp&w=2048&q=90 2048w, /_next/image?url=%2Fimages%2Fhero%2FHero01.webp&w=3840&q=90 3840w"
+        // @ts-ignore - fetchPriority is valid but not in types
+        fetchPriority="high"
+      />
+      
       {/* Structured Data (JSON-LD) for SEO */}
       <script
         type="application/ld+json"
