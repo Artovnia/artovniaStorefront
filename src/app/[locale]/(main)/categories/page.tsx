@@ -1,5 +1,3 @@
-import { ProductListingSkeleton } from "@/components/organisms/ProductListingSkeleton/ProductListingSkeleton"
-import { Suspense } from "react"
 import { listCategoriesWithProducts } from "@/lib/data/categories"
 import { HttpTypes } from "@medusajs/types"
 import { isServerSideBot } from "@/lib/utils/server-bot-detection"
@@ -115,29 +113,12 @@ async function AllCategories({
     <PromotionDataProvider countryCode="PL" limit={50}>
       <BatchPriceProvider currencyCode="PLN">
         <main className="mx-auto max-w-[1920px] pt-24 pb-24">
-          <Suspense 
-            fallback={
-              <div className="space-y-4">
-                <div className="flex justify-between items-center">
-                  <div className="h-6 bg-gray-200 rounded w-32 animate-pulse"></div>
-                  <div className="h-10 bg-gray-200 rounded w-48 animate-pulse"></div>
-                </div>
-                <ProductListingSkeleton />
-                <div className="text-center py-8">
-                  <div className="inline-flex items-center space-x-2">
-                    <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
-                    <span className="text-sm text-gray-600">Loading components...</span>
-                  </div>
-                </div>
-              </div>
-            }
-          >
-            <SmartProductsListing 
-              locale={locale}
-              categories={allCategoriesWithTree}
-              serverSideIsBot={serverSideIsBot}
-            />
-          </Suspense>
+          {/* ✅ No Suspense needed - SmartProductsListing handles its own loading states */}
+          <SmartProductsListing 
+            locale={locale}
+            categories={allCategoriesWithTree}
+            serverSideIsBot={serverSideIsBot}
+          />
         </main>
       </BatchPriceProvider>
     </PromotionDataProvider>

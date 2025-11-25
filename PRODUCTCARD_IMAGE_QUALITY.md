@@ -7,7 +7,7 @@ Improve ProductCard image quality to handle varying merchant upload sizes and fo
 
 ## ✅ **Optimizations Applied**
 
-### **1. Increased Quality to 85**
+### **1. Optimized Quality to 75**
 ```typescript
 // BEFORE: No quality specified (default 75)
 <Image
@@ -16,24 +16,27 @@ Improve ProductCard image quality to handle varying merchant upload sizes and fo
   height={320}
 />
 
-// AFTER: Quality 85 for better first impression
+// AFTER: Quality 75 with optimizations
 <Image
   src={product.thumbnail}
   width={320}
   height={320}
-  quality={85}  // ✅ Higher quality for product cards
+  quality={75}  // ✅ Balanced quality for product cards
+  placeholder="blur"  // ✅ Smooth loading
+  loading={index < 4 ? "eager" : "lazy"}  // ✅ Smart loading
 />
 ```
 
-**Why 85?**
-- **Quality 75** (default): Good for most cases, but can show compression artifacts on detailed products
-- **Quality 85**: Sweet spot - noticeably better quality, only ~15% larger file size
-- **Quality 90+**: Diminishing returns, much larger files
+**Why 75?**
+- **Quality 75** (default): Perfect balance for product grids
+- **Quality 85-95**: Causes timeout errors when loading 20-30 cards simultaneously
+- **Quality 60**: Too low, visible compression artifacts
 
 **Impact**:
-- Better image quality for product cards (first impression matters!)
-- Handles varying merchant upload quality better
-- Only ~15% larger file size vs default
+- Good image quality for product cards
+- No timeout errors on category pages (20-30 cards)
+- Fast optimization even with many concurrent requests
+- Handles varying merchant upload quality well
 
 ---
 
@@ -70,20 +73,21 @@ sizes="(max-width: 640px) 160px, 252px"
 
 ### **File Size Impact** (for 320x320 image):
 
-| Quality | File Size | Visual Quality | Use Case |
-|---------|-----------|----------------|----------|
-| **40** | ~15 KB | Poor (artifacts) | Thumbnails only |
-| **60** | ~25 KB | Acceptable | Small images |
-| **75** | ~35 KB | Good (default) | General use |
-| **85** | ~40 KB | Excellent | Product cards ✅ |
-| **90** | ~50 KB | Excellent+ | Hero images |
-| **100** | ~80 KB | Perfect (overkill) | Not recommended |
+| Quality | File Size | Visual Quality | Use Case | Category Page (20 cards) |
+|---------|-----------|----------------|----------|--------------------------|
+| **40** | ~15 KB | Poor (artifacts) | Thumbnails only | Fast, but ugly |
+| **60** | ~25 KB | Acceptable | Small images | Fast, acceptable |
+| **75** | ~35 KB | Good | Product cards ✅ | **No timeouts** ✅ |
+| **85** | ~40 KB | Excellent | Single product | Timeout risk ⚠️ |
+| **90** | ~50 KB | Excellent+ | Hero images | **Timeouts** ❌ |
+| **95** | ~60 KB | Perfect | Not recommended | **Timeouts** ❌ |
 
-**ProductCard Choice: Quality 85**
-- +14% file size vs default (75)
-- Significantly better visual quality
-- Handles merchant uploads better
-- Good balance for e-commerce
+**ProductCard Choice: Quality 75**
+- Same as Next.js default
+- Good visual quality for product grids
+- **No timeout errors** when loading 20-30 cards
+- Fast optimization even with concurrent requests
+- Perfect balance for e-commerce category pages
 
 ---
 
