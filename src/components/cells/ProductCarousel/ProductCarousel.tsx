@@ -76,20 +76,20 @@ export const ProductCarousel = ({
             ref={emblaRef}
           >
             <div className="embla__container h-[350px] flex w-full">
-              {(slides || []).map((slide) => (
+              {(slides || []).map((slide, index) => (
                 <div
                   key={slide.id}
                   className="embla__slide min-w-0 h-[350px] cursor-zoom-in"
-                  onClick={() => openZoomModal(slides.indexOf(slide))}
+                  onClick={() => openZoomModal(index)}
                 >
                   <Image
                     src={decodeURIComponent(slide.url)}
                     alt="Product image"
                     width={700}
                     height={700}
-                    quality={85} // Reduced from 100 for faster loading
-                    priority={slides.indexOf(slide) === 0} // Only first image gets priority
-                    loading={slides.indexOf(slide) === 0 ? "eager" : "lazy"} // Lazy load non-priority images
+                    quality={75}
+                    priority={index === 0} // ✅ Only first image gets priority
+                    loading={index === 0 ? "eager" : "lazy"} // ✅ Lazy load non-first images
                     placeholder="blur"
                     blurDataURL="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFQEBAQAAAAAAAAAAAAAAAAAAAAX/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oADAMBAAIRAxEAPwCdABmX/9k="
                     sizes="(max-width: 768px) 100vw, 700px"
@@ -125,7 +125,8 @@ export const ProductCarousel = ({
                     src={decodeURIComponent(slide.url)}
                     alt={`Product thumbnail ${index + 1}`}
                     fill
-                    quality={60} // Lower quality for thumbnails
+                    quality={40}
+                    loading="lazy" // ✅ ALL thumbnails lazy load (don't compete with main image)
                     className="object-cover transition-transform duration-300 hover:scale-105"
                     sizes="80px"
                   />
@@ -167,9 +168,9 @@ export const ProductCarousel = ({
                     src={decodeURIComponent(slides[selectedImageIndex].url)}
                     alt="Product image"
                     fill
-                    quality={90} // Optimized quality for main image
-                    priority={selectedImageIndex === 0} // Only prioritize if it's the first image
-                    loading={selectedImageIndex === 0 ? "eager" : "lazy"} // Lazy load non-first images
+                    quality={80}
+                    priority={true} // ✅ ALWAYS priority for main image (regardless of index)
+                    loading="eager"
                     placeholder="blur"
                     blurDataURL="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFQEBAQAAAAAAAAAAAAAAAAAAAAX/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oADAMBAAIRAxEAPwCdABmX/9k="
                     className={`object-cover transition-all duration-500 ease-out hover:scale-105 ${

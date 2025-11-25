@@ -134,10 +134,13 @@ const ProductCardComponent = ({
                 alt={product.title}
                 width={320}
                 height={320}
+                quality={95}  // ✅ Higher quality for product cards (better first impression)
                 className="object-cover w-full object-center h-full lg:group-hover:scale-105 transition-all duration-300"
                 priority={index < 4}  // ✅ Only first 4 products get priority
                 loading={index < 4 ? "eager" : "lazy"}  // ✅ Lazy load rest
                 sizes="(max-width: 640px) 160px, 252px"  // ✅ Responsive sizes
+                placeholder="blur"  // ✅ Smooth loading with blur effect
+                blurDataURL="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFQEBAQAAAAAAAAAAAAAAAAAAAAX/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oADAMBAAIRAxEAPwCdABmX/9k="
               />
             ) : (
               <Image
@@ -145,6 +148,7 @@ const ProductCardComponent = ({
                 alt="Product placeholder"
                 width={100}
                 height={100}
+                quality={75}  // ✅ Lower quality for placeholder is fine
                 className="flex margin-auto w-[100px] h-auto"
               />
             )}

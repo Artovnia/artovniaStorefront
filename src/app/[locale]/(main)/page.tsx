@@ -38,8 +38,7 @@ const BlogSkeleton = () => (
   </div>
 )
 
-// ❌ ISR REMOVED: Cannot cache user-specific data (wishlist)
-// export const revalidate = 300
+
 
 export const metadata: Metadata = {
   title: "Artovnia - Marketplace Sztuki i Rękodzieła Artystycznego | Unikalne Dzieła",

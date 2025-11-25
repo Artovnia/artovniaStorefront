@@ -92,21 +92,8 @@ export default async function ProductPage({
   const product = response.products[0]
 
   return (
-    <>
-      {/* ✅ Preload main product image (App Router way) */}
-      {product?.images?.[0] && (
-        <link
-          rel="preload"
-          as="image"
-          href={product.images[0].url}
-          // @ts-ignore - fetchPriority is valid but not in types
-          fetchPriority="high"
-        />
-      )}
-      
-      <main className="container">
-        <ProductDetailsPage handle={handle} locale={locale} product={product} />
-      </main>
-    </>
+    <main className="container">
+      <ProductDetailsPage handle={handle} locale={locale} product={product} />
+    </main>
   )
 }
