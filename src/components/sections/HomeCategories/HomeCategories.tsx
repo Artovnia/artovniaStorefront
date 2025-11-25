@@ -4,7 +4,7 @@ export const categories: { id: number; name: string; handle: string; featured?: 
   {
     id: 1,
     name: "Zwierzęta",
-    handle: "zwierzeta",
+    handle: "Zwierzeta",
     featured: true, // Large featured category
   },
   {
