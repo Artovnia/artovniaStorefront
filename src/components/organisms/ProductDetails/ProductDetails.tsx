@@ -57,7 +57,14 @@ export const ProductDetails = async ({
 
   // Extract results
   const cartData = cart.status === 'fulfilled' ? cart.value : null
-  const regionData = cartData?.region || null
+  let regionData: HttpTypes.StoreRegion | null = cartData?.region || null
+  
+  // If no region from cart, fetch default region (Poland)
+  if (!regionData) {
+    const { getRegion } = await import('@/lib/data/regions')
+    const fetchedRegion = await getRegion(locale).catch(() => null)
+    regionData = fetchedRegion || null
+  }
   
  
   const customer = user.status === 'fulfilled' ? user.value : null

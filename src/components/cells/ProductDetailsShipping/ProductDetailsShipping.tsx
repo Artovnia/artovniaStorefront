@@ -27,7 +27,6 @@ export const ProductDetailsShipping = ({
   useEffect(() => {
     const fetchShippingMethods = async () => {
       if (!product?.id || !region?.id) {
-    
         setLoading(false)
         setShippingMethods([])
         return
@@ -37,10 +36,10 @@ export const ProductDetailsShipping = ({
         setLoading(true)
         setError(null)
         
-      
-
         // Call getProductShippingOptions directly - it has its own caching
         const shippingOptions = await getProductShippingOptions(product.id, region.id)
+
+     
 
         // Don't filter by seller - show all shipping options for the product's shipping profile
         let filteredMethods = shippingOptions

@@ -3,8 +3,8 @@ import { CategoryCard } from "@/components/organisms"
 export const categories: { id: number; name: string; handle: string; featured?: boolean }[] = [
   {
     id: 1,
-    name: "Biżuteria",
-    handle: "Bizuteria",
+    name: "Zwierzęta",
+    handle: "zwierzeta",
     featured: true, // Large featured category
   },
   {
@@ -14,8 +14,8 @@ export const categories: { id: number; name: string; handle: string; featured?: 
   },
   {
     id: 3,
-    name: "Dziecko",
-    handle: "Dziecko",
+    name: "Figury i rzeźby",
+    handle: "Figury-i-rzezby",
   },
   {
     id: 4,
@@ -24,8 +24,8 @@ export const categories: { id: number; name: string; handle: string; featured?: 
   },
   {
     id: 5,
-    name: "On",
-    handle: "On",
+    name: "Prezent dla niego",
+    handle: "Prezent-dla-niego",
   },
 ]
 
