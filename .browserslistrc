@@ -1,0 +1,15 @@
+# Modern browsers only - reduces polyfills by ~27KB
+# Targets browsers with >0.5% market share and last 2 versions
+# Excludes dead browsers and IE
+
+[production]
+>0.5%
+last 2 versions
+not dead
+not IE 11
+not op_mini all
+
+[development]
+last 1 chrome version
+last 1 firefox version
+last 1 safari version

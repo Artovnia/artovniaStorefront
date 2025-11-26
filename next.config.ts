@@ -7,6 +7,12 @@ const nextConfig: NextConfig = {
   poweredByHeader: false,
   compress: true,
   
+  compiler: {
+    removeConsole: process.env.NODE_ENV === 'production' ? {
+      exclude: ['error', 'warn'],
+    } : false,
+  },
+  
   experimental: {
     optimizeCss: true,
     optimizePackageImports: ['lucide-react', '@heroicons/react', 'react-icons'],

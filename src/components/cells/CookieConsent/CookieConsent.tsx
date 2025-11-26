@@ -35,9 +35,8 @@ export const CookieConsent: React.FC<CookieConsentProps> = ({
     // Check if user has already made a choice
     const cookiePreferences = localStorage.getItem('artovnia-cookie-preferences')
     if (!cookiePreferences) {
-      // ✅ OPTIMIZED: Reduced delay from 1000ms to 500ms for faster user interaction
-      const timer = setTimeout(() => setIsVisible(true), 500)
-      return () => clearTimeout(timer)
+      // Show immediately - component loads async anyway via dynamic import
+      setIsVisible(true)
     }
   }, [])
 
@@ -226,7 +225,7 @@ export const CookieConsent: React.FC<CookieConsentProps> = ({
           {/* Privacy Policy Link */}
           <div className="mt-4 text-center">
             <Link
-              href="/privacy-policy"
+              href="/polityka-prywatnosci"
               className="text-sm text-gray-500 hover:text-[#3B3634] transition-colors underline"
               aria-label="Przejdź do polityki prywatności"
             >

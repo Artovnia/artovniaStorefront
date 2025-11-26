@@ -107,7 +107,7 @@ export function DesignerOfTheWeekSection({ className = "" }: DesignerOfTheWeekSe
           </h2>
           
           {/* Seller Name */}
-          <h3 className="text-xl lg:text-2xl xl:text-3xl text-black font-medium">
+          <h3 className="text-xl lg:text-2xl xl:text-3xl text-[#3B3634]font-medium">
           <span className="font-instrument-serif">Poznaj</span> <span className="text-[#3B3634] font-instrument-serif italic">{featuredPost.sellerName}</span>
           </h3>
           
@@ -119,7 +119,7 @@ export function DesignerOfTheWeekSection({ className = "" }: DesignerOfTheWeekSe
           {/* Button */}
           <Link 
             href={`/blog/${featuredPost.slug.current}`}
-            className="inline-flex items-center justify-center px-8 py-3 ring-1 ring-[#3B3634] text-black font-medium text-sm lg:text-base hover:bg-[#3B3634] hover:text-white transition-colors duration-300 w-fit"
+            className="inline-flex items-center justify-center px-8 py-3 ring-1 ring-[#3B3634] text-[#3B3634] font-medium text-sm lg:text-base hover:bg-[#3B3634] hover:text-white transition-colors duration-300 w-fit"
           >
             ZOBACZ POST
           </Link>

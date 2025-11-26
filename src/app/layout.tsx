@@ -6,7 +6,7 @@ import { getMessages } from "next-intl/server"
 import { ToastProvider } from "@/components/providers/ToastProvider"
 
 
-// On-demand loading strategy - fonts load when needed, not upfront
+// Critical fonts preloaded, others load on-demand
 const instrumentSans = localFont({
   src: [
     {
@@ -42,7 +42,7 @@ const instrumentSans = localFont({
   ],
   variable: "--font-instrument-sans",
   display: "swap",
-  preload: false, // Don't preload - let browser decide based on usage
+  preload: true, // Preload critical fonts for faster LCP
   fallback: ['system-ui', '-apple-system', 'sans-serif'],
 })
 
@@ -61,7 +61,7 @@ const instrumentSerif = localFont({
   ],
   variable: "--font-instrument-serif",
   display: "swap",
-  preload: false, // Don't preload - let browser decide based on usage
+  preload: true, // Preload critical fonts for faster LCP
   fallback: ['Georgia', 'serif'],
 })
 
@@ -121,8 +121,8 @@ export default async function RootLayout({
         <link rel="dns-prefetch" href="https://artovnia-medusa.s3.eu-north-1.amazonaws.com" />
         
         {/* ✅ PRECONNECT: Sanity CDN for Blog Images - Medium Priority */}
-        <link rel="preconnect" href="https://cdn.sanity.io" crossOrigin="anonymous" />
-        <link rel="dns-prefetch" href="https://cdn.sanity.io" />
+        <link rel="preconnect" href="https://o56rau04.apicdn.sanity.io" crossOrigin="anonymous" />
+        <link rel="dns-prefetch" href="https://o56rau04.apicdn.sanity.io" />
       </head>
       <NextIntlClientProvider messages={messages}>
         <body
