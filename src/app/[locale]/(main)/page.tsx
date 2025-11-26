@@ -100,11 +100,6 @@ export const metadata: Metadata = {
   },
 }
 
-// Loading skeletons for Suspense - only shown on initial load
-// Unified cache prevents skeleton loading on navigation back to homepage
-const HeroSkeleton = () => (
-  <div className="w-full h-[20vh] sm:h-[40vh] lg:h-[50vh] min-h-[300px] sm:min-h-[350px] lg:min-h-[400px] bg-gray-200 animate-pulse" />
-)
 
 const ProductsSkeleton = () => (
   <div className="py-2 md:py-8 w-full">
@@ -215,7 +210,7 @@ export default async function Home({
             <Hero />
           </div>
           
-          {/* Smart Best Products - cached for 10 minutes with unified cache */}
+          {/* Smart Best Products - cached, renders immediately on navigation */}
           <div className="mx-auto max-w-[1920px] w-full mb-8 min-h-[400px] py-2 md:py-8">
             <SmartBestProductsSection user={user} wishlist={wishlist} />
           </div>

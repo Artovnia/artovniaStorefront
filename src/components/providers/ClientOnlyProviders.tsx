@@ -12,23 +12,12 @@ export const CookieConsent = dynamic(
   }
 );
 
-// ✅ IMMEDIATE RENDER: MobileUserNavigation - Shows UI immediately, data loads in background
-// Removed ssr: false to allow immediate rendering, but component is still client-only
+// ✅ CLIENT-ONLY: MobileUserNavigation - Only renders in browser to prevent hydration issues
+// Uses ssr: false to ensure server doesn't try to render this component
 export const MobileUserNavigation = dynamic(
   () => import('@/components/molecules/MobileUserNavigation').then(mod => ({ default: mod.MobileUserNavigation })),
   { 
-    loading: () => (
-      // Show skeleton/placeholder while component loads (very brief)
-      <nav className="fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-gray-200 md:hidden">
-        <div className="flex justify-around items-center h-16 px-2">
-          {[...Array(5)].map((_, i) => (
-            <div key={i} className="flex flex-col items-center justify-center flex-1 animate-pulse">
-              <div className="w-6 h-6 bg-gray-200 rounded mb-1"></div>
-              <div className="w-12 h-2 bg-gray-200 rounded"></div>
-            </div>
-          ))}
-        </div>
-      </nav>
-    )
+    ssr: false,  // Critical: Prevent server rendering to avoid hydration mismatch
+    loading: () => null  // No loading state needed - renders quickly on client
   }
 );

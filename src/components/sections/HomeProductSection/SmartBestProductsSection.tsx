@@ -28,15 +28,11 @@ export const SmartBestProductsSection = async ({
     // This caches on the server, so it persists between page navigations
     const getCachedProducts = unstable_cache(
       async () => {
-        // ✅ PHASE 1.2: REDUCED OVER-FETCHING
-        // Fetch only 15 products instead of 50 (70% less data transfer)
-        // Still provides good selection while improving performance
         const result = await listProducts({
           countryCode: locale,
           queryParams: {
             limit: 15, // Optimized from 50 to 15 (only display 10, keep 5 as buffer)
             order: "created_at",
-            // Note: expand parameter not supported in this API, but we can still access nested data
           },
         })
         
