@@ -47,7 +47,7 @@ const CategoryNavItem = ({ category, isActive, onHover, onClose }: {
           "flex items-center my-3 md:my-0",
           category.handle === currentCategoryHandle && "md:border-b-2 md:border-primary text-primary",
           isActive && "bg-primary/5",
-          "font-['Instrument_Sans']"
+          "font-instrument-sans" // Use CSS variable for self-hosted fonts
         )}
       >
         <span>{category.name}</span>
@@ -87,7 +87,7 @@ export const FullWidthDropdown = ({
         "w-full z-50",
         "bg-primary border-t border-[#3B3634] shadow-lg ring-1 ring-[#BFB7AD]",
         "max-h-[400px] overflow-y-auto",
-        "font-['Instrument_Sans']"
+        "font-instrument-sans" // Use CSS variable for self-hosted fonts
       )}
       onMouseEnter={onMouseEnter}
       onMouseLeave={onMouseLeave}
@@ -180,7 +180,7 @@ export const CategoryNavbar = ({ categories, onClose, onDropdownStateChange }: C
     <nav 
       className={cn(
         "flex md:items-center flex-col md:flex-row relative",
-        "font-['Instrument_Sans']"
+        "font-instrument-sans" // Use CSS variable for self-hosted fonts
       )}
     >
       {/* All Products Link */}
@@ -190,7 +190,7 @@ export const CategoryNavbar = ({ categories, onClose, onDropdownStateChange }: C
         className={cn(
           "uppercase my-3 md:my-0 flex items-center justify-between text-lg hover:bg-primary/10 transition-colors mr-2",
           "px-4 py-2 font-medium",
-          "font-['Instrument_Sans']"
+          "font-instrument-sans" // Use CSS variable for self-hosted fonts
         )}
       >
         Wszystkie produkty
@@ -214,7 +214,7 @@ export const CategoryNavbar = ({ categories, onClose, onDropdownStateChange }: C
         className={cn(
           "uppercase my-3 md:my-0 flex items-center justify-between text-lg hover:bg-red-50 transition-colors ml-auto",
           "px-4 py-2 font-medium text-red-600 hover:text-red-700",
-          "font-['Instrument_Sans']"
+          "font-instrument-sans" // Use CSS variable for self-hosted fonts
         )}
       >
         Promocje

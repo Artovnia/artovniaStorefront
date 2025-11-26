@@ -1,23 +1,68 @@
 import type { Metadata } from "next"
-import { Instrument_Sans, Instrument_Serif } from "next/font/google"
+import localFont from "next/font/local"
 import "./globals.css"
 import { NextIntlClientProvider } from "next-intl"
 import { getMessages } from "next-intl/server"
 import { ToastProvider } from "@/components/providers/ToastProvider"
 
 
-
-const instrumentSans = Instrument_Sans({
+// On-demand loading strategy - fonts load when needed, not upfront
+const instrumentSans = localFont({
+  src: [
+    {
+      path: "../../public/fonts/instrument-sans-v4-latin-ext-regular.woff2",
+      weight: "400",
+      style: "normal",
+    },
+    {
+      path: "../../public/fonts/instrument-sans-v4-latin-ext-600.woff2",
+      weight: "600",
+      style: "normal",
+    },
+    {
+      path: "../../public/fonts/instrument-sans-v4-latin-ext-700.woff2",
+      weight: "700",
+      style: "normal",
+    },
+    {
+      path: "../../public/fonts/instrument-sans-v4-latin-ext-italic.woff2",
+      weight: "400",
+      style: "italic",
+    },
+    {
+      path: "../../public/fonts/instrument-sans-v4-latin-ext-600italic.woff2",
+      weight: "600",
+      style: "italic",
+    },
+    {
+      path: "../../public/fonts/instrument-sans-v4-latin-ext-700italic.woff2",
+      weight: "700",
+      style: "italic",
+    },
+  ],
   variable: "--font-instrument-sans",
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],  // Added medium, semibold, and bold weights
+  display: "swap",
+  preload: false, // Don't preload - let browser decide based on usage
+  fallback: ['system-ui', '-apple-system', 'sans-serif'],
 })
 
-const instrumentSerif = Instrument_Serif({
+const instrumentSerif = localFont({
+  src: [
+    {
+      path: "../../public/fonts/instrument-serif-v5-latin-ext-regular.woff2",
+      weight: "400",
+      style: "normal",
+    },
+    {
+      path: "../../public/fonts/instrument-serif-v5-latin-ext-italic.woff2",
+      weight: "400",
+      style: "italic",
+    },
+  ],
   variable: "--font-instrument-serif",
-  subsets: ["latin"],
-  weight: ["400"],
-  style: ["normal", "italic"], // Add support for italic style
+  display: "swap",
+  preload: false, // Don't preload - let browser decide based on usage
+  fallback: ['Georgia', 'serif'],
 })
 
 export const metadata: Metadata = {
@@ -64,6 +109,9 @@ export default async function RootLayout({
   return (
     <html lang={locale} className={`${instrumentSans.variable} ${instrumentSerif.variable}`}>
       <head>
+        {/* ✅ SELF-HOSTED FONTS: Next.js automatically preloads fonts with preload: true */}
+        {/* No manual preload needed - Next.js handles it optimally */}
+        
         {/* ✅ PRECONNECT: Backend API - Highest Priority (saves 200-400ms) */}
         <link rel="preconnect" href={backendUrl} crossOrigin="anonymous" />
         <link rel="dns-prefetch" href={backendUrl} />
@@ -75,10 +123,6 @@ export default async function RootLayout({
         {/* ✅ PRECONNECT: Sanity CDN for Blog Images - Medium Priority */}
         <link rel="preconnect" href="https://cdn.sanity.io" crossOrigin="anonymous" />
         <link rel="dns-prefetch" href="https://cdn.sanity.io" />
-        
-        {/* ✅ PRECONNECT: Google Fonts - Low Priority (already optimized by Next.js) */}
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
       </head>
       <NextIntlClientProvider messages={messages}>
         <body

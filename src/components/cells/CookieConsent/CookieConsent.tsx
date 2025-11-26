@@ -35,8 +35,8 @@ export const CookieConsent: React.FC<CookieConsentProps> = ({
     // Check if user has already made a choice
     const cookiePreferences = localStorage.getItem('artovnia-cookie-preferences')
     if (!cookiePreferences) {
-      // Show banner after a short delay for better UX
-      const timer = setTimeout(() => setIsVisible(true), 1000)
+      // ✅ OPTIMIZED: Reduced delay from 1000ms to 500ms for faster user interaction
+      const timer = setTimeout(() => setIsVisible(true), 500)
       return () => clearTimeout(timer)
     }
   }, [])

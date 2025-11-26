@@ -179,7 +179,7 @@ export const MobileUserNavigation = () => {
   const [regions, setRegions] = useState<HttpTypes.StoreRegion[]>([])
   const [currentRegionId, setCurrentRegionId] = useState<string | undefined>()
 
-  // Check authentication status and fetch regions
+  // ✅ OPTIMIZED: Defer heavy API calls until after initial render (improves perceived performance)
   useEffect(() => {
     const checkAuth = async () => {
       try {
@@ -205,11 +205,27 @@ export const MobileUserNavigation = () => {
       }
     }
     
-    checkAuth()
-    fetchRegions()
+    // Defer API calls until browser is idle (after initial render)
+    // This allows the UI to render immediately, then fetch data
+    if (typeof window !== 'undefined' && 'requestIdleCallback' in window) {
+      const idleCallbackId = requestIdleCallback(() => {
+        checkAuth()
+        fetchRegions()
+      }, { timeout: 500 }) // Fallback after 500ms if browser never idle
+      
+      return () => cancelIdleCallback(idleCallbackId)
+    } else {
+      // Fallback for browsers without requestIdleCallback (Safari)
+      const timeoutId = setTimeout(() => {
+        checkAuth()
+        fetchRegions()
+      }, 100) // Small delay to allow render
+      
+      return () => clearTimeout(timeoutId)
+    }
   }, [])
 
-  // Fetch unread messages count - only for authenticated users
+  // ✅ OPTIMIZED: Defer unread messages check - only for authenticated users
   useEffect(() => {
     if (!isAuthenticated) {
       setHasUnreadMessages(false)
@@ -230,16 +246,35 @@ export const MobileUserNavigation = () => {
       checkUnreadMessages()
     }
     
-    // Initial check
-    checkUnreadMessages()
-    
-    // Poll every 2 minutes instead of 30 seconds to reduce server load
+    // Defer initial check until browser is idle
+    let idleCallbackId: number | undefined
+    let timeoutId: NodeJS.Timeout | undefined
     const intervalId = setInterval(checkUnreadMessages, 120000)
-    window.addEventListener('messages:marked-as-read', handleMarkedAsRead)
+    
+    if (typeof window !== 'undefined') {
+      window.addEventListener('messages:marked-as-read', handleMarkedAsRead)
+      
+      if ('requestIdleCallback' in window) {
+        idleCallbackId = requestIdleCallback(() => {
+          checkUnreadMessages()
+        }, { timeout: 1000 }) // Check after 1s if browser never idle
+      } else {
+        // Fallback for browsers without requestIdleCallback (Safari)
+        timeoutId = setTimeout(checkUnreadMessages, 200)
+      }
+    }
     
     return () => {
+      if (idleCallbackId !== undefined) {
+        cancelIdleCallback(idleCallbackId)
+      }
+      if (timeoutId !== undefined) {
+        clearTimeout(timeoutId)
+      }
       clearInterval(intervalId)
-      window.removeEventListener('messages:marked-as-read', handleMarkedAsRead)
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('messages:marked-as-read', handleMarkedAsRead)
+      }
     }
   }, [isAuthenticated])
 

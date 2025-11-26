@@ -1,7 +1,8 @@
 import { Footer, Header } from '@/components/organisms';
-import { CookieConsent, ConditionalNewsletter } from '@/components/cells';
+import { ConditionalNewsletter } from '@/components/cells';
 import { CartProvider } from '@/components/context/CartContext';
-import { MobileUserNavigation } from '@/components/molecules';
+// ✅ OPTIMIZED: Lazy-loaded client components (Next.js 15 requires client wrapper for ssr: false)
+import { CookieConsent, MobileUserNavigation } from '@/components/providers/ClientOnlyProviders';
 
 export default async function RootLayout({
   children,
