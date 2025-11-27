@@ -94,14 +94,13 @@ export const metadata: Metadata = {
 
 export default async function RootLayout({
   children,
-  params,
 }: Readonly<{
   children: React.ReactNode
-  params: Promise<{ locale: string }>
 }>) {
   const messages = await getMessages()
 
-  const { locale } = await params
+  // Root layout doesn't have locale param - it's in [locale] segment
+  const locale = 'pl' // Default locale
   
   // Get backend URL for preconnect
   const backendUrl = process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || 'http://localhost:9000'

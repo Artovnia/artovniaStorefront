@@ -14,6 +14,7 @@ import { GalleryCarousel } from "./GalleryCarousel/GalleryCarousel"
 import { SellerHeading } from "./SellerHeading/SellerHeading"
 import { SellerFooter } from "./SellerFooter/SellerFooter"
 import { SellerTabs } from "./SellerTabs/SellerTabs"
+import { SellerSidebar } from "./SellerSidebar/SellerSidebar"
 import { CartSummary } from "./CartSummary/CartSummary"
 import { CartItems } from "./CartItems/CartItems"
 import { WishlistTabs } from "./WishlistTabs/WishlistTabs"
@@ -51,6 +52,7 @@ export {
   SellerHeading,
   SellerFooter,
   SellerTabs,
+  SellerSidebar,
   CartSummary,
   CartItems,
   WishlistTabs,

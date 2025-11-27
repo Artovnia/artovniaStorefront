@@ -129,7 +129,7 @@ export async function getVendorHolidayMode(vendorId: string): Promise<VendorHoli
       {
         next: { revalidate: 3600 }, // Cache for 1 hour (ISR compatible)
         headers: getHeaders(),
-        signal: AbortSignal.timeout(10000)
+        signal: AbortSignal.timeout(15000) // Increased to 15s for slow systems
       }
     )
     if (!response.ok) {
@@ -222,7 +222,7 @@ export async function getVendorSuspension(vendorId: string): Promise<VendorSuspe
       {
         next: { revalidate: 3600 }, // Cache for 1 hour (ISR compatible)
         headers: getHeaders(),
-        signal: AbortSignal.timeout(10000)
+        signal: AbortSignal.timeout(15000) // Increased to 15s for slow systems
       }
     )
 

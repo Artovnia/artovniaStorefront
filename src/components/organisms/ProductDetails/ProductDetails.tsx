@@ -1,4 +1,3 @@
-// src/components/organisms/ProductDetails/ProductDetails.tsx
 import {
   ProductDetailsFooter,
   ProductDetailsHeader,

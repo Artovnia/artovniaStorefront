@@ -27,13 +27,19 @@ export const SellerReviewTab = async ({
 
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-4 mt-8">
-      <div className="border rounded-sm p-4">
-        <SellerScore rate={rating} reviewCount={reviewCount} />
-      </div>
-      <div className="col-span-3 border rounded-sm p-4">
-        <h3 className="heading-sm uppercase border-b pb-4">Recenzje sprzedawcy</h3>
-        <SellerReviewList reviews={filteredReviews} />
+    <div className="w-full mt-8">
+      {/* Reviews layout - adjusted for two-column page layout */}
+      <div className="flex flex-col gap-6">
+        {/* Score Card */}
+        <div className="border rounded-sm p-4 lg:max-w-xs">
+          <SellerScore rate={rating} reviewCount={reviewCount} />
+        </div>
+        
+        {/* Reviews List */}
+        <div className="border rounded-sm p-4">
+          <h3 className="heading-sm uppercase border-b pb-4">Recenzje sprzedawcy</h3>
+          <SellerReviewList reviews={filteredReviews} />
+        </div>
       </div>
     </div>
   )

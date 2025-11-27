@@ -12,11 +12,13 @@ import { sdk } from "@/lib/config"
 export const MessageForm = ({
   seller_id,
   seller_name,
-  isAuthenticated
+  isAuthenticated,
+  compact = false
 }: {
   seller_id: string
   seller_name: string
   isAuthenticated: boolean
+  compact?: boolean
 }) => {
   const [formData, setFormData] = useState({
     subject: "",
@@ -102,9 +104,11 @@ export const MessageForm = ({
   // Wrap the form in the AuthCheck component
   return (
     <AuthCheck isAuthenticated={isAuthenticated}>
-      <form onSubmit={handleSubmit} className="space-y-6">
-        <div className="space-y-2">
-          <label htmlFor="subject" className="block text-sm font-medium">Temat</label>
+      <form onSubmit={handleSubmit} className={compact ? "space-y-3" : "space-y-6"}>
+        <div className={compact ? "space-y-1" : "space-y-2"}>
+          <label htmlFor="subject" className={compact ? "block text-xs font-medium" : "block text-sm font-medium"}>
+            Temat
+          </label>
           <Input
             id="subject"
             name="subject"
@@ -112,26 +116,36 @@ export const MessageForm = ({
             onChange={handleChange}
             placeholder="Wpisz temat wiadomości"
             required
+            className={compact ? "text-sm py-2" : ""}
           />
         </div>
         
         {/* Type selection removed as requested */}
         
-        <div className="space-y-2">
-          <label htmlFor="message-content" className="block text-sm font-medium">Wiadomość</label>
+        <div className={compact ? "space-y-1" : "space-y-2"}>
+          <label htmlFor="message-content" className={compact ? "block text-xs font-medium" : "block text-sm font-medium"}>
+            Wiadomość
+          </label>
           <Textarea
             id="message-content"
             name="content"
             value={formData.content}
             onChange={handleChange}
             placeholder="Wpisz swoją wiadomość tutaj..."
-            rows={6}
+            rows={compact ? 4 : 6}
             required
+            className={compact ? "text-sm py-2" : ""}
           />
         </div>
         
         <div className="flex justify-end">
-          <Button type="submit" variant="filled" disabled={isSubmitting}>
+          <Button 
+            type="submit" 
+            variant="filled" 
+            disabled={isSubmitting}
+            size={compact ? "small" : "large"}
+            className={compact ? "text-xs" : ""}
+          >
             {isSubmitting ? "Wysyłanie..." : "Wyślij wiadomość"}
           </Button>
         </div>

@@ -49,7 +49,7 @@ export const SellerTabs = ({
       <div className="mt-8 border rounded-sm p-4">
         <h3 className="heading-sm mb-4 text-error">Błąd konfiguracji karty sprzedawcy</h3>
         <p className="text-secondary">Nieprawidłowe ID sprzedawcy.</p>
-        <p className="mt-2 text-xs text-gray-500">Błąd: {typeof seller_id === 'string' ? seller_id : String(seller_id)}</p>
+        <p className="mt-2 text-xs text-[#3B3634]">Błąd: {typeof seller_id === 'string' ? seller_id : String(seller_id)}</p>
       </div>
     );
   }
@@ -66,35 +66,23 @@ export const SellerTabs = ({
   
   // Safely construct links to prevent undefined interpolation
   // Note: labels are in Polish but URLs match English directory structure
+  // Message tab removed - contact form is now in sidebar
   const tabsList = [
     { label: "produkty", link: `/sellers/${seller_handle}/` },
-    // {
-    //   label: "sold",
-    //   link: `/sellers/${seller_handle}/sold`,
-    // },
     {
       label: "recenzje", 
       link: `/sellers/${seller_handle}/reviews`,
     },
-    {
-      label: "wiadomości", 
-      link: `/sellers/${seller_handle}/messages`,
-    },
   ]
 
   return (
-    <div className="mt-8 w-full max-w-7xl mx-auto">
+    <div className="w-full">
       <TabsList list={tabsList} activeTab={tab} />
       <TabsContent value="produkty" activeTab={tab}>
         <Suspense fallback={<ProductListingSkeleton />}>
           <SellerProductListing seller_id={seller_id} />
         </Suspense>
       </TabsContent>
-      {/* <TabsContent value="sold" activeTab={tab}>
-        <Suspense fallback={<ProductListingSkeleton />}>
-          <ProductListing />
-        </Suspense>
-      </TabsContent> */}
       <TabsContent value="recenzje" activeTab={tab}>
         <Suspense fallback={<div className="mt-8 p-4 border">Ładowanie recenzji...</div>}>
           {seller_handle && 
@@ -105,28 +93,7 @@ export const SellerTabs = ({
           ) : (
             <div className="mt-8 border rounded-sm p-4">
               <p className="text-error">Nie można załadować recenzji - brak identyfikatora sprzedawcy</p>
-              <p className="mt-2 text-xs text-gray-500">Błąd: {typeof seller_handle === 'string' ? seller_handle : String(seller_handle)}</p>
-            </div>
-          )}
-        </Suspense>
-      </TabsContent>
-      <TabsContent value="wiadomości" activeTab={tab}>
-        <Suspense fallback={<div className="mt-8 p-4 ">Ładowanie wiadomości...</div>}>
-          {seller_id && 
-           seller_id !== 'undefined' && 
-           seller_id !== 'null' && 
-           seller_id !== '[object Object]' ? (
-            <ServerAuthProvider 
-              seller_id={seller_id} 
-              seller_name={seller_name && 
-                         seller_name !== 'undefined' && 
-                         seller_name !== 'null' && 
-                         seller_name !== '[object Object]' ? 
-                         seller_name : seller_handle} 
-            />
-          ) : (
-            <div className="mt-8  rounded-sm p-4">
-              <p className="text-error">Nie można załadować wiadomości - brak ID sprzedawcy</p>
+              <p className="mt-2 text-xs text-[#3B3634]">Błąd: {typeof seller_handle === 'string' ? seller_handle : String(seller_handle)}</p>
             </div>
           )}
         </Suspense>

@@ -1,11 +1,6 @@
-import { SellerTabs } from "@/components/organisms"
-import { SellerPageHeader } from "@/components/sections"
-import { retrieveCustomer } from "@/lib/data/customer"
-import { getSellerByHandle } from "@/lib/data/seller"
-import { getSellerReviews } from "@/lib/data/reviews"
-import { SellerProps } from "@/types/seller"
-import { notFound } from "next/navigation"
+import { redirect, notFound } from "next/navigation"
 import { Metadata } from "next"
+import { getSellerByHandle } from "@/lib/data/seller"
 
 // Define the expected params type structure for Next.js 15
 type PageParams = {
@@ -49,45 +44,9 @@ export default async function SellerMessagesPage(props: PageProps) {
   try {
     const { handle, locale } = await props.params
     
-    // Check if handle is valid before proceeding
-    if (!handle || handle === 'undefined') {
-      console.error(`Invalid seller handle: ${handle} for messages page`);
-      return notFound()
-    }
-    
-    console.log(`Fetching seller with handle: ${handle} for messages page`);
-    const seller = await getSellerByHandle(handle)
-
-    if (!seller) {
-      console.log(`Seller with handle ${handle} not found for messages page, showing 404 page`);
-      return notFound()
-    }
-
-    const user = await retrieveCustomer()
-    
-    // Fetch seller reviews
-    const { reviews = [] } = await getSellerReviews(handle)
-    
-    // Merge reviews data with seller object
-    const sellerWithReviews = seller ? {
-      ...seller,
-      reviews: reviews || []
-    } : null
-
-    const tab = "wiadomości"
-
-    return (
-      <main className="container">
-        <SellerPageHeader seller={sellerWithReviews as SellerProps} user={user} />
-        <SellerTabs
-          tab={tab}
-          seller_id={seller.id}
-          seller_handle={seller.handle}
-          seller_name={seller.name}
-          locale={locale}
-        />
-      </main>
-    )
+    // Messages tab has been removed - contact form is now in the sidebar
+    // Redirect to main seller page where contact form is always visible
+    redirect(`/${locale}/sellers/${handle}`)
   } catch (error) {
     console.error(`Error in SellerMessagesPage:`, error);
     return notFound();

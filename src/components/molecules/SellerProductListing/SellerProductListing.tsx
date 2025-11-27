@@ -13,8 +13,8 @@ import { Pagination } from '@/components/cells/Pagination/Pagination'
 // Simple loading component
 const SellerProductListingSkeleton = () => (
   <div className="animate-pulse">
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
-      {Array.from({ length: 8 }).map((_, i) => (
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+      {Array.from({ length: 6 }).map((_, i) => (
         <div key={i} className="h-64 bg-gray-200 rounded"></div>
       ))}
     </div>
@@ -138,7 +138,7 @@ export const SellerProductListing = ({
   return (
     <div className={className}>
       {/* Products Grid */}
-      <div className="flex flex-col items-center mx-auto w-full max-w-7xl">
+      <div className="flex flex-col items-center mx-auto w-full mt-8">
         {!products.length ? (
           <div className="text-center w-full my-10">
             <h2 className="uppercase text-primary heading-lg">Brak produktów</h2>
@@ -149,12 +149,12 @@ export const SellerProductListing = ({
         ) : (
           <>
             {/* Results Count */}
-            <div className="mb-6">
+            <div className="mb-6 w-full">
               <div className="label-md text-gray-600">{`${count} produkt${count === 1 ? '' : count < 5 ? 'y' : 'ów'}`}</div>
             </div>
           
-            {/* Products Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8 mx-auto w-full max-w-7xl justify-items-center">
+            {/* Products Grid - 3 columns max for two-column page layout */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 w-full justify-items-center">
               {products.map((product) => (
                 <ProductCard
                   key={product.id}

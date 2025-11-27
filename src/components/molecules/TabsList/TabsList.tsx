@@ -9,7 +9,7 @@ export const TabsList = ({
   activeTab: string;
 }) => {
   return (
-    <div className='flex gap-4 w-full border-b border-[#3B3634] font-instrument-sans'>
+    <div className='flex gap-4 w-full border-b border-[#3B3634] font-instrument-sans text-[#3B3634]'>
       {list.map(({ label, link }) => {
         const isActive = activeTab.trim() === label.toLowerCase().trim();
         
