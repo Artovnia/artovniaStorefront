@@ -6,8 +6,8 @@ import { ProductCarouselIndicator } from "@/components/molecules"
 import { ImageZoomModal } from "@/components/molecules/ImageZoomModal/ImageZoomModal"
 import { useScreenSize } from "@/hooks/useScreenSize"
 import { MedusaProductImage } from "@/types/product"
-import { useState } from "react"
-import { ArrowLeftIcon, ArrowRightIcon } from "@/icons"
+import { useState, useRef, useEffect } from "react"
+import { ArrowLeftIcon, ArrowRightIcon, ArrowUpIcon, ArrowDownIcon } from "@/icons"
 
 export const ProductCarousel = ({
   slides = [],
@@ -19,6 +19,10 @@ export const ProductCarousel = ({
   const [isTransitioning, setIsTransitioning] = useState(false)
   const [isZoomModalOpen, setIsZoomModalOpen] = useState(false)
   const [zoomModalInitialIndex, setZoomModalInitialIndex] = useState(0)
+  const [thumbnailScrollPosition, setThumbnailScrollPosition] = useState(0)
+  const [canScrollUp, setCanScrollUp] = useState(false)
+  const [canScrollDown, setCanScrollDown] = useState(false)
+  const thumbnailContainerRef = useRef<HTMLDivElement>(null)
 
   // Navigation functions for arrows
   const goToPrevious = () => {
@@ -56,6 +60,49 @@ export const ProductCarousel = ({
   const closeZoomModal = () => {
     setIsZoomModalOpen(false)
   }
+
+  // Thumbnail scroll functions
+  const scrollThumbnails = (direction: 'up' | 'down') => {
+    if (!thumbnailContainerRef.current) return
+    
+    const container = thumbnailContainerRef.current
+    const scrollAmount = 96 // Height of one thumbnail (80px) + gap (16px)
+    const newPosition = direction === 'up' 
+      ? Math.max(0, thumbnailScrollPosition - scrollAmount)
+      : Math.min(container.scrollHeight - container.clientHeight, thumbnailScrollPosition + scrollAmount)
+    
+    container.scrollTo({
+      top: newPosition,
+      behavior: 'smooth'
+    })
+    
+    setThumbnailScrollPosition(newPosition)
+  }
+
+  // Update scroll button states
+  const updateScrollButtons = () => {
+    if (!thumbnailContainerRef.current) return
+    
+    const container = thumbnailContainerRef.current
+    const scrollTop = container.scrollTop
+    const scrollHeight = container.scrollHeight
+    const clientHeight = container.clientHeight
+    
+    setCanScrollUp(scrollTop > 0)
+    setCanScrollDown(scrollTop < scrollHeight - clientHeight - 1)
+    setThumbnailScrollPosition(scrollTop)
+  }
+
+  // Initialize scroll state and listen for scroll events
+  useEffect(() => {
+    const container = thumbnailContainerRef.current
+    if (!container) return
+    
+    updateScrollButtons()
+    
+    container.addEventListener('scroll', updateScrollButtons)
+    return () => container.removeEventListener('scroll', updateScrollButtons)
+  }, [slides])
 
   const [emblaRef, emblaApi] = useEmblaCarousel({
     axis:
@@ -108,30 +155,58 @@ export const ProductCarousel = ({
       {/* Desktop: Thumbnails on left, main image on right */}
       <div className="hidden lg:block">
         <div className="flex gap-4">
-          {/* Left: Thumbnail Column */}
+          {/* Left: Thumbnail Column with Scroll */}
           {slides.length > 1 && (
-            <div className="flex flex-col gap-2 w-20 flex-shrink-0">
-              {slides.map((slide, index) => (
+            <div className="relative flex flex-col w-20 flex-shrink-0 py-4">
+              {/* Scroll Up Button */}
+              {canScrollUp && (
                 <button
-                  key={slide.id}
-                  onClick={() => handleThumbnailClick(index)}
-                  className={`relative w-20 h-20 rounded-xs overflow-hidden border-2 transition-all duration-300 ${
-                    selectedImageIndex === index
-                      ? "border-[#3B3634] ring-[#3B3634] shadow-md"
-                      : ""
-                  }`}
+                  onClick={() => scrollThumbnails('up')}
+                  className="absolute -top-[2px] left-1/2 -translate-x-1/2 z-10 bg-white/95 hover:bg-[#3B3634] rounded-full p-2  transition-all duration-300 hover:scale-110 backdrop-blur-sm border border-[#3B3634]"
+                  aria-label="Scroll thumbnails up"
                 >
-                  <Image
-                    src={decodeURIComponent(slide.url)}
-                    alt={`Product thumbnail ${index + 1}`}
-                    fill
-                    quality={40}
-                    loading="lazy" // ✅ ALL thumbnails lazy load (don't compete with main image)
-                    className="object-cover transition-transform duration-300 hover:scale-105"
-                    sizes="80px"
-                  />
+                  <ArrowUpIcon size={16} className="text-[#3B3634] hover:text-white" />
                 </button>
-              ))}
+              )}
+              
+              {/* Scrollable Thumbnail Container */}
+              <div 
+                ref={thumbnailContainerRef}
+                className="flex flex-col gap-2 max-h-[624px] overflow-y-auto no-scrollbar scroll-smooth mt-5"
+              >
+                {slides.map((slide, index) => (
+                  <button
+                    key={slide.id}
+                    onClick={() => handleThumbnailClick(index)}
+                    className={`relative w-20 h-20 rounded-xs overflow-hidden border-2 transition-all duration-300 flex-shrink-0 ${
+                      selectedImageIndex === index
+                        ? "border-[#3B3634] ring-2 ring-[#3B3634] shadow-md"
+                        : "border-gray-200 hover:border-[#3B3634]/50"
+                    }`}
+                  >
+                    <Image
+                      src={decodeURIComponent(slide.url)}
+                      alt={`Product thumbnail ${index + 1}`}
+                      fill
+                      quality={40}
+                      loading="lazy"
+                      className="object-cover transition-transform duration-300 hover:scale-105"
+                      sizes="80px"
+                    />
+                  </button>
+                ))}
+              </div>
+              
+              {/* Scroll Down Button */}
+              {canScrollDown && (
+                <button
+                  onClick={() => scrollThumbnails('down')}
+                  className="absolute -bottom-[2px] left-1/2 -translate-x-1/2 z-10 bg-white/95 hover:bg-[#3B3634] rounded-full p-2 transition-all duration-300 hover:scale-110 backdrop-blur-sm border border-[#3B3634]"
+                  aria-label="Scroll thumbnails down"
+                >
+                  <ArrowDownIcon size={16} className="text-[#3B3634] hover:text-white" />
+                </button>
+              )}
             </div>
           )}
           

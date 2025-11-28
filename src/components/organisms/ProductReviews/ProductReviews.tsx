@@ -91,8 +91,8 @@ const InteractiveStarRating = ({ rating, onRatingChange }: {
 
 // Individual Review Component
 const ReviewCard = ({ review }: { review: ReviewData }): JSX.Element => {
-  const customerName = review.customer?.first_name && review.customer?.last_name
-    ? `${review.customer.first_name} ${review.customer.last_name}`
+  const customerName = review.customer?.first_name 
+    ? `${review.customer.first_name}  `
     : "Anonimowy użytkownik"
   
   const initials = customerName

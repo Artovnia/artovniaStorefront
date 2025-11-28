@@ -547,7 +547,7 @@ const TermsOfUseContent = () => {
                 </p>
                 <p>
                   6.6. Kwota do wypłaty stanowi sumę wartości zamówień
-                  zrealizowanych pomniejszoną o prowizję serwisu, która wynosi 25%
+                  zrealizowanych pomniejszoną o prowizję serwisu, która wynosi 20%
                   + VAT wartości brutto sprzedanych produktów (zgodnie z cennikiem
                   obowiązującym w dniu sprzedaży).
                 </p>
@@ -706,7 +706,7 @@ const TermsOfUseContent = () => {
                 </p>
                 <p>
                   7.9. Sprzedający przyjmuje do wiadomości, że prowizja serwisu
-                  wynosi 25% od ceny brutto produktu + obowiązujący podatek VAT.
+                  wynosi 20% od ceny brutto produktu + obowiązujący podatek VAT.
                   Prowizja ta jest pobierana automatycznie przez Administratora z
                   kwoty wpłaconej przez Kupującego. Prowizja jest liczona wyłącznie
                   od ceny produktu i nie obejmuje ceny wysyłki.

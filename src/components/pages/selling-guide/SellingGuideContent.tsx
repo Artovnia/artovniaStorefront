@@ -134,7 +134,7 @@ const SellingGuideContent = () => {
               <Disclosure.Panel className="pt-4 text-gray-700 space-y-3">
                 <ul className="list-disc ml-5 space-y-2">
                   <li>Założenie i prowadzenie konta sprzedawcy jest całkowicie bezpłatne.</li>
-                  <li>Prowizja pobierana jest wyłącznie w przypadku sprzedaży i wynosi 25% brutto.</li>
+                  <li>Prowizja pobierana jest wyłącznie w przypadku sprzedaży i wynosi 20% brutto.</li>
                   <li>Wszystkie płatności obsługiwane są przez bezpieczny system Stripe.</li>
                   <li>Środki zrealizowanych zamówień są przekazywane na konto bankowe sprzedawcy zgodnie z harmonogramem wypłat.</li>
                 </ul>

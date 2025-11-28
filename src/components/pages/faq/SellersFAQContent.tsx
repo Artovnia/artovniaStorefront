@@ -40,19 +40,18 @@ const SellersFAQContent = () => {
             <>
               <Disclosure.Button className="flex w-full justify-between items-center text-left">
                 <h2 className="text-xl font-medium font-instrument-sans">
-                  1. Czy mogę założyć konto sprzedawcy za darmo?
+                  1. Jak mogę założyć konto sprzedawcy?
                 </h2>
                 <CollapseIcon
                   size={18}
-                  className={`${
-                    open ? "transform rotate-180" : ""
-                  } text-gray-500`}
+                  className={`${open ? "transform rotate-180" : ""} text-gray-500`}
                 />
               </Disclosure.Button>
               <Disclosure.Panel className="pt-4 text-gray-700 space-y-3">
                 <p>
-                  Tak! Założenie konta i dodawanie produktów jest całkowicie darmowe. 
-                  Prowizja 20% brutto + VAT pobierana jest tylko w momencie sprzedaży.
+                  Wystarczy wejść na stronę Artovnia, w prawym górnym rogu kliknąć
+                  „ZAŁÓŻ SKLEP” i wypełnić formularz rejestracyjny, akceptując
+                  regulamin.
                 </p>
               </Disclosure.Panel>
             </>
@@ -65,29 +64,17 @@ const SellersFAQContent = () => {
             <>
               <Disclosure.Button className="flex w-full justify-between items-center text-left">
                 <h2 className="text-xl font-medium font-instrument-sans">
-                  2. Jakie produkty mogę sprzedawać na Artovni?
+                  2. Czy utworzenie i prowadzenie konta jest darmowe?
                 </h2>
                 <CollapseIcon
                   size={18}
-                  className={`${
-                    open ? "transform rotate-180" : ""
-                  } text-gray-500`}
+                  className={`${open ? "transform rotate-180" : ""} text-gray-500`}
                 />
               </Disclosure.Button>
               <Disclosure.Panel className="pt-4 text-gray-700 space-y-3">
                 <p>
-                  Artovnia jest platformą dla twórców i artystów. Możesz sprzedawać:
-                </p>
-                <ul className="list-disc ml-5 space-y-1">
-                  <li>rękodzieło</li>
-                  <li>dzieła sztuki</li>
-                  <li>dekoracje</li>
-                  <li>ubrania i dodatki</li>
-                  <li>autorską biżuterię</li>
-                  <li>ilustracje, grafiki, ceramikę i wiele innych</li>
-                </ul>
-                <p>
-                  Nie akceptujemy produktów masowej produkcji, dropshippingu, ani importowanych przedmiotów bez ingerencji twórcy.
+                  Tak. Rejestracja konta sprzedawcy oraz dodawanie produktów jest
+                  całkowicie darmowe. Płacisz wyłącznie prowizję od sprzedaży.
                 </p>
               </Disclosure.Panel>
             </>
@@ -100,29 +87,18 @@ const SellersFAQContent = () => {
             <>
               <Disclosure.Button className="flex w-full justify-between items-center text-left">
                 <h2 className="text-xl font-medium font-instrument-sans">
-                  3. Jak dodawać produkty?
+                  3. Czy mogę usunąć lub zamknąć konto w dowolnym momencie?
                 </h2>
                 <CollapseIcon
                   size={18}
-                  className={`${
-                    open ? "transform rotate-180" : ""
-                  } text-gray-500`}
+                  className={`${open ? "transform rotate-180" : ""} text-gray-500`}
                 />
               </Disclosure.Button>
               <Disclosure.Panel className="pt-4 text-gray-700 space-y-3">
                 <p>
-                  Po założeniu konta sprzedawcy możesz dodać produkty z poziomu swojego panelu. 
-                  Do każdego produktu należy dodać:
+                  Tak, konto można zawiesić lub poprosić o jego usunięcie w każdej
+                  chwili, kontaktując się z obsługą.
                 </p>
-                <ul className="list-disc ml-5 space-y-1">
-                  <li>tytuł</li>
-                  <li>opis</li>
-                  <li>zdjęcia</li>
-                  <li>cenę</li>
-                  <li>informację o dostępności (od ręki / na zamówienie)</li>
-                  <li>czas realizacji</li>
-                  <li>opcje wysyłki</li>
-                </ul>
               </Disclosure.Panel>
             </>
           )}
@@ -134,19 +110,17 @@ const SellersFAQContent = () => {
             <>
               <Disclosure.Button className="flex w-full justify-between items-center text-left">
                 <h2 className="text-xl font-medium font-instrument-sans">
-                  4. Jakie są formy wysyłki?
+                  4. Czy mogę zmienić nazwę sklepu?
                 </h2>
                 <CollapseIcon
                   size={18}
-                  className={`${
-                    open ? "transform rotate-180" : ""
-                  } text-gray-500`}
+                  className={`${open ? "transform rotate-180" : ""} text-gray-500`}
                 />
               </Disclosure.Button>
               <Disclosure.Panel className="pt-4 text-gray-700 space-y-3">
                 <p>
-                  To Ty decydujesz, jakie metody wysyłki oferujesz (np. InPost, Poczta Polska, kurier). 
-                  Koszty i czas dostawy ustawiasz indywidualnie dla każdego produktu lub grupy produktów.
+                  Tak — nazwę sklepu można zmienić w ustawieniach konta, o ile nie
+                  narusza ona regulaminu i nie podszywa się pod innych twórców.
                 </p>
               </Disclosure.Panel>
             </>
@@ -159,23 +133,15 @@ const SellersFAQContent = () => {
             <>
               <Disclosure.Button className="flex w-full justify-between items-center text-left">
                 <h2 className="text-xl font-medium font-instrument-sans">
-                  5. Jak otrzymam zapłatę za zamówienie?
+                  5. Czy mogę dodawać nieograniczoną liczbę produktów?
                 </h2>
                 <CollapseIcon
                   size={18}
-                  className={`${
-                    open ? "transform rotate-180" : ""
-                  } text-gray-500`}
+                  className={`${open ? "transform rotate-180" : ""} text-gray-500`}
                 />
               </Disclosure.Button>
               <Disclosure.Panel className="pt-4 text-gray-700 space-y-3">
-                <p>
-                  Po zrealizowaniu zamówienia środki zostaną przelane na Twoje konto bankowe (po potrąceniu prowizji). 
-                  Szczegóły dotyczące wypłat znajdziesz w swoim panelu.
-                </p>
-                <p>
-                  Wypłaty są realizowane w cyklu miesięcznym, do 8 dnia kolejnego miesiąca za miesiąc poprzedni.
-                </p>
+                <p>Tak. Platforma nie nakłada limitów liczbowych.</p>
               </Disclosure.Panel>
             </>
           )}
@@ -187,18 +153,18 @@ const SellersFAQContent = () => {
             <>
               <Disclosure.Button className="flex w-full justify-between items-center text-left">
                 <h2 className="text-xl font-medium font-instrument-sans">
-                  6. Czy mogę edytować swoje produkty?
+                  6. Jakie produkty mogę sprzedawać?
                 </h2>
                 <CollapseIcon
                   size={18}
-                  className={`${
-                    open ? "transform rotate-180" : ""
-                  } text-gray-500`}
+                  className={`${open ? "transform rotate-180" : ""} text-gray-500`}
                 />
               </Disclosure.Button>
               <Disclosure.Panel className="pt-4 text-gray-700 space-y-3">
                 <p>
-                  Tak – w każdej chwili możesz edytować opis, cenę, zdjęcia, stany magazynowe, czas realizacji itd.
+                  Rękodzieło, sztukę, produkty designerskie oraz przedmioty tworzone
+                  indywidualnie lub w małych seriach — zgodnie z opisem kategorii na
+                  Artovnia i regulaminem.
                 </p>
               </Disclosure.Panel>
             </>
@@ -211,19 +177,366 @@ const SellersFAQContent = () => {
             <>
               <Disclosure.Button className="flex w-full justify-between items-center text-left">
                 <h2 className="text-xl font-medium font-instrument-sans">
-                  7. Czy mogę zawiesić swój sklep?
+                  7. Czy mogę edytować produkt po jego opublikowaniu?
                 </h2>
                 <CollapseIcon
                   size={18}
-                  className={`${
-                    open ? "transform rotate-180" : ""
-                  } text-gray-500`}
+                  className={`${open ? "transform rotate-180" : ""} text-gray-500`}
                 />
               </Disclosure.Button>
               <Disclosure.Panel className="pt-4 text-gray-700 space-y-3">
                 <p>
-                  Tak. Jeśli planujesz przerwę, możesz tymczasowo zawiesić sklep w ustawieniach konta. 
-                  Twoje produkty nie będą wtedy widoczne.
+                  Tak, możesz w każdej chwili zmienić zdjęcia, opis, cenę lub
+                  warianty.
+                </p>
+              </Disclosure.Panel>
+            </>
+          )}
+        </Disclosure>
+
+        {/* Question 8 */}
+        <Disclosure as="div" className="border-b border-gray-200 pb-6">
+          {({ open }) => (
+            <>
+              <Disclosure.Button className="flex w-full justify-between items-center text-left">
+                <h2 className="text-xl font-medium font-instrument-sans">
+                  8. Czy mogę zawiesić sprzedaż bez zamykania sklepu?
+                </h2>
+                <CollapseIcon
+                  size={18}
+                  className={`${open ? "transform rotate-180" : ""} text-gray-500`}
+                />
+              </Disclosure.Button>
+              <Disclosure.Panel className="pt-4 text-gray-700 space-y-3">
+                <p>
+                  Tak, możesz ustawić przerwę (np. urlop), a Twoje produkty będą
+                  ukryte.
+                </p>
+              </Disclosure.Panel>
+            </>
+          )}
+        </Disclosure>
+
+        {/* Question 9 */}
+        <Disclosure as="div" className="border-b border-gray-200 pb-6">
+          {({ open }) => (
+            <>
+              <Disclosure.Button className="flex w-full justify-between items-center text-left">
+                <h2 className="text-xl font-medium font-instrument-sans">
+                  9. Jaka jest prowizja Artovnia?
+                </h2>
+                <CollapseIcon
+                  size={18}
+                  className={`${open ? "transform rotate-180" : ""} text-gray-500`}
+                />
+              </Disclosure.Button>
+              <Disclosure.Panel className="pt-4 text-gray-700 space-y-3">
+                <p>
+                  Prowizja jest pobierana tylko od sprzedaży i jej wysokość wynosi
+                  20% od ceny brutto + VAT.
+                </p>
+              </Disclosure.Panel>
+            </>
+          )}
+        </Disclosure>
+
+        {/* Question 10 */}
+        <Disclosure as="div" className="border-b border-gray-200 pb-6">
+          {({ open }) => (
+            <>
+              <Disclosure.Button className="flex w-full justify-between items-center text-left">
+                <h2 className="text-xl font-medium font-instrument-sans">
+                  10. Kiedy otrzymuję pieniądze za sprzedaż?
+                </h2>
+                <CollapseIcon
+                  size={18}
+                  className={`${open ? "transform rotate-180" : ""} text-gray-500`}
+                />
+              </Disclosure.Button>
+              <Disclosure.Panel className="pt-4 text-gray-700 space-y-3">
+                <p>
+                  Wypłaty realizowane są w cyklu miesięcznym, do 8 dnia kolejnego
+                  miesiąca. Przykład: wypłatę za sprzedaż w listopadzie otrzymasz do
+                  8 grudnia.
+                </p>
+              </Disclosure.Panel>
+            </>
+          )}
+        </Disclosure>
+
+        {/* Question 11 */}
+        <Disclosure as="div" className="border-b border-gray-200 pb-6">
+          {({ open }) => (
+            <>
+              <Disclosure.Button className="flex w-full justify-between items-center text-left">
+                <h2 className="text-xl font-medium font-instrument-sans">
+                  11. Kto przetwarza płatności?
+                </h2>
+                <CollapseIcon
+                  size={18}
+                  className={`${open ? "transform rotate-180" : ""} text-gray-500`}
+                />
+              </Disclosure.Button>
+              <Disclosure.Panel className="pt-4 text-gray-700 space-y-3">
+                <p>
+                  Stripe — uznany operator płatności online, który zapewnia
+                  bezpieczeństwo transakcji.
+                </p>
+              </Disclosure.Panel>
+            </>
+          )}
+        </Disclosure>
+
+        {/* Question 12 */}
+        <Disclosure as="div" className="border-b border-gray-200 pb-6">
+          {({ open }) => (
+            <>
+              <Disclosure.Button className="flex w-full justify-between items-center text-left">
+                <h2 className="text-xl font-medium font-instrument-sans">
+                  12. Kto wystawia fakturę kupującemu?
+                </h2>
+                <CollapseIcon
+                  size={18}
+                  className={`${open ? "transform rotate-180" : ""} text-gray-500`}
+                />
+              </Disclosure.Button>
+              <Disclosure.Panel className="pt-4 text-gray-700 space-y-3">
+                <p>
+                  Sprzedawca. Umowa zawierana jest bezpośrednio między kupującym a
+                  Tobą. Artovnia nie wystawia faktur w Twoim imieniu.
+                </p>
+              </Disclosure.Panel>
+            </>
+          )}
+        </Disclosure>
+
+        {/* Question 13 */}
+        <Disclosure as="div" className="border-b border-gray-200 pb-6">
+          {({ open }) => (
+            <>
+              <Disclosure.Button className="flex w-full justify-between items-center text-left">
+                <h2 className="text-xl font-medium font-instrument-sans">
+                  13. Jak odbywa się komunikacja z klientem?
+                </h2>
+                <CollapseIcon
+                  size={18}
+                  className={`${open ? "transform rotate-180" : ""} text-gray-500`}
+                />
+              </Disclosure.Button>
+              <Disclosure.Panel className="pt-4 text-gray-700 space-y-3">
+                <p>
+                  Artovnia ma system wiadomości, który umożliwia swobodną
+                  komunikację między klientem a sprzedawcą.
+                </p>
+              </Disclosure.Panel>
+            </>
+          )}
+        </Disclosure>
+
+        {/* Question 14 */}
+        <Disclosure as="div" className="border-b border-gray-200 pb-6">
+          {({ open }) => (
+            <>
+              <Disclosure.Button className="flex w-full justify-between items-center text-left">
+                <h2 className="text-xl font-medium font-instrument-sans">
+                  14. Kto ustala metody wysyłki i ceny dostawy?
+                </h2>
+                <CollapseIcon
+                  size={18}
+                  className={`${open ? "transform rotate-180" : ""} text-gray-500`}
+                />
+              </Disclosure.Button>
+              <Disclosure.Panel className="pt-4 text-gray-700 space-y-3">
+                <p>
+                  Sprzedawca — samodzielnie określasz koszt, czas realizacji i
+                  przewoźników w ustawieniach swojego sklepu.
+                </p>
+              </Disclosure.Panel>
+            </>
+          )}
+        </Disclosure>
+
+        {/* Question 15 */}
+        <Disclosure as="div" className="border-b border-gray-200 pb-6">
+          {({ open }) => (
+            <>
+              <Disclosure.Button className="flex w-full justify-between items-center text-left">
+                <h2 className="text-xl font-medium font-instrument-sans">
+                  15. Kto odpowiada za wysyłkę zamówienia?
+                </h2>
+                <CollapseIcon
+                  size={18}
+                  className={`${open ? "transform rotate-180" : ""} text-gray-500`}
+                />
+              </Disclosure.Button>
+              <Disclosure.Panel className="pt-4 text-gray-700 space-y-3">
+                <p>
+                  Sprzedawca — to Ty pakujesz i nadajesz paczkę.
+                </p>
+              </Disclosure.Panel>
+            </>
+          )}
+        </Disclosure>
+
+        {/* Question 16 */}
+        <Disclosure as="div" className="border-b border-gray-200 pb-6">
+          {({ open }) => (
+            <>
+              <Disclosure.Button className="flex w-full justify-between items-center text-left">
+                <h2 className="text-xl font-medium font-instrument-sans">
+                  16. Co jeśli paczka zaginie w transporcie?
+                </h2>
+                <CollapseIcon
+                  size={18}
+                  className={`${open ? "transform rotate-180" : ""} text-gray-500`}
+                />
+              </Disclosure.Button>
+              <Disclosure.Panel className="pt-4 text-gray-700 space-y-3">
+                <p>
+                  Sprzedawca odpowiada za proces reklamacji u przewoźnika oraz
+                  kontakt z kupującym.
+                </p>
+              </Disclosure.Panel>
+            </>
+          )}
+        </Disclosure>
+
+        {/* Question 17 */}
+        <Disclosure as="div" className="border-b border-gray-200 pb-6">
+          {({ open }) => (
+            <>
+              <Disclosure.Button className="flex w-full justify-between items-center text-left">
+                <h2 className="text-xl font-medium font-instrument-sans">
+                  17. Kto obsługuje zwroty?
+                </h2>
+                <CollapseIcon
+                  size={18}
+                  className={`${open ? "transform rotate-180" : ""} text-gray-500`}
+                />
+              </Disclosure.Button>
+              <Disclosure.Panel className="pt-4 text-gray-700 space-y-3">
+                <p>
+                  Sprzedawca. Kupujący wysyła zwrot bezpośrednio do Ciebie. Artovnia
+                  udostępnia panel zwrotów, dzięki któremu klient może zgłosić zwrot
+                  przez swoje konto, a sprzedawca zatwierdza i zleca zwrot pieniędzy.
+                </p>
+              </Disclosure.Panel>
+            </>
+          )}
+        </Disclosure>
+
+        {/* Question 18 */}
+        <Disclosure as="div" className="border-b border-gray-200 pb-6">
+          {({ open }) => (
+            <>
+              <Disclosure.Button className="flex w-full justify-between items-center text-left">
+                <h2 className="text-xl font-medium font-instrument-sans">
+                  18. Czy każdy produkt podlega zwrotowi?
+                </h2>
+                <CollapseIcon
+                  size={18}
+                  className={`${open ? "transform rotate-180" : ""} text-gray-500`}
+                />
+              </Disclosure.Button>
+              <Disclosure.Panel className="pt-4 text-gray-700 space-y-3">
+                <p>
+                  Nie — np. produkty personalizowane nie podlegają zwrotowi,
+                  zgodnie z prawem konsumenckim.
+                </p>
+              </Disclosure.Panel>
+            </>
+          )}
+        </Disclosure>
+
+        {/* Question 19 */}
+        <Disclosure as="div" className="border-b border-gray-200 pb-6">
+          {({ open }) => (
+            <>
+              <Disclosure.Button className="flex w-full justify-between items-center text-left">
+                <h2 className="text-xl font-medium font-instrument-sans">
+                  19. Kto rozpatruje reklamacje?
+                </h2>
+                <CollapseIcon
+                  size={18}
+                  className={`${open ? "transform rotate-180" : ""} text-gray-500`}
+                />
+              </Disclosure.Button>
+              <Disclosure.Panel className="pt-4 text-gray-700 space-y-3">
+                <p>
+                  Sprzedawca — to Ty przyjmujesz zgłoszenie, oceniasz je i
+                  udzielasz odpowiedzi.
+                </p>
+              </Disclosure.Panel>
+            </>
+          )}
+        </Disclosure>
+
+        {/* Question 20 */}
+        <Disclosure as="div" className="border-b border-gray-200 pb-6">
+          {({ open }) => (
+            <>
+              <Disclosure.Button className="flex w-full justify-between items-center text-left">
+                <h2 className="text-xl font-medium font-instrument-sans">
+                  20. Gdzie mogę znaleźć instrukcję, jak sprzedawać na Artovnia?
+                </h2>
+                <CollapseIcon
+                  size={18}
+                  className={`${open ? "transform rotate-180" : ""} text-gray-500`}
+                />
+              </Disclosure.Button>
+              <Disclosure.Panel className="pt-4 text-gray-700 space-y-3">
+                <p>
+                  Na stronie znajduje się poradnik „krok po kroku”, dostępny w
+                  stopce lub w sekcji dla sprzedawców.
+                </p>
+              </Disclosure.Panel>
+            </>
+          )}
+        </Disclosure>
+
+        {/* Question 21 */}
+        <Disclosure as="div" className="border-b border-gray-200 pb-6">
+          {({ open }) => (
+            <>
+              <Disclosure.Button className="flex w-full justify-between items-center text-left">
+                <h2 className="text-xl font-medium font-instrument-sans">
+                  21. Co zrobić, jeśli mam problem techniczny?
+                </h2>
+                <CollapseIcon
+                  size={18}
+                  className={`${open ? "transform rotate-180" : ""} text-gray-500`}
+                />
+              </Disclosure.Button>
+              <Disclosure.Panel className="pt-4 text-gray-700 space-y-3">
+                <p>
+                  Skontaktuj się z pomocą techniczną poprzez e-mail podany w
+                  regulaminie lub przez system wiadomości w panelu sprzedawcy.
+                </p>
+              </Disclosure.Panel>
+            </>
+          )}
+        </Disclosure>
+
+        {/* Question 22 */}
+        <Disclosure as="div" className="border-b border-gray-200 pb-6">
+          {({ open }) => (
+            <>
+              <Disclosure.Button className="flex w-full justify-between items-center text-left">
+                <h2 className="text-xl font-medium font-instrument-sans">
+                  22. Jak Artovnia pomaga twórcom w promocji?
+                </h2>
+                <CollapseIcon
+                  size={18}
+                  className={`${open ? "transform rotate-180" : ""} text-gray-500`}
+                />
+              </Disclosure.Button>
+              <Disclosure.Panel className="pt-4 text-gray-700 space-y-3">
+                <p>
+                  Twoje prace mogą zostać pokazane na naszych social mediach,
+                  płatnych reklamach, w dedykowanych artykułach o Twojej
+                  twórczości oraz w wyróżnionych sekcjach na stronie (np.
+                  „Sprzedawca tygodnia”). Wybrane produkty mogą również trafić do
+                  naszych artykułów blogowych.
                 </p>
               </Disclosure.Panel>
             </>

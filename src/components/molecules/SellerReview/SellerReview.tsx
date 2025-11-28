@@ -26,9 +26,9 @@ export const SellerReview = ({ review }: { review: any }) => {
     // Process customer data with safety checks
     const hasCustomer = review.customer && typeof review.customer === 'object'
     const firstName = hasCustomer && review.customer.first_name ? review.customer.first_name : ''
-    const lastName = hasCustomer && review.customer.last_name ? review.customer.last_name : ''
+   {/* const lastName = hasCustomer && review.customer.last_name ? review.customer.last_name : '' */}
     const customerName = hasCustomer
-      ? `${firstName} ${lastName}`.trim()
+      ? `${firstName}`.trim()
       : "Ukryty Klient"
 
     // Get customer initials with safety checks

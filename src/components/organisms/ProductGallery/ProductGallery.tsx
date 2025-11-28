@@ -7,7 +7,7 @@ export const ProductGallery = ({
   images: MedusaProductImage[];
 }) => {
   return (
-    <div className="w-full max-w-full overflow-hidden">
+    <div className="w-full items-center justify-center max-w-full overflow-hidden">
       <GalleryCarousel images={images} />
     </div>
   );
