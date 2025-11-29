@@ -1,6 +1,8 @@
 import { Footer, Header } from '@/components/organisms';
 import { ConditionalNewsletter } from '@/components/cells';
 import { CartProvider } from '@/components/context/CartContext';
+import { listCategoriesWithProducts } from '@/lib/data/categories';
+import { Suspense } from 'react';
 // ✅ OPTIMIZED: Lazy-loaded client components (Next.js 15 requires client wrapper for ssr: false)
 import { CookieConsent, MobileUserNavigation } from '@/components/providers/ClientOnlyProviders';
 
@@ -9,6 +11,13 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  // ✅ OPTIMIZATION: Fetch categories once and pass to both Header and Footer
+  // This eliminates duplicate API calls (Header + Footer both need categories)
+  // React cache() will deduplicate this call if both components call it
+  const categoriesData = await listCategoriesWithProducts().catch((error) => {
+    console.error("Layout: Error retrieving categories:", error)
+    return { parentCategories: [], categories: [] }
+  })
  
   const initialCart = null; // Always null - let CartContext handle it
 
@@ -19,8 +28,17 @@ export default async function RootLayout({
         <div className="flex-grow pb-0">
           {children}
         </div>
-        <ConditionalNewsletter />
-        <Footer />
+        {/* ✅ OPTIMIZATION: Newsletter in Suspense for consistent pattern */}
+        {/* Below fold, lightweight component - null fallback for no visual change */}
+        <Suspense fallback={null}>
+          <ConditionalNewsletter />
+        </Suspense>
+        
+        {/* ✅ OPTIMIZATION: Footer in Suspense for non-blocking render */}
+        {/* Footer is below fold, so it can load after initial content */}
+        <Suspense fallback={<div className="h-96 bg-tertiary" />}>
+          <Footer categories={categoriesData.parentCategories} />
+        </Suspense>
       </div>
       <MobileUserNavigation />
       <CookieConsent />

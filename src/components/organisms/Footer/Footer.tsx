@@ -2,19 +2,21 @@ import { Link } from "@/i18n/routing"
 import { footerLinks } from "@/data/footerLinks"
 import { FacebookIcon, InstagramIcon, LinkedInIcon, YouTubeIcon } from "@/icons/social"
 import { HttpTypes } from "@medusajs/types"
-import { listCategories } from "@/lib/data/categories"
 
-export async function Footer() {
-  // Fetch categories directly in Footer component
-  let categories: HttpTypes.StoreProductCategory[] = []
-  try {
-    const categoriesData = await listCategories()
-    if (categoriesData && categoriesData.parentCategories) {
-      categories = categoriesData.parentCategories
-    }
-  } catch (error) {
-    console.error("Footer: Error retrieving categories:", error)
-  }
+interface FooterProps {
+  categories?: HttpTypes.StoreProductCategory[]
+}
+
+/**
+ * Footer Component
+ * 
+ * ✅ OPTIMIZED: Accepts categories as props to avoid duplicate API calls
+ * Categories are fetched once in layout and passed to both Header and Footer
+ * 
+ * @param categories - Product categories to display in footer navigation
+ */
+export async function Footer({ categories = [] }: FooterProps) {
+  // Categories now passed as props - no need to fetch here
   const getIcon = (label: string) => {
     switch(label) {
       case 'Facebook':

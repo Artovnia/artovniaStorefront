@@ -226,7 +226,7 @@ export const CookieConsent: React.FC<CookieConsentProps> = ({
           <div className="mt-4 text-center">
             <Link
               href="/polityka-prywatnosci"
-              className="text-sm text-gray-500 hover:text-[#3B3634] transition-colors underline"
+              className="text-sm text-[#3B3634] hover:text-black transition-colors underline"
               aria-label="Przejdź do polityki prywatności"
             >
               {t('privacyPolicy')}

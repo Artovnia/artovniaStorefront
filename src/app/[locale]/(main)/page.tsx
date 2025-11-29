@@ -7,8 +7,8 @@ import {
   HomeNewestProductsSection,
   SmartBestProductsSection,
   HomeCategories,
-  DesignerOfTheWeekSection,
 } from "@/components/sections"
+import { DesignerOfTheWeekSectionServer } from "@/components/sections/DesignerOfTheWeekSection/DesignerOfTheWeekSectionServer"
 import { Suspense } from "react"
 import { PromotionDataProvider } from "@/components/context/PromotionDataProvider"
 import { BatchPriceProvider } from "@/components/context/BatchPriceProvider"
@@ -175,19 +175,6 @@ export default async function Home({
 
   return (
     <>
-      {/* ✅ Preload first hero image - Eliminates 1820ms Resource Load Delay on mobile */}
-      {/* Hero is a Client Component, so browser doesn't discover image until JS executes */}
-      {/* Preload starts download immediately when HTML loads, before JS runs */}
-      <link
-        rel="preload"
-        as="image"
-        href="/images/hero/Hero01.webp"
-        // @ts-ignore - imageSrcSet is valid but not in types
-        imageSrcSet="/_next/image?url=%2Fimages%2Fhero%2FHero01.webp&w=640&q=90 640w, /_next/image?url=%2Fimages%2Fhero%2FHero01.webp&w=750&q=90 750w, /_next/image?url=%2Fimages%2Fhero%2FHero01.webp&w=828&q=90 828w, /_next/image?url=%2Fimages%2Fhero%2FHero01.webp&w=1080&q=90 1080w, /_next/image?url=%2Fimages%2Fhero%2FHero01.webp&w=1200&q=90 1200w, /_next/image?url=%2Fimages%2Fhero%2FHero01.webp&w=1920&q=90 1920w, /_next/image?url=%2Fimages%2Fhero%2FHero01.webp&w=2048&q=90 2048w, /_next/image?url=%2Fimages%2Fhero%2FHero01.webp&w=3840&q=90 3840w"
-        // @ts-ignore - fetchPriority is valid but not in types
-        fetchPriority="high"
-      />
-      
       {/* Structured Data (JSON-LD) for SEO */}
       <script
         type="application/ld+json"
@@ -237,9 +224,10 @@ export default async function Home({
             <HomeCategories heading="Wybrane" headingItalic="kategorie" />
           </div>
           
-          {/* Designer of the Week Section - Client component, no Suspense needed */}
+          {/* Designer of the Week Section - ✅ SERVER COMPONENT: Optimized for performance */}
+          {/* Fetches Sanity data during server render with 10-min caching */}
           <div className="w-full bg-[#F4F0EB] min-h-[400px] py-2 md:py-8">
-            <DesignerOfTheWeekSection />
+            <DesignerOfTheWeekSectionServer />
           </div>
 
           {/* Blog Section - cached for 10 minutes with unified cache */}
