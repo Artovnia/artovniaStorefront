@@ -87,8 +87,8 @@ const BankTransferIcon: React.FC<IconProps> = ({ width = ICON_SIZE_40.width, hei
       <path d="M10 12 L14 12" strokeLinecap="round"/>
       <path d="M12.5 10.5 L14 12 L12.5 13.5" strokeLinecap="round" strokeLinejoin="round"/>
     </g>
-    <g fill="currentColor" opacity="0.7" fontFamily="Arial, sans-serif" fontSize="8" fontWeight="bold">
-      <text x="12" y="9" textAnchor="middle">$</text>
+    <g fill="currentColor" opacity="0.7">
+      <text x="12" y="9" textAnchor="middle" fontFamily="Arial, sans-serif" fontSize="8" fontWeight="bold">$</text>
     </g>
     <g stroke="currentColor" strokeWidth="0.5" opacity="0.3">
       <line x1="9" y1="12" x2="10" y2="12"/>

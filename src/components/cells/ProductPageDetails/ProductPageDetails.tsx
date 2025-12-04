@@ -26,12 +26,27 @@ export const ProductPageDetails = ({ details }: { details: string }) => {
           remarkPlugins={[remarkGfm, remarkBreaks]}
           rehypePlugins={[rehypeRaw, rehypeSanitize]}
           components={{
-            p: ({node, ...props}) => <p className="mb-4" {...props} />,
-            h2: ({node, ...props}) => <h2 className="text-xl font-bold mb-2 mt-4" {...props} />,
-            h3: ({node, ...props}) => <h3 className="text-lg font-bold mb-2 mt-3" {...props} />,
-            ul: ({node, ...props}) => <ul className="list-disc ml-6 mb-4" {...props} />,
-            ol: ({node, ...props}) => <ol className="list-decimal ml-6 mb-4" {...props} />,
-            li: ({node, ...props}) => <li className="mb-1" {...props} />,
+            // Paragraphs
+            p: ({node, ...props}) => <p className="mb-4 leading-relaxed" {...props} />,
+            
+            // Inline formatting - explicit font-weight for bold
+            strong: ({node, ...props}) => <strong className="font-bold" style={{ fontWeight: 700 }} {...props} />,
+            b: ({node, ...props}) => <strong className="font-bold" style={{ fontWeight: 700 }} {...props} />,
+            em: ({node, ...props}) => <em className="italic" {...props} />,
+            i: ({node, ...props}) => <em className="italic" {...props} />,
+            
+            // Headings - all levels with explicit font-weight
+            h1: ({node, ...props}) => <h1 className="text-3xl font-bold mb-3 mt-6" style={{ fontWeight: 700 }} {...props} />,
+            h2: ({node, ...props}) => <h2 className="text-2xl font-bold mb-2 mt-5" style={{ fontWeight: 700 }} {...props} />,
+            h3: ({node, ...props}) => <h3 className="text-xl font-bold mb-2 mt-4" style={{ fontWeight: 700 }} {...props} />,
+            h4: ({node, ...props}) => <h4 className="text-lg font-bold mb-2 mt-3" style={{ fontWeight: 700 }} {...props} />,
+            h5: ({node, ...props}) => <h5 className="text-base font-bold mb-2 mt-3" style={{ fontWeight: 700 }} {...props} />,
+            h6: ({node, ...props}) => <h6 className="text-sm font-bold mb-2 mt-2" style={{ fontWeight: 700 }} {...props} />,
+            
+            // Lists
+            ul: ({node, ...props}) => <ul className="list-disc ml-6 mb-4 space-y-1" {...props} />,
+            ol: ({node, ...props}) => <ol className="list-decimal ml-6 mb-4 space-y-1" {...props} />,
+            li: ({node, ...props}) => <li className="mb-1 leading-relaxed" {...props} />,
             blockquote: ({node, ...props}) => (
               <blockquote className="border-l-4 border-gray-300 pl-4 italic my-4 text-gray-600" {...props} />
             ),

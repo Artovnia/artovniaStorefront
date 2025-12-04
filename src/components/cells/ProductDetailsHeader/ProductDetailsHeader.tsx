@@ -30,8 +30,26 @@ type ExtendedProductVariant = HttpTypes.StoreProductVariant & {
   id: string
   title?: string
   inventory_quantity?: number
+  manage_inventory?: boolean
+  allow_backorder?: boolean
   calculated_price?: any
   options?: ExtendedProductOptionValue[]
+  inventory_items?: Array<{
+    inventory_item_id: string
+    required_quantity: number
+    inventory?: {
+      id: string
+      sku?: string
+      title?: string
+      // Inventory levels are nested deeper
+      inventory_levels?: Array<{
+        id: string
+        stocked_quantity: number
+        reserved_quantity: number
+        location_id: string
+      }>
+    }
+  }>
 }
 
 type ExtendedProductOptionValue = HttpTypes.StoreProductOptionValue & {
@@ -158,12 +176,70 @@ export const ProductDetailsHeader = ({
   // Debug variant and stock information
   const selectedVariantObject = product.variants?.find(({ id }) => id === currentVariantId);
   
-  const variantStock = selectedVariantObject?.inventory_quantity || 0
+  // Calculate available stock
+  // Medusa should populate inventory_quantity automatically
+  const calculateAvailableStock = () => {
+    // First try inventory_quantity (Medusa's computed field)
+    if (selectedVariantObject?.inventory_quantity !== undefined && 
+        selectedVariantObject.inventory_quantity !== null && 
+        selectedVariantObject.inventory_quantity > 0) {
+      return selectedVariantObject.inventory_quantity;
+    }
+    
+    // Fallback: Check metadata for stock_quantity (from our backend workflow)
+    // This happens when inventory levels haven't been created yet but metadata has the stock info
+    if (selectedVariantObject?.metadata && typeof selectedVariantObject.metadata === 'object') {
+      const metadata = selectedVariantObject.metadata as any;
+      if (metadata.stock_quantity !== undefined) {
+        const stockQty = typeof metadata.stock_quantity === 'string' 
+          ? parseInt(metadata.stock_quantity, 10) 
+          : metadata.stock_quantity;
+        if (!isNaN(stockQty) && stockQty > 0) {
+          console.log('📦 Using stock from metadata:', stockQty);
+          return stockQty;
+        }
+      }
+    }
+    
+    // Default to 0 if no inventory data
+    return 0;
+  };
+  
+  const variantStock = calculateAvailableStock();
+  const managesInventory = selectedVariantObject?.manage_inventory ?? true // Default to true for backward compatibility
+  const allowBackorder = selectedVariantObject?.allow_backorder ?? false
+  
+  // Debug logging to see what data we're getting
+  console.log('🔍 Selected Variant Debug:', {
+    variantId: currentVariantId,
+    inventory_quantity: selectedVariantObject?.inventory_quantity,
+    inventory_items: selectedVariantObject?.inventory_items,
+    calculated_stock: variantStock,
+    manage_inventory: managesInventory,
+    allow_backorder: allowBackorder,
+    full_variant: selectedVariantObject,
+  });
+  
+  // Additional debug for inventory items structure
+  if (selectedVariantObject?.inventory_items) {
+    console.log('📦 Inventory Items Detail:', 
+      selectedVariantObject.inventory_items.map((item: any) => ({
+        inventory_item_id: item.inventory_item_id,
+        required_quantity: item.required_quantity,
+        has_inventory_object: !!item.inventory,
+        inventory_keys: item.inventory ? Object.keys(item.inventory) : [],
+        full_inventory: item.inventory
+      }))
+    );
+  }
 
   const variantHasPrice = selectedVariantObject?.calculated_price ? true : false
   
   // Combine stock availability with vendor availability
-  const canAddToCart = variantStock > 0 && variantHasPrice && isAvailable
+  // If manage_inventory is false (digital products), always allow adding to cart (if price exists)
+  // If manage_inventory is true (physical products), check stock or allow_backorder
+  const hasStock = !managesInventory || variantStock > 0 || allowBackorder
+  const canAddToCart = hasStock && variantHasPrice && isAvailable
 
   return (
     <div className=" p-5">
@@ -251,12 +327,14 @@ export const ProductDetailsHeader = ({
           className="w-full uppercase mb-1 py-3 flex justify-center mt-6"
           size="large"
         >
-          {!variantStock || !variantHasPrice
+          {!variantHasPrice
             ? "NIEDOSTĘPNE"
             : !isAvailable && availability?.onHoliday
             ? "SPRZEDAWCA NA WAKACJACH"
             : !isAvailable && availability?.suspended
             ? "SPRZEDAWCA ZAWIESZONY"
+            : managesInventory && variantStock <= 0 && !allowBackorder
+            ? "BRAK W MAGAZYNIE"
             : "DODAJ DO KOSZYKA"}
         </Button>
         

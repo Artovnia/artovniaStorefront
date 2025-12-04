@@ -108,7 +108,7 @@ export const listProducts = async ({
           limit,
           offset,
           region_id: region?.id,
-          fields: "*variants.calculated_price,*seller,*seller.products,*variants,*variants.inventory_quantity,*variants.manage_inventory,*variants.allow_backorder,*metadata,*categories,*categories.parent_category,*collection",
+          fields: "*variants.calculated_price,*seller,*seller.products,*variants,*variants.inventory_quantity,*variants.manage_inventory,*variants.allow_backorder,*variants.inventory_items.inventory_item_id,*variants.inventory_items.required_quantity,*metadata,*categories,*categories.parent_category,*collection",
           ...queryParams,
         },
         headers,
@@ -447,7 +447,7 @@ export const batchFetchProductsByHandles = async ({
           limit,
           region_id: region.id,
           handle: handles, // Pass multiple handles
-          fields: "*variants.calculated_price,*seller,*variants,*variants.inventory_quantity,*variants.manage_inventory,*variants.allow_backorder,*metadata,*categories,*categories.parent_category,*collection",
+          fields: "*variants.calculated_price,*seller,*variants,*variants.inventory_quantity,*variants.manage_inventory,*variants.allow_backorder,*variants.inventory_items.inventory_item_id,*variants.inventory_items.required_quantity,*metadata,*categories,*categories.parent_category,*collection",
         },
         headers,
         cache: "no-cache",
