@@ -473,8 +473,16 @@ const CartShippingMethodsSection: React.FC<ShippingProps> = ({
                 {currentSelectedMethods.length > 0 && (
                   <div className="flex flex-col">
                     {currentSelectedMethods.map((method: any) => {
-                      const isInpostMethod = isInpostShippingOption(method);
-                      const typedMethod = method as unknown as HttpTypes.StoreCartShippingMethod;
+                      // CRITICAL FIX: Enrich the method with name from available shipping methods
+                      // The cart's shipping_methods might not have the name field populated
+                      const availableMethod = shippingMethods.find(am => am.id === method.shipping_option_id)
+                      const enrichedMethod = {
+                        ...method,
+                        name: method.name || availableMethod?.name // Use available method name if cart method name is missing
+                      }
+                      
+                      const isInpostMethod = isInpostShippingOption(enrichedMethod);
+                      const typedMethod = enrichedMethod as unknown as HttpTypes.StoreCartShippingMethod;
                       
                       return (
                         <div key={method.id} className="flex flex-col w-full">

@@ -24,24 +24,55 @@ export default async function Page() {
       )
     }
   
-    const reviewsToWrite = orders.reduce((acc: any[], order) => {
-    if (!order.seller) return acc
+    const reviewsToWrite: any[] = []
 
-    const hasReview = reviews.some(
-      (review: any) => review.seller?.id === order.seller.id
-    )
+    // 1. Check for sellers that need reviews
+    orders.forEach((order) => {
+      if (!order.seller) return
 
-    if (
-      !hasReview &&
-      !acc.some((item) => item.seller?.id === order.seller.id)
-    ) {
-      acc.push({
-        ...order,
+      const hasSellerReview = reviews.some(
+        (review: any) => review.seller?.id === order.seller.id && review.reference === "seller"
+      )
+
+      if (
+        !hasSellerReview &&
+        !reviewsToWrite.some((item) => item.type === 'seller' && item.seller?.id === order.seller.id)
+      ) {
+        reviewsToWrite.push({
+          ...order,
+          type: 'seller',
+          reviewType: 'seller'
+        })
+      }
+    })
+
+    // 2. Check for products that need reviews
+    orders.forEach((order) => {
+      if (!order.items || !Array.isArray(order.items)) return
+
+      order.items.forEach((item: any) => {
+        if (!item.product_id) return
+
+        const hasProductReview = reviews.some(
+          (review: any) => review.reference === "product" && review.reference_id === item.product_id
+        )
+
+        if (
+          !hasProductReview &&
+          !reviewsToWrite.some((r) => r.type === 'product' && r.product_id === item.product_id)
+        ) {
+          reviewsToWrite.push({
+            id: `${order.id}-${item.id}`,
+            type: 'product',
+            reviewType: 'product',
+            product_id: item.product_id,
+            product: item.product || { title: item.title, thumbnail: item.thumbnail },
+            order_id: order.id,
+            seller: order.seller
+          })
+        }
       })
-    }
-
-    return acc
-  }, [])
+    })
 
   return (
     <UserPageLayout>

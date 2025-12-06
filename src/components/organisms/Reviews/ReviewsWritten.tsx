@@ -39,29 +39,46 @@ export const ReviewsWritten = ({ reviews }: { reviews: Review[] }) => {
         </Card>
       ) : (
         <div className="space-y-2">
-          {reviews.map((review) => (
-            <Card
-              className="flex flex-col gap-6 lg:grid lg:grid-cols-6 px-4"
-              key={review.id}
-            >
-              {review.seller && (
-                <div className="flex gap-2 max-lg:items-center lg:flex-col">
-                  <Image
-                    src={review.seller.photo}
-                    alt={`${review.seller.name} profile photo`}
-                    className="size-8 border border-base-primary rounded-xs"
-                    width={32}
-                    height={32}
-                  />
-                  <p className="label-md text-primary">{review.seller.name}</p>
-                </div>
-              )}
-              <div
-                className={cn(
-                  "flex flex-col gap-2 px-4",
-                  review.seller ? "col-span-5" : "col-span-6"
-                )}
+          {reviews.map((review) => {
+            const isSeller = review.reference === "seller"
+            const isProduct = review.reference === "product"
+            
+            return (
+              <Card
+                className="flex flex-col gap-6 lg:grid lg:grid-cols-6 px-4"
+                key={review.id}
               >
+                {(review.seller || review.product) && (
+                  <div className="flex gap-2 max-lg:items-center lg:flex-col">
+                    <Image
+                      src={
+                        isSeller 
+                          ? (review.seller?.photo || '/images/placeholder.svg')
+                          : (review.product?.thumbnail || '/images/placeholder.svg')
+                      }
+                      alt={
+                        isSeller
+                          ? `${review.seller?.name || 'Seller'} profile photo`
+                          : `${review.product?.title || 'Product'} thumbnail`
+                      }
+                      className="size-8 border border-base-primary rounded-xs object-cover"
+                      width={32}
+                      height={32}
+                    />
+                    <p className="label-md text-primary">
+                      {isSeller 
+                        ? (review.seller?.name || 'Seller')
+                        : (review.product?.title || 'Product')
+                      }
+                    </p>
+                  </div>
+                )}
+                <div
+                  className={cn(
+                    "flex flex-col gap-2 px-4",
+                    (review.seller || review.product) ? "col-span-5" : "col-span-6"
+                  )}
+                >
                 <div className="flex gap-3 items-center">
                   <div className="flex gap-0.5">
                     {new Array(review.rating).fill("").map((_, index) => (
@@ -94,7 +111,8 @@ export const ReviewsWritten = ({ reviews }: { reviews: Review[] }) => {
                 </div>
               </div>
             </Card>
-          ))}
+            )
+          })}
         </div>
       )}
     </div>

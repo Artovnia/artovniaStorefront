@@ -82,7 +82,6 @@ export const CartAddressSection = ({
       }
       
       // ✅ Validate cart ID matches active cart
-      console.log("📝 Submitting address for cart:", activeCart.id, "Session:", sessionId.current)
       
       // ✅ Build address data with validation
       const addressData = {
@@ -101,9 +100,6 @@ export const CartAddressSection = ({
         }
       }
       
-      console.log("📋 Raw form data:", formData)
-      console.log("🏗️ Built address data:", addressData)
-      
       // ✅ Validate required fields
       if (!addressData.email || !addressData.shipping_address.first_name || 
           !addressData.shipping_address.last_name || !addressData.shipping_address.address_1 ||
@@ -112,7 +108,6 @@ export const CartAddressSection = ({
         throw new Error("Please fill in all required fields (name, address, city, postal code, country, email)")
       }
       
-      console.log("📤 Sending address data:", JSON.stringify(addressData, null, 2))
       
       // ✅ Use cart context setAddress with proper error handling
       await setAddress(addressData)
@@ -130,7 +125,6 @@ export const CartAddressSection = ({
         throw new Error("Address was not saved. Please ensure all fields are correctly filled.")
       }
       
-      console.log("✅ Address successfully saved and verified")
       
       // ✅ Force form reset on next render
       setFormResetKey(prev => prev + 1)

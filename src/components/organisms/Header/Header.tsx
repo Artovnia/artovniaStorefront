@@ -88,7 +88,7 @@ export const Header = async () => {
             <span className="md:hidden">
               <StoreIcon size={24} />
             </span>
-            <span className="hidden md:inline mr-4">ZAŁÓŻ SKLEP</span>
+            <span className="hidden md:inline mr-4">TWÓJ SKLEP</span>
           </a>
           
           {/* Hide user dropdown and wishlist on mobile - handled by bottom navigation */}

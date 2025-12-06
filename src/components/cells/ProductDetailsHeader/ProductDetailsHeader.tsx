@@ -195,7 +195,7 @@ export const ProductDetailsHeader = ({
           ? parseInt(metadata.stock_quantity, 10) 
           : metadata.stock_quantity;
         if (!isNaN(stockQty) && stockQty > 0) {
-          console.log('📦 Using stock from metadata:', stockQty);
+    
           return stockQty;
         }
       }
@@ -209,29 +209,7 @@ export const ProductDetailsHeader = ({
   const managesInventory = selectedVariantObject?.manage_inventory ?? true // Default to true for backward compatibility
   const allowBackorder = selectedVariantObject?.allow_backorder ?? false
   
-  // Debug logging to see what data we're getting
-  console.log('🔍 Selected Variant Debug:', {
-    variantId: currentVariantId,
-    inventory_quantity: selectedVariantObject?.inventory_quantity,
-    inventory_items: selectedVariantObject?.inventory_items,
-    calculated_stock: variantStock,
-    manage_inventory: managesInventory,
-    allow_backorder: allowBackorder,
-    full_variant: selectedVariantObject,
-  });
-  
-  // Additional debug for inventory items structure
-  if (selectedVariantObject?.inventory_items) {
-    console.log('📦 Inventory Items Detail:', 
-      selectedVariantObject.inventory_items.map((item: any) => ({
-        inventory_item_id: item.inventory_item_id,
-        required_quantity: item.required_quantity,
-        has_inventory_object: !!item.inventory,
-        inventory_keys: item.inventory ? Object.keys(item.inventory) : [],
-        full_inventory: item.inventory
-      }))
-    );
-  }
+
 
   const variantHasPrice = selectedVariantObject?.calculated_price ? true : false
   

@@ -339,7 +339,7 @@ export const MobileUserNavigation = () => {
 
       {/* Search Modal */}
       {isSearchOpen && (
-        <div className="fixed bottom-4 left-4 right-4 mx-auto max-w-sm bg-primary backdrop-blur-xl rounded-3xl shadow-2xl border border-white/20 z-50 md:hidden overflow-hidden animate-in slide-in-from-bottom-4 duration-300">
+        <div className="fixed bottom-4 left-4 right-4 mx-auto max-w-sm bg-primary backdrop-blur-xl rounded-lg shadow-2xl border border-white/20 z-50 md:hidden overflow-hidden animate-in slide-in-from-bottom-4 duration-300">
           <div className="p-6">
             {/* Search Header */}
             <div className="flex items-center justify-between mb-4">
@@ -360,7 +360,7 @@ export const MobileUserNavigation = () => {
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Wpisz nazwę produktu..."
-                  className="w-full px-4 py-3 pr-12 bg-white border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#3B3634] focus:border-transparent text-gray-900 placeholder-gray-500"
+                  className="w-full px-4 py-3 pr-12 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#3B3634] focus:border-transparent text-gray-900 placeholder-gray-500"
                   autoFocus
                 />
                 <button
@@ -385,7 +385,7 @@ export const MobileUserNavigation = () => {
         <div className="fixed inset-0 z-50 md:hidden flex items-start justify-center pt-4 pb-24 px-4">
           <div className="w-full max-w-sm max-h-[calc(100vh-7rem)] animate-in slide-in-from-bottom-4 duration-300 flex flex-col">
             {/* Main Container with gradient background */}
-            <div className="relative bg-gradient-to-br from-[#F4F0EB] via-[#F4F0EB] to-[#F4F0EB] backdrop-blur-xl rounded-[32px] shadow-2xl border border-[#3B3634]/40 overflow-hidden flex flex-col h-full">
+            <div className="relative bg-gradient-to-br from-[#F4F0EB] via-[#F4F0EB] to-[#F4F0EB] backdrop-blur-xl rounded-sm shadow-2xl border border-[#3B3634]/40 overflow-hidden flex flex-col h-full">
             {/* Decorative background elements */}
             <div className="absolute top-0 right-0 w-40 h-40 bg-[#F4F0EB]/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 pointer-events-none" />
             <div className="absolute bottom-0 left-0 w-32 h-32 bg-[#F4F0EB]/5 rounded-full blur-3xl translate-y-1/2 -translate-x-1/2 pointer-events-none" />
@@ -422,7 +422,7 @@ export const MobileUserNavigation = () => {
                         animationDelay: `${index * 50}ms`,
                       }}
                       className={cn(
-                        "flex items-center gap-3 p-3 rounded-2xl transition-all duration-200 group relative overflow-hidden animate-in fade-in slide-in-from-left-4",
+                        "flex items-center gap-3 p-3 rounded-sm transition-all duration-200 group relative overflow-hidden animate-in fade-in slide-in-from-left-4",
                         isActive 
                           ? "bg-[#3B3634] text-white shadow-lg shadow-[#3B3634]/20" 
                           : "bg-white/60 backdrop-blur-sm text-[#3B3634] hover:bg-white hover:shadow-md border border-[#3B3634]/5"
@@ -519,7 +519,7 @@ export const MobileUserNavigation = () => {
               {/* Logout Button with artistic styling */}
               <button
                 onClick={handleLogout}
-                className="flex items-center justify-center w-full p-3 text-white bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 rounded-2xl transition-all duration-200 font-semibold shadow-lg shadow-red-500/30 hover:shadow-red-600/40 hover:scale-[1.02] active:scale-[0.98] group relative overflow-hidden"
+                className="flex items-center justify-center w-full p-3 text-white bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700  transition-all duration-200 font-semibold  shadow-red-500/30 hover:shadow-red-600/40 hover:scale-[1.02] active:scale-[0.98] group relative overflow-hidden"
               >
                 <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-1000" />
                 <LogoutIcon className="w-5 h-5 mr-2 relative z-10" />

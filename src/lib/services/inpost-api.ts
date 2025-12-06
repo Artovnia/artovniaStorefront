@@ -58,7 +58,6 @@ export function loadGeowidgetResources(): Promise<boolean> {
     }
   };
   
-  console.log('Global afterPointSelected function set up');
 
   loadingPromise = new Promise((resolve) => {
     let cssLoaded = false;
@@ -79,14 +78,13 @@ export function loadGeowidgetResources(): Promise<boolean> {
 
             // Check if custom element is registered
             if (customElements.get('inpost-geowidget')) {
-              console.log('inpost-geowidget custom element is registered');
             } else {
               console.warn('inpost-geowidget custom element is not registered');
             }
 
             resolved = true;
             resourcesLoaded = true;
-            console.log('InPost Geowidget resources loaded successfully');
+           
             
             // The afterPointSelected function is already set up above
             // No need for additional callback setup here
@@ -111,7 +109,7 @@ export function loadGeowidgetResources(): Promise<boolean> {
     const cssLink = document.createElement('link');
     cssLink.rel = 'stylesheet';
     cssLink.href = GEOWIDGET_CSS_URL;
-    console.log('Loading CSS from:', GEOWIDGET_CSS_URL);
+    
     cssLink.onload = () => {
       console.log('InPost Geowidget CSS loaded successfully');
       cssLoaded = true;
@@ -129,10 +127,10 @@ export function loadGeowidgetResources(): Promise<boolean> {
     // Load JS
     const script = document.createElement('script');
     script.src = GEOWIDGET_JS_URL;
-    console.log('Loading JS from:', GEOWIDGET_JS_URL);
+    
     script.defer = true;
     script.onload = () => {
-      console.log('InPost Geowidget JS loaded successfully');
+     
       jsLoaded = true;
       checkBothLoaded();
     };
@@ -160,8 +158,7 @@ export function loadGeowidgetResources(): Promise<boolean> {
 
 // Enhanced point selection handler setup
 export function setupPointSelectionHandler(callback: (point: any) => void): void {
-  console.log('Setting up point selection handler');
-  
+
   // Store callback
   (window as any).__inpostPointCallback = callback;
   
@@ -175,11 +172,10 @@ export function setupPointSelectionHandler(callback: (point: any) => void): void
   document.addEventListener('onPointSelect', handlePointSelectionEvent);
   document.addEventListener('pointselected', handlePointSelectionEvent);
   
-  console.log('Point selection handlers attached');
 }
 
 function handlePointSelectionEvent(event: any): void {
-  console.log('Point selection event received:', event.type, event);
+  
   const callback = (window as any).__inpostPointCallback;
   if (callback && event.detail) {
     handlePointData(event.detail, callback);
@@ -187,7 +183,6 @@ function handlePointSelectionEvent(event: any): void {
 }
 
 function handlePointData(point: any, callback: (point: InpostParcelData) => void): void {
-  console.log('Processing point data:', point);
   
   try {
     // Handle different possible point data structures
@@ -199,7 +194,6 @@ function handlePointData(point: any, callback: (point: InpostParcelData) => void
       machineCity: getCity(point)
     };
     
-    console.log('Converted parcel data:', parcelData);
     callback(parcelData);
   } catch (error) {
     console.error('Error processing point data:', error);
@@ -248,7 +242,7 @@ let searchTimeout: NodeJS.Timeout | null = null;
 const INPOST_API_BASE_URL = "https://api.inpost.pl/v2";
 
 export async function searchParcelMachines(query: string): Promise<InpostParcelData[]> {
-  console.log(`Searching for parcel machines with query: ${query}`);
+ 
   
   if (searchTimeout) {
     clearTimeout(searchTimeout);
@@ -264,7 +258,6 @@ export async function searchParcelMachines(query: string): Promise<InpostParcelD
       status: 'Operating'
     });
     
-    console.log(`Making API request to: ${INPOST_API_BASE_URL}/points?${params}`);
     
     const response = await fetch(`${INPOST_API_BASE_URL}/points?${params}`, {
       headers: {
@@ -278,7 +271,7 @@ export async function searchParcelMachines(query: string): Promise<InpostParcelD
     }
     
     const data = await response.json();
-    console.log('API response structure:', JSON.stringify(data).substring(0, 200) + '...');
+    
     
     // Transform API response to our internal format
     const items = data.items || data.points || [];
@@ -290,7 +283,6 @@ export async function searchParcelMachines(query: string): Promise<InpostParcelD
       machineCity: point.address?.city || ''
     }));
     
-    console.log(`API search for "${query}" returned ${results.length} results`);
     return results;
   } catch (error) {
     console.error('Error searching for parcel machines:', error);
@@ -305,7 +297,7 @@ export async function getNearbyParcelMachines(
   longitude?: number, 
   maxDistance: number = 10
 ): Promise<InpostParcelData[]> {
-  console.log(`Searching for nearby parcel machines at lat: ${latitude}, lng: ${longitude}`);
+  
   
   try {
     if (!latitude || !longitude) {
@@ -322,8 +314,6 @@ export async function getNearbyParcelMachines(
       status: 'Operating'
     });
     
-    console.log(`Making nearby API request to: ${INPOST_API_BASE_URL}/points?${params}`);
-    
     const response = await fetch(`${INPOST_API_BASE_URL}/points?${params}`, {
       headers: {
         'Accept': 'application/json',
@@ -336,7 +326,6 @@ export async function getNearbyParcelMachines(
     }
     
     const data = await response.json();
-    console.log('API nearby response structure:', JSON.stringify(data).substring(0, 200) + '...');
     
     // Transform API response to our internal format
     const items = data.items || data.points || [];
@@ -348,7 +337,6 @@ export async function getNearbyParcelMachines(
       machineCity: point.address?.city || ''
     }));
     
-    console.log(`API nearby search returned ${results.length} results`);
     return results;
   } catch (error) {
     console.error('Error getting nearby parcel machines:', error);
@@ -391,7 +379,6 @@ function getMockParcelMachines(query: string): InpostParcelData[] {
     item.machineName.toLowerCase().includes(lowerQuery)
   );
   
-  console.log(`Search for "${query}" returned ${filtered.length} results`);
   return filtered;
 }
 
@@ -403,6 +390,5 @@ function getMockNearbyParcelMachines(): InpostParcelData[] {
     { machineId: "NEAR004", machineName: "NEAR004", machineAddress: "ul. Obok 25", machinePostCode: "00-025", machineCity: "Warszawa" }
   ];
   
-  console.log(`Nearby search returned ${nearby.length} results`);
   return nearby;
 }

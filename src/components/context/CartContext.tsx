@@ -11,6 +11,7 @@ interface ExtendedCart extends HttpTypes.StoreCart {
     [key: string]: any
   } | null
   gift_cards?: any[]
+  customer?: HttpTypes.StoreCustomer | null
 }
 
 interface CartState {

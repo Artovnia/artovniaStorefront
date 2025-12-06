@@ -43,6 +43,7 @@ import { InpostParcelSelector } from "./InpostParcelSelector/InpostParcelSelecto
 import { InpostParcelInfo } from "./InpostParcelInfo/InpostParcelInfo"
 import { ImageZoomModal } from "./ImageZoomModal/ImageZoomModal"
 import { SellerProductListing } from "./SellerProductListing/SellerProductListing"
+import { GuestCheckoutModal } from "./GuestCheckoutModal/GuestCheckoutModal"
 
 export {
   PrimeCategoryNavbar,
@@ -88,6 +89,7 @@ export {
   InpostParcelInfo,
   ImageZoomModal,
   SellerProductListing,
+  GuestCheckoutModal,
   NewsletterForm,
 }
 

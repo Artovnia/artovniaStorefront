@@ -86,7 +86,6 @@ export const InpostShippingMethodWrapper: React.FC<InpostShippingMethodWrapperPr
       
       // Update the shipping method with the parcel data
       await updateShippingMethodWithParcelData(shippingMethod, parcelData);
-      console.log('Successfully updated shipping method data with parcel info');
       
       // Notify parent of completion
       if (onComplete) {

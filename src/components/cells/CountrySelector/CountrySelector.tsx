@@ -28,12 +28,12 @@ const getRegionDisplay = (region: HttpTypes.StoreRegion): RegionDisplay => {
     'Poland': { flag: '🇵🇱' },
     'EU': { flag: '🇪🇺', displayName: 'Europa' },
     'Europe': { flag: '🇪🇺', displayName: 'Europa' },
-    'USA': { flag: '🇺🇸', displayName: 'Stany Zjednoczone' },
-    'United States': { flag: '🇺🇸', displayName: 'Stany Zjednoczone' },
-    'US': { flag: '🇺🇸', displayName: 'Stany Zjednoczone' },
-    'Canada': { flag: '🇨🇦', displayName: 'Kanada' },
-    'Kanada': { flag: '🇨🇦', displayName: 'Kanada' },
-    'CA': { flag: '🇨🇦', displayName: 'Kanada' },
+    // 'USA': { flag: '🇺🇸', displayName: 'Stany Zjednoczone' },
+    // 'United States': { flag: '🇺🇸', displayName: 'Stany Zjednoczone' },
+    // 'US': { flag: '🇺🇸', displayName: 'Stany Zjednoczone' },
+    // 'Canada': { flag: '🇨🇦', displayName: 'Kanada' },
+    // 'Kanada': { flag: '🇨🇦', displayName: 'Kanada' },
+    // 'CA': { flag: '🇨🇦', displayName: 'Kanada' },
   }
   
   const display = displayMap[name] || { flag: '🌍' }

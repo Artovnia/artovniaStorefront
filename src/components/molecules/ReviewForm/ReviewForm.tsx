@@ -16,7 +16,7 @@ import { createReview } from "@/lib/data/reviews"
 
 interface Props {
   handleClose?: () => void
-  sellerId: string
+  sellerId: string // Format: "seller:id" or "product:id"
 }
 
 export const ReviewForm: React.FC<Props> = ({ ...props }) => {
@@ -46,12 +46,18 @@ const Form: React.FC<Props> = ({ handleClose, sellerId }) => {
     formState: { errors },
   } = useFormContext()
 
+  // Parse the sellerId to determine if it's a seller or product review
+  const [reviewType, reviewId] = sellerId.split(':')
+  const isSeller = reviewType === 'seller'
+  const isProduct = reviewType === 'product'
+
   const submit = async (data: FieldValues) => {
     const body = {
       rating: data.rating,
-      reference: "seller",
-      reference_id: sellerId,
+      reference: isSeller ? "seller" : "product",
+      reference_id: reviewId,
       customer_note: data.opinion,
+      ...(isProduct && { product_id: reviewId })
     }
 
     const response = await createReview(body)
@@ -73,7 +79,7 @@ const Form: React.FC<Props> = ({ handleClose, sellerId }) => {
       <div className="px-4 space-y-4">
         <div className="max-w-full grid grid-cols-1 items-top gap-4 mb-4">
           <div>
-            <label className="label-sm block mb-2">Rating</label>
+            <label className="label-sm block mb-2">Ocena</label>
             <InteractiveStarRating
               value={rating}
               onChange={(value) => setValue("rating", value)}
@@ -87,13 +93,13 @@ const Form: React.FC<Props> = ({ handleClose, sellerId }) => {
           </div>
 
           <label className={cn("label-sm block relative")}>
-            <p className={cn(error && "text-negative")}>Your opinion</p>
+            <p className={cn(error && "text-negative")}>Twoja opinia</p>
             <textarea
               className={cn(
                 "w-full px-4 py-3 h-32 border rounded-sm bg-component-secondary focus:border-primary focus:outline-none focus:ring-0 relative",
                 error && "border-negative focus:border-negative"
               )}
-              placeholder="Write your opinion about this seller..."
+              placeholder={isSeller ? "Napisz swoją opinię o sprzedawcy..." : "Napisz swoją opinię o produkcie..."}
               {...register("opinion")}
             />
             <div
@@ -112,7 +118,7 @@ const Form: React.FC<Props> = ({ handleClose, sellerId }) => {
           </label>
         </div>
         {error && <p className="label-md text-negative">{error}</p>}
-        <Button className="w-full">SUBMIT REVIEW</Button>
+        <Button className="w-full">OPUBLIKUJ OPINIĘ</Button>
       </div>
     </form>
   )

@@ -9,11 +9,16 @@ import { InpostParcelData } from "../services/inpost-api"
  * @returns true if the shipping option is for InPost paczkomat specifically
  */
 export function isInpostShippingOption(shippingOption: HttpTypes.StoreCartShippingMethod | undefined): boolean {
-  if (!shippingOption) return false
+  if (!shippingOption) {
+   
+    return false
+  }
   
-  // Check for specific "Inpost paczkomat" combination (case insensitive)
-  const nameCheck = shippingOption.name?.toLowerCase().includes('inpost') && 
-                   shippingOption.name?.toLowerCase().includes('paczkomat')
+  // CRITICAL: Check name field (most reliable for cart shipping methods)
+  // Check for both "inpost" AND "paczkomat" OR just "paczkomat" (as it's InPost-specific term)
+  const lowerName = shippingOption.name?.toLowerCase() || ''
+  const nameCheck = (lowerName.includes('inpost') && lowerName.includes('paczkomat')) ||
+                   lowerName.includes('paczkomat')
   
   // Check for InPost in the data type
   const dataCheck = shippingOption.data?.type === 'inpost' ||
@@ -30,7 +35,14 @@ export function isInpostShippingOption(shippingOption: HttpTypes.StoreCartShippi
   const idCheck = !!shippingOption.shipping_option_id && 
                  shippingOption.shipping_option_id.toLowerCase().includes('inpost')
   
-  return nameCheck || dataCheck || !!idCheck // Force boolean conversion
+  // ADDED: Check if the shipping method already has parcel machine data
+  // This means it was previously selected as an Inpost method
+  const hasParcelData = !!(shippingOption.data?.parcel_machine)
+  
+  const result = nameCheck || dataCheck || idCheck || hasParcelData
+  
+  
+  return result
 }
 
 /**

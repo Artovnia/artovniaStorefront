@@ -15,7 +15,11 @@ import { useState } from "react"
 import { login, loginWithGoogle } from "@/lib/data/customer"
 import { useRouter } from '@/i18n/routing'
 
-export const LoginForm = () => {
+interface LoginFormProps {
+  compact?: boolean // For use in modals
+}
+
+export const LoginForm = ({ compact = false }: LoginFormProps = {}) => {
   const methods = useForm<LoginFormData>({
     resolver: zodResolver(loginFormSchema),
     defaultValues: {
@@ -26,12 +30,12 @@ export const LoginForm = () => {
 
   return (
     <FormProvider {...methods}>
-      <Form />
+      <Form compact={compact} />
     </FormProvider>
   )
 }
 
-const Form = () => {
+const Form = ({ compact }: { compact: boolean }) => {
   const [error, setError] = useState("")
   const {
     handleSubmit,
@@ -51,7 +55,15 @@ const Form = () => {
       return
     }
     setError("")
-    router.push("/user")
+    
+    // Check if user came from checkout flow
+    const shouldRedirectToCheckout = sessionStorage.getItem('checkout_redirect')
+    if (shouldRedirectToCheckout) {
+      sessionStorage.removeItem('checkout_redirect')
+      router.push('/checkout?step=address') // Use router.push to preserve cart state
+    } else {
+      router.push("/user")
+    }
   }
 
   const handleGoogleLogin = async () => {
@@ -76,8 +88,14 @@ const Form = () => {
       }
       
       if (result?.success) {
-        // Success - redirect to user dashboard
-        router.push("/user")
+        // Check if user came from checkout flow
+        const shouldRedirectToCheckout = sessionStorage.getItem('checkout_redirect')
+        if (shouldRedirectToCheckout) {
+          sessionStorage.removeItem('checkout_redirect')
+          router.push('/checkout?step=address') // Use router.push to preserve cart state
+        } else {
+          router.push("/user")
+        }
         return
       }
       
@@ -87,13 +105,9 @@ const Form = () => {
     }
   }
 
-  return (
-    <main className="container">
-      <h1 className="heading-xl text-center uppercase my-6 font-instrument-serif">
-       Zaloguj się do swojego konta
-      </h1>
-      <form onSubmit={handleSubmit(submit)}>
-        <div className="w-96 max-w-full mx-auto space-y-4">
+  const formContent = (
+    <form onSubmit={handleSubmit(submit)}>
+      <div className={compact ? "space-y-4" : "w-96 max-w-full mx-auto space-y-4"}>
           <LabeledInput
             label="E-mail"
             placeholder="Twój adres e-mail"
@@ -135,19 +149,42 @@ const Form = () => {
             Zaloguj się z Google
           </Button>
           
-          <div className="flex justify-center">
-            <Link href="/forgot-password" className="label-md text-secondary hover:underline">
-              Zapomniałeś hasła?
-            </Link>
-          </div>
-          <p className="text-center label-md">
-            Nie masz jeszcze konta?{" "}
-            <Link href="/user/register" className="underline">
-              Zarejestruj się!
-            </Link>
-          </p>
+          {!compact && (
+            <>
+              <div className="flex justify-center">
+                <Link href="/forgot-password" className="label-md text-secondary hover:underline">
+                  Zapomniałeś hasła?
+                </Link>
+              </div>
+              <p className="text-center label-md">
+                Nie masz jeszcze konta?{" "}
+                <Link href="/user/register" className="underline">
+                  Zarejestruj się!
+                </Link>
+              </p>
+            </>
+          )}
         </div>
       </form>
+  )
+
+  if (compact) {
+    return (
+      <div>
+        <h2 className="text-2xl font-instrument-serif font-normal  text-[#3B3634] mb-4 text-center">
+          Zaloguj się
+        </h2>
+        {formContent}
+      </div>
+    )
+  }
+
+  return (
+    <main className="container">
+      <h1 className="heading-xl text-center uppercase my-6 font-instrument-serif">
+        Zaloguj się do swojego konta
+      </h1>
+      {formContent}
     </main>
   )
 }

@@ -19,16 +19,16 @@ import { getRegion } from "./regions"
 import { getPublishableApiKey } from "../get-publishable-key"
 import { unifiedCache } from "../utils/unified-cache" 
 
-interface ExtendedStoreCart extends HttpTypes.StoreCart {
+interface ExtendedStoreCart extends Omit<HttpTypes.StoreCart, 'promotions'> {
   completed_at?: string;
   status?: string;
   completed?: boolean;
   payment_status?: string;
-  promotions?: any[];
+  promotions?: HttpTypes.StoreCartPromotion[];
 }
 
 // Consolidated field list to avoid duplication
-const CART_FIELDS = "*items,*region,*region.countries,*items.product,*items.variant,*items.variant.options,items.variant.options.option.title,*items.thumbnail,*items.metadata,+items.total,+items.unit_price,+items.original_total,+items.original_unit_price,*promotions,*promotions.application_method,*shipping_methods,*items.product.seller,*payment_collection,*payment_collection.payment_sessions,email,*shipping_address,*billing_address,subtotal,total,tax_total,item_total,shipping_total,currency_code"
+const CART_FIELDS = "*items,*region,*region.countries,*items.product,*items.variant,*items.variant.options,items.variant.options.option.title,*items.thumbnail,*items.metadata,+items.total,+items.unit_price,+items.original_total,+items.original_unit_price,*promotions,*promotions.application_method,*shipping_methods,*items.product.seller,*payment_collection,*payment_collection.payment_sessions,email,*shipping_address,*billing_address,*customer,subtotal,total,tax_total,item_total,shipping_total,currency_code"
 
 async function getPaymentHeaders() {
   return {
@@ -351,10 +351,8 @@ export async function deleteLineItem(lineId: string) {
     throw new Error("Missing cart ID when deleting line item")
   }
 
-  const headers = await getAuthHeaders()
-
   try {
-    await sdk.store.cart.deleteLineItem(cartId, lineId, headers)
+    await sdk.store.cart.deleteLineItem(cartId, lineId)
     
     // ✅ Targeted cache invalidation after cart change
     unifiedCache.invalidateAfterCartChange()

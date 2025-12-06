@@ -9,7 +9,7 @@ export default function CartPromotionCode({
   cart,
 }: {
   cart:
-    | (HttpTypes.StoreCart & { promotions?: HttpTypes.StorePromotion[] })
+    | (HttpTypes.StoreCart & { promotions?: HttpTypes.StoreCartPromotion[] })
     | null
 }) {
   const [promotionCode, setPromotionCode] = useState("")

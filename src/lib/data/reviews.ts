@@ -12,7 +12,14 @@ export type Review = {
     name: string
     photo: string
   }
+  product?: {
+    id?: string
+    title?: string
+    thumbnail?: string
+  }
+  product_id?: string
   reference: string
+  reference_id?: string
   customer_note: string
   rating: number
   updated_at: string
@@ -23,6 +30,9 @@ export type Review = {
     last_name: string
     email: string
   }
+  type?: 'seller' | 'product'
+  reviewType?: 'seller' | 'product'
+  order_id?: string
 }
 
 export type Order = HttpTypes.StoreOrder & {
@@ -98,22 +108,27 @@ const getProductReviews = async (productId: string) => {
 }
 
 /**
- * Creates a review for a product
+ * Creates a review for a product or seller
  * 
  * Required fields in the review object:
- * - product_id (string): ID of the product being reviewed
  * - rating (number): Rating from 1-5
+ * - reference_id OR product_id (string): ID of the item being reviewed
  * 
  * Optional fields:
+ * - reference (string): "product" or "seller" (defaults to "product")
  * - customer_note (string): Text review content
  * 
  * The customer_id is extracted from the JWT token in the authorization header
  */
 export const createReview = async (review: any) => {
   try {
-    // Validate required fields
-    if (!review.product_id || !review.rating) {
-      throw new Error('Required fields missing: product_id or rating')
+    // Validate required fields - need either product_id or reference_id
+    if (!review.rating) {
+      throw new Error('Required field missing: rating')
+    }
+    
+    if (!review.reference_id && !review.product_id) {
+      throw new Error('Required field missing: reference_id or product_id')
     }
     
     // Validate rating range
@@ -132,8 +147,8 @@ export const createReview = async (review: any) => {
     // Format the review data according to backend API requirements
     // The format must match StoreCreateReview schema in the backend validators
     const reviewData = {
-      reference: "product",
-      reference_id: review.product_id,
+      reference: review.reference || "product",
+      reference_id: review.reference_id || review.product_id,
       rating: review.rating,
       customer_note: review.customer_note || null
     }
@@ -168,20 +183,18 @@ export const createReview = async (review: any) => {
     // Parse and return the result
     const result = await response.json()
     
-    // Try to revalidate paths to clear cache
+    // Revalidate paths using Next.js revalidatePath (server-side only)
     try {
-      const paths = [
-        '/user/reviews',
-        '/user/reviews/written',
-        `/products/${review.product_id}`
-      ]
-      await Promise.all(paths.map(path => {
-        return fetch(`/api/revalidate?path=${encodeURIComponent(path)}`, {
-          method: 'POST'
-        }).catch(err => console.warn('Revalidation error:', err))
-      }))
+      revalidatePath('/user/reviews')
+      revalidatePath('/user/reviews/written')
+      
+      // Only revalidate product page if this is a product review
+      if (review.reference === 'product' && review.product_id) {
+        revalidatePath(`/products/${review.product_id}`)
+      }
     } catch (revalidateError) {
-      // Continue execution even if revalidation fails
+      // Revalidation is optional, continue even if it fails
+      console.warn('Cache revalidation failed:', revalidateError)
     }
     
     return { success: true, review: result }
@@ -357,10 +370,7 @@ const getSellerReviews = async (sellerHandle: string) => {
       if (data?.reviews && Array.isArray(data.reviews)) {
         return { reviews: data.reviews, count: data.count || data.reviews.length }
       }
-    } else {
-      const errorText = await response.text()
-      console.log(`Error details:`, errorText)
-    }
+    } 
     
     return { reviews: [], count: 0 }
     

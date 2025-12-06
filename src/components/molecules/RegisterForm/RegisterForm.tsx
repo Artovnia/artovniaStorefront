@@ -16,7 +16,11 @@ import { useState } from "react"
 import { cn } from "@/lib/utils"
 import { useRouter } from '@/i18n/routing'
 
-export const RegisterForm = () => {
+interface RegisterFormProps {
+  compact?: boolean // For use in modals
+}
+
+export const RegisterForm = ({ compact = false }: RegisterFormProps = {}) => {
   const methods = useForm<RegisterFormData>({
     resolver: zodResolver(registerFormSchema),
     defaultValues: {
@@ -31,12 +35,12 @@ export const RegisterForm = () => {
 
   return (
     <FormProvider {...methods}>
-      <Form />
+      <Form compact={compact} />
     </FormProvider>
   )
 }
 
-const Form = () => {
+const Form = ({ compact }: { compact: boolean }) => {
   const [error, setError] = useState<string | undefined>()
   const router = useRouter()
   const {
@@ -55,7 +59,17 @@ const Form = () => {
 
     const res = await signup(formData)
 
-    if (res && !res?.id) setError(res)
+    if (res && !res?.id) {
+      setError(res)
+    } else {
+      // Registration successful - check if user came from checkout flow
+      const shouldRedirectToCheckout = sessionStorage.getItem('checkout_redirect')
+      if (shouldRedirectToCheckout) {
+        sessionStorage.removeItem('checkout_redirect')
+        router.push('/checkout?step=address') // Use router.push to preserve cart state
+      }
+      // If no redirect needed, the signup function handles the redirect
+    }
   }
 
   const handleGoogleRegister = async () => {
@@ -84,8 +98,14 @@ const Form = () => {
       }
       
       if (result?.success) {
-        // Success - redirect to user dashboard
-        router.push("/user")
+        // Check if user came from checkout flow
+        const shouldRedirectToCheckout = sessionStorage.getItem('checkout_redirect')
+        if (shouldRedirectToCheckout) {
+          sessionStorage.removeItem('checkout_redirect')
+          router.push('/checkout?step=address') // Use router.push to preserve cart state
+        } else {
+          router.push("/user")
+        }
         return
       }
       
@@ -95,13 +115,9 @@ const Form = () => {
     }
   }
 
-  return (
-    <main className="container">
-      <h1 className="heading-xl text-center uppercase my-6">
-        Dołącz do naszej społeczności
-      </h1>
-      <form onSubmit={handleSubmit(submit)}>
-        <div className="w-96 max-w-full mx-auto space-y-4">
+  const formContent = (
+    <form onSubmit={handleSubmit(submit)}>
+      <div className={compact ? "space-y-4" : "w-96 max-w-full mx-auto space-y-4"}>
           <LabeledInput
             label="Imię"
             placeholder="Twoje imię"
@@ -172,14 +188,35 @@ const Form = () => {
             Zarejestruj się za pomocą Google
           </Button>
           
-          <p className="text-center label-md">
-            Masz już konto?{" "}
-            <Link href="/user" className="underline">
-              Zaloguj się!
-            </Link>
-          </p>
+          {!compact && (
+            <p className="text-center label-md">
+              Masz już konto?{" "}
+              <Link href="/user" className="underline">
+                Zaloguj się!
+              </Link>
+            </p>
+          )}
         </div>
       </form>
+  )
+
+  if (compact) {
+    return (
+      <div>
+        <h2 className="text-2xl font-instrument-serif font-normal text-[#3B3634] mb-4 text-center">
+          Zarejestruj się
+        </h2>
+        {formContent}
+      </div>
+    )
+  }
+
+  return (
+    <main className="container">
+      <h1 className="heading-xl text-center uppercase my-6">
+        Dołącz do naszej społeczności
+      </h1>
+      {formContent}
     </main>
   )
 }

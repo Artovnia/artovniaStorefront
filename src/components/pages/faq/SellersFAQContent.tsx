@@ -50,7 +50,7 @@ const SellersFAQContent = () => {
               <Disclosure.Panel className="pt-4 text-gray-700 space-y-3">
                 <p>
                   Wystarczy wejść na stronę Artovnia, w prawym górnym rogu kliknąć
-                  „ZAŁÓŻ SKLEP” i wypełnić formularz rejestracyjny, akceptując
+                  „TWÓJ SKLEP” i wypełnić formularz rejestracyjny, akceptując
                   regulamin.
                 </p>
               </Disclosure.Panel>

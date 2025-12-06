@@ -68,8 +68,7 @@ export function useInpostParcelSelection() {
       
       // Logic to update the shipping method with the parcel data will be here
       // This will be called after a shipping method is selected and a parcel is chosen
-      console.log('Parcel selected:', parcelData)
-      console.log('Will update shipping method with parcel data')
+     
       
       // Note: The actual shipping method update will be handled by the parent component
       // as it involves more context about the cart and shipping options

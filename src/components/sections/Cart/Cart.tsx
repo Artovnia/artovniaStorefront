@@ -92,6 +92,7 @@ const Cart: React.FC = () => {
             <CartClient 
               cartTotal={cart?.total || 0}
               currencyCode={cart?.currency_code || ""}
+              hasCustomer={!!cart?.customer}
             />
           </div>
         </div>

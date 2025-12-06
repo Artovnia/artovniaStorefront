@@ -40,7 +40,7 @@ export const InpostParcelSelector: React.FC<InpostParcelSelectorProps> = ({
   const modalRef = useRef<HTMLDivElement>(null)
   
   const handleSelectParcel = useCallback((parcel: InpostParcelData) => {
-    console.log('Parcel selected:', parcel);
+  
     setSelectedParcel(parcel)
     onSelect(parcel)
     setIsModalOpen(false)
