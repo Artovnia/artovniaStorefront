@@ -17,9 +17,10 @@ import { useRouter } from '@/i18n/routing'
 
 interface LoginFormProps {
   compact?: boolean // For use in modals
+  redirectUrl?: string // URL to redirect to after login
 }
 
-export const LoginForm = ({ compact = false }: LoginFormProps = {}) => {
+export const LoginForm = ({ compact = false, redirectUrl }: LoginFormProps = {}) => {
   const methods = useForm<LoginFormData>({
     resolver: zodResolver(loginFormSchema),
     defaultValues: {
@@ -30,12 +31,12 @@ export const LoginForm = ({ compact = false }: LoginFormProps = {}) => {
 
   return (
     <FormProvider {...methods}>
-      <Form compact={compact} />
+      <Form compact={compact} redirectUrl={redirectUrl} />
     </FormProvider>
   )
 }
 
-const Form = ({ compact }: { compact: boolean }) => {
+const Form = ({ compact, redirectUrl }: { compact: boolean; redirectUrl?: string }) => {
   const [error, setError] = useState("")
   const {
     handleSubmit,
@@ -56,7 +57,13 @@ const Form = ({ compact }: { compact: boolean }) => {
     }
     setError("")
     
-    // Check if user came from checkout flow
+    // Priority 1: Redirect URL from query parameter (e.g., from seller message page)
+    if (redirectUrl) {
+      router.push(redirectUrl)
+      return
+    }
+    
+    // Priority 2: Check if user came from checkout flow
     const shouldRedirectToCheckout = sessionStorage.getItem('checkout_redirect')
     if (shouldRedirectToCheckout) {
       sessionStorage.removeItem('checkout_redirect')
@@ -88,7 +95,13 @@ const Form = ({ compact }: { compact: boolean }) => {
       }
       
       if (result?.success) {
-        // Check if user came from checkout flow
+        // Priority 1: Redirect URL from query parameter
+        if (redirectUrl) {
+          router.push(redirectUrl)
+          return
+        }
+        
+        // Priority 2: Check if user came from checkout flow
         const shouldRedirectToCheckout = sessionStorage.getItem('checkout_redirect')
         if (shouldRedirectToCheckout) {
           sessionStorage.removeItem('checkout_redirect')

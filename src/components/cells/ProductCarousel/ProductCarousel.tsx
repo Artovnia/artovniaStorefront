@@ -134,12 +134,12 @@ export const ProductCarousel = ({
                     alt="Product image"
                     width={700}
                     height={700}
-                    quality={75}
+                    quality={90}
                     priority={index === 0} // ✅ Only first image gets priority
                     loading={index === 0 ? "eager" : "lazy"} // ✅ Lazy load non-first images
                     placeholder="blur"
                     blurDataURL="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFQEBAQAAAAAAAAAAAAAAAAAAAAX/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oADAMBAAIRAxEAPwCdABmX/9k="
-                    sizes="(max-width: 768px) 100vw, 700px"
+                    sizes="(max-width: 640px) 100vw, (max-width: 768px) 90vw, 700px"
                     className="max-h-[700px] w-full h-auto aspect-square object-cover object-center hover:scale-105 transition-transform duration-300"
                   />
                 </div>
@@ -188,7 +188,7 @@ export const ProductCarousel = ({
                       src={decodeURIComponent(slide.url)}
                       alt={`Product thumbnail ${index + 1}`}
                       fill
-                      quality={40}
+                      quality={80}
                       loading="lazy"
                       className="object-cover transition-transform duration-300 hover:scale-105"
                       sizes="80px"
@@ -243,7 +243,7 @@ export const ProductCarousel = ({
                     src={decodeURIComponent(slides[selectedImageIndex].url)}
                     alt="Product image"
                     fill
-                    quality={80}
+                    quality={95}
                     priority={true} // ✅ ALWAYS priority for main image (regardless of index)
                     loading="eager"
                     placeholder="blur"
@@ -253,7 +253,7 @@ export const ProductCarousel = ({
                         ? "opacity-0 scale-105 blur-sm" 
                         : "opacity-100 scale-100 blur-0"
                     }`}
-                    sizes="(max-width: 1024px) 100vw, (max-width: 1200px) 50vw, 600px"
+                    sizes="(max-width: 640px) 100vw, (max-width: 1024px) 90vw, (max-width: 1440px) 50vw, (max-width: 1920px) 45vw, 800px"
                   />
                 )}
                 

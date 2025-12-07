@@ -21,8 +21,8 @@ import { CountrySelectorWrapper } from "@/components/cells/CountrySelector/Count
 export const Header = async () => {
   
   // ✅ PHASE 1.1: PARALLEL DATA FETCHING
-  // Fetch user and categories in parallel (66% faster than sequential)
-  const [user, categoriesData] = await Promise.all([
+  // Fetch user, categories, and regions in parallel (safe - no user-specific data)
+  const [user, categoriesData, regions] = await Promise.all([
     retrieveCustomer().catch((error) => {
       // Only log non-401 errors (401 = not logged in, which is normal)
       if (error?.status !== 401) {
@@ -33,7 +33,9 @@ export const Header = async () => {
     listCategoriesWithProducts().catch((error) => {
       console.error("🏠 Header: Error retrieving categories with products:", error)
       return { parentCategories: [], categories: [] }
-    })
+    }),
+    // ✅ Fetch regions (safe - public data, no user-specific info)
+    import('@/lib/data/regions').then(m => m.listRegions()).catch(() => [])
   ])
   
   // Fetch wishlist only if user is authenticated (conditional, not parallel)
@@ -60,7 +62,7 @@ export const Header = async () => {
         <div className="flex items-center gap-2 lg:gap-4 lg:w-1/3 py-4 ml-4">
           {/* Country Selector - Left side - Hide on mobile, show on md and up */}
           <div className="hidden md:block">
-            <CountrySelectorWrapper />
+            <CountrySelectorWrapper regions={regions} />
           </div>
           
           <MobileNavbar

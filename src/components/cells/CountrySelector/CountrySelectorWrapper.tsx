@@ -1,29 +1,35 @@
-import { listRegions } from '@/lib/data/regions'
-import { retrieveCart } from '@/lib/data/cart'
+"use client"
+
+import { useCart } from '@/components/context/CartContext'
 import { CountrySelector } from './CountrySelector'
+import { HttpTypes } from '@medusajs/types'
+import { useCallback } from 'react'
+
+interface CountrySelectorWrapperProps {
+  regions: HttpTypes.StoreRegion[]
+}
 
 /**
- * Server component wrapper for CountrySelector
- * Fetches regions from backend and detects current region from cart
+ * ✅ OPTIMIZED: Client component that uses CartContext
+ * Eliminates duplicate cart requests by using shared cart state
+ * Regions are passed as props from server (safe - public data)
  */
-export async function CountrySelectorWrapper() {
-  // Fetch all available regions from backend
-  const regions = await listRegions().catch(() => [])
+export function CountrySelectorWrapper({ regions }: CountrySelectorWrapperProps) {
+  const { cart, refreshCart } = useCart()
   
   if (!regions || regions.length === 0) {
-    console.warn('No regions available from backend')
     return null
   }
   
-  // Try to get current region from cart
-  let currentRegionId: string | undefined
-  try {
-    const cart = await retrieveCart()
-    currentRegionId = cart?.region_id
-  } catch (error) {
-    // Cart doesn't exist yet or user not authenticated - that's fine
-    // Will default to first region (Poland)
-  }
+  // Get current region from CartContext (no additional request needed!)
+  const currentRegionId = cart?.region_id
   
-  return <CountrySelector regions={regions} currentRegionId={currentRegionId} />
+  // ✅ Pass refreshCart to CountrySelector so it can update after region change
+  return (
+    <CountrySelector 
+      regions={regions} 
+      currentRegionId={currentRegionId}
+      onRegionChanged={refreshCart}
+    />
+  )
 }

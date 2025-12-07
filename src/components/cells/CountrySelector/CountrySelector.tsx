@@ -16,6 +16,7 @@ interface CountrySelectorProps {
   regions: HttpTypes.StoreRegion[]
   currentRegionId?: string
   className?: string
+  onRegionChanged?: () => Promise<void>
 }
 
 // Map region names to display info
@@ -49,7 +50,8 @@ const getRegionDisplay = (region: HttpTypes.StoreRegion): RegionDisplay => {
 export const CountrySelector = ({ 
   regions,
   currentRegionId,
-  className 
+  className,
+  onRegionChanged
 }: CountrySelectorProps) => {
   const [isOpen, setIsOpen] = useState(false)
   const [isPending, startTransition] = useTransition()
@@ -81,7 +83,12 @@ export const CountrySelector = ({
         const { updateCartRegion } = await import('@/lib/data/cart')
         await updateCartRegion(regionId)
         
-        // Refresh the page to reload with new region
+        // ✅ Refresh CartContext to get updated cart with new region
+        if (onRegionChanged) {
+          await onRegionChanged()
+        }
+        
+        // ✅ Refresh server components to update prices and product data
         router.refresh()
       } catch (error) {
         console.error('Error updating region:', error)

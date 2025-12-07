@@ -61,20 +61,18 @@ export const SellerSidebar = ({ seller, user }: SellerSidebarProps) => {
         />
       )}
       
-      {/* Contact Form Card - Only show if user is authenticated */}
-      {user && (
-        <div className="border border-[#3B3634] rounded-sm p-4 bg-primary ">
-          <h3 className="heading-sm uppercase mb-4 text-xs tracking-wider">
-            Napisz wiadomość do {name}
-          </h3>
-          <MessageForm 
-            seller_id={id}
-            seller_name={name}
-            isAuthenticated={true}
-            compact={true}
-          />
-        </div>
-      )}
+      {/* Contact Form Card - Show for all users */}
+      <div className="border border-[#3B3634] rounded-sm p-4 bg-primary ">
+        <h3 className="heading-sm uppercase mb-4 text-xs tracking-wider">
+          Napisz wiadomość do {name}
+        </h3>
+        <MessageForm 
+          seller_id={id}
+          seller_name={name}
+          isAuthenticated={!!user}
+          compact={true}
+        />
+      </div>
       
       {/* Footer Info */}
       <div className="border-t pt-4 space-y-3">

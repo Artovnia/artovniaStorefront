@@ -34,7 +34,7 @@ export const Pagination = ({
     // First page
     buttons.push(
       <PaginationButton 
-        key="first-page"
+        key="page-1"
         isActive={currentPage === 1}
         onClick={() => currentPage !== 1 && setPage(1)}
       >
@@ -47,7 +47,8 @@ export const Pagination = ({
       buttons.push(
         <div key="dots-start" className="mx-1 flex items-center">...</div>
       );
-    } else if (pages >= 2) {
+    } else if (pages >= 2 && currentPage <= 2) {
+      // Only show page 2 if we're on page 1 or 2 (not showing middle pages)
       buttons.push(
         <PaginationButton
           key="page-2"
@@ -62,7 +63,7 @@ export const Pagination = ({
     // Current page (if not 1, 2 or last page)
     if (currentPage > 2 && currentPage < pages - 1) {
       buttons.push(
-        <PaginationButton key="current-page" isActive>
+        <PaginationButton key={`page-${currentPage}`} isActive>
           {currentPage}
         </PaginationButton>
       );
@@ -73,7 +74,8 @@ export const Pagination = ({
       buttons.push(
         <div key="dots-end" className="mx-1 flex items-center">...</div>
       );
-    } else if (pages > 2) {
+    } else if (pages > 2 && currentPage >= pages - 1) {
+      // Only show second-to-last page if we're near the end
       buttons.push(
         <PaginationButton
           key={`page-${pages-1}`}
@@ -89,7 +91,7 @@ export const Pagination = ({
     if (pages > 1) {
       buttons.push(
         <PaginationButton
-          key={`last-page-${pages}`}
+          key={`page-${pages}`}
           isActive={currentPage === pages}
           onClick={() => currentPage !== pages && setPage(pages)}
         >

@@ -2,6 +2,7 @@
 
 import { Button } from "@/components/atoms"
 import Link from "next/link"
+import { usePathname } from "next/navigation"
 
 type AuthCheckProps = {
   children: React.ReactNode
@@ -9,10 +10,15 @@ type AuthCheckProps = {
 }
 
 export function AuthCheck({ children, isAuthenticated }: AuthCheckProps) {
+  const pathname = usePathname()
+  
   // If the user is authenticated, render the children
   if (isAuthenticated) {
     return <>{children}</>
   }
+
+  // Build redirect URL - encode current path to return after login
+  const redirectUrl = `/user?redirect=${encodeURIComponent(pathname)}`
 
   // If the user is not authenticated, show a message and login button
   return (
@@ -22,7 +28,7 @@ export function AuthCheck({ children, isAuthenticated }: AuthCheckProps) {
         Aby wysłać wiadomość do sprzedawcy, musisz być zalogowany.
       </p>
       <div className="flex justify-center mt-4">
-        <Link href="/account/login" className="inline-block">
+        <Link href={redirectUrl} className="inline-block">
           <Button variant="filled">Zaloguj się</Button>
         </Link>
       </div>

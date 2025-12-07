@@ -15,7 +15,7 @@ import { Wishlist, SerializableWishlist } from "../../../types/wishlist"
 import { useVendorAvailability } from "../../organisms/VendorAvailabilityProvider/vendor-availability-provider"
 import { InformationCircleSolid } from "@medusajs/icons"
 import { useVariantSelection } from "../../context/VariantSelectionContext"
-import { OptimizedLowestPriceDisplay } from "../LowestPriceDisplay/OptimizedLowestPriceDisplay"
+import { BatchLowestPriceDisplay } from "../LowestPriceDisplay/BatchLowestPriceDisplay"
 import { usePromotionData } from "../../context/PromotionDataProvider"
 
 // Define extended types for product and variants
@@ -277,7 +277,7 @@ export const ProductDetailsHeader = ({
             promotionalPricing?.hasPromotion
           ) && (
             <div className="mt-3">
-              <OptimizedLowestPriceDisplay
+              <BatchLowestPriceDisplay
                 variantId={currentVariantId}
                 currencyCode="PLN"
                 className="text-sm"

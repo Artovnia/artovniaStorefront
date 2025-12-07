@@ -31,7 +31,7 @@ export const ProductGPSR = ({ product }: { product: HttpTypes.StoreProduct }) =>
   
   return (
     <ProductPageAccordion heading="Informacje o produkcie (GPSR)" defaultOpen={false}>
-      <div className="space-y-6 divide-y divide-gray-200">
+      <div className="space-y-6 divide-y divide-gray-200 select-none" onCopy={(e) => e.preventDefault()} onCut={(e) => e.preventDefault()}>
         {/* Producer Information */}
         {hasProducerInfo && (
           <div className="py-4">

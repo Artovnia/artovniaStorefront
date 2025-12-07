@@ -79,6 +79,8 @@ export const AlgoliaProductsListing = (props: AlgoliaProductsListingProps) => {
   const effectiveCategoryIds = category_ids || (category_id ? [category_id] : [])
   
   if (effectiveCategoryIds.length > 0) {
+    console.log('🔍 Algolia: Filtering by category IDs:', effectiveCategoryIds)
+    
     // SAFE APPROACH: Try new category_ids field first, fallback to original categories.id
     // This ensures backward compatibility while we transition to the new hierarchy system
     
@@ -87,6 +89,8 @@ export const AlgoliaProductsListing = (props: AlgoliaProductsListingProps) => {
     
     // Fallback filter: Use original categories.id for immediate compatibility
     const originalCategoryFilters = effectiveCategoryIds.map(id => `categories.id:${id}`)
+    
+    console.log('🔍 Algolia: Category filters:', [...newCategoryFilters, ...originalCategoryFilters])
     
     // Use both approaches to ensure results are found
     // This creates: (category_ids:id1 OR category_ids:id2) OR (categories.id:id1 OR categories.id:id2)

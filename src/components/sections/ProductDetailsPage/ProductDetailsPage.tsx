@@ -5,7 +5,7 @@ import { VendorAvailabilityProvider } from "../../../components/organisms/Vendor
 import { BatchPriceProvider } from "@/components/context/BatchPriceProvider"
 import { PromotionDataProvider } from "@/components/context/PromotionDataProvider"
 import { listProducts, batchFetchProductsByHandles } from "../../../lib/data/products"
-import { getVendorAvailability, getVendorHolidayMode, getVendorSuspension } from "../../../lib/data/vendor-availability"
+import { getVendorCompleteStatus } from "../../../lib/data/vendor-availability"
 import { HomeProductSection } from "../HomeProductSection/HomeProductSection"
 import ProductErrorBoundary from "@/components/molecules/ProductErrorBoundary/ProductErrorBoundary"
 import { Breadcrumbs } from "@/components/atoms/Breadcrumbs/Breadcrumbs"
@@ -42,9 +42,7 @@ export const ProductDetailsPage = async ({
     sellerProductsResult,
     userResult,
     reviewsResult,
-    vendorAvailabilityResult,
-    vendorHolidayResult,
-    vendorSuspensionResult,
+    vendorStatusResult,
     breadcrumbsResult
   ] = await Promise.allSettled([
     // Seller products
@@ -74,29 +72,13 @@ export const ProductDetailsPage = async ({
     // Reviews
     getProductReviews(prod.id).catch(() => ({ reviews: [] })),
     
-    // Vendor availability (with timeout)
+    // ✅ OPTIMIZED: Batched vendor status (3 requests → 1 request)
     prod.seller?.id
       ? Promise.race([
-          getVendorAvailability(prod.seller.id),
+          getVendorCompleteStatus(prod.seller.id),
           new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 500))
-        ]).catch(() => undefined)
-      : Promise.resolve(undefined),
-    
-    // Vendor holiday mode (with timeout)
-    prod.seller?.id
-      ? Promise.race([
-          getVendorHolidayMode(prod.seller.id),
-          new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 500))
-        ]).catch(() => undefined)
-      : Promise.resolve(undefined),
-    
-    // Vendor suspension (with timeout)
-    prod.seller?.id
-      ? Promise.race([
-          getVendorSuspension(prod.seller.id),
-          new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 500))
-        ]).catch(() => undefined)
-      : Promise.resolve(undefined),
+        ]).catch(() => ({ availability: undefined, holiday: undefined, suspension: undefined }))
+      : Promise.resolve({ availability: undefined, holiday: undefined, suspension: undefined }),
     
     // Breadcrumbs
     buildProductBreadcrumbs(prod, locale)
@@ -115,17 +97,14 @@ export const ProductDetailsPage = async ({
     ? reviewsResult.value?.reviews || [] 
     : []
   
-  const availability = vendorAvailabilityResult.status === 'fulfilled' 
-    ? (vendorAvailabilityResult.value as any)
-    : undefined
+  // ✅ Extract batched vendor status
+  const vendorStatus = vendorStatusResult.status === 'fulfilled' 
+    ? (vendorStatusResult.value as any)
+    : { availability: undefined, holiday: undefined, suspension: undefined }
   
-  const holidayMode = vendorHolidayResult.status === 'fulfilled' 
-    ? (vendorHolidayResult.value as any)
-    : undefined
-  
-  const suspension = vendorSuspensionResult.status === 'fulfilled' 
-    ? (vendorSuspensionResult.value as any)
-    : undefined
+  const availability = vendorStatus?.availability
+  const holidayMode = vendorStatus?.holiday
+  const suspension = vendorStatus?.suspension
   
   const breadcrumbs = breadcrumbsResult.status === 'fulfilled'
     ? breadcrumbsResult.value

@@ -18,11 +18,7 @@ export async function ServerAuthProvider({
   const customer = await retrieveCustomer()
   const isAuthenticated = !!customer
   
-  console.log("Authentication status in ServerAuthProvider:", { 
-    isAuthenticated,
-    hasCustomer: !!customer,
-    customerId: customer?.id
-  })
+  
   
   // Pass the authentication status to the client component
   return (

@@ -3,20 +3,19 @@ import {
   ProductDetailsHeader,
   ProductDetailsMeasurements,
   ProductDetailsSellerReviews,
-  ProductDetailsShipping,
   ProductPageDetails,
 } from "@/components/cells"
+import { ProductDetailsShippingWrapper } from "@/components/cells/ProductDetailsShipping/ProductDetailsShippingWrapper"
 import { getProductMeasurements } from "@/lib/data/measurements"
 import { retrieveCustomer, isAuthenticated } from "@/lib/data/customer"
 import { getUserWishlists } from "@/lib/data/wishlist"
-import { retrieveCart } from "@/lib/data/cart"
+// ✅ REMOVED: retrieveCart - now using CartContext in client component
 import { unifiedCache } from "@/lib/utils/unified-cache"
 import { SellerProps } from "@/types/seller"
 import { Wishlist, SerializableWishlist } from "@/types/wishlist"
 import { SingleProductMeasurement } from "@/types/product"
 import { HttpTypes } from "@medusajs/types"
 import "@/types/medusa"
-import { ProductGPSR } from "@/components/molecules/ProductGPSR/ProductGPSR"
 import { ProductAdditionalAttributes } from "@/components/cells/ProductAdditionalAttributes/ProductAdditionalAttributes"
 import { ProductDetailsClient } from "@/components/organisms/ProductDetails/ProductDetailsClient"
 import { MeasurementsErrorBoundary } from "./MeasurementsErrorBoundary"
@@ -47,25 +46,13 @@ export const ProductDetails = async ({
   const supportedLocales = ['en', 'pl']
   const currentLocale = supportedLocales.includes(locale) ? locale : 'en'
   
-  // Get region from cart (respects user's selection in CountrySelector)
-  const [cart, user, authenticated] = await Promise.allSettled([
-    retrieveCart(), // Get cart with user-selected region
+  // ✅ OPTIMIZED: Removed cart fetch - region now handled by client component using CartContext
+  const [user, authenticated] = await Promise.allSettled([
     retrieveCustomer(), // Direct call - no cache for user data
     isAuthenticated(),  // Direct call - no cache for auth data
   ])
 
   // Extract results
-  const cartData = cart.status === 'fulfilled' ? cart.value : null
-  let regionData: HttpTypes.StoreRegion | null = cartData?.region || null
-  
-  // If no region from cart, fetch default region (Poland)
-  if (!regionData) {
-    const { getRegion } = await import('@/lib/data/regions')
-    const fetchedRegion = await getRegion(locale).catch(() => null)
-    regionData = fetchedRegion || null
-  }
-  
- 
   const customer = user.status === 'fulfilled' ? user.value : null
   const isUserAuthenticated = authenticated.status === 'fulfilled' ? authenticated.value : false
 
@@ -127,6 +114,7 @@ export const ProductDetails = async ({
           product={product}
         />
         <ProductPageDetails details={product?.description || ""} />
+        <ProductDetailsSellerReviews seller={product.seller} />
         <MeasurementsErrorBoundary locale={locale}>
         <ProductDetailsMeasurements 
           productId={product.id}
@@ -139,13 +127,14 @@ export const ProductDetails = async ({
         />
         </MeasurementsErrorBoundary>
       </ProductDetailsClient>
-      <ProductGPSR product={product} />
-      <ProductDetailsShipping product={product} region={regionData as HttpTypes.StoreRegion} />
+      {/* ✅ OPTIMIZED: ProductDetailsShippingWrapper uses CartContext for region */}
+      <ProductDetailsShippingWrapper product={product} locale={locale} />
       <ProductDetailsFooter
         tags={product?.tags || []}
         posted={product?.created_at || null}
+        product={product}
       />
-      <ProductDetailsSellerReviews seller={product.seller} />
+      
     </div>
   )
 }

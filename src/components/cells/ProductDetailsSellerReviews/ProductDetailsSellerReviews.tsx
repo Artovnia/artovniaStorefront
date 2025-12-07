@@ -32,7 +32,7 @@ export const ProductDetailsSellerReviews = async ({ seller }: { seller: SellerPr
  
 
   return (
-    <ProductPageAccordion heading="Sprzedawca" defaultOpen={false}>
+    <ProductPageAccordion heading="Sprzedawca" defaultOpen={true}>
       <div className='flex justify-between items-center mb-5'>
         <Link href={`/sellers/${handle}`} className="flex gap-4">
           <div className="relative h-12 w-12 overflow-hidden rounded-sm">
@@ -46,14 +46,24 @@ export const ProductDetailsSellerReviews = async ({ seller }: { seller: SellerPr
             </div>
           </div>
         </Link>
-        <Link href={`/sellers/${handle}?tab=reviews`}>
-          <Button
-            variant='tonal'
-            className='uppercase label-md font-400'
-          >
-            Zobacz więcej ({reviewCount})
-          </Button>
-        </Link>
+        <div className="flex gap-2">
+          <Link href={`${process.env.NEXT_PUBLIC_BASE_URL}/sellers/${handle}?tab=message`}>
+            <Button
+              variant='filled'
+              className='uppercase label-md font-400'
+            >
+              Kontakt
+            </Button>
+          </Link>
+          <Link href={`/sellers/${handle}?tab=reviews`}>
+            <Button
+              variant='tonal'
+              className='uppercase label-md font-400'
+            >
+              Zobacz więcej ({reviewCount})
+            </Button>
+          </Link>
+        </div>
       </div>
       {/* Display only the latest review */}
       {filteredReviews && filteredReviews.length > 0 && (

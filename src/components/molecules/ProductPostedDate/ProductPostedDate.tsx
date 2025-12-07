@@ -1,4 +1,5 @@
 import { formatDistanceToNow } from 'date-fns';
+import locale from 'date-fns/locale/pl';
 
 export const ProductPostedDate = async ({
   posted,
@@ -9,7 +10,7 @@ export const ProductPostedDate = async ({
   if (!posted) {
     return (
       <p className='label-md text-secondary'>
-        Posted: Unknown
+        Dodano:  Unknown
       </p>
     );
   }
@@ -17,19 +18,19 @@ export const ProductPostedDate = async ({
   try {
     const postedDate = formatDistanceToNow(
       new Date(posted),
-      { addSuffix: true }
+      { addSuffix: true, locale }
     );
 
     return (
       <p className='label-md text-secondary'>
-        Posted: {postedDate}
+        Dodano: {postedDate}
       </p>
     );
   } catch (error) {
     // Fallback if date parsing fails
     return (
       <p className='label-md text-secondary'>
-        Posted: Unknown
+        Dodano: Unknown
       </p>
     );
   }

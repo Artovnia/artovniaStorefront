@@ -8,6 +8,7 @@ export const ProductTags = ({
 }) => {
   return (
     <div className='flex gap-2'>
+
       {tags.map(({ id, value }) => (
         <Label key={id}>{value}</Label>
       ))}

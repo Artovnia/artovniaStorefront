@@ -140,6 +140,9 @@ async function Category({
     ? categoryIdsResult.value 
     : [category.id]
   
+  console.log(`📂 Category "${category.name}" (${category.id}):`)
+  console.log(`   - Descendant IDs (${categoryIds.length}):`, categoryIds)
+  
   const { user, wishlist } = userResult.status === 'fulfilled' 
     ? userResult.value 
     : { user: null, wishlist: [] }

@@ -324,3 +324,93 @@ export function getVendorUnavailabilityReason(
   
   return { type: null, message: null }
 }
+
+/**
+ * ✅ NEW: Batched vendor status - fetches all status data in a single request
+ * This replaces the need to call getVendorAvailability, getVendorHolidayMode, and getVendorSuspension separately
+ */
+export type VendorCompleteStatus = {
+  availability: VendorAvailability
+  holiday: VendorHolidayMode | null
+  suspension: VendorSuspension | null
+}
+
+export async function getVendorCompleteStatus(vendorId: string): Promise<VendorCompleteStatus> {
+  // Validate vendorId
+  if (!vendorId || vendorId === 'undefined') {
+    console.warn(`Invalid vendorId in getVendorCompleteStatus: ${vendorId}`)
+    return {
+      availability: getDefaultAvailability(),
+      holiday: null,
+      suspension: null
+    }
+  }
+  
+  try {
+    const response = await fetch(
+      `${MEDUSA_BACKEND_URL}/store/vendors/${vendorId}/status`,
+      {
+        next: { revalidate: 3600 }, // Cache for 1 hour (ISR compatible)
+        headers: getHeaders(),
+        signal: AbortSignal.timeout(10000) // 10 second timeout
+      }
+    )
+    
+    if (!response.ok) {
+      if (response.status !== 404) {
+        console.warn(`Vendor status API returned ${response.status} for vendor ${vendorId}`)
+      }
+      return {
+        availability: getDefaultAvailability(),
+        holiday: null,
+        suspension: null
+      }
+    }
+    
+    const data = await response.json()
+    
+    // Transform backend response to frontend format
+    const availability: VendorAvailability = {
+      available: data.availability?.is_available ?? true,
+      suspended: data.suspension?.is_suspended ?? false,
+      onHoliday: data.availability?.onHoliday ?? false,
+      message: data.availability?.reason ?? null,
+      status: data.suspension?.is_suspended ? 'suspended' : 
+              data.availability?.onHoliday ? 'holiday' : 'active',
+      suspension_expires_at: data.suspension?.suspension_expires_at ? 
+        new Date(data.suspension.suspension_expires_at) : null
+    }
+    
+    const holiday: VendorHolidayMode | null = data.holiday ? {
+      is_holiday_mode: data.holiday.is_on_holiday ?? false,
+      holiday_start_date: data.holiday.holiday_start ? new Date(data.holiday.holiday_start) : null,
+      holiday_end_date: data.holiday.holiday_end ? new Date(data.holiday.holiday_end) : null,
+      holiday_message: data.holiday.holiday_message ?? null,
+      auto_reactivate: false,
+      status: availability.status
+    } : null
+    
+    const suspension: VendorSuspension | null = data.suspension ? {
+      is_suspended: data.suspension.is_suspended ?? false,
+      suspension_reason: data.suspension.suspension_reason ?? null,
+      suspended_at: data.suspension.suspended_at ? new Date(data.suspension.suspended_at) : null,
+      suspension_expires_at: data.suspension.suspension_expires_at ? 
+        new Date(data.suspension.suspension_expires_at) : null,
+      status: availability.status,
+      has_expired: false
+    } : null
+    
+    return {
+      availability,
+      holiday,
+      suspension
+    }
+  } catch (error) {
+    console.error(`Error fetching vendor complete status: ${error instanceof Error ? error.message : 'Unknown error'}`)
+    return {
+      availability: getDefaultAvailability(),
+      holiday: null,
+      suspension: null
+    }
+  }
+}
