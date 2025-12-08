@@ -47,8 +47,8 @@ export const Pagination = ({
       buttons.push(
         <div key="dots-start" className="mx-1 flex items-center">...</div>
       );
-    } else if (pages >= 2 && currentPage <= 2) {
-      // Only show page 2 if we're on page 1 or 2 (not showing middle pages)
+    } else if (pages > 2 && currentPage <= 2) {
+      // Only show page 2 if we have more than 2 pages and we're on page 1 or 2
       buttons.push(
         <PaginationButton
           key="page-2"
@@ -87,8 +87,8 @@ export const Pagination = ({
       );
     }
 
-    // Last page (if more than one page)
-    if (pages > 1) {
+    // Last page (if more than one page and not already shown as page 2)
+    if (pages > 1 && pages !== 2) {
       buttons.push(
         <PaginationButton
           key={`page-${pages}`}
@@ -96,6 +96,17 @@ export const Pagination = ({
           onClick={() => currentPage !== pages && setPage(pages)}
         >
           {pages}
+        </PaginationButton>
+      );
+    } else if (pages === 2) {
+      // Special case: exactly 2 pages - show page 2 as last page
+      buttons.push(
+        <PaginationButton
+          key="page-last-2"
+          isActive={currentPage === 2}
+          onClick={() => currentPage !== 2 && setPage(2)}
+        >
+          2
         </PaginationButton>
       );
     }

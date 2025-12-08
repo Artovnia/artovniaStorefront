@@ -101,6 +101,7 @@ export default async function SellerReviewsPage({
                   seller_id={seller.id}
                   seller_handle={seller.handle}
                   seller_name={seller.name}
+                  user={user}
                   locale={locale}
                 />
               </div>

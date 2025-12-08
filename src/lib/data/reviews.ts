@@ -380,4 +380,101 @@ const getSellerReviews = async (sellerHandle: string) => {
   }
 }
 
+/**
+ * Checks if the authenticated user is eligible to review a specific product
+ * User is eligible if they have purchased the product in a completed order
+ */
+export const checkProductReviewEligibility = async (productId: string): Promise<{
+  isEligible: boolean
+  hasPurchased: boolean
+}> => {
+  try {
+    // Get auth headers - if not authenticated, user is not eligible
+    const headers = await getAuthHeaders()
+    
+    if (!Object.keys(headers).includes('authorization')) {
+      return { isEligible: false, hasPurchased: false }
+    }
+    
+    const requestHeaders: Record<string, string> = {
+      ...headers,
+      'Content-Type': 'application/json',
+      'x-publishable-api-key': `${process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || ''}`
+    }
+    
+    // Call the eligibility check endpoint
+    const response = await fetch(
+      `${process.env.MEDUSA_BACKEND_URL}/store/products/${productId}/review-eligibility`,
+      {
+        method: 'GET',
+        headers: requestHeaders,
+        cache: 'no-store'
+      }
+    )
+    
+    if (!response.ok) {
+      // If endpoint doesn't exist, fall back to checking orders
+      // This is a backup method
+      return await checkEligibilityViaOrders(productId, requestHeaders)
+    }
+    
+    const data = await response.json()
+    return data
+    
+  } catch (error) {
+    console.error('Error checking review eligibility:', error)
+    // On error, try fallback method
+    try {
+      const headers = await getAuthHeaders()
+      const requestHeaders: Record<string, string> = {
+        ...headers,
+        'Content-Type': 'application/json',
+        'x-publishable-api-key': `${process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || ''}`
+      }
+      return await checkEligibilityViaOrders(productId, requestHeaders)
+    } catch (fallbackError) {
+      return { isEligible: false, hasPurchased: false }
+    }
+  }
+}
+
+/**
+ * Fallback method to check eligibility by fetching user's orders
+ */
+const checkEligibilityViaOrders = async (
+  productId: string, 
+  headers: Record<string, string>
+): Promise<{ isEligible: boolean, hasPurchased: boolean }> => {
+  try {
+    // Fetch user's orders
+    const ordersResponse = await fetch(
+      `${process.env.MEDUSA_BACKEND_URL}/store/customers/me/orders?limit=100`,
+      {
+        method: 'GET',
+        headers,
+        cache: 'no-store'
+      }
+    )
+    
+    if (!ordersResponse.ok) {
+      return { isEligible: false, hasPurchased: false }
+    }
+    
+    const ordersData = await ordersResponse.json()
+    const orders = ordersData.orders || []
+    
+    // Check if user has purchased this product in any order
+    const hasPurchased = orders.some((order: any) => {
+      if (!order.items || !Array.isArray(order.items)) return false
+      return order.items.some((item: any) => item.product_id === productId)
+    })
+    
+    return { isEligible: hasPurchased, hasPurchased }
+    
+  } catch (error) {
+    console.error('Error in fallback eligibility check:', error)
+    return { isEligible: false, hasPurchased: false }
+  }
+}
+
 export { getReviews, getProductReviews, getSellerReviews }

@@ -20,7 +20,6 @@ type Story = StoryObj<typeof Hero>
 export const Default: Story = {
   args: {
     banners: HERO_BANNERS,
-    autoSwitchInterval: 8000,
     pauseOnHover: true,
   },
 }
@@ -28,15 +27,13 @@ export const Default: Story = {
 export const SingleBanner: Story = {
   args: {
     banners: [HERO_BANNERS[0]],
-    autoSwitchInterval: 8000,
     pauseOnHover: true,
   },
 }
 
-export const FastSwitching: Story = {
+export const WithoutPauseOnHover: Story = {
   args: {
     banners: HERO_BANNERS,
-    autoSwitchInterval: 2000,
     pauseOnHover: false,
   },
 }

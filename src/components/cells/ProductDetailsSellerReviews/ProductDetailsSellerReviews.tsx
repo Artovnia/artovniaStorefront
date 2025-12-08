@@ -33,7 +33,7 @@ export const ProductDetailsSellerReviews = async ({ seller }: { seller: SellerPr
 
   return (
     <ProductPageAccordion heading="Sprzedawca" defaultOpen={true}>
-      <div className='flex justify-between items-center mb-5'>
+      <div className='flex flex-col md:flex-row justify-between gap-4 md:items-start items-center mb-5'>
         <Link href={`/sellers/${handle}`} className="flex gap-4">
           <div className="relative h-12 w-12 overflow-hidden rounded-sm">
             <SellerAvatar photo={photo} size={56} alt={name} />
@@ -46,11 +46,11 @@ export const ProductDetailsSellerReviews = async ({ seller }: { seller: SellerPr
             </div>
           </div>
         </Link>
-        <div className="flex gap-2">
+        <div className="flex md:flex-col gap-4">
           <Link href={`${process.env.NEXT_PUBLIC_BASE_URL}/sellers/${handle}?tab=message`}>
             <Button
               variant='filled'
-              className='uppercase label-md font-400'
+              className='uppercase label-md font-400 md:min-w-[10rem] min-w-[10rem]'
             >
               Kontakt
             </Button>
@@ -58,7 +58,7 @@ export const ProductDetailsSellerReviews = async ({ seller }: { seller: SellerPr
           <Link href={`/sellers/${handle}?tab=reviews`}>
             <Button
               variant='tonal'
-              className='uppercase label-md font-400'
+              className='uppercase label-md font-400 max-w-[11rem] '
             >
               Zobacz więcej ({reviewCount})
             </Button>

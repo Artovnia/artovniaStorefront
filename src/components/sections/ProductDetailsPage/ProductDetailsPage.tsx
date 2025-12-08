@@ -11,7 +11,7 @@ import ProductErrorBoundary from "@/components/molecules/ProductErrorBoundary/Pr
 import { Breadcrumbs } from "@/components/atoms/Breadcrumbs/Breadcrumbs"
 import { buildProductBreadcrumbs } from "@/lib/utils/breadcrumbs"
 import { retrieveCustomer, isAuthenticated } from "@/lib/data/customer"
-import { getProductReviews } from "@/lib/data/reviews"
+import { getProductReviews, checkProductReviewEligibility } from "@/lib/data/reviews"
 import { generateProductJsonLd, generateBreadcrumbJsonLd } from "@/lib/helpers/seo"
 import { getUserWishlists } from "@/lib/data/wishlist"
 
@@ -43,7 +43,8 @@ export const ProductDetailsPage = async ({
     userResult,
     reviewsResult,
     vendorStatusResult,
-    breadcrumbsResult
+    breadcrumbsResult,
+    eligibilityResult
   ] = await Promise.allSettled([
     // Seller products
     prod.seller?.id && prod.seller.products && prod.seller.products.length > 0
@@ -81,7 +82,10 @@ export const ProductDetailsPage = async ({
       : Promise.resolve({ availability: undefined, holiday: undefined, suspension: undefined }),
     
     // Breadcrumbs
-    buildProductBreadcrumbs(prod, locale)
+    buildProductBreadcrumbs(prod, locale),
+    
+    // Review eligibility (check if user has purchased this product)
+    checkProductReviewEligibility(prod.id).catch(() => ({ isEligible: false, hasPurchased: false }))
   ])
 
   // Extract results with fallbacks
@@ -109,6 +113,10 @@ export const ProductDetailsPage = async ({
   const breadcrumbs = breadcrumbsResult.status === 'fulfilled'
     ? breadcrumbsResult.value
     : []
+  
+  const eligibility = eligibilityResult.status === 'fulfilled'
+    ? eligibilityResult.value
+    : { isEligible: false, hasPurchased: false }
 
   // Generate structured data for SEO
   const productPrice = (prod as any).calculated_price?.calculated_amount
@@ -204,6 +212,8 @@ export const ProductDetailsPage = async ({
                   isAuthenticated={isUserAuthenticated}
                   customer={customer}
                   prefetchedReviews={reviews}
+                  isEligible={eligibility.isEligible}
+                  hasPurchased={eligibility.hasPurchased}
                 />
               </div>
             </VendorAvailabilityProvider>

@@ -12,13 +12,6 @@ interface HeroClientProps {
   pauseOnHover?: boolean
 }
 
-/**
- * Client-side carousel functionality for Hero section
- * Handles: auto-play, navigation, touch gestures, hover states
- * 
- * This is separated from the main Hero component to allow the first banner
- * to be server-rendered for optimal LCP performance.
- */
 export const HeroClient = ({ 
   banners, 
   className = "",
@@ -32,7 +25,6 @@ export const HeroClient = ({
 
   const minSwipeDistance = 50
 
-  // Auto-switch functionality
   useEffect(() => {
     if (!isAutoPlaying || banners.length <= 1) return
 
@@ -43,7 +35,6 @@ export const HeroClient = ({
     return () => clearInterval(interval)
   }, [isAutoPlaying, banners.length])
 
-  // Navigation handlers
   const handleDotClick = useCallback((index: number) => {
     setCurrentIndex(index)
     setIsAutoPlaying(false)
@@ -62,7 +53,6 @@ export const HeroClient = ({
     setTimeout(() => setIsAutoPlaying(true), HERO_CONFIG.resumeAfterManualNavigation)
   }, [banners.length])
 
-  // Touch handlers
   const onTouchStart = useCallback((e: React.TouchEvent) => {
     setTouchEnd(null)
     setTouchStart(e.targetTouches[0].clientX)
@@ -86,7 +76,6 @@ export const HeroClient = ({
     }
   }, [touchStart, touchEnd, handleNext, handlePrevious])
 
-  // Hover handlers
   const handleMouseEnter = useCallback(() => {
     setIsHovered(true)
     if (pauseOnHover) {
@@ -101,8 +90,6 @@ export const HeroClient = ({
     }
   }, [pauseOnHover])
 
-  const currentBanner = banners[currentIndex]
-
   return (
     <div 
       className={`absolute inset-0 w-full h-full ${className}`}
@@ -112,7 +99,6 @@ export const HeroClient = ({
       onTouchMove={onTouchMove}
       onTouchEnd={onTouchEnd}
     >
-      {/* All banner images with transitions */}
       {banners.map((banner, index) => {
         const isActive = index === currentIndex
         
@@ -140,28 +126,26 @@ export const HeroClient = ({
                 alt={banner.alt}
                 fill
                 className="object-cover transition-transform duration-700 group-hover:scale-105"
-                priority={index === 0} // Only first image is priority
+                priority={index === 0}
                 fetchPriority={index === 0 ? "high" : "auto"}
                 quality={HERO_CONFIG.imageQuality}
                 sizes="100vw"
               />
               
-              {/* Overlay */}
               <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
               
-              {/* Text Content */}
               {banner.content && (
                 <div className={`absolute inset-0 z-10 flex items-${banner.content.verticalAlignment || 'center'} justify-${banner.content.alignment || 'center'} px-4 sm:px-6 lg:px-8`}>
-                  <div className="w-full text-center">
+                  <div className={`w-full text-${banner.content.alignment || 'center'}`}>
                     {banner.content.heading && (
-                      <h1 className="text-4xl sm:text-6xl lg:text-8xl font-instrument-serif text-white mb-4 sm:mb-6 drop-shadow-2xl">
-                        {banner.content.heading.text}
+                      <h1 className="text-4xl sm:text-5xl lg:text-7xl font-instrument-serif text-white mb-4 sm:mb-6 ">
+                        {banner.content.heading}
                       </h1>
                     )}
                     
                     {banner.content.paragraph && (
-                      <p className="font-instrument-sans uppercase text-base sm:text-lg lg:text-xl text-white mb-6 sm:mb-8 drop-shadow-lg max-w-2xl mx-auto">
-                        {banner.content.paragraph.text}
+                      <p className="font-instrument-sans uppercase text-sm sm:text-lg lg:text-xl text-white mb-6 sm:mb-8  max-w-2xl mx-auto">
+                        {banner.content.paragraph}
                       </p>
                     )}
                     
@@ -173,16 +157,15 @@ export const HeroClient = ({
                             window.location.href = banner.url
                           }
                         }}
-                        className="px-6 sm:px-8 py-3 sm:py-4 font-instrument-sans font-semibold text-sm sm:text-base lg:text-lg transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl bg-transparent border-2 border-white text-white hover:bg-white hover:text-[#3B3634]"
+                        className="px-6 sm:px-8 py-3 sm:py-4 font-instrument-sans font-semibold text-sm sm:text-base lg:text-lg transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl bg-transparent border-2 border-white text-white hover:bg-white hover:text-[#3B3634] uppercase"
                       >
-                        {banner.content.cta.text}
+                        {banner.content.cta}
                       </button>
                     )}
                   </div>
                 </div>
               )}
               
-              {/* Hover effect */}
               {banner.url && (
                 <div className="absolute inset-0 bg-black/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
               )}
@@ -191,7 +174,6 @@ export const HeroClient = ({
         )
       })}
 
-      {/* Navigation Arrows */}
       {banners.length > 1 && (
         <>
           <button
@@ -216,7 +198,6 @@ export const HeroClient = ({
         </>
       )}
 
-      {/* Navigation Dots */}
       {banners.length > 1 && (
         <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 z-20">
           <div className="flex space-x-3">

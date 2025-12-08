@@ -3,6 +3,7 @@
 
 import { useState } from "react"
 import Link from "next/link"
+import { usePathname } from "next/navigation"
 import { Button } from "@/components/atoms"
 import { StarRating } from "@/components/atoms/StarRating/StarRating"
 import { StarIcon } from '@/icons'
@@ -33,6 +34,8 @@ type ProductReviewsProps = {
   isAuthenticated: boolean
   customer: HttpTypes.StoreCustomer | null
   prefetchedReviews: ReviewData[] // Make this required, no default
+  isEligible: boolean // User has purchased this product
+  hasPurchased: boolean // Same as isEligible for now
 }
 
 type FormValues = {
@@ -263,29 +266,51 @@ const ReviewForm = ({
 }
 
 // Login Prompt Component
-const LoginPrompt = (): JSX.Element => (
-  <div className="bg-ui-bg-subtle border border-ui-border-base rounded-lg p-6 mb-8 text-center">
-    <h3 className="text-lg font-semibold mb-2 text-ui-fg-base">Dodaj recenzję produktu</h3>
-    <p className="text-ui-fg-subtle mb-4">
-      Zaloguj się, aby móc dodać recenzję tego produktu
-    </p>
-    <Link 
-      href="/account/login" 
-      className="inline-block"
-    >
-      <Button variant="filled" size="large">
-        Zaloguj się
-      </Button>
-    </Link>
-  </div>
-)
+const LoginPrompt = (): JSX.Element => {
+  const pathname = usePathname()
+  
+  // Build redirect URL - encode current path to return after login
+  const redirectUrl = `/user?redirect=${encodeURIComponent(pathname)}`
+  
+  return (
+    <div className="bg-ui-bg-subtle border border-ui-border-base rounded-lg p-6 mb-8 text-center">
+      <h3 className="text-lg font-semibold mb-2 text-ui-fg-base">Dodaj recenzję produktu</h3>
+      <p className="text-ui-fg-subtle mb-4">
+        Zaloguj się, aby móc dodać recenzję kupionego produktu
+      </p>
+      <Link 
+        href={redirectUrl}
+        className="inline-block"
+      >
+        <Button variant="filled" size="large">
+          Zaloguj się
+        </Button>
+      </Link>
+    </div>
+  )
+}
+
+// Not Eligible Prompt Component
+const NotEligiblePrompt = (): JSX.Element => {
+  return (
+    <div className="bg-ui-bg-subtle border border-ui-border-base rounded-lg p-6 mb-8 text-center">
+      <h3 className="text-lg font-semibold mb-2 text-ui-fg-base">Dodaj recenzję produktu</h3>
+      <p className="text-ui-fg-subtle mb-2">
+        Recenzje mogą być dodawane tylko przez klientów, którzy zakupili ten produkt.
+      </p>
+      
+    </div>
+  )
+}
 
 // Main ProductReviews Component - Rebuilt for simplicity and reliability
 export const ProductReviews = ({ 
   productId, 
   isAuthenticated, 
   customer, 
-  prefetchedReviews 
+  prefetchedReviews,
+  isEligible,
+  hasPurchased
 }: ProductReviewsProps): JSX.Element => {
   // Simple state management - no complex loading states
   const [reviews, setReviews] = useState<ReviewData[]>(prefetchedReviews)
@@ -326,7 +351,11 @@ export const ProductReviews = ({
         </div>
 
         {/* Review Form Section */}
-        {isAuthenticated && customer ? (
+        {!isAuthenticated ? (
+          <LoginPrompt />
+        ) : !isEligible || !hasPurchased ? (
+          <NotEligiblePrompt />
+        ) : customer ? (
           <div className="mb-8">
             {userReview ? (
               <div className="bg-ui-bg-subtle border border-ui-border-base rounded-lg p-6">
@@ -354,9 +383,7 @@ export const ProductReviews = ({
               </div>
             )}
           </div>
-        ) : (
-          <LoginPrompt />
-        )}
+        ) : null}
 
         {/* Reviews List */}
         <div className="space-y-6">

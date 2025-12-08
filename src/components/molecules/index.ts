@@ -42,7 +42,7 @@ import { ProductGPSR } from "./ProductGPSR/ProductGPSR"
 import { InpostParcelSelector } from "./InpostParcelSelector/InpostParcelSelector"
 import { InpostParcelInfo } from "./InpostParcelInfo/InpostParcelInfo"
 import { ImageZoomModal } from "./ImageZoomModal/ImageZoomModal"
-import { SellerProductListing } from "./SellerProductListing/SellerProductListing"
+import { SellerProductListingClient } from "./SellerProductListing/SellerProductListingClient"
 import { GuestCheckoutModal } from "./GuestCheckoutModal/GuestCheckoutModal"
 
 export {
@@ -88,7 +88,7 @@ export {
   InpostParcelSelector,
   InpostParcelInfo,
   ImageZoomModal,
-  SellerProductListing,
+  SellerProductListingClient,
   GuestCheckoutModal,
   NewsletterForm,
 }
