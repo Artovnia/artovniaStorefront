@@ -73,66 +73,63 @@ export const listProducts = async ({
   const _pageParam = Math.max(pageParam, 1)
   const offset = (_pageParam - 1) * limit
 
-  // Create cache key for this specific request
-  const cacheKey = `products:list:${countryCode || regionId}:${category_id || 'all'}:${collection_id || 'all'}:${pageParam}:${limit}:${JSON.stringify(queryParams || {})}`
+  // ✅ Use Next.js fetch cache instead of client-side cache
+  // Next.js automatically deduplicates identical fetch requests within the same render
+  let region: HttpTypes.StoreRegion | undefined | null
 
-  return unifiedCache.get(cacheKey, async () => {
-    let region: HttpTypes.StoreRegion | undefined | null
+  if (countryCode) {
+    region = await getRegion(countryCode)
+  } else {
+    region = await retrieveRegion(regionId!)
+  }
 
-    if (countryCode) {
-      region = await getRegion(countryCode)
-    } else {
-      region = await retrieveRegion(regionId!)
+  if (!region) {
+    return {
+      response: { products: [], count: 0 },
+      nextPage: null,
     }
+  }
 
-    if (!region) {
-      return {
-        response: { products: [], count: 0 },
-        nextPage: null,
-      }
+  const headers = {
+    ...(await getAuthHeaders()),
+  }
+
+  try {
+    const { products, count } = await sdk.client.fetch<{
+      products: HttpTypes.StoreProduct[]
+      count: number
+    }>(`/store/products`, {
+      method: "GET",
+      query: {
+        category_id,
+        collection_id,
+        limit,
+        offset,
+        region_id: region?.id,
+        fields: "*variants.calculated_price,*seller,*seller.products,*variants,*variants.inventory_quantity,*variants.manage_inventory,*variants.allow_backorder,*variants.inventory_items.inventory_item_id,*variants.inventory_items.required_quantity,*metadata,*categories,*categories.parent_category,*collection",
+        ...queryParams,
+      },
+      headers,
+      next: { revalidate: 300 }, // ✅ Next.js cache: 5 minutes
+    })
+
+    const nextPage = count > offset + limit ? pageParam + 1 : null
+    return {
+      response: {
+        products,
+        count,
+      },
+      nextPage: nextPage,
+      queryParams,
     }
-
-    const headers = {
-      ...(await getAuthHeaders()),
+  } catch (error) {
+    console.warn('Products fetch failed, returning empty result:', error)
+    return {
+      response: { products: [], count: 0 },
+      nextPage: null,
+      queryParams,
     }
-
-    try {
-      const { products, count } = await sdk.client.fetch<{
-        products: HttpTypes.StoreProduct[]
-        count: number
-      }>(`/store/products`, {
-        method: "GET",
-        query: {
-          category_id,
-          collection_id,
-          limit,
-          offset,
-          region_id: region?.id,
-          fields: "*variants.calculated_price,*seller,*seller.products,*variants,*variants.inventory_quantity,*variants.manage_inventory,*variants.allow_backorder,*variants.inventory_items.inventory_item_id,*variants.inventory_items.required_quantity,*metadata,*categories,*categories.parent_category,*collection",
-          ...queryParams,
-        },
-        headers,
-        cache: "no-cache",
-      })
-
-      const nextPage = count > offset + limit ? pageParam + 1 : null
-      return {
-        response: {
-          products,
-          count,
-        },
-        nextPage: nextPage,
-        queryParams,
-      }
-    } catch (error) {
-      console.warn('Products fetch failed, returning empty result:', error)
-      return {
-        response: { products: [], count: 0 },
-        nextPage: null,
-        queryParams,
-      }
-    }
-  }, CACHE_TTL.PRODUCT)
+  }
 }
 
 /**

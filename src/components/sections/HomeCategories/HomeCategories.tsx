@@ -9,8 +9,8 @@ export const categories: { id: number; name: string; handle: string; featured?: 
   },
   {
     id: 2,
-    name: "Dom",
-    handle: "Dom",
+    name: "Torebki i plecaki",
+    handle: "Torebki-i-plecaki",
   },
   {
     id: 3,

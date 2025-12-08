@@ -130,17 +130,18 @@ const ProductCardComponent = ({
           <div className="overflow-hidden w-full h-full flex justify-center items-center">
             {product.thumbnail ? (
               <Image
-                src={decodeURIComponent(product.thumbnail)}
+                src={product.thumbnail}
                 alt={product.title}
                 width={320}
                 height={320}
-                quality={80}  // ✅ Balanced quality - prevents timeout when loading many cards
+                quality={75}  // Reduced from 80 for better performance
                 className="object-cover w-full object-center h-full lg:group-hover:scale-105 transition-all duration-300"
                 priority={index < 4}  // ✅ Only first 4 products get priority
                 loading={index < 4 ? "eager" : "lazy"}  // ✅ Lazy load rest
                 sizes="(max-width: 640px) 160px, 352px"  // ✅ Responsive sizes
                 placeholder="blur"  // ✅ Smooth loading with blur effect
                 blurDataURL="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFQEBAQAAAAAAAAAAAAAAAAAAAAX/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oADAMBAAIRAxEAPwCdABmX/9k="
+                unoptimized={false}
               />
             ) : (
               <Image

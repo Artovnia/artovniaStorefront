@@ -17,6 +17,7 @@ import { InformationCircleSolid } from "@medusajs/icons"
 import { useVariantSelection } from "../../context/VariantSelectionContext"
 import { BatchLowestPriceDisplay } from "../LowestPriceDisplay/BatchLowestPriceDisplay"
 import { usePromotionData } from "../../context/PromotionDataProvider"
+import { ProductShareButton } from "../ProductShareButton/ProductShareButton"
 
 // Define extended types for product and variants
 type ExtendedStoreProduct = HttpTypes.StoreProduct & {
@@ -285,7 +286,12 @@ export const ProductDetailsHeader = ({
             </div>
           )}
         </div>
-        <div>
+        <div className="flex items-center gap-2">
+          {/* Share Button */}
+          <ProductShareButton
+            productTitle={product.title}
+          />
+          
           {/* Add to Wishlist */}
           <WishlistButton
             productId={product.id}

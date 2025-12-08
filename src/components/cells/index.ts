@@ -39,6 +39,7 @@ import { QuantityChanger } from "./QuantityChanger/QuantityChanger"
 import { CookieConsent } from "./CookieConsent/CookieConsent"
 import NewsletterSubscription from "./NewsletterSubscription/NewsletterSubscription"
 import { ConditionalNewsletter } from "./ConditionalNewsletter"
+import { ProductShareButton } from "./ProductShareButton/ProductShareButton"
 // ProductGPSRDetails has been moved to molecules/ProductGPSR
 
 export {
@@ -83,4 +84,5 @@ export {
   CookieConsent,
   NewsletterSubscription,
   ConditionalNewsletter,
+  ProductShareButton,
 }
