@@ -101,11 +101,13 @@ interface CartProviderProps {
 }
 
 export const CartProvider: React.FC<CartProviderProps> = ({ children, initialCart }) => {
+  // ✅ HYDRATION FIX: Use 0 as initial value to prevent server/client mismatch
+  // lastUpdated will be set properly on first cart operation
   const [state, dispatch] = useReducer(cartReducer, {
     cart: initialCart || null,
     isLoading: false,
     error: null,
-    lastUpdated: Date.now()
+    lastUpdated: 0
   })
 
   // Simple operation locking

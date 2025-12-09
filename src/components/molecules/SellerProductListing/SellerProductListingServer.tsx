@@ -9,19 +9,49 @@ export async function SellerProductListingServer({
   seller_id,
   user,
   page = 1,
+  initialProducts,
+  initialTotalCount,
+  initialWishlists,
 }: {
   seller_id: string
   user: HttpTypes.StoreCustomer | null
   page?: number
+  initialProducts?: HttpTypes.StoreProduct[]
+  initialTotalCount?: number
+  initialWishlists?: any[]
 }) {
-  const DEFAULT_REGION = process.env.NEXT_PUBLIC_DEFAULT_REGION || "pl"
+  // If initial data is provided, use it directly (no fetch needed)
+  if (initialProducts && initialTotalCount !== undefined && initialWishlists) {
+    return (
+      <SellerProductListingClient
+        initialProducts={initialProducts}
+        initialTotalCount={initialTotalCount}
+        initialPage={page}
+        seller_id={seller_id}
+        user={user}
+        initialWishlists={initialWishlists}
+      />
+    )
+  }
+
+  // Otherwise, fetch data (fallback for when not pre-fetched)
+  // Get user's cart region instead of hardcoding
+  const { getOrSetCart } = await import('@/lib/data/cart')
+  const { getRegion, retrieveRegion } = await import('@/lib/data/regions')
+  
+  const cart = await getOrSetCart("pl").catch(() => null)
+  const userRegion = cart?.region_id 
+    ? await retrieveRegion(cart.region_id)
+    : await getRegion("pl")
+  const countryCode = userRegion?.countries?.[0]?.iso_2 || "pl"
+  
   const offset = (page - 1) * PRODUCT_LIMIT
 
   // Parallel fetching
   const [productsResult, wishlistData] = await Promise.all([
     listProductsWithSort({
       seller_id,
-      countryCode: DEFAULT_REGION,
+      countryCode,
       sortBy: "created_at",
       queryParams: {
         limit: PRODUCT_LIMIT,

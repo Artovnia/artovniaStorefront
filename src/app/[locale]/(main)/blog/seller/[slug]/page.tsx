@@ -4,16 +4,15 @@ import Image from "next/image"
 import Link from "next/link"
 import { format } from "date-fns"
 import { pl } from "date-fns/locale"
-import { getSellerPost, getSellerPosts } from "../../lib/data"
+import { getSellerPost, getSellerPosts, getBlogCategories } from "../../lib/data"
 import { urlFor } from "../../lib/sanity"
 import { ArrowRightIcon } from "@/icons"
 import PortableText from "../../components/PortableText"
-import BlogLayoutWrapper from "../../components/BlogLayoutWrapper"
+import BlogLayout from "../../components/BlogLayout"
 
-// ISR with 5-minute revalidation
-export const revalidate = 300 // 5 minutes
-// CRITICAL: force-dynamic required because BlogSearch uses useSearchParams()
-// Without this, Next.js bails out to client-side rendering causing 500 errors
+// CRITICAL: force-dynamic required to prevent Sanity 500 errors on Vercel
+// Sanity CMS has issues with Next.js ISR caching on Vercel's edge network
+// Using force-dynamic ensures fresh data on every request without cache corruption
 export const dynamic = 'force-dynamic'
 export const dynamicParams = true // Generate pages on-demand for new slugs
 
@@ -133,16 +132,21 @@ function generateStructuredData(post: any, imageUrl: string | null) {
 
 export default async function SellerPostPage({ params }: SellerPostPageProps) {
   const { slug } = await params
-  console.log('🎨 SELLER POST PAGE: Rendering seller post:', slug)
   
-  let post
-  try {
-    post = await getSellerPost(slug)
-    console.log('✅ SELLER POST: Post fetched:', post ? 'FOUND' : 'NOT FOUND')
-  } catch (error) {
-    console.error('❌ SELLER POST: Error fetching post:', error)
-    notFound()
-  }
+  
+  // ✅ PERFORMANCE FIX: Fetch post and categories in parallel to eliminate waterfall
+  // This prevents the "jump" behavior where navigation appears before content
+  const [post, categories] = await Promise.all([
+    getSellerPost(slug).catch((error) => {
+      console.error('❌ SELLER POST: Error fetching post:', error)
+      return null
+    }),
+    getBlogCategories().catch((error) => {
+      console.error('❌ SELLER POST: Error fetching categories:', error)
+      return []
+    })
+  ])
+  
 
   if (!post) {
     notFound()
@@ -172,7 +176,8 @@ export default async function SellerPostPage({ params }: SellerPostPageProps) {
   const structuredData = generateStructuredData(post, mainImageUrl)
 
   return (
-      <BlogLayoutWrapper
+      <BlogLayout
+        categories={categories}
         breadcrumbs={[
           { label: "Strona główna", path: "/" },
           { label: "Blog", path: "/blog" },
@@ -271,7 +276,7 @@ export default async function SellerPostPage({ params }: SellerPostPageProps) {
                     </figure>
                   )}
 
-                  {/* Secondary Image */}
+                  {/* Secondary Image - ✅ PERFORMANCE: Lazy load since it's below the fold */}
                   {secondaryImageUrl && (
                     <figure className="absolute bottom-0 right-0 w-[160px] md:w-[200px] lg:w-[250px] h-2/5 transform rotate-3 shadow-xl">
                       <div className="relative w-full h-full rounded-lg overflow-hidden border-4 border-white">
@@ -281,9 +286,7 @@ export default async function SellerPostPage({ params }: SellerPostPageProps) {
                           fill
                           className="object-cover"
                           sizes="(max-width: 768px) 160px, (max-width: 1024px) 200px, 250px"
-                          priority
-                          fetchPriority="high"
-                          loading="eager"
+                          loading="lazy"
                         />
                       </div>
                     </figure>
@@ -398,6 +401,6 @@ export default async function SellerPostPage({ params }: SellerPostPageProps) {
             </div>
           </section>
         </article>
-      </BlogLayoutWrapper>
+      </BlogLayout>
     )
 }

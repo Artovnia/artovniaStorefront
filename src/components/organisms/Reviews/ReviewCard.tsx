@@ -1,10 +1,27 @@
+'use client'
+
 import { Button, Card } from "@/components/atoms"
 import { StarIcon } from "@/icons"
 import { Review } from "@/lib/data/reviews"
 import { cn } from "@/lib/utils"
 import Image from "next/image"
+import { useMemo } from "react"
 
 export const ReviewCard = ({ review }: { review: Review }) => {
+  // ✅ HYDRATION FIX: Calculate time difference on client side only
+  const timeAgo = useMemo(() => {
+    const now = Date.now()
+    const reviewTime = new Date(review.updated_at).getTime()
+    const daysDiff = Math.floor((now - reviewTime) / (24 * 60 * 60 * 1000))
+    
+    if (daysDiff < 7) {
+      return `${daysDiff} dni${daysDiff !== 1 ? "" : ""} ago`
+    } else {
+      const weeksDiff = Math.floor(daysDiff / 7)
+      return `${weeksDiff} tygodni${weeksDiff !== 1 ? "" : ""} ago`
+    }
+  }, [review.updated_at])
+
   return (
     <Card
       className="flex flex-col gap-6 lg:grid lg:grid-cols-6 px-4"
@@ -36,20 +53,7 @@ export const ReviewCard = ({ review }: { review: Review }) => {
               ))}
             </div>
             <div className="h-2.5 w-px bg-action" />
-            <p className="text-md text-primary">
-              {new Date(review.updated_at).getTime() >
-              Date.now() - 7 * 24 * 60 * 60 * 1000
-                ? `${Math.ceil(
-                    (Date.now() - new Date(review.updated_at).getTime()) /
-                      (24 * 60 * 60 * 1000)
-                  )} day${Date.now() - 2 * 24 * 60 * 60 * 1000 ? "" : "s"} ago`
-                : `${Math.floor(
-                    (Date.now() - new Date(review.updated_at).getTime()) /
-                      (7 * 24 * 60 * 60 * 1000)
-                  )} week${
-                    Date.now() - 2 * 24 * 60 * 60 * 1000 ? "" : "s"
-                  } ago`}
-            </p>
+            <p className="text-md text-primary">{timeAgo}</p>
           </div>
           <div className="col-span-5 flex flex-col lg:flex-row justify-between lg:items-center gap-4">
             <p className="text-md text-primary">{review.customer_note}</p>

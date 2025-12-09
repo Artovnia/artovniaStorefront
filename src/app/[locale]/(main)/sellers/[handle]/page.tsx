@@ -7,6 +7,11 @@ import { getSellerReviews } from "../../../../../lib/data/reviews"
 import { SellerProps } from "../../../../../types/seller"
 import { PromotionDataProvider } from "../../../../../components/context/PromotionDataProvider"
 import { BatchPriceProvider } from "../../../../../components/context/BatchPriceProvider"
+import { listProductsWithSort } from "../../../../../lib/data/products"
+import { getUserWishlists } from "../../../../../lib/data/wishlist"
+import { PRODUCT_LIMIT } from "../../../../../const"
+import { getOrSetCart } from "../../../../../lib/data/cart"
+import { getRegion } from "../../../../../lib/data/regions"
 
 export default async function SellerPage({
   params,
@@ -28,11 +33,29 @@ export default async function SellerPage({
       )
     }
     
-    // Parallel fetching for better performance
-    const [seller, user, { reviews = [] }] = await Promise.all([
+    // Get user's cart to determine their selected region
+    const cart = await getOrSetCart("pl").catch(() => null)
+    const userRegion = cart?.region_id 
+      ? await import("../../../../../lib/data/regions").then(m => m.retrieveRegion(cart.region_id!))
+      : await getRegion("pl")
+    const countryCode = userRegion?.countries?.[0]?.iso_2 || "pl"
+
+    // Parallel fetching for better performance - fetch products during initial render
+    const [seller, user, { reviews = [] }, productsResult, wishlistData] = await Promise.all([
       getSellerByHandle(handle),
       retrieveCustomer(),
-      getSellerReviews(handle)
+      getSellerReviews(handle),
+      // Fetch first page of products immediately with user's selected region
+      getSellerByHandle(handle).then(s => 
+        s ? listProductsWithSort({
+          seller_id: s.id,
+          countryCode,
+          sortBy: "created_at",
+          queryParams: { limit: PRODUCT_LIMIT, offset: 0 },
+        }) : null
+      ),
+      // Fetch wishlist data if user exists
+      retrieveCustomer().then(u => u ? getUserWishlists() : Promise.resolve({ wishlists: [], count: 0 }))
     ])
     
     const sellerWithReviews = seller ? {
@@ -114,6 +137,9 @@ export default async function SellerPage({
                     seller_name={seller.name}
                     user={user}
                     locale={locale}
+                    initialProducts={productsResult?.response?.products || []}
+                    initialTotalCount={productsResult?.response?.count || 0}
+                    initialWishlists={(wishlistData as any)?.wishlists || []}
                   />
                 </div>
               </div>

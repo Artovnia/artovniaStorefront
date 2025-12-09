@@ -60,6 +60,9 @@ export const SmartBestProductsSection = async ({
       )
     }
     
+    // ✅ HYDRATION FIX: Calculate current time once on server to prevent mismatch
+    const currentTime = new Date().getTime()
+    
     // Smart "best products" algorithm using available data
     const bestProducts = allProducts
       .map(product => {
@@ -77,7 +80,7 @@ export const SmartBestProductsSection = async ({
           hasDescription: product.description ? 1 : 0,
           
           // Recency factor (newer products get slight boost)
-          daysSinceCreated: Math.floor((Date.now() - new Date(product.created_at || 0).getTime()) / (1000 * 60 * 60 * 24)),
+          daysSinceCreated: Math.floor((currentTime - new Date(product.created_at || 0).getTime()) / (1000 * 60 * 60 * 24)),
           
           // Metadata indicators (if you store custom data)
           isFeatured: (product.metadata as any)?.featured === 'true' ? 1 : 0,

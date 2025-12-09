@@ -38,10 +38,20 @@ export function SellerProductListingClient({
     
     setIsLoading(true)
     try {
+      // Get user's cart region dynamically
+      const { getOrSetCart } = await import('@/lib/data/cart')
+      const { getRegion, retrieveRegion } = await import('@/lib/data/regions')
+      
+      const cart = await getOrSetCart("pl").catch(() => null)
+      const userRegion = cart?.region_id 
+        ? await retrieveRegion(cart.region_id)
+        : await getRegion("pl")
+      const countryCode = userRegion?.countries?.[0]?.iso_2 || "pl"
+      
       const offset = (page - 1) * PRODUCT_LIMIT
       const result = await listProductsWithSort({
         seller_id,
-        countryCode: process.env.NEXT_PUBLIC_DEFAULT_REGION || "pl",
+        countryCode,
         sortBy: "created_at",
         queryParams: { limit: PRODUCT_LIMIT, offset },
       })

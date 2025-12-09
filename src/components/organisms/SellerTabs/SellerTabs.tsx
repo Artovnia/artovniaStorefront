@@ -12,6 +12,9 @@ export const SellerTabs = ({
   seller_name,
   user,
   locale,
+  initialProducts,
+  initialTotalCount,
+  initialWishlists,
 }: {
   tab: string
   seller_handle: string
@@ -19,6 +22,9 @@ export const SellerTabs = ({
   seller_name?: string
   user: HttpTypes.StoreCustomer | null
   locale: string
+  initialProducts?: HttpTypes.StoreProduct[]
+  initialTotalCount?: number
+  initialWishlists?: any[]
 }) => {
   // Comprehensive safety checks for required props
   if (!seller_handle || 
@@ -64,12 +70,22 @@ export const SellerTabs = ({
       <TabsList list={tabsList} activeTab={tab} />
       
       <TabsContent value="produkty" activeTab={tab}>
-        <Suspense fallback={<ProductListingSkeleton />}>
+        {initialProducts && initialTotalCount !== undefined && initialWishlists ? (
           <SellerProductListingServer 
             seller_id={seller_id}
             user={user}
+            initialProducts={initialProducts}
+            initialTotalCount={initialTotalCount}
+            initialWishlists={initialWishlists}
           />
-        </Suspense>
+        ) : (
+          <Suspense fallback={<ProductListingSkeleton />}>
+            <SellerProductListingServer 
+              seller_id={seller_id}
+              user={user}
+            />
+          </Suspense>
+        )}
       </TabsContent>
       
       <TabsContent value="recenzje" activeTab={tab}>
