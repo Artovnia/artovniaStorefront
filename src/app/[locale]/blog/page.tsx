@@ -12,9 +12,9 @@ import BlogPostCard from "./components/BlogPostCard"
 import PaginatedBlogPosts from "./components/PaginatedBlogPosts"
 import PaginatedSellerPosts from "./components/PaginatedSellerPosts"
 
-// Use ISR instead of force-dynamic for better performance and SEO
-// User-specific data (auth) can be fetched client-side if needed
-export const revalidate = force-dynamic
+// Make the page dynamic to fetch fresh data on each request
+// This ensures blog posts are always up-to-date
+export const dynamic = 'force-dynamic'
 
 export const metadata: Metadata = {
   title: "Blog - Artovnia | Inspiracje, Porady i Nowości ze Świata Sztuki",
