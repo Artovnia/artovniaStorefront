@@ -97,7 +97,7 @@ export const FEATURED_SELLER_POST_QUERY = `
     slug,
     sellerName,
     shortDescription,
-    sellerHandle,
+    sellerUrl,
     mainImage,
     secondaryImage,
     publishedAt
@@ -111,13 +111,12 @@ export const SELLER_POST_QUERY = `
     slug,
     sellerName,
     shortDescription,
-    sellerHandle,
+    sellerUrl,
     mainImage,
     secondaryImage,
     content,
     linkedProducts[] {
-      productId,
-      productHandle,
+      productUrl,
       productName,
       productImage
     },
@@ -137,11 +136,10 @@ export const SELLER_POSTS_QUERY = `
     slug,
     sellerName,
     shortDescription,
-    sellerHandle,
+    sellerUrl,
     mainImage,
     linkedProducts[] {
-      productId,
-      productHandle,
+      productUrl,
       productName,
       productImage
     },

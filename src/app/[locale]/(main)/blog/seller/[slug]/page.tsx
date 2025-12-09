@@ -112,7 +112,7 @@ function generateStructuredData(post: any, imageUrl: string | null) {
       name: post.sellerName,
       description: post.shortDescription,
       image: imageUrl ? `${baseUrl}${imageUrl}` : undefined,
-      url: `${baseUrl}/sellers/${post.sellerHandle}`,
+      url: post.sellerUrl,
     },
     datePublished: post.publishedAt,
     dateModified: post._updatedAt || post.publishedAt,
@@ -229,7 +229,7 @@ export default async function SellerPostPage({ params }: SellerPostPageProps) {
 
                   {/* Visit Store Button */}
                   <Link
-                    href={`/sellers/${post.sellerHandle}`}
+                    href={post.sellerUrl}
                     className="inline-flex items-center space-x-3 ring-1 ring-[#BFB7AD] text-black px-6 md:px-8 py-3 md:py-4 hover:bg-[#3B3634] hover:text-white transition-all duration-300 group"
                     aria-label={`Odwiedź sklep ${post.sellerName}`}
                   >
@@ -321,14 +321,14 @@ export default async function SellerPostPage({ params }: SellerPostPageProps) {
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8" role="list">
                     {post.linkedProducts.map((product, index) => (
                       <article
-                        key={product.productId}
+                        key={product.productUrl}
                         role="listitem"
                         className={`group cursor-pointer transform hover:scale-105 transition-all duration-300 ${
                           index % 2 === 0 ? "rotate-1" : "-rotate-1"
                         } hover:rotate-0`}
                       >
                         <Link
-                          href={`/products/${product.productHandle}`}
+                          href={product.productUrl}
                           className="block"
                           aria-label={`Zobacz produkt: ${product.productName}`}
                         >
@@ -368,7 +368,7 @@ export default async function SellerPostPage({ params }: SellerPostPageProps) {
                     Odkryj więcej prac artysty w jego sklepie
                   </p>
                   <Link
-                    href={`/sellers/${post.sellerHandle}`}
+                    href={post.sellerUrl}
                     className="inline-flex items-center space-x-3 ring-1 ring-[#BFB7AD] text-black px-6 md:px-8 py-3 md:py-4 hover:bg-[#3B3634] hover:text-white transition-all duration-300 group"
                     aria-label={`Przejdź do sklepu ${post.sellerName}`}
                   >

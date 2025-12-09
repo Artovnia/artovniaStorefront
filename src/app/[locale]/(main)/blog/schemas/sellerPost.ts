@@ -37,11 +37,14 @@ export default defineType({
       description: 'Brief description for homepage display (max 200 characters)',
     }),
     defineField({
-      name: 'sellerHandle',
-      title: 'Seller Handle/URL',
-      type: 'string',
-      validation: (Rule) => Rule.required(),
-      description: 'Seller handle for store URL (e.g., "app-crates" for /sellers/app-crates)',
+      name: 'sellerUrl',
+      title: 'Seller Store URL',
+      type: 'url',
+      validation: (Rule) => Rule.required().uri({
+        scheme: ['http', 'https']
+      }),
+      description: 'Full URL to seller store page (e.g., "https://www.artovnia.com/sellers/ann-sayuri-art-anna-wawrzyniak")',
+      placeholder: 'https://www.artovnia.com/sellers/seller-handle',
     }),
     defineField({
       name: 'mainImage',
@@ -95,18 +98,14 @@ export default defineType({
           type: 'object',
           fields: [
             defineField({
-              name: 'productId',
-              title: 'Product ID',
-              type: 'string',
-              validation: (Rule) => Rule.required(),
-              description: 'Medusa product ID',
-            }),
-            defineField({
-              name: 'productHandle',
-              title: 'Product Handle',
-              type: 'string',
-              validation: (Rule) => Rule.required(),
-              description: 'Product URL handle (e.g., "stolik-pod-obraz-1747921701916-9falth")',
+              name: 'productUrl',
+              title: 'Product URL',
+              type: 'url',
+              validation: (Rule) => Rule.required().uri({
+                scheme: ['http', 'https']
+              }),
+              description: 'Full URL to product page (e.g., "https://www.artovnia.com/products/stolik-pod-obraz-1747921701916-9falth")',
+              placeholder: 'https://www.artovnia.com/products/product-handle',
             }),
             defineField({
               name: 'productName',
@@ -129,17 +128,19 @@ export default defineType({
                   title: 'Alternative Text',
                 }
               ],
+              description: 'Product image (optional - will be fetched from URL if not provided)',
             }),
           ],
           preview: {
             select: {
               title: 'productName',
+              subtitle: 'productUrl',
               media: 'productImage',
             },
           },
         }
       ],
-      description: 'Products to feature in the article',
+      description: 'Products to feature in the article (use full product URLs from storefront)',
     }),
     defineField({
       name: 'publishedAt',

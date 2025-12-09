@@ -17,7 +17,7 @@ const defaultFeaturedPost: SellerPost = {
   slug: { current: "ann-sayuri-art" },
   sellerName: "Ann Sayuri ART",
   shortDescription: "Oryginalne, ręcznie malowane obrazy abstrakcyjne w żywej kolorystyce",
-  sellerHandle: "ann-sayuri-art",
+  sellerUrl: "https://www.artovnia.com/sellers/ann-sayuri-art-anna-wawrzyniak",
   mainImage: {
     asset: null, // Removed invalid reference
     alt: "Ann Sayuri w swojej pracowni"

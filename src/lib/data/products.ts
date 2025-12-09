@@ -162,12 +162,18 @@ export const listProductsWithSort = async ({
 }> => {
   const limit = queryParams?.limit || 12
 
+  // ✅ FIX: When filtering by seller_id, fetch more products to ensure we have enough after filtering
+  // This is a workaround since the server doesn't support seller_id filtering
+  const fetchLimit = seller_id ? 100 : limit // Fetch 100 products when filtering by seller
+  const offset = seller_id ? 0 : queryParams?.offset || 0 // Always start from 0 when filtering by seller
+
   // Use direct pagination instead of over-fetching
   const result = await listProducts({
-    pageParam: page,
+    pageParam: seller_id ? 1 : page, // Always fetch page 1 when filtering by seller
     queryParams: {
       ...queryParams,
-      limit,
+      limit: fetchLimit,
+      offset,
       // Add server-side sorting if supported by Medusa
       order: sortBy === 'created_at' ? '-created_at' : sortBy,
       // Remove seller_id from server query as it's not supported
@@ -202,14 +208,32 @@ export const listProductsWithSort = async ({
     : products
 
   // Only sort client-side if server-side sorting isn't available
-  const finalProducts = sortBy && sortBy !== 'created_at' 
+  const sortedProducts = sortBy && sortBy !== 'created_at' 
     ? sortProducts(filteredProducts, sortBy)
     : filteredProducts
 
+  // ✅ FIX: When filtering by seller_id, implement client-side pagination
+  if (seller_id) {
+    const totalFilteredCount = sortedProducts.length
+    const startIndex = (page - 1) * limit
+    const endIndex = startIndex + limit
+    const paginatedProducts = sortedProducts.slice(startIndex, endIndex)
+
+    return {
+      response: {
+        products: paginatedProducts,
+        count: totalFilteredCount, // Total count of seller's products
+      },
+      nextPage: endIndex < totalFilteredCount ? page + 1 : null,
+      queryParams,
+    }
+  }
+
+  // For non-seller filtering, return as-is
   return {
     response: {
-      products: finalProducts,
-      count: filteredProducts.length, // Use filtered count since we're filtering client-side
+      products: sortedProducts,
+      count,
     },
     nextPage,
     queryParams,

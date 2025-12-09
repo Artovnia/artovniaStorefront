@@ -151,7 +151,7 @@ export const ProductListing = ({
       const { response } = result
 
       setProducts(response.products || [])
-      setCount(response.products?.length || 0)
+      setCount(response.count || 0)  // ✅ FIX: Use count from response, not products.length
     } catch (error) {
       console.error('Error fetching products:', error)
       setProducts([])

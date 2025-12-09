@@ -72,13 +72,12 @@ export interface SellerPost {
   }
   sellerName: string
   shortDescription: string
-  sellerHandle: string
+  sellerUrl: string // Full URL to seller store page
   mainImage?: any
   secondaryImage?: any
   content?: any
   linkedProducts?: Array<{
-    productId: string
-    productHandle: string
+    productUrl: string // Full URL to product page
     productName: string
     productImage?: any
   }>

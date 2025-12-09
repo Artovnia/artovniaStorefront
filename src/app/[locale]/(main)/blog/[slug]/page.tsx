@@ -15,12 +15,8 @@ import PortableText from "../components/PortableText"
 
 // CRITICAL: force-dynamic required because BlogSearch uses useSearchParams()
 // Without this, Next.js bails out to client-side rendering causing 500 errors
+// NOTE: force-dynamic disables caching, so Sanity updates appear immediately
 export const dynamic = 'force-dynamic'
-// ISR with 5-minute revalidation
-// NOTE: In development mode, caching is disabled and pages regenerate on every request
-// To test caching, build and run in production: npm run build && npm start
-export const revalidate = 300 // 5 minutes
-export const dynamicParams = true // Generate pages on-demand for new slugs
 
 interface BlogPostPageProps {
   params: Promise<{
