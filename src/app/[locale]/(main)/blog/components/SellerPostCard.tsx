@@ -138,7 +138,7 @@ export default function SellerPostCard({
         )}
 
         <Link
-          href={`/sellers/${post.sellerHandle}`}
+          href={post.sellerUrl}
           className="group relative inline-block text-[#3B3634] font-instrument-sans font-medium px-3 py-1.5 overflow-hidden transition-all duration-300 hover:text-white text-sm border border-[#3B3634] mx-auto"
         >
           <span className="absolute inset-0 bg-[#3B3634] transform translate-x-[-100%] group-hover:translate-x-0 transition-transform duration-300 ease-out"></span>
