@@ -27,7 +27,6 @@ const getCachedProduct = cache(async (handle: string, locale: string) => {
     countryCode: locale,
     queryParams: { handle },
   })
-  console.log('✅ PRODUCT PAGE: Product fetched:', response.products[0] ? 'FOUND' : 'NOT FOUND')
   return response.products[0]
 })
 

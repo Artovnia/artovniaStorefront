@@ -260,6 +260,7 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
                     dateTime={blogPost.publishedAt}
                     className="text-sm font-instrument-sans text-[#3B3634]/80"
                     itemProp="datePublished"
+                    suppressHydrationWarning
                   >
                     {format(new Date(blogPost.publishedAt), "dd MMMM yyyy", {
                       locale: pl,

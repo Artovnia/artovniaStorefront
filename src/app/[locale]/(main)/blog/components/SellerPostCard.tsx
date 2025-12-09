@@ -157,6 +157,7 @@ export default function SellerPostCard({
       <time
         dateTime={post.publishedAt}
         className="absolute bottom-2 right-2 text-sm text-gray-500 font-instrument-sans bg-primary px-2 py-1 rounded"
+        suppressHydrationWarning
       >
         {format(new Date(post.publishedAt), "dd MMM yyyy", { locale: pl })}
       </time>

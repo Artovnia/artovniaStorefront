@@ -1,28 +1,12 @@
 import { Suspense } from "react"
 import BlogLayout from "./BlogLayout"
 import { getBlogCategories } from "../lib/data"
-import { unstable_cache } from "next/cache"
 
 /**
- * Cached wrapper for BlogLayout that fetches categories once
- * This ensures the blog hero, search, and navigation are cached
- * and render immediately on subsequent visits
+ * Wrapper for BlogLayout that fetches categories
+ * Note: unstable_cache removed as it causes 500 errors with Sanity in production
+ * ISR caching at page level (revalidate: 300) is sufficient
  */
-
-// Cache the categories fetch for 5 minutes
-const getCachedBlogCategories = unstable_cache(
-  async () => {
-    console.log("🔄 BLOG LAYOUT: Fetching categories from Sanity")
-    const categories = await getBlogCategories()
-    console.log("✅ BLOG LAYOUT: Categories fetched:", categories.length)
-    return categories
-  },
-  ['blog-categories'],
-  {
-    revalidate: 300, // 5 minutes
-    tags: ['blog-categories']
-  }
-)
 
 interface BlogLayoutWrapperProps {
   children: React.ReactNode
@@ -39,8 +23,18 @@ export default async function BlogLayoutWrapper({
 }: BlogLayoutWrapperProps) {
   console.log("📦 BLOG LAYOUT WRAPPER: Rendering")
   
-  // Fetch categories with caching
-  const categories = await getCachedBlogCategories()
+  // Fetch categories with error handling
+  // Note: Page-level ISR (revalidate: 300) handles caching
+  let categories: any[] = []
+  try {
+    console.log("🔄 BLOG LAYOUT: Fetching categories from Sanity")
+    categories = await getBlogCategories()
+    console.log("✅ BLOG LAYOUT: Categories fetched:", categories.length)
+  } catch (error) {
+    console.error("❌ BLOG LAYOUT: Error fetching categories:", error)
+    // Continue with empty categories rather than crashing
+    categories = []
+  }
 
   return (
     <BlogLayout

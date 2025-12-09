@@ -120,7 +120,7 @@ const ProductCardComponent = ({
         </div>
         {/* Promotion Badge - Consistent styling to prevent hydration mismatch */}
         {hasAnyDiscount && (
-  <div className="absolute top-2 left-2 z-10 flex flex-col gap-1">
+  <div className="absolute top-2 left-2 z-10 flex flex-col gap-1" suppressHydrationWarning>
     <div className="bg-[#F4F0EB]/90 text-[#3B3634] px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider shadow-lg border border-[#3B3634]">
       PROMOCJA
     </div>

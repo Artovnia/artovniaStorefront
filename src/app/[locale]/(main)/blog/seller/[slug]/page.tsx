@@ -132,8 +132,14 @@ export default async function SellerPostPage({ params }: SellerPostPageProps) {
   const { slug } = await params
   console.log('🎨 SELLER POST PAGE: Rendering seller post:', slug)
   
-  const post = await getSellerPost(slug)
-  console.log('✅ SELLER POST: Post fetched:', post ? 'FOUND' : 'NOT FOUND')
+  let post
+  try {
+    post = await getSellerPost(slug)
+    console.log('✅ SELLER POST: Post fetched:', post ? 'FOUND' : 'NOT FOUND')
+  } catch (error) {
+    console.error('❌ SELLER POST: Error fetching post:', error)
+    notFound()
+  }
 
   if (!post) {
     notFound()
@@ -213,6 +219,7 @@ export default async function SellerPostPage({ params }: SellerPostPageProps) {
                     dateTime={post.publishedAt}
                     className="block text-sm text-[#3B3634]/70 font-instrument-sans"
                     itemProp="datePublished"
+                    suppressHydrationWarning
                   >
                     Opublikowano: {format(new Date(post.publishedAt), "dd MMMM yyyy", { locale: pl })}
                   </time>

@@ -397,7 +397,7 @@ const nextConfig: NextConfig = {
     contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
     deviceSizes: [640, 828, 1200, 1920],
   imageSizes: [80, 160, 252, 370],
-  qualities: [60, 65, 75, 85, 90],
+  qualities: [60, 65, 75, 85, 90, 100],
     loader: 'default',
     unoptimized: false,
     remotePatterns: [
