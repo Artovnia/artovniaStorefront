@@ -143,14 +143,20 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
   console.log("📝 BLOG POST PAGE: Rendering post:", slug)
 
   // Try to get regular blog post first
-  const blogPost = await getBlogPost(slug).catch(() => null)
+  const blogPost = await getBlogPost(slug).catch((error) => {
+    console.error("❌ Error fetching blog post:", slug, error)
+    return null
+  })
 
   // If not found, check if it's a seller post and redirect
   if (!blogPost) {
-    const sellerPost = await getSellerPost(slug).catch(() => null)
+    const sellerPost = await getSellerPost(slug).catch((error) => {
+      console.error("❌ Error fetching seller post:", slug, error)
+      return null
+    })
     if (sellerPost) {
       // Redirect to proper seller post URL
-      // This must be outside try-catch because redirect() throws an error internally
+      // IMPORTANT: redirect() throws internally, so it MUST be outside try-catch
       redirect(`/blog/seller/${slug}`)
     }
     // Neither blog post nor seller post found
@@ -158,14 +164,14 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
   }
 
   try {
+    
     let imageUrl: string | null = null
-
     try {
       imageUrl = blogPost.mainImage
         ? urlFor(blogPost.mainImage).width(1200).height(600).url()
         : null
     } catch (error) {
-      console.error("Error processing blog post image:", error)
+      console.error("❌ Error processing blog post image:", error)
     }
 
     const structuredData = generateStructuredData(blogPost, imageUrl)
@@ -362,7 +368,13 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
       </BlogLayoutWrapper>
     )
   } catch (error) {
-    console.error("Error rendering blog post page:", error)
+    console.error("❌ CRITICAL: Error rendering blog post page:", error)
+    console.error("Error details:", {
+      message: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined,
+      error
+    })
+    // Return 404 instead of 500 to prevent production errors
     notFound()
   }
 }

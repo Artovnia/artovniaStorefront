@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import BlogSearch from './BlogSearch'
+import BlogSearchWrapper from './BlogSearchWrapper'
 import { Footer } from '@/components/organisms/Footer/Footer'
 import { Header } from '@/components/organisms/Header/Header'
 import { Breadcrumbs } from '@/components/atoms/Breadcrumbs/Breadcrumbs'
@@ -43,7 +43,7 @@ export default function BlogLayoutClient({
           <div className="flex items-center justify-between h-16">
             
             <div className="flex-1 max-w-md mx-4">
-              <BlogSearch />
+              <BlogSearchWrapper />
             </div>
           </div>
         </div>

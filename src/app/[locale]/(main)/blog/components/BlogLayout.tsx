@@ -2,7 +2,7 @@ import { Suspense } from "react"
 import Image from "next/image"
 import { SafeI18nLink as Link } from "@/components/atoms/SafeI18nLink"
 import { Breadcrumbs } from "@/components/atoms/Breadcrumbs/Breadcrumbs"
-import BlogSearch from "./BlogSearch"
+import BlogSearchWrapper from "./BlogSearchWrapper"
 import NewsletterSection from "@/components/sections/NewsletterSection/NewsletterSection"
 import type { BlogCategory } from "../lib/data"
 
@@ -97,11 +97,7 @@ export default function BlogLayout({
           <div className="px-4 sm:px-6 lg:px-8 ">
             <div className="flex items-center justify-end">
               <div className="w-full max-w-md">
-                <Suspense fallback={
-                  <div className="h-10 bg-gray-200 rounded-lg animate-pulse"></div>
-                }>
-                  <BlogSearch />
-                </Suspense>
+                <BlogSearchWrapper />
               </div>
             </div>
           </div>
