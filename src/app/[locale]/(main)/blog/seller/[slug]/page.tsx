@@ -148,6 +148,13 @@ export default async function SellerPostPage({ params }: SellerPostPageProps) {
     notFound()
   }
 
+  // ✅ BACKWARD COMPATIBILITY: Handle old data with sellerHandle
+  // @ts-ignore - temporary fallback for migration
+  if (!post.sellerUrl && post.sellerHandle) {
+    // @ts-ignore
+    post.sellerUrl = `/sellers/${post.sellerHandle}`
+  }
+
   let mainImageUrl: string | null = null
   let secondaryImageUrl: string | null = null
 
@@ -319,7 +326,12 @@ export default async function SellerPostPage({ params }: SellerPostPageProps) {
                   </h2>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8" role="list">
-                    {post.linkedProducts.map((product, index) => (
+                    {post.linkedProducts.map((product, index) => {
+                      // ✅ BACKWARD COMPATIBILITY: Handle old data with productHandle
+                      // @ts-ignore
+                      const productUrl = product.productUrl || (product.productHandle ? `/products/${product.productHandle}` : '#')
+                      
+                      return (
                       <article
                         key={product.productUrl}
                         role="listitem"
@@ -328,7 +340,7 @@ export default async function SellerPostPage({ params }: SellerPostPageProps) {
                         } hover:rotate-0`}
                       >
                         <Link
-                          href={product.productUrl}
+                          href={productUrl}
                           className="block"
                           aria-label={`Zobacz produkt: ${product.productName}`}
                         >
@@ -356,7 +368,8 @@ export default async function SellerPostPage({ params }: SellerPostPageProps) {
                           </div>
                         </Link>
                       </article>
-                    ))}
+                      )
+                    })}
                   </div>
                 </aside>
               )}
