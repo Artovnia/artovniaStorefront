@@ -12,6 +12,9 @@ import BlogLayoutWrapper from "../../components/BlogLayoutWrapper"
 
 // ISR with 5-minute revalidation
 export const revalidate = 300 // 5 minutes
+// CRITICAL: force-dynamic required because BlogSearch uses useSearchParams()
+// Without this, Next.js bails out to client-side rendering causing 500 errors
+export const dynamic = 'force-dynamic'
 export const dynamicParams = true // Generate pages on-demand for new slugs
 
 interface SellerPostPageProps {

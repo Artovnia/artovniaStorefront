@@ -12,10 +12,9 @@ import BlogPostCard from "./components/BlogPostCard"
 import PaginatedBlogPosts from "./components/PaginatedBlogPosts"
 import PaginatedSellerPosts from "./components/PaginatedSellerPosts"
 
-// Use ISR with 5-minute revalidation for better performance
-// CartProvider is now in layout, so we can cache blog pages
-// This balances freshness with performance on Vercel
-export const revalidate = 300 // 5 minutes
+// CRITICAL: force-dynamic required because BlogSearch uses useSearchParams()
+// Without this, Next.js bails out to client-side rendering causing 500 errors
+export const dynamic = 'force-dynamic'
 
 export const metadata: Metadata = {
   title: "Blog - Artovnia | Inspiracje, Porady i Nowości ze Świata Sztuki",

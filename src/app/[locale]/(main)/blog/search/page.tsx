@@ -4,6 +4,9 @@ import { searchBlogPosts, getBlogCategories } from '../lib/data'
 import BlogLayout from '../components/BlogLayout'
 import BlogPostCard from '../components/BlogPostCard'
 
+// CRITICAL: force-dynamic required because BlogSearch uses useSearchParams()
+export const dynamic = 'force-dynamic'
+
 interface SearchPageProps {
   searchParams: Promise<{
     q?: string

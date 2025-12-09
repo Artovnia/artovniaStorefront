@@ -1,5 +1,5 @@
 import { Metadata } from "next"
-import { notFound } from "next/navigation"
+import { notFound, redirect } from "next/navigation"
 import Image from "next/image"
 import Link from "next/link"
 import { format } from "date-fns"
@@ -12,8 +12,10 @@ import {
 import { urlFor } from "../lib/sanity"
 import BlogLayoutWrapper from "../components/BlogLayoutWrapper"
 import PortableText from "../components/PortableText"
-import { redirect } from "next/navigation"
 
+// CRITICAL: force-dynamic required because BlogSearch uses useSearchParams()
+// Without this, Next.js bails out to client-side rendering causing 500 errors
+export const dynamic = 'force-dynamic'
 // ISR with 5-minute revalidation
 // NOTE: In development mode, caching is disabled and pages regenerate on every request
 // To test caching, build and run in production: npm run build && npm start
