@@ -14,7 +14,7 @@ import PaginatedSellerPosts from "./components/PaginatedSellerPosts"
 
 // Use ISR instead of force-dynamic for better performance and SEO
 // User-specific data (auth) can be fetched client-side if needed
-export const revalidate = 300 // Revalidate every 5 minutes
+export const revalidate = force-dynamic
 
 export const metadata: Metadata = {
   title: "Blog - Artovnia | Inspiracje, Porady i Nowości ze Świata Sztuki",
