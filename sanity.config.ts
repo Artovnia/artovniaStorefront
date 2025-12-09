@@ -4,28 +4,18 @@ import { visionTool } from '@sanity/vision'
 
 import { schemaTypes } from './src/app/[locale]/(main)/blog/schemas'
 
-if (!process.env.NEXT_PUBLIC_SANITY_PROJECT_ID) {
-  throw new Error('Missing NEXT_PUBLIC_SANITY_PROJECT_ID environment variable')
-}
-
-if (!process.env.NEXT_PUBLIC_SANITY_DATASET) {
-  throw new Error('Missing NEXT_PUBLIC_SANITY_DATASET environment variable')
-}
-
-if (!process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY) {
-  throw new Error('Missing NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY environment variable')
-}
-
-if (!process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL) {
-  throw new Error('Missing NEXT_PUBLIC_MEDUSA_BACKEND_URL environment variable')
-}
+// Hardcoded values for hosted Studio (env vars not available in browser)
+const SANITY_PROJECT_ID = 'pbhdm7sqrkujay1uxrxz71r1'
+const SANITY_DATASET = 'production'
+const MEDUSA_BACKEND_URL = 'https://api.artovnia.com'
+const MEDUSA_PUBLISHABLE_KEY = 'pk_9b62a68d7f80abcba6611a3711beadbed895d9a256b4b11af7930add016b0182'
 
 export default defineConfig({
   name: 'default',
   title: 'Artovnia Blog',
 
-  projectId: process.env.NEXT_PUBLIC_SANITY_PROJECT_ID,
-  dataset: process.env.NEXT_PUBLIC_SANITY_DATASET,
+  projectId: SANITY_PROJECT_ID,
+  dataset: SANITY_DATASET,
 
   plugins: [structureTool(), visionTool()],
 
@@ -37,22 +27,22 @@ export default defineConfig({
   webhooks: [
     {
       name: 'blog-post-newsletter',
-      url: `${process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL}/store/blog/webhook`,
+      url: `${MEDUSA_BACKEND_URL}/store/blog/webhook`,
       events: ['create', 'update'],
       filter: '_type == "blogPost" && defined(publishedAt)',
       headers: {
         'Content-Type': 'application/json',
-        'x-publishable-api-key': process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY
+        'x-publishable-api-key': MEDUSA_PUBLISHABLE_KEY
       }
     },
     {
       name: 'newsletter-campaign',
-      url: `${process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL}/store/newsletter/webhook`,
+      url: `${MEDUSA_BACKEND_URL}/store/newsletter/webhook`,
       events: ['create', 'update'],
       filter: '_type == "newsletter" && status == "ready" && defined(publishedAt)',
       headers: {
         'Content-Type': 'application/json',
-        'x-publishable-api-key': process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY
+        'x-publishable-api-key': MEDUSA_PUBLISHABLE_KEY
       }
     }
   ]
