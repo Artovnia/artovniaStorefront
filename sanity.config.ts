@@ -5,7 +5,7 @@ import { visionTool } from '@sanity/vision'
 import { schemaTypes } from './src/app/[locale]/(main)/blog/schemas'
 
 // Hardcoded values for hosted Studio (env vars not available in browser)
-const SANITY_PROJECT_ID = 'pbhdm7sqrkujay1uxrxz71r1'
+const SANITY_PROJECT_ID = 'o56rau04'
 const SANITY_DATASET = 'production'
 const MEDUSA_BACKEND_URL = 'https://api.artovnia.com'
 const MEDUSA_PUBLISHABLE_KEY = 'pk_9b62a68d7f80abcba6611a3711beadbed895d9a256b4b11af7930add016b0182'

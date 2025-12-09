@@ -136,7 +136,7 @@ export default async function SellersPage({
             fetchPriority="high"
             className="object-cover object-center 2xl:object-contain"
             sizes="(max-width: 640px) 640px, (max-width: 1024px) 1024px, 1920px"
-            quality={70}
+            quality={75}
             placeholder="blur"
             blurDataURL="data:image/webp;base64,UklGRiQAAABXRUJQVlA4IBgAAAAwAQCdASoBAAEAAwA0JaQAA3AA/vuUAAA="
           />

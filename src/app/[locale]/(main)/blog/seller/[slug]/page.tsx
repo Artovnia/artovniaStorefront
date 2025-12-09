@@ -333,7 +333,7 @@ export default async function SellerPostPage({ params }: SellerPostPageProps) {
                       
                       return (
                       <article
-                        key={product.productUrl}
+                        key={productUrl || `product-${index}`}
                         role="listitem"
                         className={`group cursor-pointer transform hover:scale-105 transition-all duration-300 ${
                           index % 2 === 0 ? "rotate-1" : "-rotate-1"

@@ -161,23 +161,20 @@ export const listProductsWithSort = async ({
   queryParams?: HttpTypes.FindParams & HttpTypes.StoreProductParams
 }> => {
   const limit = queryParams?.limit || 12
+  const offset = queryParams?.offset || 0
 
-  // ✅ FIX: When filtering by seller_id, fetch more products to ensure we have enough after filtering
-  // This is a workaround since the server doesn't support seller_id filtering
-  const fetchLimit = seller_id ? 100 : limit // Fetch 100 products when filtering by seller
-  const offset = seller_id ? 0 : queryParams?.offset || 0 // Always start from 0 when filtering by seller
+  // TODO: Create backend endpoint `/store/products/by-seller/:seller_id` for proper server-side filtering
+  // For now, use client-side filtering with larger fetch size
+  const fetchLimit = seller_id ? Math.max(limit * 10, 100) : limit // Fetch more when filtering by seller
+  const fetchOffset = seller_id ? 0 : offset // Always start from 0 for seller filtering
 
-  // Use direct pagination instead of over-fetching
   const result = await listProducts({
-    pageParam: seller_id ? 1 : page, // Always fetch page 1 when filtering by seller
+    pageParam: seller_id ? 1 : page,
     queryParams: {
       ...queryParams,
       limit: fetchLimit,
-      offset,
-      // Add server-side sorting if supported by Medusa
+      offset: fetchOffset,
       order: sortBy === 'created_at' ? '-created_at' : sortBy,
-      // Remove seller_id from server query as it's not supported
-      // ...(seller_id && { seller_id })
     },
     category_id,
     collection_id,
@@ -202,19 +199,19 @@ export const listProductsWithSort = async ({
     nextPage
   } = result
 
-  // Filter by seller_id client-side since server doesn't support it
-  const filteredProducts = seller_id 
+  // Client-side filtering by seller_id
+  const filteredProducts = seller_id
     ? products.filter(product => product.seller?.id === seller_id)
     : products
 
-  // Only sort client-side if server-side sorting isn't available
-  const sortedProducts = sortBy && sortBy !== 'created_at' 
+  // Apply client-side sorting
+  const sortedProducts = sortBy && sortBy !== 'created_at'
     ? sortProducts(filteredProducts, sortBy)
     : filteredProducts
 
-  // ✅ FIX: When filtering by seller_id, implement client-side pagination
+  // Client-side pagination for seller products
   if (seller_id) {
-    const totalFilteredCount = sortedProducts.length
+    const totalCount = sortedProducts.length
     const startIndex = (page - 1) * limit
     const endIndex = startIndex + limit
     const paginatedProducts = sortedProducts.slice(startIndex, endIndex)
@@ -222,14 +219,14 @@ export const listProductsWithSort = async ({
     return {
       response: {
         products: paginatedProducts,
-        count: totalFilteredCount, // Total count of seller's products
+        count: totalCount,
       },
-      nextPage: endIndex < totalFilteredCount ? page + 1 : null,
+      nextPage: endIndex < totalCount ? page + 1 : null,
       queryParams,
     }
   }
 
-  // For non-seller filtering, return as-is
+  // Standard response for non-seller queries
   return {
     response: {
       products: sortedProducts,
