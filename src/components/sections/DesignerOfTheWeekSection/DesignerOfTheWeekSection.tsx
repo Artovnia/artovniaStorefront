@@ -3,8 +3,8 @@
 import { useState, useEffect } from "react"
 import Image from "next/image"
 import Link from "next/link"
-import type { SellerPost } from "@/app/[locale]/blog/lib/data"
-import { urlFor } from "@/app/[locale]/blog/lib/sanity"
+import type { SellerPost } from "@/app/[locale]/(main)/blog/lib/data"
+import { urlFor } from "@/app/[locale]/(main)/blog/lib/sanity"
 
 interface DesignerOfTheWeekSectionProps {
   className?: string
@@ -41,7 +41,7 @@ export function DesignerOfTheWeekSection({ className = "" }: DesignerOfTheWeekSe
     const fetchRealData = async () => {
       try {
         // Import the data fetching function dynamically to avoid SSR issues
-        const { getFeaturedSellerPost } = await import("@/app/[locale]/blog/lib/data")
+        const { getFeaturedSellerPost } = await import("@/app/[locale]/(main)/blog/lib/data")
         const realPost = await getFeaturedSellerPost()
         if (realPost) {
           setFeaturedPost(realPost)

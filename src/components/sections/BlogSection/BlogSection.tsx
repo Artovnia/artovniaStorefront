@@ -1,6 +1,6 @@
 import { BlogCarousel } from '@/components/organisms/BlogCarousel';
 import { BlogCard } from '@/components/organisms/BlogCard/BlogCard';
-import { getLatestBlogPosts } from '@/app/[locale]/blog/lib/data';
+import { getLatestBlogPosts } from '@/app/[locale]/(main)/blog/lib/data';
 import Link from 'next/link';
 import { unstable_cache } from 'next/cache';
 

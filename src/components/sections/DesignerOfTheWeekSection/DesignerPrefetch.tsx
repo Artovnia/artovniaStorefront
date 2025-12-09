@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react'
 import { preloadOnHover } from '@/lib/utils/preload-resources'
-import type { SellerPost } from '@/app/[locale]/blog/lib/data'
+import type { SellerPost } from '@/app/[locale]/(main)/blog/lib/data'
 
 interface DesignerPrefetchProps {
   post: SellerPost

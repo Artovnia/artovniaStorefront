@@ -12,9 +12,10 @@ import BlogPostCard from "./components/BlogPostCard"
 import PaginatedBlogPosts from "./components/PaginatedBlogPosts"
 import PaginatedSellerPosts from "./components/PaginatedSellerPosts"
 
-// Make the page dynamic to fetch fresh data on each request
-// This ensures blog posts are always up-to-date
-export const dynamic = 'force-dynamic'
+// Use ISR with 5-minute revalidation for better performance
+// CartProvider is now in layout, so we can cache blog pages
+// This balances freshness with performance on Vercel
+export const revalidate = 300 // 5 minutes
 
 export const metadata: Metadata = {
   title: "Blog - Artovnia | Inspiracje, Porady i Nowości ze Świata Sztuki",

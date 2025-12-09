@@ -8,16 +8,17 @@ import {
   getBlogPost,
   getBlogPosts,
   getSellerPost,
-  getSellerPosts,
-  getBlogCategories,
 } from "../lib/data"
 import { urlFor } from "../lib/sanity"
-import BlogLayout from "../components/BlogLayout"
+import BlogLayoutWrapper from "../components/BlogLayoutWrapper"
 import PortableText from "../components/PortableText"
 import { redirect } from "next/navigation"
 
-// Must use force-dynamic because Header component uses cookies() for user authentication
-export const dynamic = 'force-dynamic'
+// ISR with 5-minute revalidation
+// NOTE: In development mode, caching is disabled and pages regenerate on every request
+// To test caching, build and run in production: npm run build && npm start
+export const revalidate = 300 // 5 minutes
+export const dynamicParams = true // Generate pages on-demand for new slugs
 
 interface BlogPostPageProps {
   params: Promise<{
@@ -27,20 +28,15 @@ interface BlogPostPageProps {
 
 export async function generateStaticParams() {
   try {
-    const [recentBlogPosts, recentSellerPosts] = await Promise.all([
-      getBlogPosts().then((posts) => posts.slice(0, 20)).catch(() => []),
-      getSellerPosts().then((posts) => posts.slice(0, 10)).catch(() => []),
-    ])
+    // Only generate params for regular blog posts
+    // Seller posts are handled in /blog/seller/[slug]
+    const recentBlogPosts = await getBlogPosts()
+      .then((posts) => posts.slice(0, 20))
+      .catch(() => [])
 
-    const blogParams = recentBlogPosts
+    return recentBlogPosts
       .filter((post) => post.slug?.current)
       .map((post) => ({ slug: post.slug.current }))
-
-    const sellerParams = recentSellerPosts
-      .filter((post) => post.slug?.current)
-      .map((post) => ({ slug: post.slug.current }))
-
-    return [...blogParams, ...sellerParams]
   } catch (error) {
     console.error("Error generating static params:", error)
     return []
@@ -52,14 +48,7 @@ export async function generateMetadata({
 }: BlogPostPageProps): Promise<Metadata> {
   try {
     const { slug } = await params
-
-    let post = await getBlogPost(slug)
-    let isSellerPost = false
-
-    if (!post) {
-      post = await getSellerPost(slug)
-      isSellerPost = true
-    }
+    const post = await getBlogPost(slug)
 
     if (!post) {
       return {
@@ -69,15 +58,7 @@ export async function generateMetadata({
     }
 
     const title = post.seo?.metaTitle || post.title || "Artovnia Blog"
-    let description: string = "Odkryj nasze wpisy blogowe i historie sprzedawców"
-
-    if (post.seo?.metaDescription) {
-      description = post.seo.metaDescription
-    } else if ("excerpt" in post && post.excerpt && typeof post.excerpt === 'string') {
-      description = post.excerpt
-    } else if ("shortDescription" in post && post.shortDescription && typeof post.shortDescription === 'string') {
-      description = post.shortDescription
-    }
+    const description: string = post.seo?.metaDescription || post.excerpt || "Odkryj nasze wpisy blogowe"
 
     let imageUrl: string | undefined
     try {
@@ -88,13 +69,7 @@ export async function generateMetadata({
       console.error("Error processing image for metadata:", error)
     }
 
-    let authorName: string | undefined
-    if ("author" in post && post.author?.name && typeof post.author.name === 'string') {
-      authorName = post.author.name
-    } else if ("sellerName" in post && post.sellerName && typeof post.sellerName === 'string') {
-      authorName = post.sellerName
-    }
-
+    const authorName = post.author?.name
     const keywords = post.seo?.keywords?.join(", ") || undefined
 
     return {
@@ -126,7 +101,7 @@ export async function generateMetadata({
     console.error("Error generating metadata:", error)
     return {
       title: "Artovnia Blog",
-      description: "Odkryj nasze wpisy blogowe i historie sprzedawców",
+      description: "Odkryj nasze wpisy blogowe",
     }
   }
 }
@@ -163,28 +138,26 @@ function generateStructuredData(post: any, imageUrl: string | null) {
 }
 
 export default async function BlogPostPage({ params }: BlogPostPageProps) {
-  try {
-    const { slug } = await params
+  const { slug } = await params
 
-    let post = await getBlogPost(slug)
-    let isSellerPost = false
+  console.log("📝 BLOG POST PAGE: Rendering post:", slug)
 
-    if (!post) {
-      post = await getSellerPost(slug)
-      isSellerPost = true
-    }
+  // Try to get regular blog post first
+  const blogPost = await getBlogPost(slug).catch(() => null)
 
-    if (!post) {
-      notFound()
-    }
-
-    // Redirect seller posts to dedicated route
-    if (isSellerPost && 'sellerName' in post) {
+  // If not found, check if it's a seller post and redirect
+  if (!blogPost) {
+    const sellerPost = await getSellerPost(slug).catch(() => null)
+    if (sellerPost) {
+      // Redirect to proper seller post URL
+      // This must be outside try-catch because redirect() throws an error internally
       redirect(`/blog/seller/${slug}`)
     }
+    // Neither blog post nor seller post found
+    notFound()
+  }
 
-    // Regular blog post rendering
-    const blogPost = post
+  try {
     let imageUrl: string | null = null
 
     try {
@@ -195,17 +168,15 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
       console.error("Error processing blog post image:", error)
     }
 
-    const categories = await getBlogCategories()
     const structuredData = generateStructuredData(blogPost, imageUrl)
 
     return (
-      <BlogLayout
+      <BlogLayoutWrapper
         breadcrumbs={[
           { label: "Strona główna", path: "/" },
           { label: "Blog", path: "/blog" },
           { label: blogPost.title, path: `/blog/${blogPost.slug.current}` },
         ]}
-        categories={categories}
       >
         {/* JSON-LD Structured Data */}
         <script
@@ -387,7 +358,7 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
             </aside>
           )}
         </article>
-      </BlogLayout>
+      </BlogLayoutWrapper>
     )
   } catch (error) {
     console.error("Error rendering blog post page:", error)

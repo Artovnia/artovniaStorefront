@@ -4,14 +4,15 @@ import Image from "next/image"
 import Link from "next/link"
 import { format } from "date-fns"
 import { pl } from "date-fns/locale"
-import { getSellerPost, getSellerPosts, getBlogCategories } from "../../lib/data"
+import { getSellerPost, getSellerPosts } from "../../lib/data"
 import { urlFor } from "../../lib/sanity"
 import { ArrowRightIcon } from "@/icons"
 import PortableText from "../../components/PortableText"
-import BlogLayout from "../../components/BlogLayout"
+import BlogLayoutWrapper from "../../components/BlogLayoutWrapper"
 
-// Must use force-dynamic because Header component uses cookies() for user authentication
-export const dynamic = 'force-dynamic'
+// ISR with 5-minute revalidation
+export const revalidate = 300 // 5 minutes
+export const dynamicParams = true // Generate pages on-demand for new slugs
 
 interface SellerPostPageProps {
   params: Promise<{
@@ -128,51 +129,51 @@ function generateStructuredData(post: any, imageUrl: string | null) {
 }
 
 export default async function SellerPostPage({ params }: SellerPostPageProps) {
+  const { slug } = await params
+  console.log('🎨 SELLER POST PAGE: Rendering seller post:', slug)
+  
+  const post = await getSellerPost(slug)
+  console.log('✅ SELLER POST: Post fetched:', post ? 'FOUND' : 'NOT FOUND')
+
+  if (!post) {
+    notFound()
+  }
+
+  let mainImageUrl: string | null = null
+  let secondaryImageUrl: string | null = null
+
   try {
-    const { slug } = await params
-    const post = await getSellerPost(slug)
+    mainImageUrl = post.mainImage
+      ? urlFor(post.mainImage).width(800).height(640).url()
+      : null
+    secondaryImageUrl = post.secondaryImage
+      ? urlFor(post.secondaryImage).width(400).height(300).url()
+      : null
+  } catch (error) {
+    console.error("Error processing seller post images:", error)
+  }
 
-    if (!post) {
-      notFound()
-    }
+  const structuredData = generateStructuredData(post, mainImageUrl)
 
-    let mainImageUrl: string | null = null
-    let secondaryImageUrl: string | null = null
-
-    try {
-      mainImageUrl = post.mainImage
-        ? urlFor(post.mainImage).width(800).height(640).url()
-        : null
-      secondaryImageUrl = post.secondaryImage
-        ? urlFor(post.secondaryImage).width(400).height(300).url()
-        : null
-    } catch (error) {
-      console.error("Error processing seller post images:", error)
-    }
-
-    const structuredData = generateStructuredData(post, mainImageUrl)
-    const categories = await getBlogCategories()
-
-    return (
-      <BlogLayout
+  return (
+      <BlogLayoutWrapper
         breadcrumbs={[
           { label: "Strona główna", path: "/" },
           { label: "Blog", path: "/blog" },
           { label: post.sellerName, path: `/blog/seller/${post.slug.current}` },
         ]}
-        categories={categories}
       >
-        {/* JSON-LD Structured Data */}
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
-        />
+      {/* JSON-LD Structured Data */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
+      />
 
-        <article
-          className="min-h-screen bg-[#F4F0EB]"
-          itemScope
-          itemType="https://schema.org/ProfilePage"
-        >
+      <article
+        className="bg-[#F4F0EB]"
+        itemScope
+        itemType="https://schema.org/ProfilePage"
+      >
           {/* Hero Section with Artistic Layout */}
           <section className="relative min-h-[70vh] flex items-center justify-center overflow-hidden">
             {/* Background Pattern */}
@@ -290,7 +291,11 @@ export default async function SellerPostPage({ params }: SellerPostPageProps) {
                   prose-img:rounded-lg"
                 itemProp="articleBody"
               >
-                <PortableText content={post.content} />
+                {post.content ? (
+                  <PortableText content={post.content} />
+                ) : (
+                  <p>Brak treści artykułu.</p>
+                )}
               </div>
 
               {/* Featured Products Section */}
@@ -370,10 +375,6 @@ export default async function SellerPostPage({ params }: SellerPostPageProps) {
             </div>
           </section>
         </article>
-      </BlogLayout>
+      </BlogLayoutWrapper>
     )
-  } catch (error) {
-    console.error("Error rendering seller post page:", error)
-    notFound()
-  }
 }

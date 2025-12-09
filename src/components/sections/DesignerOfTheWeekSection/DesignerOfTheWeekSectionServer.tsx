@@ -3,8 +3,8 @@
 
 import Image from "next/image"
 import Link from "next/link"
-import { getFeaturedSellerPost } from "@/app/[locale]/blog/lib/data"
-import { urlFor } from "@/app/[locale]/blog/lib/sanity"
+import { getFeaturedSellerPost } from "@/app/[locale]/(main)/blog/lib/data"
+import { urlFor } from "@/app/[locale]/(main)/blog/lib/sanity"
 import { unstable_cache } from 'next/cache'
 
 interface DesignerOfTheWeekSectionProps {

@@ -2,7 +2,7 @@ import { defineConfig } from 'sanity'
 import { structureTool } from 'sanity/structure'
 import { visionTool } from '@sanity/vision'
 
-import { schemaTypes } from './src/app/[locale]/blog/schemas'
+import { schemaTypes } from '@/app/[locale]/(main)/blog/schemas'
 
 if (!process.env.NEXT_PUBLIC_SANITY_PROJECT_ID) {
   throw new Error('Missing NEXT_PUBLIC_SANITY_PROJECT_ID environment variable')

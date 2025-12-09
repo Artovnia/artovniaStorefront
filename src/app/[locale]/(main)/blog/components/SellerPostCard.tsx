@@ -32,6 +32,7 @@ export default function SellerPostCard({
       <Link
         href={`/blog/seller/${post.slug.current}`}
         className="block"
+        prefetch={true}
         aria-label={`Read article about ${post.sellerName}: ${post.title}`}
       >
         <div className={`relative ${featured ? "h-64" : "h-48"}`}>
@@ -120,6 +121,7 @@ export default function SellerPostCard({
         <Link
           href={`/blog/seller/${post.slug.current}`}
           className="block group"
+          prefetch={true}
           aria-label={`Read full article: ${post.title}`}
         >
           <h3

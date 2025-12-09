@@ -202,6 +202,8 @@ export const ProductDetailsPage = async ({
                   theme="dark"
                   products={sellerProducts as any}
                   isSellerSection={true}
+                  user={customer}
+                  wishlist={wishlist}
                 />
               </div>
               

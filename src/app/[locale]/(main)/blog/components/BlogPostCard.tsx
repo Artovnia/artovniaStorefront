@@ -32,6 +32,7 @@ export default function BlogPostCard({
       <Link
         href={`/blog/${post.slug.current}`}
         className="block"
+        prefetch={true}
         aria-label={`Read article: ${post.title}`}
       >
         <div className={`relative ${featured ? "h-64" : "h-48"}`}>

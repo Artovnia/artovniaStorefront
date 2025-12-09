@@ -2,7 +2,7 @@
 
 import { Carousel } from "@/components/cells"
 import { BlogCard } from "../BlogCard/BlogCard"
-import { BlogPost } from "@/app/[locale]/blog/lib/data"
+import { BlogPost } from "@/app/[locale]/(main)/blog/lib/data"
 
 interface BlogCarouselProps {
   posts: BlogPost[]

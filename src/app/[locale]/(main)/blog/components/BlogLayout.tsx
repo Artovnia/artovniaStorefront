@@ -1,9 +1,8 @@
-import Link from "next/link"
+import { Suspense } from "react"
 import Image from "next/image"
-import BlogSearch from "./BlogSearch"
-import { Footer } from "@/components/organisms/Footer/Footer"
-import { Header } from "@/components/organisms/Header/Header"
+import { SafeI18nLink as Link } from "@/components/atoms/SafeI18nLink"
 import { Breadcrumbs } from "@/components/atoms/Breadcrumbs/Breadcrumbs"
+import BlogSearch from "./BlogSearch"
 import NewsletterSection from "@/components/sections/NewsletterSection/NewsletterSection"
 import type { BlogCategory } from "../lib/data"
 
@@ -15,6 +14,11 @@ interface BlogLayoutProps {
   categories: BlogCategory[]
 }
 
+/**
+ * BlogLayout - Blog-specific content wrapper
+ * NOTE: Does NOT render Header/Footer - those come from parent layout
+ * Only renders blog hero section, breadcrumbs, navigation, and content wrapper
+ */
 export default function BlogLayout({
   children,
   title,
@@ -24,8 +28,6 @@ export default function BlogLayout({
 }: BlogLayoutProps) {
   return (
     <div className="min-h-screen bg-[#F4F0EB]" lang="pl">
-      {/* Main Site Header */}
-      <Header />
 
       {/* Hero Section with Image and Overlay */}
       <section
@@ -95,7 +97,11 @@ export default function BlogLayout({
           <div className="px-4 sm:px-6 lg:px-8 ">
             <div className="flex items-center justify-end">
               <div className="w-full max-w-md">
-                <BlogSearch />
+                <Suspense fallback={
+                  <div className="h-10 bg-gray-200 rounded-lg animate-pulse"></div>
+                }>
+                  <BlogSearch />
+                </Suspense>
               </div>
             </div>
           </div>
@@ -148,8 +154,10 @@ export default function BlogLayout({
         </main>
       </div>
 
+      {/* Newsletter Section */}
       <NewsletterSection />
-      <Footer />
+      
+      {/* Note: Footer is rendered by parent layout, not here */}
     </div>
   )
 }

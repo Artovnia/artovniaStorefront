@@ -37,15 +37,17 @@ export function getPromotionalPrice({
   // Get the specific variant if variantId is provided, otherwise get cheapest variant
   const targetVariant = variantId 
     ? product.variants?.find(v => v.id === variantId)
-    : product.variants?.reduce((prev, current) => {
-        const prevPrice = prev.prices?.find(p => !regionId || p.region_id === regionId)
-        const currentPrice = current.prices?.find(p => !regionId || p.region_id === regionId)
-        
-        if (!prevPrice) return current
-        if (!currentPrice) return prev
-        
-        return (currentPrice.amount || 0) < (prevPrice.amount || 0) ? current : prev
-      })
+    : product.variants && product.variants.length > 0
+      ? product.variants.reduce((prev, current) => {
+          const prevPrice = prev.prices?.find(p => !regionId || p.region_id === regionId)
+          const currentPrice = current.prices?.find(p => !regionId || p.region_id === regionId)
+          
+          if (!prevPrice) return current
+          if (!currentPrice) return prev
+          
+          return (currentPrice.amount || 0) < (prevPrice.amount || 0) ? current : prev
+        }, product.variants[0]) // ✅ FIX: Provide initial value to prevent crash
+      : undefined // ✅ FIX: Handle empty variants array
 
   if (!targetVariant) {
     return {

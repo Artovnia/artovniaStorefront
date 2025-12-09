@@ -1,6 +1,8 @@
 import { HomeProductsCarousel } from "@/components/organisms"
 import { Product } from "@/types/product"
 import { BatchPriceProvider } from "@/components/context/BatchPriceProvider"
+import { HttpTypes } from "@medusajs/types"
+import { SerializableWishlist } from "@/types/wishlist"
 
 export const HomeProductSection = async ({
   heading,
@@ -12,6 +14,8 @@ export const HomeProductSection = async ({
   headingFont = 'font-instrument-serif', // Default font for backward compatibility
   headingSpacing = 'mb-6', // Default spacing for backward compatibility
   isSellerSection = false, // Identifies if this component shows a specific seller's products
+  user = null, // ✅ NEW: User data for wishlist functionality
+  wishlist = [], // ✅ NEW: Wishlist data for wishlist icons
 }: {
   heading: string
   locale?: string
@@ -23,6 +27,8 @@ export const HomeProductSection = async ({
   headingSpacing?: string
   textTransform?: string
   isSellerSection?: boolean
+  user?: HttpTypes.StoreCustomer | null // ✅ NEW
+  wishlist?: SerializableWishlist[] // ✅ NEW
 }) => {
   // Create a centered container that works within parent constraints
   return (
@@ -55,6 +61,8 @@ export const HomeProductSection = async ({
               home={home}
               theme={theme}
               isSellerSection={isSellerSection}
+              user={user}
+              wishlist={wishlist}
             />
           </div>
         </div>

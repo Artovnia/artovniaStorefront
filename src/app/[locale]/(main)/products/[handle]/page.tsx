@@ -3,9 +3,11 @@ import { listProducts } from "@/lib/data/products"
 import { generateProductMetadata } from "@/lib/helpers/seo"
 import type { Metadata } from "next"
 import { listRegions } from "@/lib/data/regions"
+import { cache } from 'react'
 
-// Force dynamic rendering for this page to support no-store fetches
-export const dynamic = 'force-dynamic'
+// ✅ OPTIMIZATION: Enable ISR caching (5 minutes)
+// User-specific data (wishlist, customer) is fetched separately and NOT cached
+export const revalidate = 300 // 5 minutes
 
 // Import the base StoreProduct type and extend it
 import type { StoreProduct } from "@medusajs/types"
@@ -16,6 +18,19 @@ type ProductWithHandle = StoreProduct & {
   seller?: any;
 }
 
+// ✅ OPTIMIZATION: React cache() deduplicates product fetch within single request
+// This prevents fetching the same product twice (metadata + page render)
+// NOTE: This is per-request caching only, NOT cross-request or cross-user
+const getCachedProduct = cache(async (handle: string, locale: string) => {
+  console.log('🔍 PRODUCT PAGE: Fetching product:', handle)
+  const { response } = await listProducts({
+    countryCode: locale,
+    queryParams: { handle },
+  })
+  console.log('✅ PRODUCT PAGE: Product fetched:', response.products[0] ? 'FOUND' : 'NOT FOUND')
+  return response.products[0]
+})
+
 export async function generateMetadata({
   params,
 }: {
@@ -24,12 +39,8 @@ export async function generateMetadata({
   const { handle, locale } = await params
 
   try {
-    const { response } = await listProducts({
-      countryCode: locale,
-      queryParams: { handle },
-    })
-
-    const product = response.products[0]
+    // ✅ OPTIMIZATION: Use cached product fetch (deduplicates with page render)
+    const product = await getCachedProduct(handle, locale)
     
     if (!product) {
       return {
@@ -84,12 +95,9 @@ export default async function ProductPage({
 }) {
   const { handle, locale } = await params
 
-  // ✅ Fetch product ONCE and pass it down (avoid double fetch)
-  const { response } = await listProducts({
-    countryCode: locale,
-    queryParams: { handle },
-  })
-  const product = response.products[0]
+  // ✅ OPTIMIZATION: Use cached product fetch (deduplicates with generateMetadata)
+  // This ensures product is fetched only ONCE per request, not twice
+  const product = await getCachedProduct(handle, locale)
 
   return (
     <main className="container">

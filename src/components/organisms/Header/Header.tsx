@@ -18,10 +18,18 @@ import { SerializableWishlist } from "@/types/wishlist"
 import { Badge } from "@/components/atoms"
 import { CountrySelectorWrapper } from "@/components/cells/CountrySelector/CountrySelectorWrapper"
 
-export const Header = async () => {
+interface HeaderProps {
+  categories?: {
+    parentCategories: HttpTypes.StoreProductCategory[]
+    categories: HttpTypes.StoreProductCategory[]
+  }
+}
+
+export const Header = async ({ categories }: HeaderProps = {}) => {
+  console.log("📋 HEADER: Rendering with categories:", categories ? "✅ Provided" : "❌ Will fetch")
   
-  // ✅ PHASE 1.1: PARALLEL DATA FETCHING
-  // Fetch user, categories, and regions in parallel (safe - no user-specific data)
+  // ✅ OPTIMIZATION: Only fetch categories if not provided by layout
+  // This eliminates duplicate API calls when layout already fetched them
   const [user, categoriesData, regions] = await Promise.all([
     retrieveCustomer().catch((error) => {
       // Only log non-401 errors (401 = not logged in, which is normal)
@@ -30,10 +38,13 @@ export const Header = async () => {
       }
       return null
     }),
-    listCategoriesWithProducts().catch((error) => {
-      console.error("🏠 Header: Error retrieving categories with products:", error)
-      return { parentCategories: [], categories: [] }
-    }),
+    // ✅ Use provided categories or fetch if not available
+    categories 
+      ? (console.log("✅ HEADER: Using provided categories (no fetch)"), Promise.resolve(categories))
+      : (console.log("⚠️ HEADER: Categories not provided, fetching..."), listCategoriesWithProducts().catch((error) => {
+          console.error("🏠 Header: Error retrieving categories with products:", error)
+          return { parentCategories: [], categories: [] }
+        })),
     // ✅ Fetch regions (safe - public data, no user-specific info)
     import('@/lib/data/regions').then(m => m.listRegions()).catch(() => [])
   ])

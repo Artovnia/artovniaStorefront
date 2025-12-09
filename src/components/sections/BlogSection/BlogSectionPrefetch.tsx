@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect } from 'react'
-import type { BlogPost } from '@/app/[locale]/blog/lib/data'
+import type { BlogPost } from '@/app/[locale]/(main)/blog/lib/data'
 
 interface BlogSectionPrefetchProps {
   posts: BlogPost[]
