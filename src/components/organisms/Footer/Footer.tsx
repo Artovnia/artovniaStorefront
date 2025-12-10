@@ -44,7 +44,7 @@ export async function Footer({ categories = [] }: FooterProps) {
           
           {/* Column 1: Sklep (Categories) */}
           <div>
-            <h2 className="text-white font-instrument-sans font-bold text-lg mb-6 uppercase" id="footer-shop">
+            <h2 className="text-white font-instrument-sans font-normal text-lg mb-6 uppercase" id="footer-shop">
               Sklep
             </h2>
             <nav className="space-y-3 font-instrument-sans uppercase" aria-labelledby="footer-shop">
@@ -65,7 +65,7 @@ export async function Footer({ categories = [] }: FooterProps) {
 
           {/* Column 2: O nas */}
           <div>
-            <h2 className="text-white font-instrument-sans font-bold text-lg mb-6 uppercase" id="footer-about">
+            <h2 className="text-white font-instrument-sans font-normal text-lg mb-6 uppercase" id="footer-about">
               O nas
             </h2>
             <nav className="space-y-3 font-instrument-sans uppercase" aria-labelledby="footer-about">
@@ -89,7 +89,7 @@ export async function Footer({ categories = [] }: FooterProps) {
 
           {/* Column 3: Dla kupujących */}
           <div>
-            <h2 className="text-white font-instrument-sans font-bold text-lg mb-6 uppercase" id="footer-buyers">
+            <h2 className="text-white font-instrument-sans font-normal text-lg mb-6 uppercase" id="footer-buyers">
               Dla kupujących
             </h2>
             <nav className="space-y-3 font-instrument-sans uppercase" aria-labelledby="footer-buyers">
@@ -107,7 +107,7 @@ export async function Footer({ categories = [] }: FooterProps) {
 
           {/* Column 4: Dla sprzedających */}
           <div>
-            <h2 className="text-white font-instrument-sans font-bold text-lg mb-6 uppercase" id="footer-sellers">
+            <h2 className="text-white font-instrument-sans font-normal text-lg mb-6 uppercase" id="footer-sellers">
               Dla sprzedających
             </h2>
             <nav className="space-y-3 font-instrument-sans uppercase" aria-labelledby="footer-sellers">
@@ -138,7 +138,7 @@ export async function Footer({ categories = [] }: FooterProps) {
       <div className="w-full border-t border-white/20">
         <div className="max-w-[1920px] mx-auto px-6 py-8">
           <div className="flex justify-center items-center">
-            <p className="text-2xl font-instrument-serif font-medium tracking-wider mb-6" aria-hidden="true">
+            <p className="text-2xl font-instrument-serif font-normal tracking-wider mb-6" aria-hidden="true">
               ARTOVNIA
             </p>
           </div>

@@ -1,4 +1,57 @@
 "use client"
+/**
+ * 🎨 FONT WEIGHT HIERARCHY GUIDE
+ * ================================
+ * This component uses Instrument Sans font with the following weights:
+ * 
+ * Available weights (from layout.tsx):
+ * - 400 (font-normal) - Regular weight
+ * - 600 (font-semibold) - Semi-bold weight
+ * - 700 (font-bold) - Bold weight
+ * 
+ * VISUAL HIERARCHY (from least to most prominent):
+ * ================================================
+ * 
+ * 1. 📊 LOWEST 30-DAY PRICE (BatchLowestPriceDisplay component)
+ *    - Class: font-normal
+ *    - Weight: 400
+ *    - Purpose: Historical reference, least prominent
+ *    - Example: "Najniższa cena z 30 dni: 79,99 zł"
+ * 
+ * 2. 👤 SELLER NAME (Line ~185)
+ *    - Class: font-normal
+ *    - Weight: 400
+ *    - Purpose: Normal weight, subtle
+ *    - Example: "ArtisanCrafts"
+ * 
+ * 3. 📝 PRODUCT TITLE (Line ~214)
+ *    - Class: text-md font-semibold
+ *    - Weight: 600
+ *    - Purpose: Medium prominence, readable and noticeable
+ *    - Example: "Handmade Ceramic Vase"
+ * 
+ * 4. 💰 CURRENT PRICE (Lines ~244, ~261, ~284) ⭐ MOST BOLD
+ *    - Class: text-lg sm:text-xl font-bold
+ *    - Weight: 700
+ *    - Purpose: BOLDEST - The primary call-to-action element, larger than title
+ *    - Applies to: Promotional price, discounted price, regular price
+ *    - Example: "89,99 zł"
+ * 
+ * 5. 📉 ORIGINAL PRICE (Lines ~248, ~268-274)
+ *    - Class: text-xs line-through
+ *    - Weight: Inherited (400)
+ *    - Purpose: De-emphasized, shows previous price
+ *    - Example: "129,99 zł" (strikethrough)
+ * 
+ * TO ADJUST FONT WEIGHTS:
+ * =======================
+ * - Lowest 30-day Price: Edit BatchLowestPriceDisplay.tsx (font-normal)
+ * - Seller Name: Change font-normal on line ~185
+ * - Product Title: Change text-md font-semibold on line ~214
+ * - Current Price: Change text-lg sm:text-xl font-bold on lines ~244, ~261, ~284
+ * - Original Price: Change text-xs on lines ~248, ~268-274
+ */
+
 import Image from "next/image"
 import { useEffect, useState, useMemo, memo } from "react"
 
@@ -164,10 +217,12 @@ const ProductCardComponent = ({
       <Link href={`/products/${product.handle}`} aria-label={`Szczegóły produktu: ${product.title}`}>
         <div className="flex justify-between flex-grow mt-2">
           <div className="w-full font-instrument-sans">
-            <h3 className={`text-md font-instrument-sans truncate mb-1 leading-tight font-bold ${themeMode === 'light' ? 'text-white' : ''}`}>
+            {/* 📝 PRODUCT TITLE: font-medium (weight: 500) - Medium prominence, less bold than current price */}
+            <h3 className={`text-md font-instrument-sans truncate mb-1 leading-tight font-medium ${themeMode === 'light' ? 'text-white' : ''}`}>
               {product.title}
             </h3>
             
+            {/* 📝 SELLER NAME: font-normal (weight: 400) - Normal weight, same as title */}
             {/* Seller name below title - Enhanced for Algolia compatibility */}
             {(() => {
               // ✅ Multiple fallback patterns for seller name detection
@@ -180,7 +235,7 @@ const ProductCardComponent = ({
               
               
               return sellerName ? (
-                <p className={`font-instrument-sans text-sm mb-1  ${themeMode === 'light' ? 'text-white/80' : 'text-black'}`}>
+                <p className={`font-instrument-sans text-sm mb-1 font-normal ${themeMode === 'light' ? 'text-white/80' : 'text-black'}`}>
                   {sellerName}
                 </p>
               ) : null
@@ -192,25 +247,30 @@ const ProductCardComponent = ({
                   {/* Always use promotional pricing data when any discount is detected */}
                   {promotionalPricing.discountPercentage > 0 ? (
                     <>
-                      <p className={`font-instrument-sans font-semibold text-md text-[#3B3634] ${themeMode === 'light' ? 'text-white' : ''}`}>
+                      {/* 💰 PROMOTIONAL PRICE: font-bold (700) + larger size (text-lg sm:text-xl) */}
+                      {/*    👉 To tweak size, edit text-lg sm:text-xl below */}
+                      <p className={`font-instrument-sans font-semibold text-md sm:text-md text-[#3B3634] ${themeMode === 'light' ? 'text-white' : ''}`}>
                         {promotionalPricing.promotionalPrice}
                       </p>
+                      {/* 📊 ORIGINAL PRICE: Strikethrough, smaller, gray - de-emphasized */}
                       <p className="text-xs text-gray-500 line-through">
                         {promotionalPricing.originalPrice}
                       </p>
                       {/* Only show percentage badge for actual promotions, not price-list discounts */}
                       {(product as any).has_promotions && (product as any).promotions?.length > 0 && (
-                        <span className="relative bg-primary text-[#3B3634] text-xs font-bold px-3 py-1 rounded-lg shadow-2xl border border-[#3B3634]/90 overflow-hidden group">
+                        <span className="relative bg-primary text-[#3B3634] text-xs font-semibold px-3 py-1 rounded-lg shadow-2xl border border-[#3B3634]/90 overflow-hidden group">
                            <span className="relative z-10 tracking-wide">-{promotionalPricing.discountPercentage}%</span>
                         </span>
                       )}
                     </>
                   ) : (
                     <>
-                      {/* Fallback: Show price list discount pricing */}
-                      <p className={`font-instrument-sans font-semibold text-md text-[#3B3634] ${themeMode === 'light' ? 'text-white' : ''}`}>
+                      {/* 💰 PRICE LIST DISCOUNT: font-bold (700) + larger size (text-lg sm:text-xl) */}
+                      {/*    👉 To tweak size, edit text-lg sm:text-xl below */}
+                      <p className={`font-instrument-sans font-semibold text-md sm:text-md text-[#3B3634] ${themeMode === 'light' ? 'text-white' : ''}`}>
                         {(sellerCheapestPrice?.calculated_price || cheapestPrice?.calculated_price)?.replace(/PLN\s+([\d,.]+)/, '$1 zł')}
                       </p>
+                      {/* 📊 ORIGINAL PRICE: Strikethrough, smaller, gray - de-emphasized */}
                       {sellerCheapestPrice?.calculated_price
                         ? sellerCheapestPrice?.calculated_price !==
                             sellerCheapestPrice?.original_price && (
@@ -229,8 +289,9 @@ const ProductCardComponent = ({
                 </>
               ) : (
                 <>
-                  {/* Regular price display when no discounts */}
-                  <p className={`font-instrument-sans font-semibold text-md ${themeMode === 'light' ? 'text-white' : ''}`}>
+                  {/* 💰 REGULAR PRICE: font-bold (700) + larger size (text-lg sm:text-xl) */}
+                  {/*    👉 To tweak size, edit text-lg sm:text-xl below */}
+                  <p className={`font-instrument-sans font-semibold text-md sm:text-md ${themeMode === 'light' ? 'text-white' : ''}`}>
                     {(sellerCheapestPrice?.calculated_price || cheapestPrice?.calculated_price)?.replace(/PLN\s+([\d,.]+)/, '$1 zł')}
                   </p>
                 </>

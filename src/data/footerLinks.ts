@@ -4,6 +4,7 @@ export const footerLinks = {
     { name: "Sprzedawcy", href: "/sellers" },
     { name: "Regulamin", href: "/regulamin" },
     { name: "Polityka prywatności", href: "/polityka-prywatnosci" },
+    { name: "Blog", href: "/blog" },
    
   ],
   support: [

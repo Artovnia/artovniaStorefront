@@ -26,7 +26,6 @@ interface HeaderProps {
 }
 
 export const Header = async ({ categories }: HeaderProps = {}) => {
-  console.log("📋 HEADER: Rendering with categories:", categories ? "✅ Provided" : "❌ Will fetch")
   
   // ✅ OPTIMIZATION: Only fetch categories if not provided by layout
   // This eliminates duplicate API calls when layout already fetched them

@@ -43,7 +43,7 @@ const CategoryNavItem = ({ category, isActive, onHover, onClose }: {
         href={`/categories/${category.handle}`}
         onClick={handleCategoryClick}
         className={cn(
-          "uppercase px-4 py-2 hover:bg-primary/10 transition-colors text-lg block whitespace-nowrap font-medium",
+          "uppercase px-4 py-2 hover:bg-primary/10 transition-colors text-lg block whitespace-nowrap font-normal",
           "flex items-center my-3 md:my-0",
           category.handle === currentCategoryHandle && "md:border-b-2 md:border-primary text-primary",
           isActive && "bg-primary/5",
@@ -106,7 +106,7 @@ export const FullWidthDropdown = ({
           href={`/categories/${child.handle}`}
           onClick={handleCategoryClick}
           className={cn(
-            "flex items-center gap-2 text-lg font-semibold text-black hover:text-primary transition-colors hover:underline uppercase",
+            "flex items-center gap-2 text-lg font-normal text-black hover:text-primary transition-colors hover:underline uppercase",
             child.handle === currentCategoryHandle && "text-primary"
           )}
         >
@@ -128,7 +128,7 @@ export const FullWidthDropdown = ({
                 onClick={handleCategoryClick}
                 className={cn(
                   "block text-sm text-gray-700 hover:text-primary hover:underline transition-colors capitalize",
-                  grandchild.handle === currentCategoryHandle && "text-primary font-medium"
+                  grandchild.handle === currentCategoryHandle && "text-primary font-normal"
                 )}
               >
                 {grandchild.name}
@@ -189,7 +189,7 @@ export const CategoryNavbar = ({ categories, onClose, onDropdownStateChange }: C
         onClick={() => onClose?.()}
         className={cn(
           "uppercase my-3 md:my-0 flex items-center justify-between text-lg hover:bg-primary/10 transition-colors mr-2",
-          "px-4 py-2 font-medium",
+          "px-4 py-2 font-normal",
           "font-instrument-sans" // Use CSS variable for self-hosted fonts
         )}
       >
@@ -213,7 +213,7 @@ export const CategoryNavbar = ({ categories, onClose, onDropdownStateChange }: C
         onClick={() => onClose?.()}
         className={cn(
           "uppercase my-3 md:my-0 flex items-center justify-between text-lg hover:bg-red-50 transition-colors ml-auto",
-          "px-4 py-2 font-medium text-red-600 hover:text-red-700",
+          "px-4 py-2 font-normal text-red-600 hover:text-red-700",
           "font-instrument-sans" // Use CSS variable for self-hosted fonts
         )}
       >

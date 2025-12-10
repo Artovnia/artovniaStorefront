@@ -112,7 +112,7 @@ export async function getBlogPosts(): Promise<BlogPost[]> {
     try {
       const posts = await client.fetch(BLOG_POSTS_QUERY, {}, {
         cache: 'force-cache',
-        next: { revalidate: 600 }, // 10 minutes cache
+        next: { revalidate: 60 }, // 1 minute cache - reduced to minimize inconsistency
       })
       return (posts || []).map(transformBlogPost)
     } catch (error) {
@@ -128,7 +128,7 @@ export async function getFeaturedPosts(): Promise<BlogPost[]> {
     try {
       const posts = await client.fetch(FEATURED_POSTS_QUERY, {}, {
         cache: 'force-cache',
-        next: { revalidate: 600 }, // 10 minutes cache
+        next: { revalidate: 60 }, // 1 minute cache - reduced to minimize inconsistency
       })
       return (posts || []).map(transformBlogPost)
     } catch (error) {
@@ -159,7 +159,7 @@ export async function getLatestBlogPosts(): Promise<BlogPost[]> {
       `
       const posts = await client.fetch(query, {}, {
         cache: 'force-cache',
-        next: { revalidate: 600 }, // 10 minutes cache
+        next: { revalidate: 60 }, // 1 minute cache - reduced to minimize inconsistency
       })
       return (posts || []).map(transformBlogPost)
     } catch (error) {

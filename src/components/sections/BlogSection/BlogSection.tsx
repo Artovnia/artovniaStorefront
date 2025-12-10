@@ -12,7 +12,7 @@ export async function BlogSection() {
     },
     ['homepage-blog-latest'], // Cache key
     {
-      revalidate: 600, // 10 minutes
+      revalidate: 60, // 1 minute - reduced to match blog listing page cache
       tags: ['homepage-blog', 'blog']
     }
   )

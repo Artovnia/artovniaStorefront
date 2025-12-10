@@ -108,7 +108,7 @@ export const CountrySelector = ({
           "bg-primary hover:bg-[#3B3634]",
           "border border-[#3B3634]/20 hover:border-[#3B3634]/40",
           "transition-all duration-300 ease-out",
-          "text-sm font-semibold text-[#3B3634] hover:text-white",
+          "text-sm font-normal text-[#3B3634] hover:text-white",
           "shadow-sm hover:shadow-md",
           "group relative overflow-hidden",
           {
@@ -151,7 +151,7 @@ export const CountrySelector = ({
             
             {/* Header */}
             <div className="px-4 py-3 border-b border-[#3B3634]/10 relative">
-              <h3 className="text-md font-bold text-[#3B3634] font-instrument-sans">
+              <h3 className="text-md font-semibold text-[#3B3634] font-instrument-sans">
                 Wybierz swój region
               </h3>
             </div>

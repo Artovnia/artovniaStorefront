@@ -188,12 +188,60 @@ export const generateCategoryMetadata = (
 // STRUCTURED DATA (JSON-LD) GENERATORS
 // ============================================
 
+/**
+ * Generate Product JSON-LD structured data for SEO
+ * 
+ * GOOGLE REQUIREMENT: Product schema MUST include at least ONE of:
+ * - offers (price information)
+ * - review (individual reviews)
+ * - aggregateRating (average rating from reviews)
+ * 
+ * This function ensures compliance by:
+ * 1. Always including "offers" if price is available
+ * 2. Adding "aggregateRating" if reviews exist
+ * 3. Adding "review" array if reviews exist
+ * 
+ * @param product - Product data from Medusa
+ * @param price - Product price in cents (will be converted to decimal)
+ * @param currency - Currency code (default: PLN)
+ * @param reviews - Array of product reviews with rating, comment, customer_name, created_at
+ * @returns JSON-LD structured data object
+ */
 export const generateProductJsonLd = (
   product: HttpTypes.StoreProduct,
   price?: number,
   currency: string = 'PLN',
+  reviews?: Array<{ rating: number; comment?: string; customer_name?: string; created_at?: string }>
 ): JsonLdBase & Record<string, any> => {
   const baseUrl = getBaseUrl()
+
+  // Calculate aggregate rating from reviews
+  const aggregateRating = reviews && reviews.length > 0 ? {
+    "@type": "AggregateRating",
+    "ratingValue": (reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length).toFixed(1),
+    "reviewCount": reviews.length,
+    "bestRating": "5",
+    "worstRating": "1"
+  } : undefined
+
+  // Format individual reviews for schema
+  const reviewsSchema = reviews && reviews.length > 0 ? reviews.slice(0, 5).map(review => ({
+    "@type": "Review",
+    "reviewRating": {
+      "@type": "Rating",
+      "ratingValue": review.rating,
+      "bestRating": "5",
+      "worstRating": "1"
+    },
+    ...(review.comment && { "reviewBody": review.comment }),
+    ...(review.customer_name && {
+      "author": {
+        "@type": "Person",
+        "name": review.customer_name
+      }
+    }),
+    ...(review.created_at && { "datePublished": review.created_at })
+  })) : undefined
 
   return {
     "@context": "https://schema.org",
@@ -222,6 +270,10 @@ export const generateProductJsonLd = (
         }
       }
     }),
+    // ✅ FIX: Add aggregateRating to satisfy Google's requirement
+    ...(aggregateRating && { "aggregateRating": aggregateRating }),
+    // ✅ FIX: Add reviews to satisfy Google's requirement
+    ...(reviewsSchema && reviewsSchema.length > 0 && { "review": reviewsSchema }),
   }
 }
 

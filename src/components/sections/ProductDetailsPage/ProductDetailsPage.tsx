@@ -120,7 +120,7 @@ export const ProductDetailsPage = async ({
 
   // Generate structured data for SEO
   const productPrice = (prod as any).calculated_price?.calculated_amount
-  const productJsonLd = generateProductJsonLd(prod, productPrice, 'PLN')
+  const productJsonLd = generateProductJsonLd(prod, productPrice, 'PLN', reviews)
   const breadcrumbJsonLd = generateBreadcrumbJsonLd(breadcrumbs)
 
   return (

@@ -1,4 +1,18 @@
 "use client"
+/**
+ * 🎨 FONT WEIGHT HIERARCHY - Lowest Price Display
+ * ================================================
+ * This component shows the lowest price from last 30 days.
+ * It should be LESS prominent than the current price and product title.
+ * 
+ * Font Weight: font-normal (400) - Least prominent
+ * Purpose: Historical reference, not a call-to-action
+ * 
+ * CARD HIERARCHY (from least to most bold):
+ * 1. Lowest 30-day price → font-normal (400) ← THIS COMPONENT
+ * 2. Product Title → font-semibold (600)
+ * 3. Current Price → font-bold (700) ← MOST BOLD
+ */
 
 import { useEffect, memo } from "react"
 import { useBatchPrice } from "@/components/context/BatchPriceProvider"
@@ -35,24 +49,25 @@ export const BatchLowestPriceDisplay = memo(({
   const priceData = getPriceData(variantId)
 
   // Dynamic theme-based styling
+  // 📊 LOWEST PRICE: font-normal (weight: 400) - Less prominent than title and current price
   const getThemeClasses = () => {
     switch (themeMode) {
       case 'dark':
         return {
           container: "text-xs text-white/80",
-          price: "font-semibold font-instrument-sans text-white",
+          price: "font-normal font-instrument-sans text-white",
           date: "text-white/60 font-instrument-sans ml-1"
         }
       case 'light':
         return {
           container: "text-xs text-white/90",
-          price: "font-semibold font-instrument-sans text-white",
+          price: "font-normal font-instrument-sans text-white",
           date: "text-white/70 font-instrument-sans ml-1"
         }
       default:
         return {
           container: "text-xs text-gray-600",
-          price: "font-semibold font-instrument-sans text-[#3B3634]",
+          price: "font-normal font-instrument-sans text-[#3B3634]",
           date: "text-gray-600 font-instrument-sans ml-1"
         }
     }

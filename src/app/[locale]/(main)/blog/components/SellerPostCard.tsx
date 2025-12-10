@@ -125,7 +125,7 @@ export default function SellerPostCard({
           aria-label={`Read full article: ${post.title}`}
         >
           <h3
-            className={`font-semibold text-[#3B3634] group-hover:text-[#2a221f] transition-colors duration-200 mb-2 font-instrument-serif line-clamp-2 ${featured ? "text-2xl" : "text-xl"}`}
+            className={`font-normal text-[#3B3634] group-hover:text-[#2a221f] transition-colors duration-200 mb-2 font-instrument-serif line-clamp-2 ${featured ? "text-2xl" : "text-xl"}`}
           >
             {post.title}
           </h3>

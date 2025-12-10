@@ -15,6 +15,11 @@ const instrumentSans = localFont({
       style: "normal",
     },
     {
+      path: "../../public/fonts/instrument-sans-v4-latin-ext-500.woff2",
+      weight: "500",
+      style: "normal",
+    },
+    {
       path: "../../public/fonts/instrument-sans-v4-latin-ext-600.woff2",
       weight: "600",
       style: "normal",
@@ -27,6 +32,11 @@ const instrumentSans = localFont({
     {
       path: "../../public/fonts/instrument-sans-v4-latin-ext-italic.woff2",
       weight: "400",
+      style: "italic",
+    },
+    {
+      path: "../../public/fonts/instrument-sans-v4-latin-ext-500italic.woff2",
+      weight: "500",
       style: "italic",
     },
     {

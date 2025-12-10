@@ -150,9 +150,7 @@ export default function BlogLayout({
         </main>
       </div>
 
-      {/* Newsletter Section */}
-      <NewsletterSection />
-      
+   
       {/* Note: Footer is rendered by parent layout, not here */}
     </div>
   )

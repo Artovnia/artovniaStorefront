@@ -11,17 +11,19 @@ Font is now configured in layout.tsx using Next.js font optimization.
 To change the font, modify the import in src/app/layout.tsx
 */
 /* Typography */
+/* 🎨 FONT WEIGHT NOTE: Removed font-light from these classes to allow independent font-weight control */
+/* Now you can use: text-md font-bold, text-lg font-semibold, etc. */
 .text-xl {
-  @apply font-light tracking-normal;
+  @apply tracking-normal;
 }
 .text-lg {
-  @apply text-base font-light tracking-normal max-md:text-[14px] max-md:leading-[22px];
+  @apply text-base tracking-normal max-md:text-[14px] max-md:leading-[22px];
 }
 .text-md {
-  @apply text-[14px] leading-[22px] font-light tracking-normal max-md:text-[13px] max-md:leading-[20px];
+  @apply text-[14px] leading-[22px] tracking-normal max-md:text-[13px] max-md:leading-[20px];
 }
 .text-sm {
-  @apply text-[12px] font-light tracking-normal;
+  @apply text-[12px] tracking-normal;
 }
 
 .label-sm {
