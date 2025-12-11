@@ -8,6 +8,7 @@ import {
   SmartBestProductsSection,
   HomeCategories,
 } from "@/components/sections"
+import { BestSellersSection } from "@/components/sections/HomeProductSection/BestSellersSection"
 import { DesignerOfTheWeekSectionServer } from "@/components/sections/DesignerOfTheWeekSection/DesignerOfTheWeekSectionServer"
 import { Suspense } from "react"
 import { PromotionDataProvider } from "@/components/context/PromotionDataProvider"
@@ -201,6 +202,21 @@ export default async function Home({
           <div className="mx-auto max-w-[1920px] w-full mb-8 min-h-[400px] py-2 md:py-8">
             <SmartBestProductsSection user={user} wishlist={wishlist} />
           </div>
+
+          {/* Best Sellers - based on actual sales data */}
+        {/*   <div className="mx-auto max-w-[1920px] w-full mb-8 min-h-[400px] py-2 md:py-8">
+            <Suspense fallback={<ProductsSkeleton />}>
+            <BestSellersSection 
+                heading="Najczęściej kupowane"
+                locale={locale}
+                limit={10}
+                days={90}
+                home={true}
+                user={user}
+                wishlist={wishlist}
+              />
+            </Suspense> 
+          </div> */}
          
           {/* Full width dark section */}
           <div className="w-full bg-[#3B3634]">

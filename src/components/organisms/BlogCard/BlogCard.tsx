@@ -18,7 +18,7 @@ export function BlogCard({ post, index }: BlogCardProps) {
   const [isHovered, setIsHovered] = useState(false)
 
   const imageUrl = post.mainImage
-    ? urlFor(post.mainImage).width(467).height(472).url()
+    ? urlFor(post.mainImage).width(567).height(572).url()
     : "/images/placeholder.svg"
 
   const categoryName =
@@ -38,8 +38,8 @@ export function BlogCard({ post, index }: BlogCardProps) {
         <Image
           src={imageUrl}
           alt={post.mainImage?.alt || `Featured image for ${post.title}`}
-          width={467}
-          height={472}
+          width={567}
+          height={572}
           className="object-cover max-h-[472px] h-full w-full"
           priority={index === 0}
           sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, 33vw"

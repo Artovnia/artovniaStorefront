@@ -138,7 +138,6 @@ function generateStructuredData(post: any, imageUrl: string | null) {
 export default async function BlogPostPage({ params }: BlogPostPageProps) {
   const { slug } = await params
 
-  console.log("📝 BLOG POST PAGE: Rendering post:", slug)
 
   // Try to get regular blog post first
   const blogPost = await getBlogPost(slug).catch((error) => {

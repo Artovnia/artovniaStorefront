@@ -3,6 +3,8 @@
 import { Link } from "@/i18n/routing"
 import Image from "next/image"
 import { useState } from "react"
+import { ArrowRightIcon} from "@/icons"
+
 
 export function CategoryCard({
   category,
@@ -32,18 +34,22 @@ export function CategoryCard({
   return (
     <Link
       href={`/categories/${category.handle}`}
-      className={`group relative block w-full ${heightClass} overflow-hidden bg-primary transition-all duration-300`}
+      className={`group relative block w-full ${heightClass} overflow-hidden bg-primary transition-all duration-300 will-change-transform`}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
+      style={{ backfaceVisibility: 'hidden', transform: 'translateZ(0)' }}
     >
       {/* Category Image */}
-      <div className="relative w-full h-full">
+      <div className="relative w-full h-full" style={{ backfaceVisibility: 'hidden' }}>
         <Image
           src={`/images/categories/${category.handle}.webp`}
           alt={category.name}
           fill
           className="object-cover transition-transform duration-500 group-hover:scale-110"
           sizes={isLarge ? "(max-width: 1024px) 100vw, 50vw" : "(max-width: 1024px) 50vw, 25vw"}
+          quality={90}
+          priority={isLarge}
+          style={{ backfaceVisibility: 'hidden' }}
         />
 
         {/* Artistic Hover Overlay */}
@@ -66,9 +72,12 @@ export function CategoryCard({
 
         {/* Category Name Below Image (Always Visible) */}
         <div className="absolute bottom-0 left-0 right-0 bg-primary backdrop-blur-sm py-3 px-4">
-          <h3 className="text-[#3B3634] font-instrument-sans font-medium text-center text-sm sm:text-base md:text-lg lg:text-xl">
-            {category.name}
-          </h3>
+          <div className="flex items-center justify-center gap-2">
+            <h3 className="text-[#3B3634] font-instrument-sans font-normal text-center text-sm sm:text-base md:text-lg lg:text-xl whitespace-nowrap uppercase">
+              {category.name} 
+            </h3>
+            <ArrowRightIcon className="w-4 h-4 text-[#3B3634] flex-shrink-0" />
+          </div>
         </div>
       </div>
     </Link>

@@ -49,9 +49,9 @@ export const HomeCategories = async ({
       </div>
 
       {/* Grid Layout: 1 Large + 4 Small */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6 xl:gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6 xl:gap-8 items-start">
         {/* Large Featured Category - Left Side */}
-        <div className="w-full">
+        <div className="w-full h-full">
           <CategoryCard 
             category={featuredCategory} 
             size="large"
@@ -59,7 +59,7 @@ export const HomeCategories = async ({
         </div>
 
         {/* 4 Smaller Categories - Right Side (2x2 Grid) */}
-        <div className="grid grid-cols-2 gap-4 lg:gap-6 xl:gap-8">
+        <div className="grid grid-cols-2 gap-4 lg:gap-6 xl:gap-8 h-full content-start">
           {otherCategories.map((category) => (
             <CategoryCard 
               key={category.id} 

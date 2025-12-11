@@ -24,23 +24,22 @@ export const SmartBestProductsSection = async ({
   wishlist = []
 }: SmartBestProductsSectionProps) => {
   try {
-    // ✅ Use Next.js server-side cache to prevent skeleton loading on navigation
-    // This caches on the server, so it persists between page navigations
     const getCachedProducts = unstable_cache(
       async () => {
         const result = await listProducts({
           countryCode: locale,
           queryParams: {
-            limit: 15, // Optimized from 50 to 15 (only display 10, keep 5 as buffer)
-            order: "created_at",
+            limit: 50,
+            order: "-created_at",
+         
           },
         })
         
         return result?.response?.products || []
       },
-      [`homepage-top-${locale}-${limit}`], // Cache key
+      [`homepage-best-${locale}-${limit}`],
       {
-        revalidate: 600, // 10 minutes
+        revalidate: 600,
         tags: ['homepage-products', 'products']
       }
     )
@@ -60,57 +59,86 @@ export const SmartBestProductsSection = async ({
       )
     }
     
-    // ✅ HYDRATION FIX: Calculate current time once on server to prevent mismatch
     const currentTime = new Date().getTime()
     
-    // Smart "best products" algorithm using available data
-    const bestProducts = allProducts
+    // Enhanced scoring algorithm
+    const scoredProducts = allProducts
       .map(product => {
-        // Calculate various metrics for each product
+        const createdAt = new Date(product.created_at || 0).getTime()
+        const updatedAt = new Date((product as any).updated_at || product.created_at || 0).getTime()
+        
         const metrics = {
-          // Review metrics (if available)
-          reviewCount: (product as any).reviews?.length || 0,
-          averageRating: (product as any).reviews?.length > 0 
-            ? (product as any).reviews.reduce((sum: number, review: any) => sum + (review.rating || 0), 0) / (product as any).reviews.length
-            : 0,
-          
-          // Product quality indicators
+          // Quality indicators
           variantCount: product.variants?.length || 0,
           imageCount: product.images?.length || 0,
           hasDescription: product.description ? 1 : 0,
+          descriptionLength: product.description?.length || 0,
           
-          // Recency factor (newer products get slight boost)
-          daysSinceCreated: Math.floor((currentTime - new Date(product.created_at || 0).getTime()) / (1000 * 60 * 60 * 24)),
+          // Recency
+          daysSinceCreated: Math.floor(
+            (currentTime - createdAt) / (1000 * 60 * 60 * 24)
+          ),
+          daysSinceUpdated: Math.floor(
+            (currentTime - updatedAt) / (1000 * 60 * 60 * 24)
+          ),
           
-          // Metadata indicators (if you store custom data)
+          // Categorization
+          hasCollection: (product as any).collection_id ? 1 : 0,
+          tagCount: product.tags?.length || 0,
+          
+          // Metadata
           isFeatured: (product.metadata as any)?.featured === 'true' ? 1 : 0,
+          isNew: (currentTime - createdAt) < (30 * 24 * 60 * 60 * 1000) ? 1 : 0,
           viewCount: parseInt((product.metadata as any)?.view_count || '0'),
           wishlistCount: parseInt((product.metadata as any)?.wishlist_count || '0'),
+          
+          // Seller diversity
+          sellerId: (product.metadata as any)?.seller_id || 'default',
         }
         
-        // Calculate composite score
         let score = 0
         
-        // Review-based scoring (highest weight)
-        score += metrics.reviewCount * 10 // 10 points per review
-        score += metrics.averageRating * 20 // Up to 100 points for 5-star rating
-        
-        // Quality indicators
-        score += metrics.variantCount * 5 // 5 points per variant
-        score += metrics.imageCount * 3 // 3 points per image
-        score += metrics.hasDescription * 10 // 10 points for having description
-        
-        // Engagement metrics (if available in metadata)
-        score += metrics.viewCount * 0.1 // 0.1 points per view
-        score += metrics.wishlistCount * 15 // 15 points per wishlist add
-        
-        // Featured products get bonus
-        score += metrics.isFeatured * 50 // 50 point bonus for featured
-        
-        // Slight penalty for very old products (encourage freshness)
-        if (metrics.daysSinceCreated > 365) {
-          score -= Math.min(metrics.daysSinceCreated - 365, 100) * 0.1
+        // RECENCY: Strong preference for new products (heaviest weight)
+        if (metrics.daysSinceCreated <= 7) {
+          score += 200 // Last week
+        } else if (metrics.daysSinceCreated <= 30) {
+          score += 150 // Last month
+        } else if (metrics.daysSinceCreated <= 90) {
+          score += 100 // Last 3 months
+        } else if (metrics.daysSinceCreated <= 180) {
+          score += 50 // Last 6 months
+        } else {
+          // Penalty for old products
+          score -= Math.min((metrics.daysSinceCreated - 180) * 0.5, 150)
         }
+        
+        // Recently updated products get boost
+        if (metrics.daysSinceUpdated <= 7) {
+          score += 40
+        } else if (metrics.daysSinceUpdated <= 30) {
+          score += 20
+        }
+        
+        // QUALITY: Content richness
+        score += Math.min(metrics.imageCount * 8, 40)
+        score += metrics.hasDescription * 25
+        score += Math.min(metrics.descriptionLength / 100, 25)
+        score += Math.min(metrics.variantCount * 6, 30)
+        
+        // CATEGORIZATION
+        score += metrics.hasCollection * 30
+        score += Math.min(metrics.tagCount * 4, 20)
+        
+        // FEATURED & NEW
+        score += metrics.isFeatured * 150
+        score += metrics.isNew * 80
+        
+        // ENGAGEMENT (if tracked in metadata)
+        score += metrics.viewCount * 0.05
+        score += metrics.wishlistCount * 12
+        
+        // CONTROLLED RANDOMNESS: Break ties between similar products
+        score += Math.random() * 15
         
         return {
           ...product,
@@ -118,15 +146,47 @@ export const SmartBestProductsSection = async ({
           _metrics: metrics
         }
       })
-      .sort((a, b) => b._score - a._score) // Sort by score descending
-      .slice(0, limit) // Take top products
+      .sort((a, b) => b._score - a._score)
     
+    // SELLER DIVERSITY: Max 3 products per seller
+    const MAX_PER_SELLER = 3
+    const diversifiedProducts: typeof scoredProducts = []
+    const sellerCounts: Record<string, number> = {}
     
+    // First pass: enforce diversity limit
+    for (const product of scoredProducts) {
+      const sellerId = product._metrics.sellerId
+      const count = sellerCounts[sellerId] || 0
+      
+      if (count < MAX_PER_SELLER) {
+        diversifiedProducts.push(product)
+        sellerCounts[sellerId] = count + 1
+      }
+      
+      if (diversifiedProducts.length >= limit) break
+    }
+    
+    // Second pass: fill remaining slots if needed
+    if (diversifiedProducts.length < limit) {
+      for (const product of scoredProducts) {
+        if (!diversifiedProducts.includes(product)) {
+          diversifiedProducts.push(product)
+          if (diversifiedProducts.length >= limit) break
+        }
+      }
+    }
+    
+    // Fisher-Yates shuffle for variety
+    const shuffled = diversifiedProducts
+      .slice(0, limit)
+      .sort(() => Math.random() - 0.5)
+    
+    const bestProducts = shuffled
     
     return (
       <BatchPriceProvider currencyCode="PLN" days={30}>
         <section className="py-2 md:py-8 w-full">
-          <h2 className="mb-6 md:mb-12 heading-lg font-bold tracking-tight font-instrument-serif italic  ml-4 lg:ml-[68px] ">
+          <h2 className="mb-6 md:mb-12 heading-lg font-bold tracking-tight font-instrument-serif italic ml-4 lg:ml-[68px]">
             {heading}
           </h2>
 
@@ -134,6 +194,7 @@ export const SmartBestProductsSection = async ({
             locale={locale}
             sellerProducts={bestProducts as unknown as Product[]}
             home={home}
+           
             user={user}
             wishlist={wishlist}
           />
