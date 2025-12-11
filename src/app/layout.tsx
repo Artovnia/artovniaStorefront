@@ -4,6 +4,7 @@ import "./globals.css"
 import { NextIntlClientProvider } from "next-intl"
 import { getMessages } from "next-intl/server"
 import { ToastProvider } from "@/components/providers/ToastProvider"
+import Script from "next/script"
 
 
 // Critical fonts preloaded, others load on-demand
@@ -78,11 +79,11 @@ const instrumentSerif = localFont({
 export const metadata: Metadata = {
   title: {
     template: '%s | Artovnia',
-    default: 'Artovnia - Market sztuki i rękodzieła',
+    default: 'Artovnia - Marketplace Sztuki i Rękodzieła Handmade',
   },
   description:
     process.env.NEXT_PUBLIC_SITE_DESCRIPTION ||
-    'Artovnia - market rękodzieła i sztuki',
+    'Zobacz unikalne dzieła sztuki handmade. Kup więcej lub sprzedawać swoje prace. Polityka cookie dostępna.',
   metadataBase: new URL(
     process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"
   ),
@@ -94,6 +95,13 @@ export const metadata: Metadata = {
       rel: 'apple-touch-icon',
       url: '/A.svg',
     },
+  },
+  other: {
+    'preconnect': [
+      process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || 'http://localhost:9000',
+      'https://artovnia-medusa.s3.eu-north-1.amazonaws.com',
+      'https://o56rau04.apicdn.sanity.io'
+    ],
   },
 }
 
@@ -112,28 +120,25 @@ export default async function RootLayout({
   
   return (
     <html lang={locale} className={`${instrumentSans.variable} ${instrumentSerif.variable}`}>
-      <head>
-        {/* ✅ SELF-HOSTED FONTS: Next.js automatically preloads fonts with preload: true */}
-        {/* No manual preload needed - Next.js handles it optimally */}
-        
-        {/* ✅ PRECONNECT: Backend API - Highest Priority (saves 200-400ms) */}
-        <link rel="preconnect" href={backendUrl} crossOrigin="anonymous" />
-        <link rel="dns-prefetch" href={backendUrl} />
-        
-        {/* ✅ PRECONNECT: AWS S3 Image CDN - High Priority */}
-        <link rel="preconnect" href="https://artovnia-medusa.s3.eu-north-1.amazonaws.com" crossOrigin="anonymous" />
-        <link rel="dns-prefetch" href="https://artovnia-medusa.s3.eu-north-1.amazonaws.com" />
-        
-        {/* ✅ PRECONNECT: Sanity CDN for Blog Images - Medium Priority */}
-        <link rel="preconnect" href="https://o56rau04.apicdn.sanity.io" crossOrigin="anonymous" />
-        <link rel="dns-prefetch" href="https://o56rau04.apicdn.sanity.io" />
-      </head>
       <NextIntlClientProvider messages={messages}>
         <body
           className={`${instrumentSans.className} antialiased bg-primary text-primary`}
         >
+          {/* Google Analytics */}
+          <Script
+            src="https://www.googletagmanager.com/gtag/js?id=G-0T68CBFP9J"
+            strategy="afterInteractive"
+          />
+          <Script id="google-analytics" strategy="afterInteractive">
+            {`
+              window.dataLayer = window.dataLayer || [];
+              function gtag(){dataLayer.push(arguments);}
+              gtag('js', new Date());
+              gtag('config', 'G-0T68CBFP9J');
+            `}
+          </Script>
+          
           <ToastProvider />
-          {/* Remove the max-width container here to allow full-width sections */}
           {children}
         </body>
       </NextIntlClientProvider>

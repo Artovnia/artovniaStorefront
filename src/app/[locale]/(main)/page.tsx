@@ -42,18 +42,21 @@ const BlogSkeleton = () => (
 
 
 export const metadata: Metadata = {
-  title: "Artovnia - Marketplace Sztuki i Rękodzieła Artystycznego | Unikalne Dzieła",
+  title: "Artovnia - Marketplace Sztuki i Rękodzieła Handmade",
   description:
-    "Odkryj unikalne dzieła sztuki i rękodzieła od polskich artystów. Ceramika, malarstwo, rzeźba i więcej. Kup oryginalną sztukę bezpośrednio od twórców na Artovnia.",
+    "Zobacz unikalne dzieła sztuki handmade od polskich artystów. Kup więcej oryginalnej sztuki lub sprzedawać swoje prace. Ceramika, malarstwo, rzeźba i więcej.",
   keywords: [
     'marketplace sztuki',
     'rękodzieło artystyczne',
+    'handmade',
     'polska sztuka',
     'ceramika artystyczna',
     'unikalne dzieła sztuki',
     'polscy artyści',
     'oryginalna sztuka',
     'marketplace rękodzieła',
+    'sprzedawać sztukę',
+    'zobacz sztukę',
   ].join(', '),
   alternates: {
     canonical: process.env.NEXT_PUBLIC_BASE_URL,
@@ -64,9 +67,9 @@ export const metadata: Metadata = {
     },
   },
   openGraph: {
-    title: "Artovnia - Marketplace Sztuki i Rękodzieła Artystycznego",
+    title: "Artovnia - Marketplace Sztuki i Rękodzieła Handmade",
     description:
-      "Odkryj unikalne dzieła sztuki i rękodzieła od polskich artystów. Kup oryginalną sztukę bezpośrednio od twórców.",
+      "Zobacz unikalne dzieła sztuki handmade od polskich artystów. Kup więcej oryginalnej sztuki lub sprzedawać swoje prace.",
     url: process.env.NEXT_PUBLIC_BASE_URL,
     siteName: "Artovnia",
     type: "website",
@@ -84,8 +87,8 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     site: '@artovnia',
     creator: '@artovnia',
-    title: 'Artovnia - Marketplace Sztuki',
-    description: 'Odkryj unikalne dzieła sztuki i rękodzieła od polskich artystów',
+    title: 'Artovnia - Marketplace Sztuki Handmade',
+    description: 'Zobacz unikalne dzieła sztuki handmade. Kup więcej lub sprzedawać swoje prace',
     images: [`${process.env.NEXT_PUBLIC_BASE_URL}/ArtovniaOgImage.png`],
   },
   robots: {

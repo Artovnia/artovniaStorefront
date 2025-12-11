@@ -1,0 +1,10 @@
+# Ads.txt file for Artovnia
+# This file is used by advertising platforms to verify authorized sellers
+# Add your advertising partner entries below in the format:
+# domain.com, publisher-account-id, DIRECT/RESELLER, TAG-ID
+
+# Example:
+# google.com, pub-0000000000000000, DIRECT, f08c47fec0942fa0
+
+# Currently no advertising partners configured
+# Add entries as needed when setting up advertising
