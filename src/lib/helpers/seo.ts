@@ -67,7 +67,7 @@ export const generateProductMetadata = (
   )
 
   return {
-    title: `${product?.title} | ${process.env.NEXT_PUBLIC_SITE_NAME}`,
+    title: `${product?.title} | Artovnia`,
     description,
     keywords: [
       product?.title,
@@ -82,7 +82,7 @@ export const generateProductMetadata = (
     alternates: {
       canonical: productUrl,
       languages: {
-        'pl': `${baseUrl}/pl/products/${product?.handle}`,
+        'pl': productUrl,
         'en': `${baseUrl}/en/products/${product?.handle}`,
         'x-default': productUrl,
       },
@@ -91,7 +91,7 @@ export const generateProductMetadata = (
       title: product?.title,
       description,
       url: productUrl,
-      siteName: process.env.NEXT_PUBLIC_SITE_NAME,
+      siteName: 'Artovnia',
       images: [
         {
           url: product?.thumbnail || `${baseUrl}/placeholder.webp`,
@@ -140,7 +140,7 @@ export const generateCategoryMetadata = (
   return {
     robots: "index, follow",
     metadataBase: new URL(baseUrl),
-    title: `${category.name} - Kategoria | ${process.env.NEXT_PUBLIC_SITE_NAME}`,
+    title: `${category.name} | Artovnia`,
     description,
     keywords: [
       category.name,
@@ -152,16 +152,16 @@ export const generateCategoryMetadata = (
     alternates: {
       canonical: categoryUrl,
       languages: {
-        'pl': `${baseUrl}/pl/categories/${category.handle}`,
+        'pl': categoryUrl,
         'en': `${baseUrl}/en/categories/${category.handle}`,
         'x-default': categoryUrl,
       },
     },
     openGraph: {
-      title: `${category.name} - Kategoria`,
+      title: category.name,
       description,
       url: categoryUrl,
-      siteName: process.env.NEXT_PUBLIC_SITE_NAME,
+      siteName: 'Artovnia',
       images: [
         {
           url: categoryImage,
@@ -177,7 +177,7 @@ export const generateCategoryMetadata = (
       card: "summary_large_image",
       site: "@artovnia",
       creator: "@artovnia",
-      title: `${category.name} - Kategoria`,
+      title: category.name,
       description,
       images: [categoryImage],
     },

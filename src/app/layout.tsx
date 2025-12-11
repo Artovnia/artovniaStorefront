@@ -77,13 +77,8 @@ const instrumentSerif = localFont({
 
 export const metadata: Metadata = {
   title: {
-    template: `%s | ${
-      process.env.NEXT_PUBLIC_SITE_NAME ||
-      'Artovnia - market rękodzieła i sztuki'
-    }`,
-    default:
-      process.env.NEXT_PUBLIC_SITE_NAME ||
-      'Artovnia - market rękodzieła i sztuki',
+    template: '%s | Artovnia',
+    default: 'Artovnia - Market sztuki i rękodzieła',
   },
   description:
     process.env.NEXT_PUBLIC_SITE_DESCRIPTION ||

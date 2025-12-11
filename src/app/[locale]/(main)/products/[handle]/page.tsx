@@ -58,9 +58,11 @@ export async function generateMetadata({
     return {
       ...baseMetadata,
       alternates: {
-        canonical: `${process.env.NEXT_PUBLIC_BASE_URL}/${locale}/products/${product.handle}`,
+        canonical: locale === 'pl' 
+          ? `${process.env.NEXT_PUBLIC_BASE_URL}/products/${product.handle}`
+          : `${process.env.NEXT_PUBLIC_BASE_URL}/${locale}/products/${product.handle}`,
         languages: {
-          'pl': `${process.env.NEXT_PUBLIC_BASE_URL}/pl/products/${product.handle}`,
+          'pl': `${process.env.NEXT_PUBLIC_BASE_URL}/products/${product.handle}`,
           'en': `${process.env.NEXT_PUBLIC_BASE_URL}/en/products/${product.handle}`,
           'x-default': `${process.env.NEXT_PUBLIC_BASE_URL}/products/${product.handle}`,
         },
