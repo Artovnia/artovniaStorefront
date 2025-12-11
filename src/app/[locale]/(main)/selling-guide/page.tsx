@@ -7,7 +7,7 @@ import { generateBreadcrumbJsonLd } from "@/lib/helpers/seo"
 
 export async function generateMetadata(): Promise<Metadata> {
   return {
-    title: "Jak Sprzedawać na Artovnia? - Przewodnik dla Artystów | Artovnia",
+    title: "Jak Sprzedawać na Artovnia? - Przewodnik dla Artystów",
     description: "Dowiedz się jak zacząć sprzedawać na platformie Artovnia. Kompletny przewodnik dla artystów, projektantów i rękodzielników. Zarejestruj się, dodaj produkty i zacznij zarabiać.",
     keywords: [
       'jak sprzedawać',
@@ -26,7 +26,7 @@ export async function generateMetadata(): Promise<Metadata> {
       },
     },
     openGraph: {
-      title: "Jak Sprzedawać na Artovnia? - Przewodnik dla Artystów",
+      title: "Jak Sprzedawać na Artovnia? - Przewodnik",
       description: "Kompletny przewodnik dla artystów, projektantów i rękodzielników. Zacznij sprzedawać na Artovnia.",
       url: `${process.env.NEXT_PUBLIC_BASE_URL}/selling-guide`,
       siteName: "Artovnia",
@@ -37,7 +37,7 @@ export async function generateMetadata(): Promise<Metadata> {
       card: 'summary',
       site: '@artovnia',
       creator: '@artovnia',
-      title: 'Jak Sprzedawać na Artovnia?',
+      title: 'Przewodnik Sprzedawcy',
       description: 'Przewodnik dla artystów i twórców',
     },
     robots: {

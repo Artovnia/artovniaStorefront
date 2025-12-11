@@ -6,7 +6,7 @@ import { ArrowLeftIcon } from "@/icons"
 
 export async function generateMetadata(): Promise<Metadata> {
   return {
-    title: "Formy płatności | Artovnia",
+    title: "Formy płatności",
     description: "Poznaj dostępne metody płatności na platformie Artovnia - karty, BLIK, przelewy online.",
   }
 }

@@ -6,7 +6,7 @@ import { ArrowLeftIcon } from "@/icons"
 
 export async function generateMetadata(): Promise<Metadata> {
   return {
-    title: "Zwroty i reklamacje | Artovnia",
+    title: "Zwroty i reklamacje",
     description: "Poznaj zasady zwrotów i reklamacji na platformie Artovnia - Twoje prawa jako konsumenta.",
   }
 }

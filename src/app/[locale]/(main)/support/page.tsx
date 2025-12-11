@@ -4,7 +4,7 @@ import { Metadata } from "next"
 import { generateBreadcrumbJsonLd } from "@/lib/helpers/seo"
 
 export const metadata: Metadata = {
-  title: "Wsparcie Klienta - Pomoc i Kontakt | Artovnia",
+  title: "Wsparcie Klienta - Pomoc i Kontakt",
   description: "Potrzebujesz pomocy? Skontaktuj się z naszym zespołem wsparcia. Wysyłaj zgłoszenia, zadawaj pytania i otrzymuj szybką pomoc dotyczącą zakupów na Artovnia.",
   keywords: [
     'wsparcie',
@@ -23,7 +23,7 @@ export const metadata: Metadata = {
     },
   },
   openGraph: {
-    title: "Wsparcie Klienta - Pomoc i Kontakt | Artovnia",
+    title: "Wsparcie Klienta - Pomoc i Kontakt",
     description: "Potrzebujesz pomocy? Skontaktuj się z naszym zespołem wsparcia.",
     url: `${process.env.NEXT_PUBLIC_BASE_URL}/support`,
     siteName: "Artovnia",
@@ -34,7 +34,7 @@ export const metadata: Metadata = {
     card: 'summary',
     site: '@artovnia',
     creator: '@artovnia',
-    title: 'Wsparcie Klienta - Artovnia',
+    title: 'Wsparcie Klienta',
     description: 'Skontaktuj się z naszym zespołem wsparcia',
   },
   robots: {

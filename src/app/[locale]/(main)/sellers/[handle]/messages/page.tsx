@@ -22,19 +22,19 @@ export async function generateMetadata(
 
     if (!seller) {
       return {
-        title: "Seller Not Found | Artovnia",
+        title: "Seller Not Found",
         description: "The seller you are looking for does not exist.",
       }
     }
 
     return {
-      title: `Message ${seller.name} | Artovnia`,
+      title: `Message ${seller.name}`,
       description: `Send a message to ${seller.name} on Artovnia.`,
     }
   } catch (error) {
     console.error('Error in messages generateMetadata:', error)
     return {
-      title: "Message Seller | Artovnia",
+      title: "Message Seller",
       description: "Send a message to a seller on Artovnia.",
     }
   }

@@ -4,7 +4,7 @@ import { Button } from "@/components/atoms"
 
 export async function generateMetadata(): Promise<Metadata> {
   return {
-    title: "Zwrot zgłoszony - Gość | Artovnia",
+    title: "Zwrot zgłoszony - Gość",
     description: "Twój zwrot został pomyślnie zgłoszony",
   }
 }

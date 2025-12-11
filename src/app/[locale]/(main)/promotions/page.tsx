@@ -13,7 +13,7 @@ import { getUserWishlists } from "@/lib/data/wishlist"
 import { generateBreadcrumbJsonLd, generateCollectionPageJsonLd } from "@/lib/helpers/seo"
 
 export const metadata: Metadata = {
-  title: "Promocje - Artovnia | Najlepsze Okazje na Sztukę i Rękodzieło",
+  title: "Promocje - Najlepsze Okazje na Sztukę i Rękodzieło",
   description: "Odkryj najlepsze promocje i wyprzedaże na Artovnia. Unikalne dzieła sztuki i rękodzieła w obniżonych cenach. Limitowane okazje od polskich artystów.",
   keywords: [
     'promocje sztuki',
@@ -32,7 +32,7 @@ export const metadata: Metadata = {
     },
   },
   openGraph: {
-    title: "Promocje - Artovnia | Najlepsze Okazje na Sztukę",
+    title: "Promocje - Najlepsze Okazje na Sztukę",
     description: "Odkryj najlepsze promocje i wyprzedaże. Unikalne dzieła sztuki i rękodzieła w obniżonych cenach.",
     url: `${process.env.NEXT_PUBLIC_BASE_URL}/promotions`,
     siteName: "Artovnia",
@@ -51,7 +51,7 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     site: '@artovnia',
     creator: '@artovnia',
-    title: 'Promocje - Artovnia',
+    title: 'Promocje',
     description: 'Najlepsze okazje na sztukę i rękodzieło w obniżonych cenach',
     images: [`${process.env.NEXT_PUBLIC_BASE_URL}/ArtovniaOgImage.png`],
   },

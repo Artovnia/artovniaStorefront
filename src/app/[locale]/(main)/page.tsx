@@ -18,6 +18,7 @@ import { getUserWishlists } from "@/lib/data/wishlist"
 import { listProductsWithPromotions } from "@/lib/data/products"
 import type { Metadata } from "next"
 import { generateOrganizationJsonLd, generateWebsiteJsonLd } from "@/lib/helpers/seo"
+import { JsonLd } from "@/components/JsonLd"
 
 // Loading skeletons for initial load - unified cache prevents these on navigation
 const BlogSkeleton = () => (
@@ -42,7 +43,9 @@ const BlogSkeleton = () => (
 
 
 export const metadata: Metadata = {
-  title: "Artovnia - Marketplace Sztuki i Rękodzieła Handmade",
+  title: {
+    absolute: "Artovnia - Marketplace Sztuki i Rękodzieła Handmade"
+  },
   description:
     "Zobacz unikalne dzieła sztuki handmade od polskich artystów. Kup więcej oryginalnej sztuki lub sprzedawać swoje prace. Ceramika, malarstwo, rzeźba i więcej.",
   keywords: [
@@ -180,14 +183,8 @@ export default async function Home({
   return (
     <>
       {/* Structured Data (JSON-LD) for SEO */}
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd) }}
-      />
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteJsonLd) }}
-      />
+      <JsonLd data={organizationJsonLd} />
+      <JsonLd data={websiteJsonLd} />
       
       <PromotionDataProvider 
       countryCode="PL" 

@@ -6,7 +6,7 @@ import { getSellers } from '@/lib/data/seller'
 import { generateBreadcrumbJsonLd, generateCollectionPageJsonLd } from '@/lib/helpers/seo'
 
 export const metadata: Metadata = {
-  title: 'Sprzedawcy - Artovnia | Poznaj Polskich Artystów i Twórców',
+  title: 'Sprzedawcy - Poznaj Polskich Artystów i Twórców',
   description:
     'Przeglądaj wszystkich sprzedawców na platformie Artovnia. Znajdź swoich ulubionych artystów, odkryj nowe talenty i kup unikalne dzieła sztuki bezpośrednio od twórców.',
   keywords: [
@@ -25,7 +25,7 @@ export const metadata: Metadata = {
     },
   },
   openGraph: {
-    title: 'Sprzedawcy - Artovnia | Poznaj Polskich Artystów',
+    title: 'Sprzedawcy - Poznaj Polskich Artystów',
     description:
       'Przeglądaj wszystkich sprzedawców na platformie Artovnia. Znajdź swoich ulubionych artystów i odkryj nowe talenty.',
     url: `${process.env.NEXT_PUBLIC_BASE_URL}/sellers`,
@@ -37,7 +37,7 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     site: '@artovnia',
     creator: '@artovnia',
-    title: 'Sprzedawcy - Artovnia',
+    title: 'Sprzedawcy',
     description: 'Poznaj polskich artystów i twórców na Artovnia',
   },
   robots: {

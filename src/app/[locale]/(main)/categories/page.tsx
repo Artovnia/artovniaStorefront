@@ -1,9 +1,10 @@
 import { listCategoriesWithProducts } from "@/lib/data/categories"
 import { HttpTypes } from "@medusajs/types"
 import { isServerSideBot } from "@/lib/utils/server-bot-detection"
-import { SmartProductsListing } from "@/components/sections/ProductListing/SmartProductsListing"
+import { SmartProductsListing } from '@/components/sections/ProductListing/SmartProductsListing'
 import { PromotionDataProvider } from "@/components/context/PromotionDataProvider"
 import { BatchPriceProvider } from "@/components/context/BatchPriceProvider"
+import { JsonLd } from '@/components/JsonLd'
 import type { Metadata } from "next"
 import { generateBreadcrumbJsonLd, generateCollectionPageJsonLd } from "@/lib/helpers/seo"
 
@@ -101,14 +102,8 @@ async function AllCategories({
   return (
     <>
       {/* Structured Data (JSON-LD) for SEO */}
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
-      />
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(collectionJsonLd) }}
-      />
+      <JsonLd data={breadcrumbJsonLd} />
+      <JsonLd data={collectionJsonLd} />
       
     <PromotionDataProvider countryCode="PL" limit={50}>
       <BatchPriceProvider currencyCode="PLN">

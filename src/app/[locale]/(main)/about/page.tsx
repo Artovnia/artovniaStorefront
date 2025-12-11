@@ -4,6 +4,7 @@ import AboutUsContent from "@/components/pages/about/AboutUsContent"
 import { Link } from "@/i18n/routing"
 import { ArrowLeftIcon } from "@/icons"
 import { generateBreadcrumbJsonLd, generateOrganizationJsonLd } from "@/lib/helpers/seo"
+import { JsonLd } from "@/components/JsonLd"
 
 export async function generateMetadata(): Promise<Metadata> {
   return {
@@ -60,14 +61,8 @@ export default async function AboutPage() {
   return (
     <>
       {/* Structured Data (JSON-LD) for SEO */}
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
-      />
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd) }}
-      />
+      <JsonLd data={breadcrumbJsonLd} />
+      <JsonLd data={organizationJsonLd} />
       
       <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <Suspense fallback={

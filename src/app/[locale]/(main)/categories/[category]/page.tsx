@@ -11,6 +11,7 @@ import { HttpTypes } from "@medusajs/types"
 import { SmartProductsListing } from "@/components/sections/ProductListing/SmartProductsListing"
 import { PromotionDataProvider } from "@/components/context/PromotionDataProvider"
 import { BatchPriceProvider } from "@/components/context/BatchPriceProvider"
+import { JsonLd } from "@/components/JsonLd"
 
 type Props = {
   params: Promise<{ category: string; locale: string }>
@@ -191,14 +192,8 @@ async function Category({
   return (
     <>
       {/* ✅ Structured Data (JSON-LD) for SEO */}
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
-      />
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(collectionJsonLd) }}
-      />
+      <JsonLd data={breadcrumbJsonLd} />
+      <JsonLd data={collectionJsonLd} />
       
       <PromotionDataProvider 
         countryCode="PL" 

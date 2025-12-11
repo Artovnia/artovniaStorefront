@@ -9,7 +9,7 @@ import {
 
 export async function generateMetadata(): Promise<Metadata> {
   return {
-    title: "Zwrot zamówienia - Gość | Artovnia",
+    title: "Zwrot zamówienia - Gość",
     description: "Zgłoś zwrot zamówienia jako gość",
   }
 }

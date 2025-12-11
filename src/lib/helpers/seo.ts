@@ -66,8 +66,34 @@ export const generateProductMetadata = (
     155
   )
 
+  // ✅ Build rich SEO title: "Product | Category - Seller" (max 60 chars)
+  const buildSeoTitle = (): string => {
+    const productTitle = product.title || ''
+    const productWithExtras = product as any
+    const categoryName = productWithExtras.categories?.[0]?.name || ''
+    const sellerName = productWithExtras.seller?.name || ''
+    
+    // Strategy: Prioritize product name, add category if space allows
+    // Template adds "| Artovnia" at the end via layout.tsx
+    
+    if (categoryName && sellerName) {
+      // Full format: "Product | Category - Seller"
+      const fullTitle = `${productTitle} | ${categoryName} - ${sellerName}`
+      if (fullTitle.length <= 50) return fullTitle // Leave 10 chars for " | Artovnia"
+    }
+    
+    if (categoryName) {
+      // Medium format: "Product | Category"
+      const mediumTitle = `${productTitle} | ${categoryName}`
+      if (mediumTitle.length <= 50) return mediumTitle
+    }
+    
+    // Fallback: Just product name (template adds | Artovnia)
+    return productTitle
+  }
+
   return {
-    title: `${product?.title} | Artovnia`,
+    title: buildSeoTitle(),
     description,
     keywords: [
       product?.title,
@@ -140,7 +166,7 @@ export const generateCategoryMetadata = (
   return {
     robots: "index, follow",
     metadataBase: new URL(baseUrl),
-    title: `${category.name} | Artovnia`,
+    title: category.name,
     description,
     keywords: [
       category.name,

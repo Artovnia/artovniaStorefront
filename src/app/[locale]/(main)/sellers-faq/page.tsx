@@ -7,7 +7,7 @@ import { generateBreadcrumbJsonLd } from "@/lib/helpers/seo"
 
 export async function generateMetadata(): Promise<Metadata> {
   return {
-    title: "FAQ dla Sprzedawców - Najczęściej Zadawane Pytania | Artovnia",
+    title: "FAQ dla Sprzedawców - Najczęściej Zadawane Pytania",
     description: "Odpowiedzi na najczęściej zadawane pytania dotyczące sprzedaży na platformie Artovnia. Dowiedz się jak zacząć sprzedawać, zarządzać produktami i otrzymywać płatności.",
     keywords: [
       'FAQ sprzedawcy',
@@ -26,7 +26,7 @@ export async function generateMetadata(): Promise<Metadata> {
       },
     },
     openGraph: {
-      title: "FAQ dla Sprzedawców | Artovnia",
+      title: "FAQ dla Sprzedawców",
       description: "Odpowiedzi na najczęściej zadawane pytania dotyczące sprzedaży na platformie Artovnia.",
       url: `${process.env.NEXT_PUBLIC_BASE_URL}/sellers-faq`,
       siteName: "Artovnia",
@@ -37,7 +37,7 @@ export async function generateMetadata(): Promise<Metadata> {
       card: 'summary',
       site: '@artovnia',
       creator: '@artovnia',
-      title: 'FAQ dla Sprzedawców - Artovnia',
+      title: 'FAQ dla Sprzedawców',
       description: 'Pytania i odpowiedzi dla sprzedawców',
     },
     robots: {
