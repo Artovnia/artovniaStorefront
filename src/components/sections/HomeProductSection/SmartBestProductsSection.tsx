@@ -59,7 +59,22 @@ export const SmartBestProductsSection = async ({
       )
     }
     
-    const currentTime = new Date().getTime()
+    // ✅ FIX: Use stable timestamp for SSR/CSR consistency
+    // Generate a deterministic seed from the cache key to ensure same results on server and client
+    const cacheTimestamp = Math.floor(Date.now() / (1000 * 60 * 10)) // Stable for 10 minutes
+    const currentTime = cacheTimestamp * (1000 * 60 * 10)
+    
+    // ✅ FIX: Deterministic pseudo-random using product ID as seed
+    const deterministicRandom = (productId: string, salt: number = 0): number => {
+      let hash = 0
+      const str = productId + salt.toString()
+      for (let i = 0; i < str.length; i++) {
+        const char = str.charCodeAt(i)
+        hash = ((hash << 5) - hash) + char
+        hash = hash & hash // Convert to 32-bit integer
+      }
+      return Math.abs(hash % 1000) / 1000 // Returns 0-1
+    }
     
     // Enhanced scoring algorithm
     const scoredProducts = allProducts
@@ -137,8 +152,8 @@ export const SmartBestProductsSection = async ({
         score += metrics.viewCount * 0.05
         score += metrics.wishlistCount * 12
         
-        // CONTROLLED RANDOMNESS: Break ties between similar products
-        score += Math.random() * 15
+        // ✅ FIX: DETERMINISTIC RANDOMNESS: Break ties using product ID as seed
+        score += deterministicRandom(product.id, cacheTimestamp) * 15
         
         return {
           ...product,
@@ -176,10 +191,15 @@ export const SmartBestProductsSection = async ({
       }
     }
     
-    // Fisher-Yates shuffle for variety
+    // ✅ FIX: Deterministic shuffle using product IDs as seed
     const shuffled = diversifiedProducts
       .slice(0, limit)
-      .sort(() => Math.random() - 0.5)
+      .map((product, index) => ({
+        product,
+        sortKey: deterministicRandom(product.id, index + cacheTimestamp)
+      }))
+      .sort((a, b) => a.sortKey - b.sortKey)
+      .map(item => item.product)
     
     const bestProducts = shuffled
     

@@ -20,7 +20,6 @@ export const CustomCarousel = ({
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [scrollPosition, setScrollPosition] = useState(0);
   const [maxScroll, setMaxScroll] = useState(1); // Initialize to non-zero to enable right arrow
-  const [showArrows, setShowArrows] = useState(false);
   
   // Responsive scroll amount for each button click (in pixels)
   const scrollAmount = 350; // Approximately one product card width
@@ -31,22 +30,12 @@ export const CustomCarousel = ({
     return Math.min(Math.max(scrollPosition / maxScroll, 0), 1);
   };
   
-  // Initialize scroll state and check window width on component mount
+  // ✅ FIX: Initialize scroll state only - no layout-shifting state changes
   useEffect(() => {
     if (scrollContainerRef.current) {
       const { scrollWidth, clientWidth } = scrollContainerRef.current;
       setMaxScroll(Math.max(0, scrollWidth - clientWidth));
     }
-    
-    // Check window width for arrow visibility
-    const checkWindowWidth = () => {
-      setShowArrows(window.innerWidth >= 868);
-    };
-    
-    checkWindowWidth();
-    window.addEventListener('resize', checkWindowWidth);
-    
-    return () => window.removeEventListener('resize', checkWindowWidth);
   }, [items]);
   
   const scrollNext = () => {
@@ -109,23 +98,22 @@ export const CustomCarousel = ({
 
   return (
     <div className='w-full max-w-[1920px] mx-auto overflow-hidden'>
-      {/* Desktop Layout: Three-column grid with arrows outside content area */}
-      <div className={`${showArrows ? 'grid grid-cols-[auto_1fr_auto] items-center gap-2 sm:gap-4' : 'block'}`}>
+      {/* ✅ FIX: Always use grid layout - hide arrows on mobile with CSS */}
+      {/* min-[868px]: breakpoint matches the previous 868px threshold */}
+      <div className='block min-[868px]:grid min-[868px]:grid-cols-[auto_1fr_auto] min-[868px]:items-center min-[868px]:gap-2 sm:min-[868px]:gap-4'>
         
-        {/* Left Arrow Column - Only visible on desktop */}
+        {/* Left Arrow Column - Hidden on mobile via CSS */}
         {/* Arrow positioned at center of product image: 315px height ÷ 2 = 157.5px, minus arrow button height ÷ 2 = ~78px */}
-        {showArrows && (
-          <div className='flex justify-center' style={{ marginTop: '-78px' }}>
-            <button
-              className={`${arrowStyles.buttonClass} rounded-full p-3 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed`}
-              onClick={scrollPrev}
-              disabled={scrollPosition <= 0}
-              aria-label="Previous slide"
-            >
-              <ArrowLeftIcon color={arrowStyles.iconColor} size={25} />
-            </button>
-          </div>
-        )}
+        <div className='hidden min-[868px]:flex justify-center' style={{ marginTop: '-78px' }}>
+          <button
+            className={`${arrowStyles.buttonClass} rounded-full p-3 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed`}
+            onClick={scrollPrev}
+            disabled={scrollPosition <= 0}
+            aria-label="Previous slide"
+          >
+            <ArrowLeftIcon color={arrowStyles.iconColor} size={25} />
+          </button>
+        </div>
 
         {/* Content Column - Scrollable container */}
         <div 
@@ -150,20 +138,18 @@ export const CustomCarousel = ({
           </div>
         </div>
 
-        {/* Right Arrow Column - Only visible on desktop */}
+        {/* Right Arrow Column - Hidden on mobile via CSS */}
         {/* Arrow positioned at center of product image: 315px height ÷ 2 = 157.5px, minus arrow button height ÷ 2 = ~78px */}
-        {showArrows && (
-          <div className='flex justify-center' style={{ marginTop: '-78px' }}>
-            <button
-              className={`${arrowStyles.buttonClass} rounded-full p-3 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed`}
-              onClick={scrollNext}
-              disabled={scrollPosition >= maxScroll}
-              aria-label="Next slide"
-            >
-              <ArrowRightIcon color={arrowStyles.iconColor} size={25} />
-            </button>
-          </div>
-        )}
+        <div className='hidden min-[868px]:flex justify-center' style={{ marginTop: '-78px' }}>
+          <button
+            className={`${arrowStyles.buttonClass} rounded-full p-3 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed`}
+            onClick={scrollNext}
+            disabled={scrollPosition >= maxScroll}
+            aria-label="Next slide"
+          >
+            <ArrowRightIcon color={arrowStyles.iconColor} size={25} />
+          </button>
+        </div>
       </div>
 
       {/* Mobile Navigation - Only visible on mobile */}
