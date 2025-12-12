@@ -57,6 +57,7 @@ export function BlogCard({ post, index }: BlogCardProps) {
           <time
             dateTime={post.publishedAt}
             className="bg-white/90 text-black px-3 py-1 rounded-full text-xs font-medium block"
+            suppressHydrationWarning
           >
             {format(new Date(post.publishedAt), "dd MMM yyyy", { locale: pl })}
           </time>

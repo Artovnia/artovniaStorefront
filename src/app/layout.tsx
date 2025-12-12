@@ -140,9 +140,9 @@ export default async function RootLayout({
             `}
           </Script>
 
-          {/* SiteBehaviour Heatmap & Session Recording */}
-          {/* Using lazyOnload strategy to minimize performance impact */}
-          <Script id="site-behaviour" strategy="lazyOnload">
+          {/* SiteBehaviour */}
+       
+            <Script id="site-behaviour" strategy="lazyOnload">
             {`
               (function() {
                 try {
