@@ -99,7 +99,7 @@ export const ViewBasedBestProductsSection = ({
   if (loading) {
     return (
       <section className="py-8 w-full">
-        <h2 className="mb-6 heading-lg font-bold tracking-tight uppercase font-instrument-serif">
+        <h2 className="mb-6 heading-lg  tracking-tight uppercase font-instrument-serif">
           {heading}
         </h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">

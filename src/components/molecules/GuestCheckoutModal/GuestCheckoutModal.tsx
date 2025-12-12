@@ -61,7 +61,7 @@ export const GuestCheckoutModal = ({
         {/* Choice View */}
         {currentView === 'choice' && (
           <div className="p-8">
-            <h2 className="text-2xl font-instrument-serif font-bold text-[#3B3634] mb-6 text-center">
+            <h2 className="text-2xl font-instrument-serif text-[#3B3634] mb-6 text-center">
               Jak chcesz kontynuować?
             </h2>
             <div className="space-y-6">

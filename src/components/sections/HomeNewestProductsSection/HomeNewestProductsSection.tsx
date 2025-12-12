@@ -46,7 +46,7 @@ export const HomeNewestProductsSection = async ({
     
     return (
       <section className="py-2 md:py-8 w-full">
-        <h2 className="mb-6 md:mb-12 heading-lg font-bold tracking-tight font-instrument-serif italic text-white text-center">
+        <h2 className="mb-6 md:mb-12 heading-lg  tracking-tight font-instrument-serif italic text-white text-center">
           {heading}
         </h2>
 
@@ -64,7 +64,7 @@ export const HomeNewestProductsSection = async ({
     console.error("Error in HomeNewestProductsSection:", error)
     return (
       <section className="py-2 md:py-8 w-full">
-        <h2 className="mb-6 heading-lg font-bold tracking-tight uppercase font-instrument-serif">
+        <h2 className="mb-6 heading-lg  tracking-tight uppercase font-instrument-serif">
           {heading}
         </h2>
         <div className="flex justify-center w-full py-8">

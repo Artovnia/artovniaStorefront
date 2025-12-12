@@ -261,7 +261,7 @@ export default async function PromotionsPage({ searchParams }: PromotionsPagePro
             role="alert"
             aria-live="assertive"
           >
-            <h2 className="text-2xl font-bold mb-4 font-instrument-serif text-red-600">Wystąpił błąd</h2>
+            <h2 className="text-2xl  mb-4 font-instrument-serif text-red-600">Wystąpił błąd</h2>
             <p className="text-[#3B3634] mb-6 font-instrument-sans">
               Nie udało się załadować promocji. Spróbuj ponownie później.
             </p>

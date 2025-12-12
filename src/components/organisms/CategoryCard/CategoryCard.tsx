@@ -64,7 +64,7 @@ export function CategoryCard({
             <p className="text-white font-instrument-serif italic text-lg sm:text-xl md:text-2xl lg:text-3xl xl:text-4xl">
               Zobacz kategorię
             </p>
-            <p className="text-white font-instrument-serif font-bold text-xl sm:text-2xl md:text-3xl lg:text-4xl xl:text-5xl mt-2">
+            <p className="text-white font-instrument-serif  text-xl sm:text-2xl md:text-3xl lg:text-4xl xl:text-5xl mt-2">
               {category.name}
             </p>
           </div>

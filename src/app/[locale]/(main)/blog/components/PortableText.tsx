@@ -40,16 +40,16 @@ const components = {
   },
   block: {
     h1: ({ children }: any) => (
-      <h1 className="text-4xl font-bold mt-8 mb-4 text-[#3B3634] font-instrument-serif">{children}</h1>
+      <h1 className="text-4xl  mt-8 mb-4 text-[#3B3634] font-instrument-serif">{children}</h1>
     ),
     h2: ({ children }: any) => (
-      <h2 className="text-3xl font-bold mt-6 mb-3 text-[#3B3634] font-instrument-serif">{children}</h2>
+      <h2 className="text-3xl  mt-6 mb-3 text-[#3B3634] font-instrument-serif">{children}</h2>
     ),
     h3: ({ children }: any) => (
-      <h3 className="text-2xl font-bold mt-6 mb-3 text-[#3B3634] font-instrument-serif">{children}</h3>
+      <h3 className="text-2xl  mt-6 mb-3 text-[#3B3634] font-instrument-serif">{children}</h3>
     ),
     h4: ({ children }: any) => (
-      <h4 className="text-xl font-bold mt-4 mb-2 text-[#3B3634] font-instrument-serif">{children}</h4>
+      <h4 className="text-xl mt-4 mb-2 text-[#3B3634] font-instrument-serif">{children}</h4>
     ),
     blockquote: ({ children }: any) => (
       <blockquote className="border-l-4 border-blue-500 pl-4 my-6 italic text-gray-700 bg-gray-50 py-2 font-instrument-sans">

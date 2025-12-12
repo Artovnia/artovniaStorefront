@@ -206,7 +206,7 @@ export const SmartBestProductsSection = async ({
     return (
       <BatchPriceProvider currencyCode="PLN" days={30}>
         <section className="py-2 md:py-8 w-full">
-          <h2 className="mb-6 md:mb-12 heading-lg font-bold tracking-tight font-instrument-serif italic ml-4 lg:ml-[68px]">
+          <h2 className="mb-6 md:mb-12 heading-lg  tracking-tight font-instrument-serif italic ml-4 lg:ml-[68px]">
             {heading}
           </h2>
 

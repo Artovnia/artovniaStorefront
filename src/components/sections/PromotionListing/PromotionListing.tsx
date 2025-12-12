@@ -161,7 +161,7 @@ export const PromotionListing = ({
           <PromotionListingSkeleton />
         ) : filteredProducts.length === 0 ? (
           <div className="text-center py-12">
-            <h2 className="text-xl font-bold text-gray-800 mb-2 font-instrument-serif">
+            <h2 className="text-xl  text-gray-800 mb-2 font-instrument-serif">
               {products.length === 0 ? "Brak promocji" : "Brak wyników"}
             </h2>
             <p className="text-gray-600 font-instrument-sans">

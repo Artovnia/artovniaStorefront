@@ -82,7 +82,7 @@ export const AlgoliaTrendingListings = () => {
   if (loading) {
     return (
       <section className="py-8 w-full">
-        <h2 className="mb-6 heading-lg font-bold tracking-tight uppercase font-instrument-serif">
+        <h2 className="mb-6 heading-lg racking-tight uppercase font-instrument-serif">
           Najlepsze produkty
         </h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -101,7 +101,7 @@ export const AlgoliaTrendingListings = () => {
   if (error) {
     return (
       <section className="py-8 w-full">
-        <h2 className="mb-6 heading-lg font-bold tracking-tight uppercase font-instrument-serif">
+        <h2 className="mb-6 heading-lg tracking-tight uppercase font-instrument-serif">
           Najlepsze produkty
         </h2>
         <div className="flex justify-center w-full py-8">
@@ -114,7 +114,7 @@ export const AlgoliaTrendingListings = () => {
   if (!products.length) {
     return (
       <section className="py-8 w-full">
-        <h2 className="mb-6 heading-lg font-bold tracking-tight uppercase font-instrument-serif">
+        <h2 className="mb-6 heading-lg  tracking-tight uppercase font-instrument-serif">
           Najlepsze produkty
         </h2>
         <div className="flex justify-center w-full py-8">
@@ -126,7 +126,7 @@ export const AlgoliaTrendingListings = () => {
 
   return (
     <section className="py-8 w-full">
-      <h2 className="mb-6 heading-lg font-bold tracking-tight uppercase font-instrument-serif">
+      <h2 className="mb-6 heading-lg  tracking-tight uppercase font-instrument-serif">
         Najlepsze produkty
       </h2>
       <BatchPriceProvider currencyCode="PLN" days={30}>

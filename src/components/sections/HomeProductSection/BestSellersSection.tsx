@@ -34,7 +34,7 @@ export const BestSellersSection = async ({
     if (allProducts.length === 0) {
       return (
         <section className="py-8 w-full">
-          <h2 className="mb-6 ml-0 lg:ml-12 font-bold tracking-tight normal-case font-instrument-serif italic">
+          <h2 className="mb-6 ml-0 lg:ml-12 tracking-tight normal-case font-instrument-serif italic">
             {heading}
           </h2>
           <div className="flex justify-center w-full py-8">

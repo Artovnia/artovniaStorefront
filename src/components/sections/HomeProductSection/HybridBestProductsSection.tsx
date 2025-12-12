@@ -34,7 +34,6 @@ export const HybridBestProductsSection = ({
         const mostViewed = getMostViewed(limit * 3) // Get more for better selection
         const analytics = getAnalytics()
 
-        console.log('🔥 Hybrid Best Products - View Analytics:', analytics)
 
         // Fetch all products with their backend data
         const result = await listProducts({
@@ -145,7 +144,7 @@ export const HybridBestProductsSection = ({
   if (loading) {
     return (
       <section className="py-8 w-full">
-        <h2 className="mb-6 heading-lg font-bold tracking-tight uppercase font-instrument-serif">
+        <h2 className="mb-6 heading-lg tracking-tight uppercase font-instrument-serif">
           {heading}
         </h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -164,7 +163,7 @@ export const HybridBestProductsSection = ({
   if (error) {
     return (
       <section className="py-8 w-full">
-        <h2 className="mb-6 heading-lg font-bold tracking-tight uppercase font-instrument-serif">
+        <h2 className="mb-6 heading-lg  tracking-tight uppercase font-instrument-serif">
           {heading}
         </h2>
         <div className="flex justify-center w-full py-8">
