@@ -140,7 +140,7 @@ export const Pagination = ({
       </PaginationButton>
 
       {/* Go to page input */}
-      <div className='flex items-center ml-4'>
+      <div className='hidden md:flex items-center ml-4'>
         <span className='mr-2 text-sm font-instrument-sans'>Idź do strony:</span>
         <div className='flex relative ring-1 ring-[#3B3634] rounded-full overflow-hidden'>
           <input

@@ -12,6 +12,39 @@ import { getUserWishlists } from "../../../../../lib/data/wishlist"
 import { PRODUCT_LIMIT } from "../../../../../const"
 import { getOrSetCart } from "../../../../../lib/data/cart"
 import { getRegion } from "../../../../../lib/data/regions"
+import { generateSellerMetadata } from "../../../../../lib/helpers/seo"
+import type { Metadata } from "next"
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ handle: string; locale: string }>
+}): Promise<Metadata> {
+  const { handle, locale } = await params
+
+  try {
+    const seller = await getSellerByHandle(handle)
+    
+    if (!seller) {
+      return {
+        title: "Sprzedawca nie znaleziony",
+        description: "Nie mogliśmy znaleźć tego sprzedawcy.",
+        robots: {
+          index: false,
+          follow: false,
+        },
+      }
+    }
+
+    return generateSellerMetadata(seller, locale)
+  } catch (error) {
+    console.error("Error generating seller metadata:", error)
+    return {
+      title: "Sprzedawca",
+      description: "Profil sprzedawcy na Artovnia",
+    }
+  }
+}
 
 export default async function SellerPage({
   params,

@@ -129,7 +129,6 @@ export const ProductListing = ({
         if (value) queryParams[param] = value
       })
 
-      console.log('ProductListing: Fetching products with filters:', queryParams)
 
       const result = await listProductsWithSort({
         seller_id,

@@ -15,12 +15,17 @@ import { Pagination } from "@/components/cells/Pagination/Pagination"
 
 // Loading skeleton component
 const PromotionListingSkeleton = () => (
-  <div className="animate-pulse">
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 justify-items-center w-full max-w-[1200px]">
-      {Array.from({ length: 8 }).map((_, i) => (
-        <div key={i} className="h-[315px] w-[252px] bg-gray-200 rounded"></div>
-      ))}
-    </div>
+  <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4 sm:gap-12">
+    {Array.from({ length: 12 }).map((_, i) => (
+      <div key={i} className="bg-white rounded-lg shadow-md animate-pulse overflow-hidden">
+        <div className="aspect-square bg-gray-200" />
+        <div className="p-4 space-y-3">
+          <div className="h-4 bg-gray-200 rounded w-3/4" />
+          <div className="h-4 bg-gray-200 rounded w-1/2" />
+          <div className="h-6 bg-gray-200 rounded w-1/3" />
+        </div>
+      </div>
+    ))}
   </div>
 )
 
@@ -136,70 +141,64 @@ export const PromotionListing = ({
   return (
     <div className="w-full">
       {/* Results Info */}
-      <div className="px-4 sm:px-6 py-4 bg-primary max-w-[1200px] mx-auto">
-        <div className="flex items-center justify-between">
-          <p className="text-sm text-gray-600 font-instrument-sans">
-            {isLoading ? (
-              "Ładowanie..."
-            ) : (
-              <>
-                Strona {currentPage} z {totalPages} 
-                {filteredProducts.length > 0 && (
-                  <span className="ml-2">
-                    ({filteredProducts.length} {filteredProducts.length === 1 ? "produkt" : "produktów"})
-                  </span>
-                )}
-              </>
-            )}
-          </p>
-        </div>
+      <div className="mb-6">
+        <p className="text-sm text-gray-600 font-instrument-sans max-w-[1450px] mx-auto">
+          {isLoading ? (
+            "Ładowanie..."
+          ) : (
+            <>
+              Strona {currentPage} z {totalPages}
+            </>
+          )}
+        </p>
       </div>
 
       {/* Content Area */}
-      <div className="px-4 sm:px-6 py-8 max-w-[1200px] mx-auto">
-        {isLoading ? (
-          <PromotionListingSkeleton />
-        ) : filteredProducts.length === 0 ? (
-          <div className="text-center py-12">
-            <h2 className="text-xl  text-gray-800 mb-2 font-instrument-serif">
-              {products.length === 0 ? "Brak promocji" : "Brak wyników"}
-            </h2>
-            <p className="text-gray-600 font-instrument-sans">
-              {products.length === 0 
-                ? "Obecnie nie ma produktów w promocyjnych cenach" 
-                : "Nie znaleziono produktów spełniających wybrane kryteria"}
-            </p>
-          </div>
-        ) : (
-          <>
-            <BatchPriceProvider currencyCode="PLN" days={30}>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-4 gap-6 justify-items-center mb-8">
+      {isLoading ? (
+        <PromotionListingSkeleton />
+      ) : filteredProducts.length === 0 ? (
+        <div className="text-center py-12">
+          <h2 className="text-xl text-gray-800 mb-2 font-instrument-serif">
+            {products.length === 0 ? "Brak promocji" : "Brak wyników"}
+          </h2>
+          <p className="text-gray-600 font-instrument-sans">
+            {products.length === 0 
+              ? "Obecnie nie ma produktów w promocyjnych cenach" 
+              : "Nie znaleziono produktów spełniających wybrane kryteria"}
+          </p>
+        </div>
+      ) : (
+        <>
+          <BatchPriceProvider currencyCode="PLN" days={30}>
+            <div className="w-full flex justify-center ">
+              <ul className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4 sm:gap-12 w-fit mx-auto ">
                 {filteredProducts.map((product) => (
-                  <div key={product.id} className="relative">
-                    <ProductCard
-                      product={product}
-                      user={user}
-                      wishlist={wishlist}
-                      onWishlistChange={refreshWishlist}
-                    />
-                  </div>
+                  <ProductCard
+                    key={product.id}
+                    product={product}
+                    user={user}
+                    wishlist={wishlist}
+                    onWishlistChange={refreshWishlist}
+                  />
                 ))}
-              </div>
-            </BatchPriceProvider>
+              </ul>
+            </div>
+          </BatchPriceProvider>
 
-            {/* Pagination */}
-            {totalPages > 1 && (
-              <div className="flex justify-center mt-8">
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="w-full mt-10">
+              <div className="flex justify-center">
                 <Pagination 
                   pages={totalPages} 
                   setPage={handlePageChange} 
                   currentPage={currentPage} 
                 />
               </div>
-            )}
-          </>
-        )}
-      </div>
+            </div>
+          )}
+        </>
+      )}
     </div>
   )
 }

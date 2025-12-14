@@ -120,7 +120,9 @@ export const generateProductMetadata = (
       siteName: 'Artovnia',
       images: [
         {
-          url: product?.thumbnail || `${baseUrl}/placeholder.webp`,
+          url: product?.thumbnail?.startsWith('http') 
+            ? product.thumbnail 
+            : `${baseUrl}${product?.thumbnail || '/images/placeholder.webp'}`,
           width: 1200,
           height: 630,
           alt: product?.title,
@@ -129,6 +131,10 @@ export const generateProductMetadata = (
       type: "website",
       locale: locale === 'pl' ? 'pl_PL' : 'en_US',
     },
+    // ✅ SEO: Add article:tag meta tags for better social media categorization
+    other: product?.tags && product.tags.length > 0 ? {
+      'article:tag': product.tags.map(t => t.value),
+    } : undefined,
     twitter: {
       card: "summary_large_image",
       site: "@artovnia",
@@ -210,6 +216,81 @@ export const generateCategoryMetadata = (
   }
 }
 
+export const generateSellerMetadata = (
+  seller: { name: string; handle: string; description?: string; logo?: string; banner?: string },
+  locale: string = 'pl'
+): Metadata => {
+  const baseUrl = getBaseUrl()
+  const sellerUrl = `${baseUrl}/sellers/${seller.handle}`
+
+  const description = generateDescription(
+    seller.description,
+    `Odkryj unikalne dzieła sztuki i rękodzieła od ${seller.name}. Zobacz kolekcję produktów i poznaj artystę na Artovnia.`,
+    155
+  )
+
+  // Use seller banner or logo, fallback to default
+  const getSellerImage = (): string => {
+    if (seller.banner) {
+      return seller.banner.startsWith('http') ? seller.banner : `${baseUrl}${seller.banner}`
+    }
+    if (seller.logo) {
+      return seller.logo.startsWith('http') ? seller.logo : `${baseUrl}${seller.logo}`
+    }
+    return `${baseUrl}/ArtovniaOgImage.png`
+  }
+
+  const sellerImage = getSellerImage()
+
+  return {
+    robots: "index, follow",
+    metadataBase: new URL(baseUrl),
+    title: `${seller.name} - Artysta`,
+    description,
+    keywords: [
+      seller.name,
+      'artysta',
+      'sprzedawca',
+      'sztuka',
+      'rękodzieło',
+      'marketplace',
+      'polski artysta',
+    ].join(', '),
+    alternates: {
+      canonical: sellerUrl,
+      languages: {
+        'pl': sellerUrl,
+        'en': `${baseUrl}/en/sellers/${seller.handle}`,
+        'x-default': sellerUrl,
+      },
+    },
+    openGraph: {
+      title: `${seller.name} - Artysta na Artovnia`,
+      description,
+      url: sellerUrl,
+      siteName: 'Artovnia',
+      images: [
+        {
+          url: sellerImage,
+          width: 1200,
+          height: 630,
+          alt: `${seller.name} - Profil artysty`,
+        },
+      ],
+      type: "profile",
+      locale: locale === 'pl' ? 'pl_PL' : 'en_US',
+    },
+    twitter: {
+      card: "summary_large_image",
+      site: "@artovnia",
+      creator: "@artovnia",
+      title: `${seller.name} - Artysta`,
+      description,
+      images: [sellerImage],
+    },
+  }
+}
+
 // ============================================
 // STRUCTURED DATA (JSON-LD) GENERATORS
 // ============================================
@@ -269,6 +350,10 @@ export const generateProductJsonLd = (
     ...(review.created_at && { "datePublished": review.created_at })
   })) : undefined
 
+  // ✅ SEO: Extract tags as keywords for better search visibility
+  const productTags = product.tags?.map(t => t.value).filter(Boolean) || []
+  const category = (product as any).categories?.[0]?.name
+
   return {
     "@context": "https://schema.org",
     "@type": "Product",
@@ -280,6 +365,10 @@ export const generateProductJsonLd = (
       "@type": "Brand",
       "name": (product as any).seller?.name || product.metadata?.brand || "Artovnia"
     },
+    // ✅ SEO: Add category for better product classification
+    ...(category && { "category": category }),
+    // ✅ SEO: Add tags as keywords for search engines
+    ...(productTags.length > 0 && { "keywords": productTags.join(', ') }),
     ...(price && price > 0 && {
       "offers": {
         "@type": "Offer",

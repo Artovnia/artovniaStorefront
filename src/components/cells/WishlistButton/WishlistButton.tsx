@@ -7,6 +7,7 @@ import { SerializableWishlist } from "@/types/wishlist"
 import { useEffect, useState } from "react"
 import { HttpTypes } from "@medusajs/types"
 import { useRouter } from "next/navigation"
+import { useGuestWishlist } from "@/components/context/GuestWishlistContext"
 
 export const WishlistButton = ({
   productId,
@@ -20,45 +21,55 @@ export const WishlistButton = ({
   onWishlistChange?: () => void
 }) => {
   const router = useRouter()
+  const { 
+    isInGuestWishlist, 
+    addToGuestWishlist, 
+    removeFromGuestWishlist 
+  } = useGuestWishlist()
   
   const [isWishlistAdding, setIsWishlistAdding] = useState(false)
-  const initialWishlisted = wishlist?.[0]?.products?.some((item) => item.id === productId)
-  const [isWishlisted, setIsWishlisted] = useState(initialWishlisted)
+  
+  // Determine if product is wishlisted (check both database and local storage)
+  const isInDatabaseWishlist = wishlist?.[0]?.products?.some((item) => item.id === productId)
+  const isInLocalWishlist = isInGuestWishlist(productId)
+  const isWishlisted = user ? isInDatabaseWishlist : isInLocalWishlist
 
   useEffect(() => {
-    const newIsWishlisted = wishlist?.[0]?.products?.some((item) => item.id === productId)
-  
-    setIsWishlisted(newIsWishlisted)
-  }, [wishlist, productId]) // Removed isWishlisted from dependencies to prevent loops
-
-  if (!user) {
-    return null
-  }
+    // Update local state when database wishlist changes (for authenticated users)
+    if (user) {
+      const newIsWishlisted = wishlist?.[0]?.products?.some((item) => item.id === productId)
+      if (newIsWishlisted !== isInDatabaseWishlist) {
+        // State will be updated via isWishlisted calculation
+      }
+    }
+  }, [wishlist, productId, user, isInDatabaseWishlist])
 
   const handleAddToWishlist = async () => {
     try {
       setIsWishlistAdding(true)
-      const result = await addWishlistItem({
-        reference_id: productId,
-        reference: "product",
-      })
       
-      // Update local state for both success and "already exists" cases
-      setIsWishlisted(true)
-      
-      // Notify parent component about wishlist change if callback is provided
-      if (onWishlistChange) {
-        onWishlistChange()
+      if (user) {
+        // Authenticated user: Add to database
+        const result = await addWishlistItem({
+          reference_id: productId,
+          reference: "product",
+        })
+        
+        // Notify parent component about wishlist change if callback is provided
+        if (onWishlistChange) {
+          onWishlistChange()
+        }
+        
+        // Force router refresh to update Header and other components
+        setTimeout(() => {
+          router.refresh()
+        }, 100)
+      } else {
+        // Guest user: Add to local storage
+        addToGuestWishlist(productId)
       }
-      
-      // Force router refresh to update Header and other components
-      // Use setTimeout to ensure state updates are processed first
-      setTimeout(() => {
-        router.refresh()
-      }, 100)
     } catch (error) {
       console.error('❌ Error adding to wishlist:', error)
-      // For genuine errors, don't update the state
     } finally {
       setIsWishlistAdding(false)
     }
@@ -68,31 +79,28 @@ export const WishlistButton = ({
     try {
       setIsWishlistAdding(true)
 
-      await removeWishlistItem({
-        wishlist_id: wishlist?.[0].id!,
-        product_id: productId,
-      })
-      // Update local state immediately after successful removal
-      setIsWishlisted(false)
-      
-      // Notify parent component about wishlist change if callback is provided
-      if (onWishlistChange) {
-        onWishlistChange()
+      if (user) {
+        // Authenticated user: Remove from database
+        await removeWishlistItem({
+          wishlist_id: wishlist?.[0].id!,
+          product_id: productId,
+        })
+        
+        // Notify parent component about wishlist change if callback is provided
+        if (onWishlistChange) {
+          onWishlistChange()
+        }
+        
+        // Force router refresh to update Header and other components
+        setTimeout(() => {
+          router.refresh()
+        }, 100)
+      } else {
+        // Guest user: Remove from local storage
+        removeFromGuestWishlist(productId)
       }
-      
-      // Force router refresh to update Header and other components
-      // Use setTimeout to ensure state updates are processed first
-      setTimeout(() => {
-        router.refresh()
-      }, 100)
     } catch (error) {
       console.error('Error removing from wishlist:', error)
-      
-      // Check if the error is because item is not in wishlist
-      if (error instanceof Error && (error.message.includes('not found') || error.message.includes('404'))) {
-        setIsWishlisted(false)
-      } else {
-      }
     } finally {
       setIsWishlistAdding(false)
     }

@@ -38,9 +38,9 @@ export async function Footer({ categories = [] }: FooterProps) {
       role="contentinfo"
       aria-label="Stopka strony"
     >
-      {/* Main Footer Content - 4 Columns */}
+      {/* Main Footer Content - 5 Columns */}
       <div className="max-w-[1920px] mx-auto px-6 py-12" id="footer-content">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8">
           
           {/* Column 1: Sklep (Categories) */}
           <div>
@@ -48,6 +48,12 @@ export async function Footer({ categories = [] }: FooterProps) {
               Sklep
             </h2>
             <nav className="space-y-3 font-instrument-sans uppercase" aria-labelledby="footer-shop">
+               <Link 
+                href="/tags" 
+                className="block text-white hover:text-primary transition-colors duration-200 text-sm"
+              >
+                Tagi
+              </Link>
               <Link href="/categories" className="block text-white hover:text-primary transition-colors duration-200 text-sm">
                 Wszystkie produkty
               </Link>
@@ -84,6 +90,7 @@ export async function Footer({ categories = [] }: FooterProps) {
               >
                 Kontakt
               </Link>
+             
             </nav>
           </div>
 

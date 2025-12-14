@@ -70,10 +70,18 @@ export const ProductShareButton = ({
 }: ProductShareButtonProps) => {
   const [isOpen, setIsOpen] = useState(false)
   const [copied, setCopied] = useState(false)
+  const [canShare, setCanShare] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
 
   // Get the current page URL if not provided
   const shareUrl = productUrl || (typeof window !== 'undefined' ? window.location.href : '')
+
+  // Check if Web Share API is available
+  useEffect(() => {
+    if (typeof window !== 'undefined' && typeof navigator !== 'undefined' && 'share' in navigator) {
+      setCanShare(true)
+    }
+  }, [])
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -112,10 +120,17 @@ export const ProductShareButton = ({
     setIsOpen(false)
   }
 
-  // Share on Facebook Messenger
+  // Share on Facebook Messenger (mobile deep link)
   const shareOnMessenger = () => {
-    const messengerUrl = `https://www.facebook.com/dialog/send?link=${encodeURIComponent(shareUrl)}&app_id=YOUR_APP_ID&redirect_uri=${encodeURIComponent(shareUrl)}`
-    window.open(messengerUrl, '_blank', 'width=600,height=400')
+    // Try mobile app deep link first, fallback to web
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)
+    if (isMobile) {
+      // Mobile deep link - opens Messenger app directly
+      window.location.href = `fb-messenger://share/?link=${encodeURIComponent(shareUrl)}`
+    } else {
+      // Desktop fallback - requires Facebook App ID
+      alert('Messenger sharing works best on mobile devices. Please use the "Więcej opcji" button to share via Messenger.')
+    }
     setIsOpen(false)
   }
 
@@ -126,13 +141,8 @@ export const ProductShareButton = ({
     setIsOpen(false)
   }
 
-  // Share on Instagram (opens Instagram in new tab - direct sharing not available via web)
-  const shareOnInstagram = () => {
-    // Instagram doesn't have a web share API, so we'll copy the link and open Instagram
-    navigator.clipboard.writeText(shareUrl)
-    window.open('https://www.instagram.com/', '_blank')
-    setIsOpen(false)
-  }
+  // Instagram sharing only works through native share on mobile
+  // Removed non-functional web implementation
 
   // Share on WhatsApp
   const shareOnWhatsApp = () => {
@@ -155,28 +165,41 @@ export const ProductShareButton = ({
     setIsOpen(false)
   }
 
-  // Native share (mobile)
+  // Native share (mobile) - Primary sharing method
   const handleNativeShare = async () => {
-    if (navigator.share) {
+    if (typeof navigator !== 'undefined' && 'share' in navigator) {
       try {
         await navigator.share({
           title: productTitle,
+          text: `Sprawdź ten produkt: ${productTitle}`,
           url: shareUrl,
         })
         setIsOpen(false)
       } catch (err) {
-        console.error('Error sharing:', err)
+        // User cancelled or error occurred
+        if (err instanceof Error && err.name !== 'AbortError') {
+          console.error('Error sharing:', err)
+        }
       }
+    }
+  }
+
+  // Handle share button click - use native share on mobile, dropdown on desktop
+  const handleShareClick = () => {
+    if (canShare) {
+      handleNativeShare()
+    } else {
+      setIsOpen(!isOpen)
     }
   }
 
   return (
     <div className={`relative ${className}`} ref={dropdownRef}>
       <button
-        onClick={() => setIsOpen(!isOpen)}
+        onClick={handleShareClick}
         className="p-2 rounded-full hover:bg-ui-bg-subtle transition-colors duration-200"
         aria-label="Udostępnij produkt"
-        title="Udostępnij"
+        title={canShare ? "Udostępnij" : "Opcje udostępniania"}
       >
         <ShareIcon size={24} className="text-[#3b3634]" />
       </button>
@@ -188,49 +211,19 @@ export const ProductShareButton = ({
           </div>
 
           <div className="p-2">
-            {/* Copy Link */}
-            <button
-              onClick={copyToClipboard}
-              className="w-full flex items-center gap-3 px-3 py-2 rounded-md hover:bg-ui-bg-subtle transition-colors duration-200 text-left"
-            >
-              {copied ? (
-                <CheckIcon size={20} className="text-green-600" />
-              ) : (
-                <CopyIcon size={20} className="text-ui-fg-subtle" />
-              )}
-              <span className="text-sm text-ui-fg-base">
-                {copied ? 'Skopiowano!' : 'Kopiuj link'}
-              </span>
-            </button>
-
-            {/* Facebook */}
-            <button
-              onClick={shareOnFacebook}
-              className="w-full flex items-center gap-3 px-3 py-2 rounded-md hover:bg-gray-50 transition-colors duration-200 text-left"
-            >
-              <FacebookIcon size={20} color="#1877F2" />
-              <span className="text-sm text-ui-fg-base">Facebook</span>
-            </button>
-
-            {/* Facebook Messenger */}
-            <button
-              onClick={shareOnMessenger}
-              className="w-full flex items-center gap-3 px-3 py-2 rounded-md hover:bg-gray-50 transition-colors duration-200 text-left"
-            >
-              <svg
-                width={20}
-                height={20}
-                viewBox="0 0 24 24"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
+            {/* Native Share (Mobile) - Primary option at top */}
+            {canShare && (
+              <button
+                onClick={handleNativeShare}
+                className="w-full flex items-center gap-3 px-3 py-2 rounded-md bg-blue-50 hover:bg-blue-100 transition-colors duration-200 text-left border border-blue-200 mb-2"
               >
-                <path
-                  d="M12 2C6.477 2 2 6.145 2 11.243C2 14.041 3.281 16.551 5.344 18.243V22L8.958 20.031C9.932 20.309 10.95 20.486 12 20.486C17.523 20.486 22 16.341 22 11.243C22 6.145 17.523 2 12 2ZM13.2 14.4L10.8 11.8L6 14.4L11.4 8.6L13.8 11.2L18.6 8.6L13.2 14.4Z"
-                  fill="#0084FF"
-                />
-              </svg>
-              <span className="text-sm text-ui-fg-base">Messenger</span>
-            </button>
+                <ShareIcon size={20} className="text-blue-600" />
+                <div className="flex flex-col">
+                  <span className="text-sm font-semibold text-blue-600">Udostępnij</span>
+                  <span className="text-xs text-blue-500">Instagram, Messenger, WhatsApp i więcej</span>
+                </div>
+              </button>
+            )}
 
             {/* Pinterest */}
             <button
@@ -252,74 +245,20 @@ export const ProductShareButton = ({
               <span className="text-sm text-ui-fg-base">Pinterest</span>
             </button>
 
-            {/* Instagram */}
+            {/* Copy Link - At bottom */}
             <button
-              onClick={shareOnInstagram}
-              className="w-full flex items-center gap-3 px-3 py-2 rounded-md hover:bg-gray-50 transition-colors duration-200 text-left"
+              onClick={copyToClipboard}
+              className="w-full flex items-center gap-3 px-3 py-2 rounded-md hover:bg-ui-bg-subtle transition-colors duration-200 text-left mt-2 border-t border-ui-border-base pt-3"
             >
-              <InstagramIcon size={20} color="#E4405F" />
-              <span className="text-sm text-ui-fg-base">Instagram</span>
+              {copied ? (
+                <CheckIcon size={20} className="text-green-600" />
+              ) : (
+                <CopyIcon size={20} className="text-ui-fg-subtle" />
+              )}
+              <span className="text-sm text-ui-fg-base">
+                {copied ? 'Skopiowano!' : 'Kopiuj link'}
+              </span>
             </button>
-
-            {/* WhatsApp */}
-            <button
-              onClick={shareOnWhatsApp}
-              className="w-full flex items-center gap-3 px-3 py-2 rounded-md hover:bg-gray-50 transition-colors duration-200 text-left"
-            >
-              <svg
-                width={20}
-                height={20}
-                viewBox="0 0 24 24"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path
-                  d="M17.472 14.382C17.015 14.154 14.784 13.058 14.362 12.906C13.94 12.754 13.627 12.678 13.314 13.135C13.001 13.592 12.121 14.614 11.843 14.927C11.565 15.24 11.287 15.276 10.83 15.048C10.373 14.82 8.874 14.333 7.104 12.756C5.719 11.52 4.787 9.992 4.509 9.535C4.231 9.078 4.478 8.822 4.706 8.594C4.911 8.389 5.163 8.062 5.391 7.784C5.619 7.506 5.695 7.3 5.847 6.987C5.999 6.674 5.923 6.396 5.809 6.168C5.695 5.94 4.787 3.709 4.401 2.795C4.027 1.905 3.647 2.023 3.362 2.009C3.089 1.995 2.776 1.992 2.463 1.992C2.15 1.992 1.657 2.106 1.235 2.563C0.813 3.02 -0.5 4.116 -0.5 6.347C-0.5 8.578 1.271 10.736 1.499 11.049C1.727 11.362 4.787 15.837 9.314 17.791C10.38 18.265 11.214 18.542 11.863 18.749C12.933 19.084 13.905 19.037 14.673 18.921C15.527 18.793 17.328 17.827 17.714 16.764C18.1 15.701 18.1 14.782 17.986 14.59C17.872 14.398 17.559 14.284 17.102 14.056L17.472 14.382ZM12.002 21.785H11.998C10.158 21.784 8.353 21.281 6.772 20.329L6.398 20.107L2.77 21.089L3.768 17.558L3.524 17.169C2.486 15.533 1.938 13.639 1.939 11.699C1.941 6.257 6.426 1.785 12.006 1.785C14.701 1.786 17.229 2.838 19.106 4.719C20.983 6.6 22.032 9.133 22.031 11.833C22.029 17.275 17.544 21.785 12.002 21.785Z"
-                  fill="#25D366"
-                />
-              </svg>
-              <span className="text-sm text-ui-fg-base">WhatsApp</span>
-            </button>
-
-            {/* Twitter/X */}
-            <button
-              onClick={shareOnTwitter}
-              className="w-full flex items-center gap-3 px-3 py-2 rounded-md hover:bg-gray-50 transition-colors duration-200 text-left"
-            >
-              <svg
-                width={20}
-                height={20}
-                viewBox="0 0 24 24"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path
-                  d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"
-                  fill="#000000"
-                />
-              </svg>
-              <span className="text-sm text-ui-fg-base">X (Twitter)</span>
-            </button>
-
-            {/* LinkedIn */}
-            <button
-              onClick={shareOnLinkedIn}
-              className="w-full flex items-center gap-3 px-3 py-2 rounded-md hover:bg-gray-50 transition-colors duration-200 text-left"
-            >
-              <LinkedInIcon size={20} color="#0A66C2" />
-              <span className="text-sm text-ui-fg-base">LinkedIn</span>
-            </button>
-
-            {/* Native Share (Mobile) */}
-            {typeof window !== 'undefined' && typeof navigator.share === 'function' && (
-              <button
-                onClick={handleNativeShare}
-                className="w-full flex items-center gap-3 px-3 py-2 rounded-md hover:bg-gray-50 transition-colors duration-200 text-left"
-              >
-                <ShareIcon size={20} className="text-[#3b3634]" />
-                <span className="text-sm text-[#3b3634]">Więcej opcji...</span>
-              </button>
-            )}
           </div>
         </div>
       )}

@@ -2,6 +2,7 @@ import { Footer } from '@/components/organisms';
 import { Header } from '@/components/organisms/Header/Header';
 import { ConditionalNewsletter } from '@/components/cells';
 import { CartProvider } from '@/components/context/CartContext';
+import { GuestWishlistProvider } from '@/components/context/GuestWishlistContext';
 import { listCategoriesWithProducts } from '@/lib/data/categories';
 import { Suspense } from 'react';
 // ✅ OPTIMIZED: Lazy-loaded client components (Next.js 15 requires client wrapper for ssr: false)
@@ -25,26 +26,28 @@ export default async function RootLayout({
   const initialCart = null; // Always null - let CartContext handle it
 
   return (
-    <CartProvider initialCart={initialCart}>
-      <div className="flex flex-col min-h-screen ">
-        <Header categories={categoriesData} />
-        <div className="flex-grow pb-0">
-          {children}
+    <GuestWishlistProvider>
+      <CartProvider initialCart={initialCart}>
+        <div className="flex flex-col min-h-screen ">
+          <Header categories={categoriesData} />
+          <div className="flex-grow pb-0">
+            {children}
+          </div>
+          {/* ✅ OPTIMIZATION: Newsletter in Suspense for consistent pattern */}
+          {/* Below fold, lightweight component - null fallback for no visual change */}
+          <Suspense fallback={null}>
+            <ConditionalNewsletter />
+          </Suspense>
+          
+          {/* ✅ OPTIMIZATION: Footer in Suspense for non-blocking render */}
+          {/* Footer is below fold, so it can load after initial content */}
+          <Suspense fallback={<div className="h-96 bg-tertiary" />}>
+            <Footer categories={categoriesData.parentCategories} />
+          </Suspense>
         </div>
-        {/* ✅ OPTIMIZATION: Newsletter in Suspense for consistent pattern */}
-        {/* Below fold, lightweight component - null fallback for no visual change */}
-        <Suspense fallback={null}>
-          <ConditionalNewsletter />
-        </Suspense>
-        
-        {/* ✅ OPTIMIZATION: Footer in Suspense for non-blocking render */}
-        {/* Footer is below fold, so it can load after initial content */}
-        <Suspense fallback={<div className="h-96 bg-tertiary" />}>
-          <Footer categories={categoriesData.parentCategories} />
-        </Suspense>
-      </div>
-      <MobileUserNavigation />
-      <CookieConsent />
-    </CartProvider>
+        <MobileUserNavigation />
+        <CookieConsent />
+      </CartProvider>
+    </GuestWishlistProvider>
   );
 }

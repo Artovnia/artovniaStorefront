@@ -8,6 +8,7 @@ import {
   CategorySidebar,
   ProductFilterBar,
 } from "@/components/organisms"
+import { MobileCategoryBreadcrumbs } from "@/components/molecules/MobileCategoryBreadcrumbs"
 import { BatchPriceProvider } from "@/components/context/BatchPriceProvider"
 import { SelectField } from "@/components/molecules/SelectField/SelectField"
 import { Configure, useHits, useRefinementList } from "react-instantsearch"
@@ -410,13 +411,13 @@ const ProductsListing = ({
 
   return (
     <>
-      <div className="grid grid-cols-1 lg:grid-cols-6 gap-8 w-full">
+      <div className="grid grid-cols-1 lg:grid-cols-6 gap-4 w-full">
         {/* Left Column: Category Sidebar with Results Count - Hidden below 768px (md breakpoint) */}
         <div className="hidden lg:block lg:col-span-1">
           {/* Category Sidebar - Now includes results count */}
           <CategorySidebar 
             parentCategoryHandle={category_id ? undefined : undefined} 
-            className="bg-primary p-4"
+            className="bg-primary pl-4"
             categories={categories}
             currentCategory={currentCategory}
             resultsCount={results?.nbHits || 0}
@@ -425,6 +426,9 @@ const ProductsListing = ({
 
         {/* Right Column: Filter Bar + Products */}
         <div className="lg:col-span-5">
+          {/* Mobile Category Breadcrumbs - Only visible on mobile */}
+          <MobileCategoryBreadcrumbs currentCategory={currentCategory} />
+          
           {/* Filter Bar - Above products */}
           <div className="mb-6">
             <ProductFilterBar 
@@ -446,7 +450,7 @@ const ProductsListing = ({
               </div>
             ) : (
               <div className="w-full flex justify-center xl:justify-start">
-                <ul className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4 sm:gap-12 w-fit mx-auto xl:mx-0">
+                <ul className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4 sm:gap-4 lg:gap-6 2xl:gap-8 w-fit mx-auto xl:mx-0">
                     {items
                       .filter((hit: any) => hit?.objectID && hit?.title) 
                       .map((hit: any, index: number) => {

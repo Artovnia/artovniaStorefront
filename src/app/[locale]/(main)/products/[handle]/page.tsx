@@ -71,13 +71,22 @@ export async function generateMetadata({
         ...baseMetadata.openGraph,
         images: product.images?.[0] ? [
           {
-            url: product.images[0].url,
+            url: product.images[0].url.startsWith('http') 
+              ? product.images[0].url 
+              : `${process.env.NEXT_PUBLIC_BASE_URL}${product.images[0].url}`,
             width: 1200,
             height: 630,
             alt: product.title,
             type: 'image/webp'
           }
-        ] : [],
+        ] : [
+          {
+            url: `${process.env.NEXT_PUBLIC_BASE_URL}/images/placeholder.webp`,
+            width: 1200,
+            height: 630,
+            alt: product.title,
+          }
+        ],
       },
     }
   } catch (error) {

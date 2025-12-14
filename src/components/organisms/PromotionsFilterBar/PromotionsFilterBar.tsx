@@ -225,7 +225,7 @@ export const PromotionsFilterBar = ({
       </div>
 
       {/* Desktop: Filter Buttons Row - Show only on screens >= 768px */}
-      <div className="hidden md:flex flex-wrap items-center gap-2 sm:gap-3 mb-4 overflow-x-auto scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-gray-100 pb-2">
+      <div className="hidden md:flex flex-wrap items-center gap-2 sm:gap-3  overflow-x-auto scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-gray-100 pb-2">
         {/* Sort Filter */}
         <SortFilter />
         

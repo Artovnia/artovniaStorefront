@@ -2,6 +2,7 @@
 
 import { HttpTypes } from "@medusajs/types"
 import { CategoryNavbar, NavbarSearch } from "@/components/molecules"
+import { MobileProductSearch } from "@/components/molecules/MobileProductSearch"
 import { FullWidthDropdown } from "@/components/molecules/CategoryNavbar/CategoryNavbar"
 import { useState, useEffect } from "react"
 import { getTopLevelCategories } from "@/components/molecules/CategoryNavbar/mockCategoryData"
@@ -72,12 +73,19 @@ export const Navbar = ({
   }
 
   return (
-    <div 
-      className="hidden md:block w-full border ring-1 ring-[#BFB7AD] bg-primary relative"
-      onMouseLeave={handleDropdownMouseLeave}
-      aria-label="Main navigation bar with categories"
-    >
-      <div className="flex py-4 justify-between max-w-[1920px] mx-auto">
+    <>
+      {/* Mobile Search - Only visible on mobile, hidden on desktop */}
+      <div className="md:hidden">
+        <MobileProductSearch />
+      </div>
+
+      {/* Desktop Navbar */}
+      <div 
+        className="hidden md:block w-full border ring-1 ring-[#BFB7AD] bg-primary relative"
+        onMouseLeave={handleDropdownMouseLeave}
+        aria-label="Main navigation bar with categories"
+      >
+        <div className="flex py-4 justify-between max-w-[1920px] mx-auto">
         <div className="hidden md:flex w-full">
           <CategoryNavbar 
             categories={categories} 
@@ -109,6 +117,7 @@ export const Navbar = ({
           />
         </div>
       )}
-    </div>
+      </div>
+    </>
   )
 }

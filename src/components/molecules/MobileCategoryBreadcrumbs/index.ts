@@ -1,0 +1,1 @@
+export { MobileCategoryBreadcrumbs } from './MobileCategoryBreadcrumbs'

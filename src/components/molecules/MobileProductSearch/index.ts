@@ -1,0 +1,1 @@
+export { MobileProductSearch } from './MobileProductSearch'

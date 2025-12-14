@@ -14,13 +14,17 @@ import { loginFormSchema, LoginFormData } from "./schema"
 import { useState } from "react"
 import { login, loginWithGoogle } from "@/lib/data/customer"
 import { useRouter } from '@/i18n/routing'
+import { useSearchParams } from 'next/navigation'
+import { useGuestWishlist } from "@/components/context/GuestWishlistContext"
+import { syncGuestWishlistToDatabase } from "@/lib/data/wishlist-sync"
 
 interface LoginFormProps {
   compact?: boolean // For use in modals
   redirectUrl?: string // URL to redirect to after login
+  onSuccess?: () => void // Callback after successful login (prevents redirect)
 }
 
-export const LoginForm = ({ compact = false, redirectUrl }: LoginFormProps = {}) => {
+export const LoginForm = ({ compact = false, redirectUrl, onSuccess }: LoginFormProps = {}) => {
   const methods = useForm<LoginFormData>({
     resolver: zodResolver(loginFormSchema),
     defaultValues: {
@@ -31,19 +35,21 @@ export const LoginForm = ({ compact = false, redirectUrl }: LoginFormProps = {})
 
   return (
     <FormProvider {...methods}>
-      <Form compact={compact} redirectUrl={redirectUrl} />
+      <Form compact={compact} redirectUrl={redirectUrl} onSuccess={onSuccess} />
     </FormProvider>
   )
 }
 
-const Form = ({ compact, redirectUrl }: { compact: boolean; redirectUrl?: string }) => {
+const Form = ({ compact, redirectUrl, onSuccess }: { compact: boolean; redirectUrl?: string; onSuccess?: () => void }) => {
+  const router = useRouter()
+  const searchParams = useSearchParams()
   const [error, setError] = useState("")
+  const { guestWishlist, clearGuestWishlist } = useGuestWishlist()
   const {
     handleSubmit,
     register,
     formState: { errors, isSubmitting },
   } = useFormContext()
-  const router = useRouter()
 
   const submit = async (data: FieldValues) => {
     const formData = new FormData()
@@ -57,17 +63,35 @@ const Form = ({ compact, redirectUrl }: { compact: boolean; redirectUrl?: string
     }
     setError("")
     
-    // Priority 1: Redirect URL from query parameter (e.g., from seller message page)
+    // Sync guest wishlist to database after successful login
+    if (guestWishlist.length > 0) {
+      console.log(`🔄 Syncing ${guestWishlist.length} guest wishlist items after login...`)
+      try {
+        await syncGuestWishlistToDatabase(guestWishlist)
+        clearGuestWishlist()
+        console.log('✅ Guest wishlist synced and cleared')
+      } catch (error) {
+        console.error('❌ Failed to sync guest wishlist:', error)
+      }
+    }
+    
+    // Priority 1: onSuccess callback (for mobile modal - stay on current page)
+    if (onSuccess) {
+      onSuccess()
+      return
+    }
+    
+    // Priority 2: Redirect URL from query parameter (e.g., from seller message page)
     if (redirectUrl) {
       router.push(redirectUrl)
       return
     }
     
-    // Priority 2: Check if user came from checkout flow
+    // Priority 3: Check if user came from checkout flow
     const shouldRedirectToCheckout = sessionStorage.getItem('checkout_redirect')
     if (shouldRedirectToCheckout) {
       sessionStorage.removeItem('checkout_redirect')
-      router.push('/checkout?step=address') // Use router.push to preserve cart state
+      router.push('/checkout?step=address')
     } else {
       router.push("/user")
     }

@@ -7,6 +7,8 @@ import {
   useFormContext,
 } from "react-hook-form"
 import { Button } from "@/components/atoms"
+import { useGuestWishlist } from "@/components/context/GuestWishlistContext"
+import { syncGuestWishlistToDatabase } from "@/lib/data/wishlist-sync"
 import { zodResolver } from "@hookform/resolvers/zod"
 import Link from "next/link"
 import { LabeledInput } from "@/components/cells"
@@ -18,9 +20,10 @@ import { useRouter } from '@/i18n/routing'
 
 interface RegisterFormProps {
   compact?: boolean // For use in modals
+  onSuccess?: () => void // Callback after successful registration (prevents redirect)
 }
 
-export const RegisterForm = ({ compact = false }: RegisterFormProps = {}) => {
+export const RegisterForm = ({ compact = false, onSuccess }: RegisterFormProps = {}) => {
   const methods = useForm<RegisterFormData>({
     resolver: zodResolver(registerFormSchema),
     defaultValues: {
@@ -35,14 +38,15 @@ export const RegisterForm = ({ compact = false }: RegisterFormProps = {}) => {
 
   return (
     <FormProvider {...methods}>
-      <Form compact={compact} />
+      <Form compact={compact} onSuccess={onSuccess} />
     </FormProvider>
   )
 }
 
-const Form = ({ compact }: { compact: boolean }) => {
+const Form = ({ compact, onSuccess }: { compact: boolean; onSuccess?: () => void }) => {
   const [error, setError] = useState<string | undefined>()
   const router = useRouter()
+  const { guestWishlist, clearGuestWishlist } = useGuestWishlist()
   const {
     handleSubmit,
     register,
@@ -62,11 +66,31 @@ const Form = ({ compact }: { compact: boolean }) => {
     if (res && !res?.id) {
       setError(res)
     } else {
-      // Registration successful - check if user came from checkout flow
+      // Registration successful
+      
+      // Sync guest wishlist to database after successful registration
+      if (guestWishlist.length > 0) {
+        console.log(`🔄 Syncing ${guestWishlist.length} guest wishlist items after registration...`)
+        try {
+          await syncGuestWishlistToDatabase(guestWishlist)
+          clearGuestWishlist()
+          console.log('✅ Guest wishlist synced and cleared')
+        } catch (error) {
+          console.error('❌ Failed to sync guest wishlist:', error)
+        }
+      }
+      
+      // Priority 1: onSuccess callback (for mobile modal - stay on current page)
+      if (onSuccess) {
+        onSuccess()
+        return
+      }
+      
+      // Priority 2: Check if user came from checkout flow
       const shouldRedirectToCheckout = sessionStorage.getItem('checkout_redirect')
       if (shouldRedirectToCheckout) {
         sessionStorage.removeItem('checkout_redirect')
-        router.push('/checkout?step=address') // Use router.push to preserve cart state
+        router.push('/checkout?step=address')
       }
       // If no redirect needed, the signup function handles the redirect
     }
@@ -176,7 +200,7 @@ const Form = ({ compact }: { compact: boolean }) => {
           <Button 
             type="button"
             onClick={handleGoogleRegister}
-            className="w-full bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 flex items-center justify-center gap-3"
+            className="w-full bg-white border border-[#3B3634] text-[#3B3634] hover:bg-[#3B3634] hover:text-white flex items-center justify-center gap-3"
             disabled={isSubmitting}
           >
             <svg className="w-5 h-5" viewBox="0 0 24 24">

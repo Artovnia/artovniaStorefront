@@ -17,6 +17,7 @@ import { getUserWishlists } from "@/lib/data/wishlist"
 import { SerializableWishlist } from "@/types/wishlist"
 import { Badge } from "@/components/atoms"
 import { CountrySelectorWrapper } from "@/components/cells/CountrySelector/CountrySelectorWrapper"
+import { WishlistBadge } from "@/components/cells/WishlistBadge"
 
 interface HeaderProps {
   categories?: {
@@ -79,7 +80,7 @@ export const Header = async ({ categories }: HeaderProps = {}) => {
             categories={allCategoriesWithTree}
           />
         </div>
-        <div className="flex lg:justify-center lg:w-1/3 items-center pl-4 lg:pl-0">
+        <div className="flex lg:justify-center lg:w-1/3 items-center  lg:pl-0">
           <Link href="/" className="text-2xl font-bold">
             <Image
               src="/Logo.svg"
@@ -90,35 +91,27 @@ export const Header = async ({ categories }: HeaderProps = {}) => {
             />
           </Link>
         </div>
-        <div className="flex items-center justify-end gap-2 lg:gap-4 w-full lg:w-1/3 py-4 mr-4">
+        <div className="flex items-center justify-end gap-3 lg:gap-4 w-full lg:w-1/3 py-4 mr-4">
           {/* Store link - Icon on mobile, text on desktop */}
           <a 
             href="https://artovniapanel.netlify.app/login" 
-            className="text-lg font-medium hover:text-action transition-colors hover:underline flex items-center"
+            className="hidden md:inline text-lg font-medium hover:text-action transition-colors hover:underline  items-center"
             aria-label="Załóż sklep"
           >
-            <span className="md:hidden">
-              <StoreIcon size={24} />
-            </span>
-            <span className="hidden md:inline mr-4">TWÓJ SKLEP</span>
+          
+            <span className="mr-4">TWÓJ SKLEP</span>
           </a>
           
           {/* Hide user dropdown and wishlist on mobile - handled by bottom navigation */}
-          <div className="hidden md:flex items-center gap-2 lg:gap-4">
-            <UserDropdown user={user} />
-            {user && (
-              <Link href="/user/wishlist" className="relative">
-                <HeartIcon size={20} />
-                {Boolean(wishlistCount) && (
-                  <Badge className="absolute -top-2 -right-2 w-4 h-4 p-0">
-                    {wishlistCount}
-                  </Badge>
-                )}
-              </Link>
-            )}
+          <div className="flex items-center gap-2 lg:gap-4">
+           
+            <WishlistBadge user={user} databaseWishlistCount={wishlistCount} />
           </div>
 
           <CartDropdown />
+          <div className="hidden md:inline items-center gap-2 lg:gap-4">
+            <UserDropdown user={user} />
+          </div>
         </div>
       </div>
       <Navbar categories={allCategoriesWithTree} />

@@ -17,6 +17,7 @@ interface MobileRegionModalProps {
   onClose: () => void
   regions: HttpTypes.StoreRegion[]
   currentRegionId?: string
+  onRegionChanged?: () => Promise<void>
 }
 
 // Map region names to display info (same as CountrySelector)
@@ -47,7 +48,7 @@ const getRegionDisplay = (region: HttpTypes.StoreRegion): RegionDisplay => {
   }
 }
 
-export const MobileRegionModal = ({ isOpen, onClose, regions, currentRegionId }: MobileRegionModalProps) => {
+export const MobileRegionModal = ({ isOpen, onClose, regions, currentRegionId, onRegionChanged }: MobileRegionModalProps) => {
   const [isPending, startTransition] = useTransition()
   const router = useRouter()
 
@@ -69,7 +70,12 @@ export const MobileRegionModal = ({ isOpen, onClose, regions, currentRegionId }:
         const { updateCartRegion } = await import('@/lib/data/cart')
         await updateCartRegion(regionId)
         
-        // Refresh the page to reload with new region
+        // ✅ Refresh CartContext to get updated cart with new region
+        if (onRegionChanged) {
+          await onRegionChanged()
+        }
+        
+        // ✅ Refresh server components to update prices and product data
         router.refresh()
       } catch (error) {
         console.error('Error updating region:', error)

@@ -399,7 +399,7 @@ export const ProductFilterBar = ({
   return (
     <div className={cn("w-full bg-primary border-b border-[#3B3634] py-4 px-4 sm:px-6", className)}>
       {/* Mobile: Single "Filtry" Button - Show only on screens < 768px */}
-      <div className="md:hidden flex items-center gap-3 mb-4">
+      <div className="md:hidden flex items-center gap-3 ">
         <MobileFilterModal 
           colorFacetItems={colorFacetItems}
           ratingFacetItems={ratingFacetItems}
@@ -419,7 +419,7 @@ export const ProductFilterBar = ({
       </div>
 
       {/* Desktop: Individual Filter Dropdowns - Show only on screens >= 768px */}
-      <div className="hidden md:flex flex-wrap items-center gap-2 sm:gap-3 mb-4 overflow-x-auto scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-gray-100 pb-2">
+      <div className="hidden md:flex flex-wrap items-center gap-2 sm:gap-3  overflow-x-auto scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-gray-100 pb-2">
         {/* Sort Filter */}
         <SortFilter onApply={applyFilters} />
         

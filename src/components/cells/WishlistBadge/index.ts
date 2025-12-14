@@ -1,0 +1,1 @@
+export { WishlistBadge } from "./WishlistBadge"
