@@ -217,56 +217,7 @@ export const MobileUserNavigation = () => {
 
   return (
     <>
-      {/* Backdrop with blur effect for search */}
-      {isSearchOpen && (
-        <div 
-          className="fixed inset-0 bg-black/40 backdrop-blur-sm z-40 md:hidden transition-all duration-300"
-          onClick={closeSearch}
-        />
-      )}
-
-      {/* Search Modal */}
-      {isSearchOpen && (
-        <div className="fixed bottom-4 left-4 right-4 mx-auto max-w-sm bg-primary backdrop-blur-xl rounded-lg shadow-2xl border border-white/20 z-50 md:hidden overflow-hidden animate-in slide-in-from-bottom-4 duration-300">
-          <div className="p-6">
-            {/* Search Header */}
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-gray-900">Wyszukaj produkty</h2>
-              <button
-                onClick={closeSearch}
-                className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-              >
-                <CloseIcon className="w-5 h-5 text-gray-600" />
-              </button>
-            </div>
-
-            {/* Search Form */}
-            <form onSubmit={handleSearchSubmit} className="space-y-4">
-              <div className="relative">
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Wpisz nazwę produktu..."
-                  className="w-full px-4 py-3 pr-12 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#3B3634] focus:border-transparent text-gray-900 placeholder-gray-500"
-                  autoFocus
-                />
-                <button
-                  type="submit"
-                  className="absolute right-2 top-1/2 transform -translate-y-1/2 p-2 bg-[#3B3634] text-white rounded-xl hover:bg-[#2d2a28] transition-colors"
-                >
-                  <SearchIcon className="w-4 h-4" />
-                </button>
-              </div>
-              
-              {/* Quick search suggestions could go here */}
-              <div className="text-sm text-gray-500 text-center">
-                Naciśnij Enter lub kliknij lupę aby wyszukać
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+      
 
       {/* User Settings Modal */}
       <UserSettingsModal 
@@ -282,11 +233,11 @@ export const MobileUserNavigation = () => {
         <div className="bg-transparent">
           <div className="flex items-end justify-center w-full">
             {/* Navigation Dock Container - 3 items only */}
-            <div className="relative flex items-center justify-around bg-white px-6 py-3 shadow-lg w-full" style={{ borderTopLeftRadius: '24px', borderTopRightRadius: '24px' }}>
+            <div className="relative flex items-center justify-around bg-white px-6  shadow-lg w-full" style={{ borderTopLeftRadius: '24px', borderTopRightRadius: '24px' }}>
 {/* Region Selector Button */}
               <button
                 onClick={() => setIsRegionModalOpen(true)}
-                className="flex flex-col items-center justify-center gap-1 flex-1 group"
+                className="flex flex-col items-center justify-center mb-2 flex-1 group"
               >
                 <div className="w-10 h-10 rounded-full flex items-center justify-center text-gray-600 transition-all duration-200 group-hover:text-[#3B3634]">
                   <GlobeIcon className="w-5 h-5" />
@@ -312,7 +263,7 @@ export const MobileUserNavigation = () => {
               {/* Profile Button */}
               <button
                 onClick={toggleMenu}
-                className="flex flex-col items-center justify-center gap-1 flex-1 group relative"
+                className="flex flex-col items-center justify-center mb-2 flex-1 group relative"
               >
                 <div className={cn(
                   "w-10 h-10 rounded-full flex items-center justify-center transition-all duration-200",

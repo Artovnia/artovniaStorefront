@@ -16,54 +16,49 @@ interface CategoriesProps {
  * This is used to filter categories to only show those with actual products
  */
 export const getCategoriesWithProductsFromDatabase = async (): Promise<Set<string>> => {
-  // Temporarily disabled caching to fix infinite requests
-  // const cachedResult = await unifiedCache.get('category:tree:products-database', async () => {
-  const cachedResult = await (async () => {
-    try {
-      // Fetch all products from Medusa backend to get category information
-      const response = await sdk.client.fetch<{
-        products: Array<{
-          id: string
-          categories?: Array<{
-            id: string
-            name?: string
-          }>
-        }>
-      }>("/store/products", {
-        query: {
-          fields: "id,categories.id,categories.name", // Only get category data for efficiency
-          limit: 1000, // Get many products to ensure we capture all categories
-        },
-        cache: "force-cache",
-        next: { revalidate: 300 }
-      })
+  try {
+    const categoriesResponse = await sdk.client.fetch<{
+      product_categories: Array<{ id: string }>
+    }>("/store/product-categories", {
+      query: { fields: "id", limit: 500 },
+      cache: "force-cache",
+      next: { revalidate: 3600 }
+    })
 
-      // Extract unique category IDs that have products
-      const categoryIds = new Set<string>()
+    const allCategories = categoriesResponse?.product_categories || []
+    const categoriesWithProducts = new Set<string>()
+
+    // Batch into groups of 10 categories at a time
+    const batchSize = 10
+    for (let i = 0; i < allCategories.length; i += batchSize) {
+      const batch = allCategories.slice(i, i + batchSize)
       
-      if (response?.products && Array.isArray(response.products)) {
-        response.products.forEach((product, index) => {
-          if (product.categories && Array.isArray(product.categories)) {
-            product.categories.forEach((category) => {
-              if (category.id) {
-                categoryIds.add(category.id)
-              }
-            })
-          } 
+      await Promise.all(
+        batch.map(async (category) => {
+          const response = await sdk.client.fetch<{
+            products: Array<{ id: string }>
+          }>("/store/products", {
+            query: {
+              category_id: [category.id],
+              fields: "id",
+              limit: 1,
+            },
+            cache: "force-cache",
+            next: { revalidate: 3600 }
+          })
+
+          if (response?.products?.length > 0) {
+            categoriesWithProducts.add(category.id)
+          }
         })
-      }
-      
-      return Array.from(categoryIds) // Convert Set to Array for caching
-    } catch (error) {
-      console.error("🔍 Database: Error fetching categories with products:", error)
-      console.error("🔍 Database: Error details:", error instanceof Error ? error.message : String(error))
-      // Return empty array on error - will be converted to Set below
-      return []
+      )
     }
-  })()
-  
-  // Convert cached result back to Set (handles both Array and Set cases)
-  return new Set(cachedResult || [])
+
+    return categoriesWithProducts
+  } catch (error) {
+    console.error("Error:", error)
+    return new Set()
+  }
 }
 
 /**
@@ -75,30 +70,27 @@ export const listCategories = async (): Promise<{
   parentCategories: HttpTypes.StoreProductCategory[]
   categories: HttpTypes.StoreProductCategory[]
 }> => {
-  // Temporarily disabled caching to fix infinite requests
-  // return unifiedCache.get('category:tree:all', async () => {
   return await (async () => {
     try {
-      // Fetch all categories from Medusa backend - simple and clean
-      const response = await sdk.client.fetch<HttpTypes.StoreProductCategoryListResponse>(
-        `/store/product-categories`,
-        {
-          query: {
-            fields: "id, handle, name, rank, parent_category_id, mpath",
-            limit: 1000,
-          },
-          cache: "force-cache",
-          next: { revalidate: 300 }
+      const response = await sdk.client.fetch<
+        HttpTypes.StoreProductCategoryListResponse
+      >(`/store/product-categories`, {
+        query: {
+          fields: "id, handle, name, rank, parent_category_id, mpath",
+          limit: 1000,
+        },
+        cache: "force-cache",
+        next: { 
+          revalidate: 3600, // ✅ Changed from 300
+          tags: ['all-categories']
         }
-      )
+      })
     
       const allCategories = response?.product_categories || []
-      
-      // Build a clean hierarchical tree - no complex filtering
       const hierarchicalCategories = buildCategoryTree(allCategories)
-      
-      // Get top-level categories (those without parents)
-      const parentCategories = hierarchicalCategories.filter(cat => !cat.parent_category_id)
+      const parentCategories = hierarchicalCategories.filter(
+        cat => !cat.parent_category_id
+      )
       
       return {
         parentCategories,
@@ -189,37 +181,43 @@ export const listCategoriesWithProducts = async (): Promise<{
   categories: HttpTypes.StoreProductCategory[]
 }> => {
   try {
-    // Get categories that have products from database
-    const categoriesWithProducts = await getCategoriesWithProductsFromDatabase()
+    const categoriesWithProducts = 
+      await getCategoriesWithProductsFromDatabase()
     
     if (categoriesWithProducts.size === 0) {
       const essentialCategories = await getEssentialCategories()
       return essentialCategories
     }
     
-    // Fetch all categories from database (single request)
-    const response = await sdk.client.fetch<HttpTypes.StoreProductCategoryListResponse>(
-      `/store/product-categories`,
-      {
-        query: {
-          fields: "id, handle, name, rank, parent_category_id, mpath",
-          limit: 1000,
-        },
-        cache: "force-cache",
-        next: { revalidate: 300 }
+    const response = await sdk.client.fetch<
+      HttpTypes.StoreProductCategoryListResponse
+    >("/store/product-categories", {
+      query: {
+        fields: "id, handle, name, rank, parent_category_id, mpath",
+        limit: 1000,
+      },
+      cache: "force-cache",
+      next: { 
+        revalidate: 3600, // ✅ Changed from 300 to match
+        tags: ['all-categories']
       }
-    )
+    })
     
     const allCategories = response?.product_categories || []
     
-    // Filter categories to only include those with products OR their ancestors
+    // Filter categories with products OR their ancestors
     const filteredCategories = allCategories.filter(category => {
-      return hasProductsInCategoryTree(category, allCategories, categoriesWithProducts)
+      return hasProductsInCategoryTree(
+        category, 
+        allCategories, 
+        categoriesWithProducts
+      )
     })
     
-    // Build tree from filtered categories
     const filteredTree = buildCategoryTree(filteredCategories)
-    const filteredParents = filteredTree.filter(cat => !cat.parent_category_id)
+    const filteredParents = filteredTree.filter(
+      cat => !cat.parent_category_id
+    )
     
     return {
       parentCategories: filteredParents,
@@ -227,7 +225,6 @@ export const listCategoriesWithProducts = async (): Promise<{
     }
   } catch (error) {
     console.error('Error in listCategoriesWithProducts:', error)
-    // Fallback to essential categories
     return await getEssentialCategories()
   }
 }

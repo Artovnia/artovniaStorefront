@@ -1,12 +1,15 @@
 import { MetadataRoute } from 'next'
 import { listProducts } from '@/lib/data/products'
 import { getBlogPosts } from './[locale]/(main)/blog/lib/data'
-import { listCategories } from '@/lib/data/categories'
+import {
+  listCategories,
+  getCategoriesWithProductsFromDatabase,
+} from '@/lib/data/categories'
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://artovnia.com'
+  const baseUrl =
+    process.env.NEXT_PUBLIC_BASE_URL || 'https://artovnia.com'
 
-  // Static pages with priorities
   const staticPages: MetadataRoute.Sitemap = [
     {
       url: baseUrl,
@@ -83,41 +86,58 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   ]
 
   try {
-    // Dynamic product pages
-    const { response } = await listProducts({ 
+    const { response } = await listProducts({
       queryParams: { limit: 1000 },
-      countryCode: 'PL'
+      countryCode: 'PL',
     })
-    
-    const productPages: MetadataRoute.Sitemap = response.products.map(product => ({
-      url: `${baseUrl}/products/${product.handle}`,
-      lastModified: new Date(), // Use current date as products don't expose updated_at
-      changeFrequency: 'weekly' as const,
-      priority: 0.7,
-    }))
 
-    // Dynamic category pages
+    const productPages: MetadataRoute.Sitemap = response.products.map(
+      (product) => ({
+        url: `${baseUrl}/products/${product.handle}`,
+        lastModified: new Date(),
+        changeFrequency: 'weekly' as const,
+        priority: 0.7,
+      })
+    )
+
+    // Get categories with products
     const categoriesData = await listCategories()
-    const categoryPages: MetadataRoute.Sitemap = categoriesData.categories.map(category => ({
-      url: `${baseUrl}/categories/${category.handle}`,
-      lastModified: new Date(category.updated_at || new Date()),
-      changeFrequency: 'weekly' as const,
-      priority: 0.6,
-    }))
+    const categoriesWithProducts =
+      await getCategoriesWithProductsFromDatabase()
 
-    // Blog posts
+    const categoryPages: MetadataRoute.Sitemap = categoriesData.categories
+      .filter((category) => categoriesWithProducts.has(category.id))
+      .map((category) => {
+        const isParent = !category.parent_category_id
+        const priority = isParent ? 0.7 : 0.6
+
+        return {
+          url: `${baseUrl}/categories/${category.handle}`,
+          lastModified: new Date(category.updated_at || new Date()),
+          changeFrequency: 'weekly' as const,
+          priority,
+        }
+      })
+
+    // Blog posts - FIX: Access slug.current
     const posts = await getBlogPosts()
-    const blogPages: MetadataRoute.Sitemap = posts.map(post => ({
-      url: `${baseUrl}/blog/${post.slug}`,
-      lastModified: new Date(post.publishedAt),
-      changeFrequency: 'monthly' as const,
-      priority: 0.6,
-    }))
+    const blogPages: MetadataRoute.Sitemap = posts
+      .filter((post) => post.slug?.current) // Filter out posts without slugs
+      .map((post) => ({
+        url: `${baseUrl}/blog/${post.slug.current}`, // ✅ Fixed!
+        lastModified: new Date(post.publishedAt),
+        changeFrequency: 'monthly' as const,
+        priority: 0.6,
+      }))
 
-    return [...staticPages, ...productPages, ...categoryPages, ...blogPages]
+    return [
+      ...staticPages,
+      ...productPages,
+      ...categoryPages,
+      ...blogPages,
+    ]
   } catch (error) {
     console.error('Error generating sitemap:', error)
-    // Return at least static pages if dynamic content fails
     return staticPages
   }
 }

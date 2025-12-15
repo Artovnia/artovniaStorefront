@@ -22,7 +22,7 @@ export const MobileProductSearch = () => {
   }
 
   return (
-    <div className="md:hidden w-full px-4 mb-4">
+    <div className="md:hidden w-full px-4 mb-1">
       <form className="flex items-center w-full" method="POST" onSubmit={submitHandler}>
         <div className="w-full">
           <Input

@@ -69,7 +69,7 @@ export const Header = async ({ categories }: HeaderProps = {}) => {
 
   return (
     <header className="sticky top-0 z-50 bg-primary shadow-sm">
-      <div className="flex py-2 max-w-[1920px] mx-auto">
+      <div className="flex  lg:py-2 max-w-[1920px] mx-auto">
         <div className="flex items-center gap-2 lg:gap-4 lg:w-1/3 py-4 ml-4">
           {/* Country Selector - Left side - Hide on mobile, show on md and up */}
           <div className="hidden md:block">
@@ -91,7 +91,7 @@ export const Header = async ({ categories }: HeaderProps = {}) => {
             />
           </Link>
         </div>
-        <div className="flex items-center justify-end gap-3 lg:gap-4 w-full lg:w-1/3 py-4 mr-4">
+        <div className="flex items-center justify-end gap-3 lg:gap-4 w-full lg:w-1/3 py-2 lg:py-4 mr-4">
           {/* Store link - Icon on mobile, text on desktop */}
           <a 
             href="https://artovniapanel.netlify.app/login" 
