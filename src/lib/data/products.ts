@@ -161,19 +161,64 @@ export const listProductsWithSort = async ({
   queryParams?: HttpTypes.FindParams & HttpTypes.StoreProductParams
 }> => {
   const limit = queryParams?.limit || 12
-  const offset = queryParams?.offset || 0
+  const offset = queryParams?.offset !== undefined ? queryParams.offset : (page - 1) * limit
 
-  // TODO: Create backend endpoint `/store/products/by-seller/:seller_id` for proper server-side filtering
-  // For now, use client-side filtering with larger fetch size
-  const fetchLimit = seller_id ? Math.max(limit * 10, 100) : limit // Fetch more when filtering by seller
-  const fetchOffset = seller_id ? 0 : offset // Always start from 0 for seller filtering
+  // OPTIMIZED: Use dedicated backend endpoint for seller products
+  if (seller_id) {
+    try {
+      const region = await getRegion(countryCode)
+      const headers = await getAuthHeaders()
 
+      const { products, count } = await sdk.client.fetch<{
+        products: HttpTypes.StoreProduct[]
+        count: number
+      }>(`/store/products/by-seller/${seller_id}`, {
+        method: "GET",
+        query: {
+          limit,
+          offset,
+          order: sortBy === 'created_at' ? '-created_at' : sortBy,
+          region_id: region?.id,
+        },
+        headers,
+        next: { revalidate: 300 }, // Cache for 5 minutes
+      })
+
+      // Apply client-side sorting only if not using created_at
+      const sortedProducts = sortBy && sortBy !== 'created_at'
+        ? sortProducts(products, sortBy)
+        : products
+
+      const nextPage = count > offset + limit ? page + 1 : null
+
+      return {
+        response: {
+          products: sortedProducts,
+          count,
+        },
+        nextPage,
+        queryParams,
+      }
+    } catch (error) {
+      console.error('Error fetching seller products:', error)
+      return {
+        response: {
+          products: [],
+          count: 0,
+        },
+        nextPage: null,
+        queryParams,
+      }
+    }
+  }
+
+  // For non-seller queries, use standard product listing
   const result = await listProducts({
-    pageParam: seller_id ? 1 : page,
+    pageParam: page,
     queryParams: {
       ...queryParams,
-      limit: fetchLimit,
-      offset: fetchOffset,
+      limit,
+      offset,
       order: sortBy === 'created_at' ? '-created_at' : sortBy,
     },
     category_id,
@@ -199,34 +244,12 @@ export const listProductsWithSort = async ({
     nextPage
   } = result
 
-  // Client-side filtering by seller_id
-  const filteredProducts = seller_id
-    ? products.filter(product => product.seller?.id === seller_id)
+  // Apply client-side sorting only if not using created_at (which is handled server-side)
+  const sortedProducts = sortBy && sortBy !== 'created_at'
+    ? sortProducts(products, sortBy)
     : products
 
-  // Apply client-side sorting
-  const sortedProducts = sortBy && sortBy !== 'created_at'
-    ? sortProducts(filteredProducts, sortBy)
-    : filteredProducts
-
-  // Client-side pagination for seller products
-  if (seller_id) {
-    const totalCount = sortedProducts.length
-    const startIndex = (page - 1) * limit
-    const endIndex = startIndex + limit
-    const paginatedProducts = sortedProducts.slice(startIndex, endIndex)
-
-    return {
-      response: {
-        products: paginatedProducts,
-        count: totalCount,
-      },
-      nextPage: endIndex < totalCount ? page + 1 : null,
-      queryParams,
-    }
-  }
-
-  // Standard response for non-seller queries
+  // Return paginated response
   return {
     response: {
       products: sortedProducts,

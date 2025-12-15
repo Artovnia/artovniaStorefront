@@ -74,22 +74,34 @@ export default async function SellerPage({
     const countryCode = userRegion?.countries?.[0]?.iso_2 || "pl"
 
     // Parallel fetching for better performance - fetch products during initial render
-    const [seller, user, { reviews = [] }, productsResult, wishlistData] = await Promise.all([
+    const [seller, user, { reviews = [] }] = await Promise.all([
       getSellerByHandle(handle),
       retrieveCustomer(),
       getSellerReviews(handle),
-      // Fetch first page of products immediately with user's selected region
-      getSellerByHandle(handle).then(s => 
-        s ? listProductsWithSort({
-          seller_id: s.id,
-          countryCode,
-          sortBy: "created_at",
-          queryParams: { limit: PRODUCT_LIMIT, offset: 0 },
-        }) : null
-      ),
-      // Fetch wishlist data if user exists
-      retrieveCustomer().then(u => u ? getUserWishlists() : Promise.resolve({ wishlists: [], count: 0 }))
     ])
+    
+    // Fetch products and wishlists only if seller exists (avoid unnecessary fetches)
+    const [productsResult, wishlistData] = seller && user
+      ? await Promise.all([
+          listProductsWithSort({
+            seller_id: seller.id,
+            countryCode,
+            sortBy: "created_at",
+            queryParams: { limit: PRODUCT_LIMIT, offset: 0 },
+          }),
+          getUserWishlists()
+        ])
+      : seller && !user
+      ? await Promise.all([
+          listProductsWithSort({
+            seller_id: seller.id,
+            countryCode,
+            sortBy: "created_at",
+            queryParams: { limit: PRODUCT_LIMIT, offset: 0 },
+          }),
+          Promise.resolve({ wishlists: [], count: 0 })
+        ])
+      : [null, { wishlists: [], count: 0 }]
     
     const sellerWithReviews = seller ? {
       ...seller,
