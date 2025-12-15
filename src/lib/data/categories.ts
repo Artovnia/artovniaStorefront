@@ -195,49 +195,11 @@ export const listCategoriesWithProducts = async (): Promise<{
   parentCategories: HttpTypes.StoreProductCategory[]
   categories: HttpTypes.StoreProductCategory[]
 }> => {
+  // ✅ OPTIMIZED: Just return all categories without expensive product checks
+  // Product checks caused 10+ requests on every page reload
+  // Categories are filtered in the UI if needed
   try {
-    const categoriesWithProducts = 
-      await getCategoriesWithProductsFromDatabase()
-    
-    if (categoriesWithProducts.size === 0) {
-      const essentialCategories = await getEssentialCategories()
-      return essentialCategories
-    }
-    
-    const response = await sdk.client.fetch<
-      HttpTypes.StoreProductCategoryListResponse
-    >("/store/product-categories", {
-      query: {
-        fields: "id, handle, name, rank, parent_category_id, mpath",
-        limit: 1000,
-      },
-      cache: "force-cache",
-      next: { 
-        revalidate: 3600, // ✅ Changed from 300 to match
-        tags: ['all-categories']
-      }
-    })
-    
-    const allCategories = response?.product_categories || []
-    
-    // Filter categories with products OR their ancestors
-    const filteredCategories = allCategories.filter(category => {
-      return hasProductsInCategoryTree(
-        category, 
-        allCategories, 
-        categoriesWithProducts
-      )
-    })
-    
-    const filteredTree = buildCategoryTree(filteredCategories)
-    const filteredParents = filteredTree.filter(
-      cat => !cat.parent_category_id
-    )
-    
-    return {
-      parentCategories: filteredParents,
-      categories: filteredTree
-    }
+    return await listCategories()
   } catch (error) {
     console.error('Error in listCategoriesWithProducts:', error)
     return await getEssentialCategories()

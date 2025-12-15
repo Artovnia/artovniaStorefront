@@ -83,8 +83,8 @@ export const Header = () => {
       }
     }
 
-    // Defer header data load to prevent blocking and reduce initial requests
-    const timer = setTimeout(loadData, 500)
+    // Load regions immediately (cached), defer heavy category checks
+    const timer = setTimeout(loadData, 0) // Immediate for regions, categories cached
 
     return () => {
       mounted = false

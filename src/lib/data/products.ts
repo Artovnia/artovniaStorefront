@@ -163,16 +163,17 @@ export const listProductsWithSort = async ({
   const limit = queryParams?.limit || 12
   const offset = queryParams?.offset !== undefined ? queryParams.offset : (page - 1) * limit
 
-  // For seller products, use unified-cache for client-side requests
+  // For seller products, fetch ALL once and cache, then paginate in memory
   if (seller_id) {
-    const cacheKey = `seller:products:${seller_id}:${countryCode}:${page}:${limit}:${sortBy}`
+    const cacheKey = `seller:all-products:${seller_id}:${countryCode}:${sortBy}`
     
-    return unifiedCache.get(cacheKey, async () => {
+    // Fetch all seller products once (cached for 5 min)
+    const allSellerProducts = await unifiedCache.get(cacheKey, async () => {
       const result = await listProducts({
-        pageParam: page,
+        pageParam: 1,
         queryParams: {
           ...queryParams,
-          limit: limit * 3, // Fetch 3x requested to account for filtering
+          limit: 1000, // Fetch all products (sellers rarely have >1000)
           offset: 0,
           order: sortBy === 'created_at' ? '-created_at' : sortBy,
         },
@@ -180,39 +181,33 @@ export const listProductsWithSort = async ({
       })
 
       if (!result || !result.response) {
-        return {
-          response: {
-            products: [],
-            count: 0,
-          },
-          nextPage: null,
-          queryParams,
-        }
+        return []
       }
 
-      // Filter products by seller_id client-side
+      // Filter products by seller_id
       const filteredProducts = result.response.products.filter(
         (p: any) => p.seller?.id === seller_id
       )
 
-      // Apply client-side sorting
-      const sortedProducts = sortBy && sortBy !== 'created_at'
+      // Apply sorting
+      return sortBy && sortBy !== 'created_at'
         ? sortProducts(filteredProducts, sortBy)
         : filteredProducts
-
-      // Apply pagination to filtered results
-      const paginatedProducts = sortedProducts.slice(offset, offset + limit)
-      const hasMore = sortedProducts.length > offset + limit
-
-      return {
-        response: {
-          products: paginatedProducts,
-          count: sortedProducts.length,
-        },
-        nextPage: hasMore ? page + 1 : null,
-        queryParams,
-      }
     }, CACHE_TTL.PRODUCT)
+
+    // Paginate the cached results
+    const paginatedProducts = allSellerProducts.slice(offset, offset + limit)
+    const totalCount = allSellerProducts.length
+    const hasMore = totalCount > offset + limit
+
+    return {
+      response: {
+        products: paginatedProducts,
+        count: totalCount,
+      },
+      nextPage: hasMore ? page + 1 : null,
+      queryParams,
+    }
   }
 
   // For non-seller queries, use standard product listing
@@ -305,43 +300,28 @@ export const listProductsWithPromotions = async ({
 
       const headers = { ...(await getAuthHeaders()) }
 
-      // Step 1: Fetch products with promotions from standard endpoint
-      let promotionProducts: any[] = []
-      // Note: Promotion products endpoint removed - promotions applied via standard product fetch
+      // Fetch all products with proper fields for promotions
+      const productsResponse = await sdk.client.fetch<{
+        products: (HttpTypes.StoreProduct & { seller?: SellerProps })[]
+        count: number
+      }>(`/store/products`, {
+        query: {
+          limit: limit || 50,
+          offset: (page - 1) * (limit || 50),
+          region_id: region?.id,
+          fields: "*variants.calculated_price,*seller,*variants,*metadata,*categories,*collection",
+        },
+        headers,
+        next: { revalidate: 300 },
+      })
 
-      // Step 2: Get products with price-list discounts using dedicated API
-      let priceListProducts: any[] = []
-      try {
-        const priceListResponse = await sdk.client.fetch<{
-          products: (HttpTypes.StoreProduct & { seller?: SellerProps })[]
-          count: number
-          price_lists_found?: number
-          discounted_variants_found?: number
-          total_products_with_discounts?: number
-        }>(`/store/products/price-list-discounts`, {
-          method: "GET",
-          query: {
-            limit: 100,
-            offset: 0,
-            region_id: region?.id,
-          },
-          headers,
-          next: { revalidate: 300 }, // Cache for 5 minutes
-        })
-        
-        // Filter out products already in promotion products
-        priceListProducts = priceListResponse.products.filter((product: any) => 
-          !promotionProducts.some(p => p.id === product.id)
-        )
-      } catch (error) {
-        console.warn('Failed to fetch price-list products:', error)
-      }
+      const allProducts = productsResponse?.products || []
 
-      // Step 4: Combine and paginate
-      const allDiscountedProducts = [
-        ...promotionProducts.map(p => ({ ...p, discount_type: 'promotion' })),
-        ...priceListProducts.map(p => ({ ...p, discount_type: 'price_list', has_promotions: true }))
-      ]
+      // Return all products (promotions are included in calculated_price)
+      const allDiscountedProducts = allProducts.map(p => ({ 
+        ...p, 
+        has_promotions: true // Flag for UI
+      }))
 
       // Apply pagination
       const startIndex = (page - 1) * limit

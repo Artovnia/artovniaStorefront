@@ -29,14 +29,18 @@ export function SellerProductListingClient({
   const [wishlist, setWishlist] = useState<SerializableWishlist[]>(initialWishlists || [])
   const [isLoading, setIsLoading] = useState(!initialProducts)
   
-  // Fetch products on mount (only if no initial data) and page change
+  // Fetch products on page change
   useEffect(() => {
-    // Skip initial fetch if we have initial data and we're on page 1
-    if (initialProducts && currentPage === 1) {
-      return
-    }
-
     const fetchData = async () => {
+      // Use initial data for first page if available
+      if (currentPage === 1 && initialProducts && initialProducts.length > 0) {
+        setProducts(initialProducts)
+        setTotalCount(initialTotalCount || 0)
+        setWishlist(initialWishlists || [])
+        setIsLoading(false)
+        return
+      }
+
       setIsLoading(true)
       try {
         const offset = (currentPage - 1) * PRODUCT_LIMIT
@@ -64,7 +68,7 @@ export function SellerProductListingClient({
     }
 
     fetchData()
-  }, [seller_id, currentPage, user, initialProducts])
+  }, [seller_id, currentPage, user, initialProducts, initialTotalCount, initialWishlists])
 
   const totalPages = Math.ceil(totalCount / PRODUCT_LIMIT)
 

@@ -17,8 +17,11 @@ interface CountrySelectorWrapperProps {
 export function CountrySelectorWrapper({ regions }: CountrySelectorWrapperProps) {
   const { cart, refreshCart } = useCart()
   
+  // Show loading placeholder instead of disappearing
   if (!regions || regions.length === 0) {
-    return null
+    return (
+      <div className="h-8 w-20 bg-gray-200 animate-pulse rounded" />
+    )
   }
   
   // Get current region from CartContext (no additional request needed!)
