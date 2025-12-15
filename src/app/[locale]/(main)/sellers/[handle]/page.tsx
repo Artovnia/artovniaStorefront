@@ -7,13 +7,11 @@ import { getSellerReviews } from "../../../../../lib/data/reviews"
 import { SellerProps } from "../../../../../types/seller"
 import { PromotionDataProvider } from "../../../../../components/context/PromotionDataProvider"
 import { BatchPriceProvider } from "../../../../../components/context/BatchPriceProvider"
+import { generateSellerMetadata } from "../../../../../lib/helpers/seo"
+import type { Metadata } from "next"
 import { listProductsWithSort } from "../../../../../lib/data/products"
 import { getUserWishlists } from "../../../../../lib/data/wishlist"
 import { PRODUCT_LIMIT } from "../../../../../const"
-import { getOrSetCart } from "../../../../../lib/data/cart"
-import { getRegion } from "../../../../../lib/data/regions"
-import { generateSellerMetadata } from "../../../../../lib/helpers/seo"
-import type { Metadata } from "next"
 
 export async function generateMetadata({
   params,
@@ -46,6 +44,9 @@ export async function generateMetadata({
   }
 }
 
+// Enable Next.js static generation with revalidation
+export const revalidate = 300 // Revalidate every 5 minutes
+
 export default async function SellerPage({
   params,
 }: {
@@ -66,61 +67,54 @@ export default async function SellerPage({
       )
     }
     
-    // Get user's cart to determine their selected region
-    const cart = await getOrSetCart("pl").catch(() => null)
-    const userRegion = cart?.region_id 
-      ? await import("../../../../../lib/data/regions").then(m => m.retrieveRegion(cart.region_id!))
-      : await getRegion("pl")
-    const countryCode = userRegion?.countries?.[0]?.iso_2 || "pl"
-
-    // Parallel fetching for better performance - fetch products during initial render
+    // Parallel fetching for better performance
     const [seller, user, { reviews = [] }] = await Promise.all([
       getSellerByHandle(handle),
       retrieveCustomer(),
       getSellerReviews(handle),
     ])
     
-    // Fetch products and wishlists only if seller exists (avoid unnecessary fetches)
-    const [productsResult, wishlistData] = seller && user
-      ? await Promise.all([
-          listProductsWithSort({
-            seller_id: seller.id,
-            countryCode,
-            sortBy: "created_at",
-            queryParams: { limit: PRODUCT_LIMIT, offset: 0 },
-          }),
-          getUserWishlists()
-        ])
-      : seller && !user
-      ? await Promise.all([
-          listProductsWithSort({
-            seller_id: seller.id,
-            countryCode,
-            sortBy: "created_at",
-            queryParams: { limit: PRODUCT_LIMIT, offset: 0 },
-          }),
-          Promise.resolve({ wishlists: [], count: 0 })
-        ])
-      : [null, { wishlists: [], count: 0 }]
-    
-    const sellerWithReviews = seller ? {
-      ...seller,
-      reviews: reviews || []
-    } : null
-    
-    const tab = "produkty"
-
     if (!seller) {
       console.error(`Seller not found for handle: ${handle}`)
       return (
         <main className="container">
           <div className="border rounded-sm p-4 my-8">
             <h1 className="heading-lg mb-4">Sprzedawca nie znaleziony</h1>
-            <p className="text-secondary">Nie mogliśmy znaleźć sprzedawcy. Sprawdź adres URL i spróbuj ponownie.</p>
+            <p className="text-secondary">Nie znaleziono sprzedawcy. Sprawdź adres URL i spróbuj ponownie.</p>
           </div>
         </main>
       )
     }
+
+    // Fetch initial products and wishlists in parallel (like homepage pattern)
+    const [productsResult, wishlistData] = await Promise.allSettled([
+      listProductsWithSort({
+        seller_id: seller.id,
+        countryCode: "pl",
+        sortBy: "created_at",
+        queryParams: { limit: PRODUCT_LIMIT, offset: 0 },
+      }),
+      user ? getUserWishlists() : Promise.resolve({ wishlists: [] })
+    ])
+
+    const initialProducts = productsResult.status === 'fulfilled' 
+      ? productsResult.value?.response?.products || []
+      : []
+    
+    const initialTotalCount = productsResult.status === 'fulfilled'
+      ? productsResult.value?.response?.count || 0
+      : 0
+
+    const initialWishlists = wishlistData.status === 'fulfilled'
+      ? wishlistData.value.wishlists || []
+      : []
+    
+    const sellerWithReviews = {
+      ...seller,
+      reviews: reviews || []
+    }
+    
+    const tab = "produkty"
   
     // Get vendor availability data with better error handling
     let availability = undefined
@@ -182,9 +176,9 @@ export default async function SellerPage({
                     seller_name={seller.name}
                     user={user}
                     locale={locale}
-                    initialProducts={productsResult?.response?.products || []}
-                    initialTotalCount={productsResult?.response?.count || 0}
-                    initialWishlists={(wishlistData as any)?.wishlists || []}
+                    initialProducts={initialProducts}
+                    initialTotalCount={initialTotalCount}
+                    initialWishlists={initialWishlists}
                   />
                 </div>
               </div>

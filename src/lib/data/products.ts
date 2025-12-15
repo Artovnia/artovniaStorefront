@@ -163,53 +163,56 @@ export const listProductsWithSort = async ({
   const limit = queryParams?.limit || 12
   const offset = queryParams?.offset !== undefined ? queryParams.offset : (page - 1) * limit
 
-  // OPTIMIZED: Use dedicated backend endpoint for seller products
+  // For seller products, use unified-cache for client-side requests
   if (seller_id) {
-    try {
-      const region = await getRegion(countryCode)
-      const headers = await getAuthHeaders()
-
-      const { products, count } = await sdk.client.fetch<{
-        products: HttpTypes.StoreProduct[]
-        count: number
-      }>(`/store/products/by-seller/${seller_id}`, {
-        method: "GET",
-        query: {
-          limit,
-          offset,
+    const cacheKey = `seller:products:${seller_id}:${countryCode}:${page}:${limit}:${sortBy}`
+    
+    return unifiedCache.get(cacheKey, async () => {
+      const result = await listProducts({
+        pageParam: page,
+        queryParams: {
+          ...queryParams,
+          limit: limit * 3, // Fetch 3x requested to account for filtering
+          offset: 0,
           order: sortBy === 'created_at' ? '-created_at' : sortBy,
-          region_id: region?.id,
         },
-        headers,
-        next: { revalidate: 300 }, // Cache for 5 minutes
+        countryCode,
       })
 
-      // Apply client-side sorting only if not using created_at
+      if (!result || !result.response) {
+        return {
+          response: {
+            products: [],
+            count: 0,
+          },
+          nextPage: null,
+          queryParams,
+        }
+      }
+
+      // Filter products by seller_id client-side
+      const filteredProducts = result.response.products.filter(
+        (p: any) => p.seller?.id === seller_id
+      )
+
+      // Apply client-side sorting
       const sortedProducts = sortBy && sortBy !== 'created_at'
-        ? sortProducts(products, sortBy)
-        : products
+        ? sortProducts(filteredProducts, sortBy)
+        : filteredProducts
 
-      const nextPage = count > offset + limit ? page + 1 : null
+      // Apply pagination to filtered results
+      const paginatedProducts = sortedProducts.slice(offset, offset + limit)
+      const hasMore = sortedProducts.length > offset + limit
 
       return {
         response: {
-          products: sortedProducts,
-          count,
+          products: paginatedProducts,
+          count: sortedProducts.length,
         },
-        nextPage,
+        nextPage: hasMore ? page + 1 : null,
         queryParams,
       }
-    } catch (error) {
-      console.error('Error fetching seller products:', error)
-      return {
-        response: {
-          products: [],
-          count: 0,
-        },
-        nextPage: null,
-        queryParams,
-      }
-    }
+    }, CACHE_TTL.PRODUCT)
   }
 
   // For non-seller queries, use standard product listing
@@ -302,42 +305,9 @@ export const listProductsWithPromotions = async ({
 
       const headers = { ...(await getAuthHeaders()) }
 
-      // Step 1: Get products with promotion module discounts
+      // Step 1: Fetch products with promotions from standard endpoint
       let promotionProducts: any[] = []
-      try {
-        const queryParams: any = {
-          limit: 50, // Get more to have enough after filtering
-          offset: 0,
-          region_id: region?.id,
-        }
-        
-        // Add filter parameters
-        if (sortBy) queryParams.sortBy = sortBy
-        if (promotion) queryParams.promotion = promotion
-        if (seller) queryParams.seller = seller
-        if (campaign) queryParams.campaign = campaign
-        
-        const promotionResponse = await sdk.client.fetch<{
-          products: (HttpTypes.StoreProduct & { 
-            promotions?: any[]
-            has_promotions?: boolean
-            seller?: SellerProps 
-          })[]
-          count: number
-          promotions_found?: number
-          applicable_product_ids?: number
-        }>(`/store/products/promotions`, {
-          method: "GET",
-          query: queryParams,
-          headers,
-          cache: "no-cache"
-        })
-        
-        promotionProducts = promotionResponse.products || []
-        
-      } catch (error) {
-        console.warn('Failed to fetch promotion products, continuing with price-list only:', error)
-      }
+      // Note: Promotion products endpoint removed - promotions applied via standard product fetch
 
       // Step 2: Get products with price-list discounts using dedicated API
       let priceListProducts: any[] = []
@@ -356,7 +326,7 @@ export const listProductsWithPromotions = async ({
             region_id: region?.id,
           },
           headers,
-          cache: "no-cache"
+          next: { revalidate: 300 }, // Cache for 5 minutes
         })
         
         // Filter out products already in promotion products

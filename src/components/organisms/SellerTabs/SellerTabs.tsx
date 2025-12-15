@@ -1,7 +1,7 @@
 import { Suspense } from "react"
 import { ProductListingSkeleton } from "../ProductListingSkeleton/ProductListingSkeleton"
 import { TabsContent, TabsList } from "@/components/molecules"
-import { SellerProductListingServer } from "@/components/molecules/SellerProductListing/SellerProductListingServer"
+import { SellerProductListingClient } from "@/components/molecules/SellerProductListing/SellerProductListingClient"
 import { SellerReviewTab } from "@/components/cells"
 import { HttpTypes } from "@medusajs/types"
 
@@ -70,22 +70,13 @@ export const SellerTabs = ({
       <TabsList list={tabsList} activeTab={tab} />
       
       <TabsContent value="produkty" activeTab={tab}>
-        {initialProducts && initialTotalCount !== undefined && initialWishlists ? (
-          <SellerProductListingServer 
-            seller_id={seller_id}
-            user={user}
-            initialProducts={initialProducts}
-            initialTotalCount={initialTotalCount}
-            initialWishlists={initialWishlists}
-          />
-        ) : (
-          <Suspense fallback={<ProductListingSkeleton />}>
-            <SellerProductListingServer 
-              seller_id={seller_id}
-              user={user}
-            />
-          </Suspense>
-        )}
+        <SellerProductListingClient 
+          seller_id={seller_id}
+          user={user}
+          initialProducts={initialProducts}
+          initialTotalCount={initialTotalCount}
+          initialWishlists={initialWishlists}
+        />
       </TabsContent>
       
       <TabsContent value="recenzje" activeTab={tab}>

@@ -83,8 +83,8 @@ export const Header = () => {
       }
     }
 
-    // Defer slightly to prioritize initial render
-    const timer = setTimeout(loadData, 50)
+    // Defer header data load to prevent blocking and reduce initial requests
+    const timer = setTimeout(loadData, 500)
 
     return () => {
       mounted = false

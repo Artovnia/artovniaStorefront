@@ -14,7 +14,7 @@ interface CategoriesProps {
 // In-memory cache for category product counts (prevents duplicate requests)
 let categoriesWithProductsCache: Set<string> | null = null
 let cacheTimestamp: number = 0
-const CACHE_TTL = 3600000 // 1 hour in milliseconds
+const CACHE_TTL = 86400000 // 24 hours - categories rarely change
 
 /**
  * Get categories that have products from Medusa database

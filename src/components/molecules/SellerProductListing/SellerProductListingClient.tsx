@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { HttpTypes } from "@medusajs/types"
 import { ProductCard } from "@/components/organisms"
 import { ProductListingSkeleton } from "@/components/organisms/ProductListingSkeleton/ProductListingSkeleton"
@@ -11,67 +11,67 @@ import { getUserWishlists } from '@/lib/data/wishlist'
 import { SerializableWishlist } from '@/types/wishlist'
 
 export function SellerProductListingClient({
-  initialProducts,
-  initialTotalCount,
-  initialPage,
   seller_id,
   user,
+  initialProducts,
+  initialTotalCount,
   initialWishlists,
 }: {
-  initialProducts: HttpTypes.StoreProduct[]
-  initialTotalCount: number
-  initialPage: number
   seller_id: string
   user: HttpTypes.StoreCustomer | null
-  initialWishlists: SerializableWishlist[]
+  initialProducts?: HttpTypes.StoreProduct[]
+  initialTotalCount?: number
+  initialWishlists?: SerializableWishlist[]
 }) {
-  const [products, setProducts] = useState(initialProducts)
-  const [totalCount, setTotalCount] = useState(initialTotalCount)
-  const [currentPage, setCurrentPage] = useState(initialPage)
-  const [wishlist, setWishlist] = useState(initialWishlists)
-  const [isLoading, setIsLoading] = useState(false)
+  const [products, setProducts] = useState<HttpTypes.StoreProduct[]>(initialProducts || [])
+  const [totalCount, setTotalCount] = useState(initialTotalCount || 0)
+  const [currentPage, setCurrentPage] = useState(1)
+  const [wishlist, setWishlist] = useState<SerializableWishlist[]>(initialWishlists || [])
+  const [isLoading, setIsLoading] = useState(!initialProducts)
+  
+  // Fetch products on mount (only if no initial data) and page change
+  useEffect(() => {
+    // Skip initial fetch if we have initial data and we're on page 1
+    if (initialProducts && currentPage === 1) {
+      return
+    }
+
+    const fetchData = async () => {
+      setIsLoading(true)
+      try {
+        const offset = (currentPage - 1) * PRODUCT_LIMIT
+        
+        const [productsResult, wishlistData] = await Promise.all([
+          listProductsWithSort({
+            seller_id,
+            countryCode: "pl",
+            sortBy: "created_at",
+            queryParams: { limit: PRODUCT_LIMIT, offset },
+          }),
+          user ? getUserWishlists() : Promise.resolve({ wishlists: [] })
+        ])
+
+        setProducts(productsResult?.response?.products || [])
+        setTotalCount(productsResult?.response?.count || 0)
+        setWishlist(wishlistData.wishlists || [])
+      } catch (error) {
+        console.error('Error fetching seller products:', error)
+        setProducts([])
+        setTotalCount(0)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    fetchData()
+  }, [seller_id, currentPage, user, initialProducts])
 
   const totalPages = Math.ceil(totalCount / PRODUCT_LIMIT)
 
-  const handlePageChange = async (page: number) => {
+  const handlePageChange = (page: number) => {
     if (page < 1 || page > totalPages || page === currentPage) return
-    
-    setIsLoading(true)
-    try {
-      // Get user's cart region dynamically
-      const { getOrSetCart } = await import('@/lib/data/cart')
-      const { getRegion, retrieveRegion } = await import('@/lib/data/regions')
-      
-      const cart = await getOrSetCart("pl").catch(() => null)
-      const userRegion = cart?.region_id 
-        ? await retrieveRegion(cart.region_id)
-        : await getRegion("pl")
-      const countryCode = userRegion?.countries?.[0]?.iso_2 || "pl"
-      
-      const offset = (page - 1) * PRODUCT_LIMIT
-      const result = await listProductsWithSort({
-        seller_id,
-        countryCode,
-        sortBy: "created_at",
-        queryParams: { limit: PRODUCT_LIMIT, offset },
-      })
-
-      setProducts(result?.response?.products || [])
-      setTotalCount(result?.response?.count || 0) // Update total count from API response
-      setCurrentPage(page)
-      
-      // Refresh wishlist data
-      if (user) {
-        const wishlistData = await getUserWishlists()
-        setWishlist(wishlistData.wishlists || [])
-      }
-      
-      window.scrollTo({ top: 0, behavior: 'smooth' })
-    } catch (error) {
-      console.error('Error fetching products:', error)
-    } finally {
-      setIsLoading(false)
-    }
+    setCurrentPage(page)
+    window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
   const refreshWishlist = async () => {
