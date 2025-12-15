@@ -1,65 +1,26 @@
 "use client"
 import { usePathname, useRouter } from "next/navigation"
 import { useEffect, useState } from "react"
+import dynamic from "next/dynamic"
 import { Link } from "@/components/atoms"
 import { getUnreadMessagesCount } from "@/lib/data/actions/messages"
-import { signout, retrieveCustomer } from "@/lib/data/customer"
+import { retrieveCustomer } from "@/lib/data/customer"
 import { cn } from "@/lib/utils"
 import { MobileRegionModal } from "@/components/cells/MobileRegionModal/MobileRegionModal"
-import { UserSettingsModal } from "@/components/cells/UserSettingsModal"
 import { listRegions } from "@/lib/data/regions"
 import { HttpTypes } from "@medusajs/types"
 import { useCart } from "@/components/context/CartContext"
 import { ProfileIcon } from "@/icons"
+import { GlobeIcon, MarketplaceIcon, MenuIcon } from "@/components/atoms/icons/mobile-icons"
 
-
-// Icons for mobile navigation
-
-
-const HomeIcon = ({ className = "" }: { className?: string }) => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
-    <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
-    <polyline points="9,22 9,12 15,12 15,22"></polyline>
-  </svg>
-)
-
-
-const CloseIcon = ({ className = "" }: { className?: string }) => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
-    <line x1="18" y1="6" x2="6" y2="18"></line>
-    <line x1="6" y1="6" x2="18" y2="18"></line>
-  </svg>
-)
-
-const MenuIcon = ({ className = "" }: { className?: string }) => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
-    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-    <circle cx="12" cy="7" r="4"></circle>
-  </svg>
-)
-
-const SearchIcon = ({ className = "" }: { className?: string }) => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
-    <circle cx="11" cy="11" r="8"></circle>
-    <path d="m21 21-4.35-4.35"></path>
-  </svg>
-)
-
-
-const MarketplaceIcon = ({ className = "" }: { className?: string }) => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
-    <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path>
-    <line x1="3" y1="6" x2="21" y2="6"></line>
-    <path d="M16 10a4 4 0 0 1-8 0"></path>
-  </svg>
-)
-
-const GlobeIcon = ({ className = "" }: { className?: string }) => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
-    <circle cx="12" cy="12" r="10"></circle>
-    <line x1="2" y1="12" x2="22" y2="12"></line>
-    <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
-  </svg>
+// ✅ LAZY LOAD: UserSettingsModal - Only loads when user opens menu
+// Saves ~15-20KB on initial bundle, improves mobile performance
+const UserSettingsModal = dynamic(
+  () => import('@/components/cells/UserSettingsModal').then(m => ({ default: m.UserSettingsModal })),
+  { 
+    ssr: false,
+    loading: () => null
+  }
 )
 
 export const MobileUserNavigation = () => {
@@ -217,16 +178,16 @@ export const MobileUserNavigation = () => {
 
   return (
     <>
-      
-
-      {/* User Settings Modal */}
-      <UserSettingsModal 
-        isOpen={isMenuOpen}
-        onClose={closeMenu}
-        hasUnreadMessages={hasUnreadMessages}
-        isAuthenticated={isAuthenticated}
-        onAuthStateChange={recheckAuthentication}
-      />
+      {/* User Settings Modal - Only render when open for better performance */}
+      {isMenuOpen && (
+        <UserSettingsModal 
+          isOpen={isMenuOpen}
+          onClose={closeMenu}
+          hasUnreadMessages={hasUnreadMessages}
+          isAuthenticated={isAuthenticated}
+          onAuthStateChange={recheckAuthentication}
+        />
+      )}
 
       {/* Bottom Navigation Dock */}
       <div className="fixed bottom-0 left-0 right-0 z-30 md:hidden ">

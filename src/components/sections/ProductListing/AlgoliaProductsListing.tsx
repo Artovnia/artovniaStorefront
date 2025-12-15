@@ -282,8 +282,10 @@ export const AlgoliaProductsListing = (props: AlgoliaProductsListingProps) => {
       searchClient={searchClient} 
       indexName={activeIndexName}
       future={{
-        preserveSharedStateOnUnmount: true // ✅ Fix InstantSearch warning
+        preserveSharedStateOnUnmount: true,
+        persistHierarchicalRootCount: false
       }}
+      routing={false}
     >
       <Configure {...configureProps} />
       <ProductsListing 

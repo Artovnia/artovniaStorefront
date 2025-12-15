@@ -82,6 +82,10 @@ interface FilterState {
   }
   setPendingDimensionFilter: (key: string, value: string) => void
   
+  // Editing state to prevent URL sync interference
+  isEditingPrice: boolean
+  setIsEditingPrice: (editing: boolean) => void
+  
   // Apply pending filters (move pending to active)
   applyPendingFilters: () => void
   
@@ -219,6 +223,10 @@ export const useFilterStore = create<FilterState>()(
         }
       })),
       
+      // Editing state to prevent URL sync interference
+      isEditingPrice: false,
+      setIsEditingPrice: (editing) => set({ isEditingPrice: editing }),
+      
       // Apply pending filters (move pending to active)
       applyPendingFilters: () => set((state) => ({
         selectedColors: [...state.pendingColors],
@@ -280,10 +288,10 @@ export const useFilterStore = create<FilterState>()(
     {
       name: 'filter-store', // unique name for localStorage key
       // Only persist essential filter state
+      // NOTE: Price filters are NOT persisted - URL params are the source of truth
       partialize: (state) => ({
         selectedColors: state.selectedColors,
-        minPrice: state.minPrice,
-        maxPrice: state.maxPrice,
+        // minPrice and maxPrice removed from persistence - causes stale data issues
         selectedSizes: state.selectedSizes,
         selectedRating: state.selectedRating,
         selectedCondition: state.selectedCondition,

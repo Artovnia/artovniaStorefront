@@ -339,7 +339,7 @@ export const ProductReviews = ({
     <div className="w-full py-8">
       <div className="border-t border-ui-border-base pt-8">
         <div className="flex items-center justify-between mb-6">
-          <h3 className="text-xl font-semibold text-ui-fg-base">
+          <h3 className="heading-md font-instrument-serif  text-ui-fg-base">
             Recenzje produktu ({reviews.length})
           </h3>
           <div className="flex items-center gap-2">

@@ -1,5 +1,6 @@
 // src/lib/data/reviews.ts
 "use server"
+import { cache } from "react"
 import { revalidatePath } from "next/cache"
 import { sdk } from "../config"
 import { getAuthHeaders } from "./cookies" // Reverted to correct import path
@@ -68,7 +69,7 @@ const getReviews = async () => {
  * 1. Reviews properly linked through the product-review link table (accessible via /products/{id}/reviews)
  * 2. Reviews with reference="product" and reference_id=productId but not in the link table (via /reviews)
  */
-const getProductReviews = async (productId: string) => {  
+const getProductReviews = cache(async (productId: string) => {  
   try {
     const headers = await getAuthHeaders()
     
@@ -78,13 +79,16 @@ const getProductReviews = async (productId: string) => {
       'x-publishable-api-key': `${process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || ''}`
     }
     
-    // Use the product reviews endpoint
+    // Use the product reviews endpoint with caching
     const response = await fetch(
       `${process.env.MEDUSA_BACKEND_URL}/store/products/${productId}/reviews?limit=100`,
       {
         method: 'GET',
         headers: commonHeaders,
-        cache: 'no-store'
+        next: { 
+          revalidate: 300, // Cache for 5 minutes
+          tags: [`product-reviews-${productId}`] // Allow targeted cache invalidation
+        }
       }
     )
     
@@ -105,7 +109,7 @@ const getProductReviews = async (productId: string) => {
     console.error(`❌ Error fetching product reviews:`, error)
     return { reviews: [] }
   }
-}
+})
 
 /**
  * Creates a review for a product or seller

@@ -11,11 +11,11 @@ import dynamic from "next/dynamic"
 // 2. Bots get ProductListing (database), never AlgoliaProductsListing
 // 3. InstantSearch hooks only run on client, no server-side Algolia queries
 // 4. Enabling SSR improves loading by 300-400ms (no bundle download delay)
+// 5. No loading skeleton to prevent flash/rerender - SSR renders immediately
 const AlgoliaProductsListing = dynamic(
   () => import("./AlgoliaProductsListing").then(mod => ({ default: mod.AlgoliaProductsListing })),
   {
-    loading: () => <ProductListingSkeleton />,
-    ssr: true, // ✅ Safe for bots, faster for users
+    ssr: true, // ✅ Safe for bots, faster for users, no flash
   }
 )
 

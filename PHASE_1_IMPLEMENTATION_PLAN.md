@@ -195,12 +195,10 @@ import { cache } from 'react'
 
 // ✅ ADD cached product fetch (after imports)
 const getCachedProduct = cache(async (handle: string, locale: string) => {
-  console.log('🔍 PRODUCT PAGE: Fetching product:', handle)
   const { response } = await listProducts({
     countryCode: locale,
     queryParams: { handle },
   })
-  console.log('✅ PRODUCT PAGE: Product fetched:', response.products[0] ? 'FOUND' : 'NOT FOUND')
   return response.products[0]
 })
 

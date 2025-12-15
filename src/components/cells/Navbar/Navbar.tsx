@@ -19,7 +19,11 @@ export const Navbar = ({
   const [dropdownActiveCategory, setDropdownActiveCategory] = useState<HttpTypes.StoreProductCategory | null>(null)
   const [isDropdownVisible, setIsDropdownVisible] = useState(false)
   const [hoverTimeout, setHoverTimeout] = useState<NodeJS.Timeout | null>(null)
-  const [categories, setCategories] = useState<HttpTypes.StoreProductCategory[]>([])
+  
+  // ✅ Initialize with propCategories to prevent empty navbar on first render
+  const [categories, setCategories] = useState<HttpTypes.StoreProductCategory[]>(
+    USE_MOCK_DATA ? getTopLevelCategories() : (propCategories || [])
+  )
   
   useEffect(() => {
     if (USE_MOCK_DATA) {
@@ -36,12 +40,8 @@ export const Navbar = ({
         }, 1000)
       }
     } else if (propCategories && propCategories.length > 0) {
-      // Use provided categories if available and not in mock mode
+      // Update categories when props change (for background loading)
       setCategories(propCategories);
-    } else {
-      // Fallback to mock data if no categories provided
-      const mockCategories = getTopLevelCategories();
-      setCategories(mockCategories);
     }
   }, [propCategories])
 

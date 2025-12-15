@@ -11,11 +11,22 @@ interface CategoriesProps {
   headingCategories?: string[]
 }
 
+// In-memory cache for category product counts (prevents duplicate requests)
+let categoriesWithProductsCache: Set<string> | null = null
+let cacheTimestamp: number = 0
+const CACHE_TTL = 3600000 // 1 hour in milliseconds
+
 /**
  * Get categories that have products from Medusa database
  * This is used to filter categories to only show those with actual products
+ * OPTIMIZED: Uses in-memory cache to prevent duplicate requests on same page load
  */
 export const getCategoriesWithProductsFromDatabase = async (): Promise<Set<string>> => {
+  // Return cached result if still valid
+  const now = Date.now()
+  if (categoriesWithProductsCache && (now - cacheTimestamp) < CACHE_TTL) {
+    return categoriesWithProductsCache
+  }
   try {
     const categoriesResponse = await sdk.client.fetch<{
       product_categories: Array<{ id: string }>
@@ -53,6 +64,10 @@ export const getCategoriesWithProductsFromDatabase = async (): Promise<Set<strin
         })
       )
     }
+
+    // Update cache
+    categoriesWithProductsCache = categoriesWithProducts
+    cacheTimestamp = Date.now()
 
     return categoriesWithProducts
   } catch (error) {

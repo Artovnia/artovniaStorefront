@@ -23,17 +23,22 @@ export const useSyncFiltersFromURL = () => {
     setPendingRating,
     setPendingDimensionFilter,
     setSelectedColors,
-    setPendingColors
+    setPendingColors,
+    isEditingPrice
   } = useFilterStore()
 
   useEffect(() => {
-    // Sync price filters from URL
     const urlMinPrice = searchParams.get('min_price') || ''
     const urlMaxPrice = searchParams.get('max_price') || ''
-    setMinPrice(urlMinPrice)
-    setMaxPrice(urlMaxPrice)
-    setPendingMinPrice(urlMinPrice)
-    setPendingMaxPrice(urlMaxPrice)
+    
+   
+   // Sync price filters from URL - SKIP if user is actively editing
+if (!isEditingPrice) {
+  setMinPrice(urlMinPrice)
+  setMaxPrice(urlMaxPrice)
+  setPendingMinPrice(urlMinPrice)
+  setPendingMaxPrice(urlMaxPrice)
+}
 
     // Sync size filters from URL
     const urlSizes = searchParams.get('size')
@@ -65,5 +70,5 @@ export const useSyncFiltersFromURL = () => {
     // This prevents ghost selections from persisted localStorage
     setSelectedColors([])
     setPendingColors([])
-  }, [searchParams, setMinPrice, setMaxPrice, setSelectedSizes, setSelectedRating, setDimensionFilter, setPendingMinPrice, setPendingMaxPrice, setPendingSizes, setPendingRating, setPendingDimensionFilter, setSelectedColors, setPendingColors])
+  }, [searchParams, setMinPrice, setMaxPrice, setSelectedSizes, setSelectedRating, setDimensionFilter, setPendingMinPrice, setPendingMaxPrice, setPendingSizes, setPendingRating, setPendingDimensionFilter, setSelectedColors, setPendingColors, isEditingPrice])
 }

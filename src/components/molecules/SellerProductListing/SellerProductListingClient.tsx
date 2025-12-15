@@ -57,7 +57,15 @@ export function SellerProductListingClient({
       })
 
       setProducts(result?.response?.products || [])
+      setTotalCount(result?.response?.count || 0) // Update total count from API response
       setCurrentPage(page)
+      
+      // Refresh wishlist data
+      if (user) {
+        const wishlistData = await getUserWishlists()
+        setWishlist(wishlistData.wishlists || [])
+      }
+      
       window.scrollTo({ top: 0, behavior: 'smooth' })
     } catch (error) {
       console.error('Error fetching products:', error)

@@ -21,6 +21,11 @@ export const MobileProductSearch = () => {
     }
   }
 
+  const handleClear = () => {
+    // Navigate to categories page without query to show all results
+    router.push(`/categories`)
+  }
+
   return (
     <div className="md:hidden w-full px-4 mb-1">
       <form className="flex items-center w-full" method="POST" onSubmit={submitHandler}>
@@ -31,6 +36,7 @@ export const MobileProductSearch = () => {
             value={search}
             changeValue={setSearch}
             clearable={true}
+            onClear={handleClear}
           />
         </div>
         <input type="submit" className="hidden" />

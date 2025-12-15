@@ -22,7 +22,7 @@ type ProductWithHandle = StoreProduct & {
 // This prevents fetching the same product twice (metadata + page render)
 // NOTE: This is per-request caching only, NOT cross-request or cross-user
 const getCachedProduct = cache(async (handle: string, locale: string) => {
-  console.log('🔍 PRODUCT PAGE: Fetching product:', handle)
+
   const { response } = await listProducts({
     countryCode: locale,
     queryParams: { handle },

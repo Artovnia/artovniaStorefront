@@ -15,6 +15,7 @@ import useFilters from '@/hooks/useFilters'
 import { MobileFilterModal } from '@/components/organisms/MobileFilterModal/MobileFilterModal'
 import { useApplyFilters } from '@/hooks/useApplyFilters'
 import { useSyncFiltersFromURL } from '@/hooks/useSyncFiltersFromURL'
+import { useRouter, usePathname } from '@/i18n/routing'
 
 interface FilterDropdownProps {
   label: string
@@ -165,6 +166,8 @@ export const ProductFilterBar = ({
   const searchParams = useSearchParams()
   const updateSearchParams = useUpdateSearchParams()
   const applyFilters = useApplyFilters()
+  const router = useRouter()
+  const pathname = usePathname()
   
   // Sync store FROM URL (URL is source of truth)
   useSyncFiltersFromURL()
@@ -256,13 +259,15 @@ export const ProductFilterBar = ({
   }, [selectedRating, ratingFacetItems, refineRating])
   
   // Check if any filters are active
+  // Read price from store for immediate updates
+  const { minPrice, maxPrice } = useFilterStore()
   const hasActiveFilters = Boolean(
-    searchParams.get("min_price") ||
-    searchParams.get("max_price") ||
+    minPrice ||
+    maxPrice ||
     selectedColors.length > 0 ||
     selectedRating ||
     searchParams.get("size") ||
-    // Add dimension filters from URL parameters
+    searchParams.get("condition") ||
     searchParams.get("min_length") ||
     searchParams.get("max_length") ||
     searchParams.get("min_width") ||
@@ -277,8 +282,8 @@ export const ProductFilterBar = ({
   const getActiveFilters = () => {
     const filters = []
     
-    const minPrice = searchParams.get("min_price")
-    const maxPrice = searchParams.get("max_price")
+    // Read price from store instead of URL for immediate UI updates
+    const { minPrice, maxPrice } = useFilterStore.getState()
     if (minPrice || maxPrice) {
       const priceLabel = minPrice && maxPrice 
         ? `${minPrice}zł - ${maxPrice}zł`
@@ -289,16 +294,25 @@ export const ProductFilterBar = ({
         key: 'price',
         label: `Cena: ${priceLabel}`,
         onRemove: () => {
-          // Clear URL params
-          updateSearchParams("min_price", "")
-          updateSearchParams("max_price", "")
+          // Get store actions
+          const { setMinPrice, setMaxPrice, setPendingMinPrice, setPendingMaxPrice, setIsEditingPrice } = useFilterStore.getState()
           
-          // Clear Zustand store (both active and pending)
-          const { setMinPrice, setMaxPrice, setPendingMinPrice, setPendingMaxPrice } = useFilterStore.getState()
+          // Reset editing flag
+          setIsEditingPrice(false)
+          
+          // Clear store immediately for instant UI update
           setMinPrice('')
           setMaxPrice('')
           setPendingMinPrice('')
           setPendingMaxPrice('')
+          
+          // Clear URL params
+          const params = new URLSearchParams(searchParams.toString())
+          params.delete("min_price")
+          params.delete("max_price")
+          
+          // Use router.push to trigger proper navigation and re-render
+          router.push(`${pathname}?${params.toString()}`, { scroll: false })
         }
       })
     }

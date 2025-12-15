@@ -4,8 +4,8 @@ import React, { createContext, useContext, useMemo } from "react"
 import { useRouter } from 'next/navigation'
 import { useSearchParams } from 'next/navigation'
 
-// ARCHITECTURAL REDESIGN: URL-First, Server-Driven Variant Selection
-// No client state, no synchronization issues, no hydration mismatches
+// URL-First Variant Selection with Client-Side Navigation
+// Updates URL without full page reload, preserving React state and caches
 
 type VariantSelectionContextType = {
   selectedVariantId: string
@@ -25,29 +25,27 @@ export const VariantSelectionProvider = ({
   const router = useRouter()
   const searchParams = useSearchParams()
   
-  // ARCHITECTURAL CHANGE: Read variant from URL only - no client state
+  // Read variant from URL only - no client state
   const selectedVariantId = searchParams.get('variant') || initialVariantId
   
-  // ARCHITECTURAL CHANGE: Direct URL navigation - no debouncing, no state sync
+  // ✅ Client-side navigation - updates URL without page reload
+  // Preserves React state, caches, and prevents unnecessary refetches
   const setSelectedVariantId = (id: string) => {
     if (!id || id === selectedVariantId || !id.trim()) return
     
+    // Build new URL with updated variant parameter
+    const params = new URLSearchParams(searchParams.toString())
+    params.set('variant', id)
     
-    
-    // CRITICAL: Use window.location for immediate, synchronous navigation
-    // This avoids all React state/router conflicts
-    const url = new URL(window.location.href)
-    url.searchParams.set('variant', id)
-    
-    // Immediate navigation - no async operations
-    window.location.href = url.toString()
+    // ✅ Use Next.js router for client-side navigation (no page reload)
+    // scroll: false prevents scrolling to top on variant change
+    router.push(`?${params.toString()}`, { scroll: false })
   }
   
-  // Simple context value - no complex memoization
   const contextValue = useMemo(() => ({
     selectedVariantId,
     setSelectedVariantId,
-    updateUrlWithVariant: setSelectedVariantId // Redirect to new implementation
+    updateUrlWithVariant: setSelectedVariantId
   }), [selectedVariantId])
 
   return (

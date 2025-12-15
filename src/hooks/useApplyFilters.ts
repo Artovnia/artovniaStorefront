@@ -9,7 +9,7 @@ import { useFilterStore } from '@/stores/filterStore'
 export const useApplyFilters = () => {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const { applyPendingFilters } = useFilterStore()
+  const { applyPendingFilters, setIsEditingPrice } = useFilterStore()
 
   const applyFilters = useCallback(() => {
     // Get pending filter state
@@ -17,6 +17,9 @@ export const useApplyFilters = () => {
     
     // Apply pending to active in store
     applyPendingFilters()
+    
+    // Reset editing flag to allow URL sync to work again
+    setIsEditingPrice(false)
     
     // Build new URL params
     const params = new URLSearchParams(searchParams.toString())
@@ -83,7 +86,7 @@ export const useApplyFilters = () => {
     
     // Update URL - this triggers a single Algolia search
     router.push(`?${params.toString()}`, { scroll: false })
-  }, [applyPendingFilters, router, searchParams])
+  }, [applyPendingFilters, setIsEditingPrice, router, searchParams])
 
   return applyFilters
 }

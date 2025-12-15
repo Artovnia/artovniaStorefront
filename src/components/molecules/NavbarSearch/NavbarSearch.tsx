@@ -21,6 +21,11 @@ export const NavbarSearch = () => {
     }
   }
 
+  const handleClear = () => {
+    // Navigate to categories page without query to show all results
+    router.push(`/categories`)
+  }
+
   return (
     <form className="flex items-center" method="POST" onSubmit={submitHandler}>
       <Input
@@ -29,6 +34,7 @@ export const NavbarSearch = () => {
         value={search}
         changeValue={setSearch}
         clearable={true}
+        onClear={handleClear}
       />
       <input type="submit" className="hidden" />
     </form>

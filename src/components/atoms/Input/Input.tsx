@@ -10,11 +10,12 @@ interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   clearable?: boolean
   error?: boolean
   changeValue?: (value: string) => void
+  onClear?: () => void
 }
 
 export const Input = forwardRef<HTMLInputElement, InputProps>(
   (
-    { label, icon, clearable, className, error, changeValue, ...props },
+    { label, icon, clearable, className, error, changeValue, onClear, ...props },
     ref
   ) => {
     const [showPassword, setShowPassword] = useState(false)
@@ -85,6 +86,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
 
     const clearHandler = () => {
       if (changeValue) changeValue("")
+      if (onClear) onClear()
     }
 
     const {

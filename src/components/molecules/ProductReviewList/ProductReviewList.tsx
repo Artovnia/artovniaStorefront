@@ -30,7 +30,7 @@ export const ProductReviewList = ({ reviews, title = "Recenzje produktu" }: { re
   if (!reviews?.length) {
     return (
       <div className="w-full py-8">
-        <h2 className="text-xl font-bold mb-4">{title}</h2>
+        <h2 className="heading-md font-instrument-serif mb-4">{title}</h2>
         <p className="text-ui-fg-subtle">Brak recenzji dla tego produktu.</p>
       </div>
     )
@@ -39,7 +39,7 @@ export const ProductReviewList = ({ reviews, title = "Recenzje produktu" }: { re
   return (
     <div className="w-full py-8">
       <div className="flex items-center justify-between mb-6">
-        <h2 className="text-xl font-bold">{title}</h2>
+        <h2 className="heading-md font-instrument-serif">{title}</h2>
         <span className="text-ui-fg-subtle notranslate">
           {reviews.length} {reviews.length === 1 ? 'recenzja' : 
             reviews.length % 10 >= 2 && reviews.length % 10 <= 4 && (reviews.length % 100 < 10 || reviews.length % 100 >= 20) ? 'recenzje' : 'recenzji'}
