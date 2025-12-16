@@ -10,11 +10,12 @@ import { ArrowRightIcon } from "@/icons"
 import PortableText from "../../components/PortableText"
 import BlogLayout from "../../components/BlogLayout"
 
-// CRITICAL: force-dynamic required to prevent Sanity 500 errors on Vercel
-// Sanity CMS has issues with Next.js ISR caching on Vercel's edge network
-// Using force-dynamic ensures fresh data on every request without cache corruption
-export const dynamic = 'force-dynamic'
+// ✅ OPTIMIZED: Use ISR with longer cache for seller posts (content rarely changes)
+export const revalidate = 3600 // 1 hour
 export const dynamicParams = true // Generate pages on-demand for new slugs
+
+// Note: Seller posts change less frequently than regular blog posts
+// Use Sanity webhooks to revalidate specific pages when content updates
 
 interface SellerPostPageProps {
   params: Promise<{

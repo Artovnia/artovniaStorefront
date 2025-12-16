@@ -1,5 +1,5 @@
 import { client, BLOG_POSTS_QUERY, BLOG_POST_QUERY, BLOG_CATEGORIES_QUERY, FEATURED_POSTS_QUERY, FEATURED_SELLER_POST_QUERY, SELLER_POST_QUERY, SELLER_POSTS_QUERY, NEWSLETTERS_QUERY, NEWSLETTER_QUERY, READY_NEWSLETTERS_QUERY } from './sanity'
-import { unifiedCache } from '@/lib/utils/unified-cache'
+// ✅ Removed unified-cache - using only Next.js ISR to avoid cache layer conflicts
 
 export interface BlogPost {
   _id: string
@@ -106,221 +106,191 @@ function transformBlogPost(post: any): BlogPost {
   }
 }
 
-// OPTIMIZED: Fetch all blog posts with unified cache
+// ✅ Single cache layer: Next.js ISR only
 export async function getBlogPosts(): Promise<BlogPost[]> {
-  return unifiedCache.get('blog:posts:all', async () => {
-    try {
-      const posts = await client.fetch(BLOG_POSTS_QUERY, {}, {
-        cache: 'force-cache',
-        next: { revalidate: 60 }, // 1 minute cache - reduced to minimize inconsistency
-      })
-      return (posts || []).map(transformBlogPost)
-    } catch (error) {
-      console.error('Error fetching blog posts:', error)
-      return []
-    }
-  })
+  try {
+    const posts = await client.fetch(BLOG_POSTS_QUERY, {}, {
+      next: { revalidate: 60 }, // 1 minute cache
+    })
+    return (posts || []).map(transformBlogPost)
+  } catch (error) {
+    console.error('Error fetching blog posts:', error)
+    return []
+  }
 }
 
-// OPTIMIZED: Fetch featured blog posts with unified cache
+// ✅ Single cache layer: Next.js ISR only
 export async function getFeaturedPosts(): Promise<BlogPost[]> {
-  return unifiedCache.get('blog:posts:featured', async () => {
-    try {
-      const posts = await client.fetch(FEATURED_POSTS_QUERY, {}, {
-        cache: 'force-cache',
-        next: { revalidate: 60 }, // 1 minute cache - reduced to minimize inconsistency
-      })
-      return (posts || []).map(transformBlogPost)
-    } catch (error) {
-      console.error('Error fetching featured posts:', error)
-      return []
-    }
-  })
+  try {
+    const posts = await client.fetch(FEATURED_POSTS_QUERY, {}, {
+      next: { revalidate: 60 }, // 1 minute cache
+    })
+    return (posts || []).map(transformBlogPost)
+  } catch (error) {
+    console.error('Error fetching featured posts:', error)
+    return []
+  }
 }
 
-// OPTIMIZED: Fetch latest blog posts using unified cache
+// ✅ Single cache layer: Next.js ISR only
 export async function getLatestBlogPosts(): Promise<BlogPost[]> {
-  return unifiedCache.get('blog:posts:latest', async () => {
-    try {
-      const query = `
-        *[_type == "blogPost" && !(_id in path("drafts.**"))] | order(publishedAt desc)[0...3] {
-          _id,
-          title,
-          slug,
-          excerpt,
-          publishedAt,
-          "authorName": author->name,
-          "authorImage": author->image,
-          mainImage,
-          "categoryTitles": categories[]->title,
-          "categorySlugs": categories[]->slug.current,
-          tags
-        }
-      `
-      const posts = await client.fetch(query, {}, {
-        cache: 'force-cache',
-        next: { revalidate: 60 }, // 1 minute cache - reduced to minimize inconsistency
-      })
-      return (posts || []).map(transformBlogPost)
-    } catch (error) {
-      console.error('Error fetching latest blog posts:', error)
-      return []
-    }
-  })
+  try {
+    const query = `
+      *[_type == "blogPost" && !(_id in path("drafts.**"))] | order(publishedAt desc)[0...3] {
+        _id,
+        title,
+        slug,
+        excerpt,
+        publishedAt,
+        "authorName": author->name,
+        "authorImage": author->image,
+        mainImage,
+        "categoryTitles": categories[]->title,
+        "categorySlugs": categories[]->slug.current,
+        tags
+      }
+    `
+    const posts = await client.fetch(query, {}, {
+      next: { revalidate: 60 }, // 1 minute cache
+    })
+    return (posts || []).map(transformBlogPost)
+  } catch (error) {
+    console.error('Error fetching latest blog posts:', error)
+    return []
+  }
 }
 
-// OPTIMIZED: Fetch single blog post with unified cache
+// ✅ Single cache layer: Next.js ISR only
 export async function getBlogPost(slug: string): Promise<BlogPost | null> {
-  return unifiedCache.get(`blog:post:${slug}`, async () => {
-    try {
-      const post = await client.fetch(BLOG_POST_QUERY, { slug }, {
-        cache: 'force-cache',
-        next: { revalidate: 1800 }, // 30 minutes for individual posts
-      })
-      return post ? transformBlogPost(post) : null
-    } catch (error) {
-      console.error(`Error fetching blog post (slug: ${slug}):`, error)
-      return null
-    }
-  })
+  try {
+    const post = await client.fetch(BLOG_POST_QUERY, { slug }, {
+      next: { revalidate: 1800 }, // 30 minutes for individual posts
+    })
+    return post ? transformBlogPost(post) : null
+  } catch (error) {
+    console.error(`Error fetching blog post (slug: ${slug}):`, error)
+    return null
+  }
 }
 
-// Fetch all blog categories with unified cache
+// ✅ Single cache layer: Next.js ISR only
 export async function getBlogCategories(): Promise<BlogCategory[]> {
-  return unifiedCache.get('blog:categories:all', async () => {
-    try {
-      const categories = await client.fetch(BLOG_CATEGORIES_QUERY, {}, {
-        cache: 'force-cache',
-        next: { revalidate: 3600 }, // 1 hour cache for categories (they change less frequently)
-      })
-      return categories || []
-    } catch (error) {
-      console.error('Error fetching blog categories:', error)
-      return []
-    }
-  })
+  try {
+    const categories = await client.fetch(BLOG_CATEGORIES_QUERY, {}, {
+      next: { revalidate: 3600 }, // 1 hour cache for categories
+    })
+    return categories || []
+  } catch (error) {
+    console.error('Error fetching blog categories:', error)
+    return []
+  }
 }
 
-// Fetch posts by category with unified cache
+// ✅ Single cache layer: Next.js ISR only
 export async function getPostsByCategory(categorySlug: string): Promise<BlogPost[]> {
-  return unifiedCache.get(`blog:posts:category:${categorySlug}`, async () => {
-    try {
-      const query = `
-        *[_type == "blogPost" && references(*[_type == "blogCategory" && slug.current == $categorySlug]._id) && !(_id in path("drafts.**"))] | order(publishedAt desc) {
-          _id,
+  try {
+    const query = `
+      *[_type == "blogPost" && references(*[_type == "blogCategory" && slug.current == $categorySlug]._id) && !(_id in path("drafts.**"))] | order(publishedAt desc) {
+        _id,
+        title,
+        slug,
+        excerpt,
+        publishedAt,
+        author->{
+          name,
+          image
+        },
+        mainImage,
+        categories[]->{
           title,
-          slug,
-          excerpt,
-          publishedAt,
-          author->{
-            name,
-            image
-          },
-          mainImage,
-          categories[]->{
-            title,
-            slug
-          },
-          tags
-        }
-      `
-      const posts = await client.fetch(query, { categorySlug }, {
-        cache: 'force-cache',
-        next: { revalidate: 600 }, // 10 minutes cache
-      })
-      return posts || []
-    } catch (error) {
-      console.error('Error fetching posts by category:', error)
-      return []
-    }
-  })
+          slug
+        },
+        tags
+      }
+    `
+    const posts = await client.fetch(query, { categorySlug }, {
+      next: { revalidate: 600 }, // 10 minutes cache
+    })
+    return posts || []
+  } catch (error) {
+    console.error('Error fetching posts by category:', error)
+    return []
+  }
 }
 
-// Search blog posts (no cache for search results as they should be real-time)
+// ✅ Search has no cache (real-time results)
 export async function searchBlogPosts(searchTerm: string): Promise<BlogPost[]> {
-  // Use unified cache for search with short TTL since search results should be relatively fresh
-  return unifiedCache.get(`blog:search:${searchTerm.toLowerCase()}`, async () => {
-    try {
-      const query = `
-        *[_type == "blogPost" && (
-          title match $searchTerm + "*" ||
-          excerpt match $searchTerm + "*" ||
-          $searchTerm in tags
-        ) && !(_id in path("drafts.**"))] | order(publishedAt desc) {
-          _id,
+  try {
+    const query = `
+      *[_type == "blogPost" && (
+        title match $searchTerm + "*" ||
+        excerpt match $searchTerm + "*" ||
+        $searchTerm in tags
+      ) && !(_id in path("drafts.**"))] | order(publishedAt desc) {
+        _id,
+        title,
+        slug,
+        excerpt,
+        publishedAt,
+        author->{
+          name,
+          image
+        },
+        mainImage,
+        categories[]->{
           title,
-          slug,
-          excerpt,
-          publishedAt,
-          author->{
-            name,
-            image
-          },
-          mainImage,
-          categories[]->{
-            title,
-            slug
-          },
-          tags
-        }
-      `
-      const posts = await client.fetch(query, { searchTerm }, {
-        cache: 'no-store', // Don't use Next.js cache for search
-      })
-      return posts || []
-    } catch (error) {
-      console.error('Error searching blog posts:', error)
-      return []
-    }
-  })
+          slug
+        },
+        tags
+      }
+    `
+    const posts = await client.fetch(query, { searchTerm }, {
+      cache: 'no-store', // Don't cache search results
+    })
+    return posts || []
+  } catch (error) {
+    console.error('Error searching blog posts:', error)
+    return []
+  }
 }
 
-// Fetch featured seller post for homepage with unified cache
+// ✅ Single cache layer: Next.js ISR only
 export async function getFeaturedSellerPost(): Promise<SellerPost | null> {
-  return unifiedCache.get('blog:seller:featured', async () => {
-    try {
-      const post = await client.fetch(FEATURED_SELLER_POST_QUERY, {}, {
-        cache: 'force-cache',
-        next: { revalidate: 600 }, // 10 minutes cache
-      })
-      return post || null
-    } catch (error) {
-      console.error('Error fetching featured seller post:', error)
-      return null
-    }
-  })
+  try {
+    const post = await client.fetch(FEATURED_SELLER_POST_QUERY, {}, {
+      next: { revalidate: 600 }, // 10 minutes cache
+    })
+    return post || null
+  } catch (error) {
+    console.error('Error fetching featured seller post:', error)
+    return null
+  }
 }
 
-// OPTIMIZED: Fetch single seller post with unified cache
+// ✅ Single cache layer: Next.js ISR only
 export async function getSellerPost(slug: string): Promise<SellerPost | null> {
-  return unifiedCache.get(`blog:seller:post:${slug}`, async () => {
-    try {
-      const post = await client.fetch(SELLER_POST_QUERY, { slug }, {
-        cache: 'force-cache',
-        next: { revalidate: 1800 }, // 30 minutes for individual posts
-      })
-      return post || null
-    } catch (error) {
-      console.error(`Error fetching seller post (slug: ${slug}):`, error)
-      return null
-    }
-  })
+  try {
+    const post = await client.fetch(SELLER_POST_QUERY, { slug }, {
+      next: { revalidate: 1800 }, // 30 minutes for individual posts
+    })
+    return post || null
+  } catch (error) {
+    console.error(`Error fetching seller post (slug: ${slug}):`, error)
+    return null
+  }
 }
 
-// Fetch all seller posts with unified cache
+// ✅ Single cache layer: Next.js ISR only
 export async function getSellerPosts(): Promise<SellerPost[]> {
-  return unifiedCache.get('blog:seller:posts:all', async () => {
-    try {
-      const posts = await client.fetch(SELLER_POSTS_QUERY, {}, {
-        cache: 'force-cache',
-        next: { revalidate: 600 }, // 10 minutes cache
-      })
-      return posts || []
-    } catch (error) {
-      console.error('Error fetching seller posts:', error)
-      return []
-    }
-  })
+  try {
+    const posts = await client.fetch(SELLER_POSTS_QUERY, {}, {
+      next: { revalidate: 600 }, // 10 minutes cache
+    })
+    return posts || []
+  } catch (error) {
+    console.error('Error fetching seller posts:', error)
+    return []
+  }
 }
 
 export interface Newsletter {
@@ -338,71 +308,46 @@ export interface Newsletter {
   _updatedAt: string
 }
 
-// Newsletter data fetching functions with unified cache
+// ✅ Single cache layer: Next.js ISR only
 export async function getNewsletters(): Promise<Newsletter[]> {
-  return unifiedCache.get('blog:newsletters:all', async () => {
-    try {
-      const newsletters = await client.fetch(NEWSLETTERS_QUERY, {}, {
-        cache: 'force-cache',
-        next: { revalidate: 300 }, // 5 minutes cache
-      })
-      return newsletters || []
-    } catch (error) {
-      console.error('Error fetching newsletters:', error)
-      return []
-    }
-  })
+  try {
+    const newsletters = await client.fetch(NEWSLETTERS_QUERY, {}, {
+      next: { revalidate: 300 }, // 5 minutes cache
+    })
+    return newsletters || []
+  } catch (error) {
+    console.error('Error fetching newsletters:', error)
+    return []
+  }
 }
 
 export async function getNewsletter(id: string): Promise<Newsletter | null> {
-  return unifiedCache.get(`blog:newsletter:${id}`, async () => {
-    try {
-      const newsletter = await client.fetch(NEWSLETTER_QUERY, { id }, {
-        cache: 'force-cache',
-        next: { revalidate: 300 }, // 5 minutes cache
-      })
-      return newsletter || null
-    } catch (error) {
-      console.error(`Error fetching newsletter (id: ${id}):`, error)
-      return null
-    }
-  })
+  try {
+    const newsletter = await client.fetch(NEWSLETTER_QUERY, { id }, {
+      next: { revalidate: 300 }, // 5 minutes cache
+    })
+    return newsletter || null
+  } catch (error) {
+    console.error(`Error fetching newsletter (id: ${id}):`, error)
+    return null
+  }
 }
 
-// Ready newsletters shouldn't be cached as aggressively since they change status quickly
+// Ready newsletters shouldn't be cached since they change status quickly
 export async function getReadyNewsletters(): Promise<Newsletter[]> {
-  return unifiedCache.get('blog:newsletters:ready', async () => {
-    try {
-      const newsletters = await client.fetch(READY_NEWSLETTERS_QUERY, {}, {
-        cache: 'no-store', // Don't use Next.js cache
-      })
-      return newsletters || []
-    } catch (error) {
-      console.error('Error fetching ready newsletters:', error)
-      return []
-    }
-  })
+  try {
+    const newsletters = await client.fetch(READY_NEWSLETTERS_QUERY, {}, {
+      cache: 'no-store', // Don't cache
+    })
+    return newsletters || []
+  } catch (error) {
+    console.error('Error fetching ready newsletters:', error)
+    return []
+  }
 }
-// Utility function to invalidate blog-related caches
+// ✅ Cache invalidation now handled by Next.js revalidateTag() or revalidatePath()
+// Use this in Sanity webhooks: revalidateTag('blog') or revalidatePath('/blog')
 export async function invalidateBlogCache(type?: 'posts' | 'categories' | 'sellers' | 'newsletters') {
-  if (!type) {
-    // Invalidate all blog caches
-    await unifiedCache.invalidate('blog')
-    return
-  }
-
-  switch (type) {
-    case 'posts':
-      unifiedCache.invalidate('blog:posts')
-      break
-    case 'categories':
-      unifiedCache.invalidate('blog:categories')
-      break
-    case 'sellers':
-      unifiedCache.invalidate('blog:seller')
-      break
-    case 'newsletters':
-      unifiedCache.invalidate('blog:newsletters')
-      break
-  }
+  // This function is deprecated - use Next.js revalidateTag() instead
+  console.log('invalidateBlogCache is deprecated - use Next.js revalidateTag() in webhooks')
 }

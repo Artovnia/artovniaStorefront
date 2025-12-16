@@ -11,67 +11,45 @@ interface CategoriesProps {
   headingCategories?: string[]
 }
 
-// In-memory cache for category product counts (prevents duplicate requests)
-let categoriesWithProductsCache: Set<string> | null = null
-let cacheTimestamp: number = 0
-const CACHE_TTL = 86400000 // 24 hours - categories rarely change
-
 /**
- * Get categories that have products from Medusa database
- * This is used to filter categories to only show those with actual products
- * OPTIMIZED: Uses in-memory cache to prevent duplicate requests on same page load
+ * ✅ OPTIMIZED: Get categories that have products with SINGLE efficient query
+ * Instead of N+1 queries (one per category), fetch all products once and extract category IDs
+ * This reduces 10+ requests to just 1 request
  */
 export const getCategoriesWithProductsFromDatabase = async (): Promise<Set<string>> => {
-  // Return cached result if still valid
-  const now = Date.now()
-  if (categoriesWithProductsCache && (now - cacheTimestamp) < CACHE_TTL) {
-    return categoriesWithProductsCache
-  }
   try {
-    const categoriesResponse = await sdk.client.fetch<{
-      product_categories: Array<{ id: string }>
-    }>("/store/product-categories", {
-      query: { fields: "id", limit: 500 },
-      cache: "force-cache",
-      next: { revalidate: 3600 }
+    // ✅ Single request: fetch all products with category info
+    // This replaces 10+ individual category checks
+    const response = await sdk.client.fetch<{
+      products: Array<{ 
+        id: string
+        categories?: Array<{ id: string }> 
+      }>
+    }>("/store/products", {
+      query: {
+        fields: "id,categories.id",
+        limit: 1000, // Get enough products to cover all categories
+      },
+      next: { revalidate: 86400 }, // Cache for 24 hours
     })
 
-    const allCategories = categoriesResponse?.product_categories || []
+    const products = response?.products || []
     const categoriesWithProducts = new Set<string>()
 
-    // Batch into groups of 10 categories at a time
-    const batchSize = 10
-    for (let i = 0; i < allCategories.length; i += batchSize) {
-      const batch = allCategories.slice(i, i + batchSize)
-      
-      await Promise.all(
-        batch.map(async (category) => {
-          const response = await sdk.client.fetch<{
-            products: Array<{ id: string }>
-          }>("/store/products", {
-            query: {
-              category_id: [category.id],
-              fields: "id",
-              limit: 1,
-            },
-            cache: "force-cache",
-            next: { revalidate: 3600 }
-          })
-
-          if (response?.products?.length > 0) {
+    // Extract unique category IDs from products
+    products.forEach(product => {
+      if (product.categories && Array.isArray(product.categories)) {
+        product.categories.forEach(category => {
+          if (category.id) {
             categoriesWithProducts.add(category.id)
           }
         })
-      )
-    }
-
-    // Update cache
-    categoriesWithProductsCache = categoriesWithProducts
-    cacheTimestamp = Date.now()
+      }
+    })
 
     return categoriesWithProducts
   } catch (error) {
-    console.error("Error:", error)
+    console.error("Error fetching categories with products:", error)
     return new Set()
   }
 }
@@ -195,11 +173,45 @@ export const listCategoriesWithProducts = async (): Promise<{
   parentCategories: HttpTypes.StoreProductCategory[]
   categories: HttpTypes.StoreProductCategory[]
 }> => {
-  // ✅ OPTIMIZED: Just return all categories without expensive product checks
-  // Product checks caused 10+ requests on every page reload
-  // Categories are filtered in the UI if needed
   try {
-    return await listCategories()
+    // ✅ OPTIMIZED: Use cached product check with 24h TTL to prevent spam
+    const categoriesWithProducts = await getCategoriesWithProductsFromDatabase()
+    
+    if (categoriesWithProducts.size === 0) {
+      // Fallback to essential categories if no products found
+      return await getEssentialCategories()
+    }
+    
+    const response = await sdk.client.fetch<
+      HttpTypes.StoreProductCategoryListResponse
+    >("/store/product-categories", {
+      query: {
+        fields: "id, handle, name, rank, parent_category_id, mpath",
+        limit: 1000,
+      },
+      next: { revalidate: 3600 }, // 1 hour cache
+    })
+    
+    const allCategories = response?.product_categories || []
+    
+    // Filter categories with products OR their ancestors
+    const filteredCategories = allCategories.filter(category => {
+      return hasProductsInCategoryTree(
+        category, 
+        allCategories, 
+        categoriesWithProducts
+      )
+    })
+    
+    const filteredTree = buildCategoryTree(filteredCategories)
+    const filteredParents = filteredTree.filter(
+      cat => !cat.parent_category_id
+    )
+    
+    return {
+      parentCategories: filteredParents,
+      categories: filteredTree
+    }
   } catch (error) {
     console.error('Error in listCategoriesWithProducts:', error)
     return await getEssentialCategories()

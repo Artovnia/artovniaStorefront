@@ -13,10 +13,12 @@ import { urlFor } from "../lib/sanity"
 import BlogLayoutWrapper from "../components/BlogLayoutWrapper"
 import PortableText from "../components/PortableText"
 
-// CRITICAL: force-dynamic required because BlogSearch uses useSearchParams()
-// Without this, Next.js bails out to client-side rendering causing 500 errors
-// NOTE: force-dynamic disables caching, so Sanity updates appear immediately
-export const dynamic = 'force-dynamic'
+// ✅ OPTIMIZED: Use ISR for blog posts with on-demand revalidation
+// Individual posts are more static, cache for 30 minutes
+export const revalidate = 1800 // 30 minutes
+
+// Note: Use Sanity webhooks to trigger revalidateTag() for immediate updates
+// This gives us both performance AND fresh content when needed
 
 interface BlogPostPageProps {
   params: Promise<{

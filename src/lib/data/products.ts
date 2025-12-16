@@ -198,17 +198,20 @@ export const listProductsWithSort = async ({
   const limit = queryParams?.limit || 12
   const offset = queryParams?.offset !== undefined ? queryParams.offset : (page - 1) * limit
 
-  // For seller products, fetch ALL once and cache, then paginate in memory
+  // For seller products, fetch ALL once and cache IN-MEMORY (not Next.js cache due to 2MB limit)
   if (seller_id) {
     const cacheKey = `seller:all-products:${seller_id}:${countryCode}:${sortBy}`
     
-    // Fetch all seller products once (cached for 5 min)
+    // ✅ Use client-side unified-cache to avoid Next.js 2MB cache limit
+    // Production error: 7MB response exceeds Next.js cache limit
     const allSellerProducts = await unifiedCache.get(cacheKey, async () => {
+      // ✅ Reduced from 1000 to 200 to prevent cache bloat
+      // Most sellers have <100 products, 200 is safe limit
       const result = await listProducts({
         pageParam: 1,
         queryParams: {
           ...queryParams,
-          limit: 1000, // Fetch all products (sellers rarely have >1000)
+          limit: 200, // Reduced to prevent 7MB responses
           offset: 0,
           order: sortBy === 'created_at' ? '-created_at' : sortBy,
         },

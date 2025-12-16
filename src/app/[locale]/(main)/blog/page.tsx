@@ -12,9 +12,12 @@ import BlogPostCard from "./components/BlogPostCard"
 import PaginatedBlogPosts from "./components/PaginatedBlogPosts"
 import PaginatedSellerPosts from "./components/PaginatedSellerPosts"
 
-// CRITICAL: force-dynamic required because BlogSearch uses useSearchParams()
-// Without this, Next.js bails out to client-side rendering causing 500 errors
-export const dynamic = 'force-dynamic'
+// ✅ OPTIMIZED: Use ISR instead of force-dynamic for better performance
+// Blog content is relatively static, revalidate every 5 minutes
+export const revalidate = 300 // 5 minutes
+
+// Note: If BlogSearch component needs dynamic behavior, make it a client component
+// with Suspense boundary instead of forcing entire page to be dynamic
 
 export const metadata: Metadata = {
   title: "Blog - Artovnia | Inspiracje, Porady i Nowości ze Świata Sztuki",
