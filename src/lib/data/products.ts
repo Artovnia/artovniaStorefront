@@ -107,10 +107,45 @@ export const listProducts = async ({
   }
 
   try {
+    // ✅ OPTIMIZED: For seller filtering, use custom endpoint that returns full product data
+    if (seller_id) {
+      console.log('🔍 [FRONTEND] Calling seller products endpoint:', {
+        seller_id,
+        endpoint: `/store/seller/${seller_id}/products`,
+        limit,
+        offset,
+        region_id: region?.id
+      })
 
+      const { products, count } = await sdk.client.fetch<{
+        products: HttpTypes.StoreProduct[]
+        count: number
+      }>(`/store/seller/${seller_id}/products`, {
+        method: "GET",
+        query: {
+          limit,
+          offset,
+          region_id: region?.id,
+          ...queryParams,
+        },
+        headers,
+        next: { revalidate: 300 },
+      })
+
+      console.log('✅ [FRONTEND] Seller products response:', {
+        productsCount: products?.length || 0,
+        totalCount: count
+      })
+
+      const nextPage = count > offset + limit ? pageParam + 1 : null
+      return {
+        response: { products, count },
+        nextPage,
+        queryParams,
+      }
+    }
     
-    // ✅ CRITICAL FIX: Only include seller_id in query if it's actually provided
-    // Passing undefined breaks promotional price calculations
+    // ✅ Standard product fetching (no seller filter)
     const queryObject: any = {
       category_id,
       collection_id,
@@ -119,11 +154,6 @@ export const listProducts = async ({
       region_id: region?.id,
       fields: "*variants.calculated_price,*seller,*seller.products,*variants,*variants.inventory_quantity,*variants.manage_inventory,*variants.allow_backorder,*variants.inventory_items.inventory_item_id,*variants.inventory_items.required_quantity,*metadata,*categories,*categories.parent_category,*collection",
       ...queryParams,
-    }
-    
-    // Only add seller_id if it's actually provided
-    if (seller_id) {
-      queryObject.seller_id = seller_id
     }
     
     const { products, count } = await sdk.client.fetch<{
