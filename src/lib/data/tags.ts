@@ -115,7 +115,8 @@ export const getPopularTags = cache(async (
       .map(([value, count]) => ({
         value,
         count,
-        slug: value.toLowerCase().replace(/\s+/g, '-'),
+        // ✅ Use URL encoding to preserve exact tag value
+        slug: encodeURIComponent(value.toLowerCase()),
       }))
       .sort((a, b) => b.count - a.count)
       .slice(0, limit)
@@ -132,9 +133,14 @@ export const getPopularTags = cache(async (
  * Converts slug back to tag value
  */
 export const getTagBySlug = (slug: string): string => {
-  // Convert slug back to readable format
-  // "kolczyki-handmade" -> "kolczyki handmade"
-  return slug.replace(/-/g, ' ')
+  // ✅ Decode URL-encoded slug to get exact original tag value
+  try {
+    return decodeURIComponent(slug)
+  } catch (error) {
+    // Fallback for old-style slugs (backward compatibility)
+    console.warn(`Failed to decode tag slug "${slug}", using fallback conversion`)
+    return slug.replace(/-/g, ' ')
+  }
 }
 
 /**
@@ -167,7 +173,8 @@ export const getRelatedTags = cache(async (
       .map(([value, count]) => ({
         value,
         count,
-        slug: value.toLowerCase().replace(/\s+/g, '-'),
+        // ✅ Use URL encoding to preserve exact tag value
+        slug: encodeURIComponent(value.toLowerCase()),
       }))
       .sort((a, b) => b.count - a.count)
       .slice(0, limit)

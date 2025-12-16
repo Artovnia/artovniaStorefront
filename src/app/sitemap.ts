@@ -1,5 +1,5 @@
 import { MetadataRoute } from 'next'
-import { listProducts } from '@/lib/data/products'
+import { listProductsForSitemap } from '@/lib/data/products-sitemap'
 import { getBlogPosts } from './[locale]/(main)/blog/lib/data'
 import {
   listCategories,
@@ -101,11 +101,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   try {
     // Fetch all data in parallel with timeouts
     const [productsResult, categoriesResult, blogResult] = await Promise.allSettled([
-      // Products with 20-second timeout
+      // Products with 20-second timeout - using sitemap-specific function
       withTimeout(
-        listProducts({ queryParams: { limit: 1000 }, countryCode: 'PL' }),
+        listProductsForSitemap({ limit: 1000 }),
         20000,
-        { response: { products: [], count: 0 }, nextPage: null }
+        { products: [], count: 0 }
       ),
       // Categories with 15-second timeout
       withTimeout(
@@ -129,10 +129,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     let uniqueSellers = new Map<string, any>()
     
     if (productsResult.status === 'fulfilled') {
-      const { response } = productsResult.value
-      console.log(`✅ Sitemap: Found ${response.products.length} products`)
+      const { products } = productsResult.value
+      console.log(`✅ Sitemap: Found ${products.length} products`)
       
-      productPages = response.products
+      productPages = products
         .filter((product) => product.handle)
         .map((product) => ({
           url: `${baseUrl}/products/${product.handle}`,
@@ -144,7 +144,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         }))
       
       // Extract sellers from already-fetched products
-      response.products.forEach((product) => {
+      products.forEach((product) => {
         if (product.seller?.handle && !uniqueSellers.has(product.seller.handle)) {
           uniqueSellers.set(product.seller.handle, product.seller)
         }

@@ -24,8 +24,8 @@ export const SmartBestProductsSection = async ({
   wishlist = []
 }: SmartBestProductsSectionProps) => {
   try {
-    // ✅ FIXED: Simplified caching like HomeNewestProductsSection to avoid 2MB cache limit
-    const getCachedProducts = unstable_cache(
+    // ✅ FIXED: Cache only product IDs to avoid 2MB limit, then fetch full data
+    const getCachedProductIds = unstable_cache(
       async () => {
         const result = await listProducts({
           countryCode: locale,
@@ -34,18 +34,26 @@ export const SmartBestProductsSection = async ({
             order: "-created_at",
           },
         })
-        return result?.response?.products || []
+        // Cache only IDs and minimal data for scoring (< 50KB)
+        return (result?.response?.products || []).map(p => ({
+          id: p.id,
+          handle: p.handle,
+          created_at: p.created_at,
+          updated_at: (p as any).updated_at,
+          metadata: p.metadata,
+        }))
       },
-      [`homepage-best-${locale}-${limit}`],
+      [`homepage-best-ids-${locale}-${limit}`],
       {
         revalidate: 600,
         tags: ['homepage-products', 'products']
       }
     )
     
-    const allProducts = await getCachedProducts()
+    // Get cached IDs
+    const productIds = await getCachedProductIds()
     
-    if (allProducts.length === 0) {
+    if (productIds.length === 0) {
       return (
         <section className="py-8 w-full">
           <h2 className="mb-6 ml-0 lg:ml-12 font-bold tracking-tight normal-case font-instrument-serif italic">
@@ -57,6 +65,16 @@ export const SmartBestProductsSection = async ({
         </section>
       )
     }
+    
+    // Fetch full product data (not cached - fresh data)
+    const result = await listProducts({
+      countryCode: locale,
+      queryParams: {
+        limit: 50,
+        order: "-created_at",
+      },
+    })
+    const allProducts = result?.response?.products || []
     
     // ✅ FIX: Use stable timestamp for SSR/CSR consistency
     // Generate a deterministic seed from the cache key to ensure same results on server and client
