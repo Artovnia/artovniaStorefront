@@ -98,7 +98,13 @@ export const listProducts = async ({
   }
 
   if (!region) {
-    console.error('❌ listProducts: No region found, returning empty products', { countryCode, regionId })
+    // ✅ During build time, backend might be offline - log warning but don't fail
+    const isBuildTime = process.env.NEXT_PHASE === 'phase-production-build'
+    if (isBuildTime) {
+      console.warn('⚠️ listProducts: No region found during build (backend offline?), returning empty products', { countryCode, regionId })
+    } else {
+      console.error('❌ listProducts: No region found, returning empty products', { countryCode, regionId })
+    }
     return {
       response: { products: [], count: 0 },
       nextPage: null,

@@ -1,43 +1,32 @@
-'use client'
-
-import { useEffect, useState } from 'react'
 import Link from 'next/link'
+import { getPopularTags } from '@/lib/data/tags'
 
-interface Tag {
-  value: string
-  slug: string
-  count: number
-}
+/**
+ * ✅ CONVERTED TO SERVER COMPONENT
+ * 
+ * Previously: Client component fetching from /api/popular-tags
+ * Problem: API route caused build failures when backend was offline
+ * 
+ * Now: Server component calling getPopularTags() directly
+ * Benefits:
+ * - No build-time API route execution
+ * - Cached server-side (1 hour)
+ * - Fails gracefully if backend offline
+ */
+export async function PopularTagsFooter() {
+  // Fetch tags server-side with error handling
+  let tags: Array<{ value: string; slug: string; count: number }> = []
+  
+  try {
+    const allTags = await getPopularTags(20)
+    tags = allTags.slice(0, 8) // Top 8 tags for footer
+  } catch (error) {
+    console.error('Error loading popular tags:', error)
+    // Return null if tags can't be loaded (graceful degradation)
+    return null
+  }
 
-export function PopularTagsFooter() {
-  const [tags, setTags] = useState<Tag[]>([])
-  const [isLoaded, setIsLoaded] = useState(false)
-
-  useEffect(() => {
-    // Load tags after page is fully loaded
-    const loadTags = async () => {
-      try {
-        const response = await fetch('/api/popular-tags')
-        if (response.ok) {
-          const data = await response.json()
-          setTags(data.tags.slice(0, 8)) // Top 8 tags for footer
-          setIsLoaded(true)
-        }
-      } catch (error) {
-        console.error('Error loading popular tags:', error)
-      }
-    }
-
-    // Wait for page to be fully loaded before fetching
-    if (document.readyState === 'complete') {
-      loadTags()
-    } else {
-      window.addEventListener('load', loadTags)
-      return () => window.removeEventListener('load', loadTags)
-    }
-  }, [])
-
-  if (!isLoaded || tags.length === 0) {
+  if (tags.length === 0) {
     return null
   }
 

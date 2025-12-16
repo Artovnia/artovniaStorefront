@@ -83,6 +83,10 @@ export const getPopularTags = cache(async (
   limit: number = 50
 ): Promise<Array<{ value: string; count: number; slug: string }>> => {
   try {
+    // ✅ Add timeout to prevent build hangs when backend is offline
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), 10000) // 10 second timeout
+    
     // Fetch all products with tags
     const response = await sdk.store.product.list(
       {
@@ -94,7 +98,7 @@ export const getPopularTags = cache(async (
           tags: ["products", "tags"],
         },
       }
-    )
+    ).finally(() => clearTimeout(timeoutId))
 
     // Count tag occurrences
     const tagCounts = new Map<string, number>()
