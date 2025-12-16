@@ -24,39 +24,20 @@ export const SmartBestProductsSection = async ({
   wishlist = []
 }: SmartBestProductsSectionProps) => {
   try {
-    // ✅ FIXED: Cache only product IDs to avoid 2MB limit, then fetch full data
-    const getCachedProductIds = unstable_cache(
-      async () => {
-        const result = await listProducts({
-          countryCode: locale,
-          queryParams: {
-            limit: 50,
-            order: "-created_at",
-          },
-        })
-        // Cache only IDs and minimal data for scoring (< 50KB)
-        return (result?.response?.products || []).map(p => ({
-          id: p.id,
-          handle: p.handle,
-          created_at: p.created_at,
-          updated_at: (p as any).updated_at,
-          metadata: p.metadata,
-        }))
+    // Fetch products directly without caching IDs
+    const result = await listProducts({
+      countryCode: locale,
+      queryParams: {
+        limit: 50,
+        order: "-created_at",
       },
-      [`homepage-best-ids-${locale}-${limit}`],
-      {
-        revalidate: 600,
-        tags: ['homepage-products', 'products']
-      }
-    )
+    })
+    const allProducts = result?.response?.products || []
     
-    // Get cached IDs
-    const productIds = await getCachedProductIds()
+    console.log('🔍 [SMART BEST] Products fetched:', { count: allProducts.length })
     
-    console.log('🔍 [SMART BEST] Cached product IDs:', { count: productIds.length })
-    
-    if (productIds.length === 0) {
-      console.warn('⚠️ [SMART BEST] No cached product IDs found')
+    if (allProducts.length === 0) {
+      console.warn('⚠️ [SMART BEST] No products found')
       return (
         <section className="py-8 w-full">
           <h2 className="mb-6 ml-0 lg:ml-12 font-bold tracking-tight normal-case font-instrument-serif italic">
@@ -68,18 +49,6 @@ export const SmartBestProductsSection = async ({
         </section>
       )
     }
-    
-    // Fetch full product data (not cached - fresh data)
-    const result = await listProducts({
-      countryCode: locale,
-      queryParams: {
-        limit: 50,
-        order: "-created_at",
-      },
-    })
-    const allProducts = result?.response?.products || []
-    
-    console.log('🔍 [SMART BEST] Full products fetched:', { count: allProducts.length })
     
     // ✅ FIX: Use stable timestamp for SSR/CSR consistency
     // Generate a deterministic seed from the cache key to ensure same results on server and client
