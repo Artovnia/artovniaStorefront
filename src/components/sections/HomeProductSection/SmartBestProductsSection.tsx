@@ -53,7 +53,10 @@ export const SmartBestProductsSection = async ({
     // Get cached IDs
     const productIds = await getCachedProductIds()
     
+    console.log('🔍 [SMART BEST] Cached product IDs:', { count: productIds.length })
+    
     if (productIds.length === 0) {
+      console.warn('⚠️ [SMART BEST] No cached product IDs found')
       return (
         <section className="py-8 w-full">
           <h2 className="mb-6 ml-0 lg:ml-12 font-bold tracking-tight normal-case font-instrument-serif italic">
@@ -75,6 +78,8 @@ export const SmartBestProductsSection = async ({
       },
     })
     const allProducts = result?.response?.products || []
+    
+    console.log('🔍 [SMART BEST] Full products fetched:', { count: allProducts.length })
     
     // ✅ FIX: Use stable timestamp for SSR/CSR consistency
     // Generate a deterministic seed from the cache key to ensure same results on server and client
