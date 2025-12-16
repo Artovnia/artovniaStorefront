@@ -120,12 +120,14 @@ export const PromotionListing = ({
     setCurrentPage(initialPage)
   }, [initialProducts, initialCount, initialPage])
 
-  // Refetch when filters change
+  // ✅ PERFORMANCE: Refetch only when filters change AND we don't have matching data
   useEffect(() => {
-    // Skip initial render
-    if (products.length === 0 && initialProducts.length > 0) return
+    // Skip if we have initial data that matches current page
+    const hasMatchingInitialData = initialProducts.length > 0 && currentPage === initialPage
+    if (hasMatchingInitialData) return
     
     fetchProductsForPage(1)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [promotionFilter, sellerFilter, campaignFilter, sortBy])
 
   // Calculate total pages

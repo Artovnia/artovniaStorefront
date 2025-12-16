@@ -32,12 +32,13 @@ export const PromotionDataProvider: React.FC<PromotionDataProviderProps> = ({
   const [promotionalProducts, setPromotionalProducts] = useState<Map<string, HttpTypes.StoreProduct>>(
     initialData || new Map()  // ✅ Use initial data if provided
   )
-  const [isLoading, setIsLoading] = useState(!initialData)  // ✅ No loading if we have data
+  // ✅ FIX: If we have initialData with products, we're NOT loading
+  const [isLoading, setIsLoading] = useState(!initialData || initialData.size === 0)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     // ✅ OPTIMIZATION: Skip fetch if we already have server data
-    if (initialData) {
+    if (initialData && initialData.size > 0) {
       return
     }
     
@@ -53,7 +54,10 @@ export const PromotionDataProvider: React.FC<PromotionDataProviderProps> = ({
 
     const fetchPromotionalData = async () => {
       try {
-        setIsLoading(true)
+        // ✅ OPTIMIZATION: Only show loading on first fetch
+        if (promotionalProducts.size === 0) {
+          setIsLoading(true)
+        }
         setError(null)
 
         // Determine fetch limit and cache key
@@ -69,6 +73,7 @@ export const PromotionDataProvider: React.FC<PromotionDataProviderProps> = ({
           cacheKey = `promotions:${countryCode}:all:${fetchLimit}`
         }
         
+        // ✅ OPTIMIZATION: Use unified cache with longer TTL
         const result = await unifiedCache.get(cacheKey, async () => {
           return await listProductsWithPromotions({
             page: 1,
@@ -94,7 +99,6 @@ export const PromotionDataProvider: React.FC<PromotionDataProviderProps> = ({
 
         setPromotionalProducts(productMap)
       } catch (err) {
-        console.error('Failed to fetch promotional data:', err)
         setError(err instanceof Error ? err.message : 'Failed to fetch promotional data')
       } finally {
         setIsLoading(false)

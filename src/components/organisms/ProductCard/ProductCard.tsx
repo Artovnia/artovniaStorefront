@@ -99,23 +99,23 @@ const ProductCardComponent = ({
     setIsMounted(true)
   }, [])
   
-  // Try to get promotional product data from context first
+  // ✅ OPTIMIZATION: Get promotional product data synchronously (no delay)
   const promotionalProduct = getProductWithPromotions(product.id)
   const productToUse = promotionalProduct || product
 
-  // Calculate promotional pricing using helper function for the first variant
+  // ✅ OPTIMIZATION: Calculate promotional pricing immediately
   const promotionalPricing = useMemo(() => {
     const firstVariant = productToUse.variants?.[0]
     return getPromotionalPrice({
       product: productToUse as any,
       regionId: firstVariant?.calculated_price?.region_id,
-      variantId: firstVariant?.id // Use specific variant ID for accurate pricing
+      variantId: firstVariant?.id
     })
-  }, [productToUse]) // Recalculate when product data changes
+  }, [productToUse])
 
-  // Check if product has any discount (promotion or price-list)
-  // Only show after mounting and when promotional data has loaded to prevent hydration mismatch
-  const hasAnyDiscount = isMounted && !isLoading && (
+  // ✅ FIX: Show promotional prices immediately when mounted (no waiting for isLoading)
+  // Backend pre-calculates discounts, so data is ready on first render
+  const hasAnyDiscount = isMounted && (
     promotionalPricing.discountPercentage > 0 || 
     product.variants?.some((variant: any) => 
       variant.calculated_price && 
@@ -129,7 +129,6 @@ const ProductCardComponent = ({
     try {
       router.prefetch(`/products/${product.handle}`)
     } catch (error) {
-      console.error('❌ Fallback prefetch failed for:', productUrl, error)
     }
   }
   

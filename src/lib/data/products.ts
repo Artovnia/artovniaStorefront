@@ -47,6 +47,7 @@ export const listProducts = async ({
   regionId,
   category_id,
   collection_id,
+  seller_id,
 }: {
   pageParam?: number
   queryParams?: HttpTypes.FindParams &
@@ -55,6 +56,7 @@ export const listProducts = async ({
     }
   category_id?: string
   collection_id?: string
+  seller_id?: string
   countryCode?: string
   regionId?: string
 }): Promise<{
@@ -79,22 +81,11 @@ export const listProducts = async ({
   let region: HttpTypes.StoreRegion | undefined | null
 
   if (countryCode) {
-    console.log('🔍 listProducts: Fetching region for countryCode', { countryCode })
     region = await getRegion(countryCode)
-    console.log('📍 listProducts: Region result', { 
-      countryCode, 
-      regionFound: !!region, 
-      regionId: region?.id,
-      regionName: region?.name 
-    })
+  
   } else {
-    console.log('🔍 listProducts: Fetching region by ID', { regionId })
     region = await retrieveRegion(regionId!)
-    console.log('📍 listProducts: Region result', { 
-      regionId, 
-      regionFound: !!region,
-      regionName: region?.name 
-    })
+
   }
 
   if (!region) {
@@ -116,37 +107,33 @@ export const listProducts = async ({
   }
 
   try {
-    console.log('🔍 listProducts: Fetching from /store/products', {
-      region_id: region?.id,
-      limit,
-      offset,
+
+    
+    // ✅ CRITICAL FIX: Only include seller_id in query if it's actually provided
+    // Passing undefined breaks promotional price calculations
+    const queryObject: any = {
       category_id,
       collection_id,
-      queryParams
-    })
+      limit,
+      offset,
+      region_id: region?.id,
+      fields: "*variants.calculated_price,*seller,*seller.products,*variants,*variants.inventory_quantity,*variants.manage_inventory,*variants.allow_backorder,*variants.inventory_items.inventory_item_id,*variants.inventory_items.required_quantity,*metadata,*categories,*categories.parent_category,*collection",
+      ...queryParams,
+    }
+    
+    // Only add seller_id if it's actually provided
+    if (seller_id) {
+      queryObject.seller_id = seller_id
+    }
     
     const { products, count } = await sdk.client.fetch<{
       products: HttpTypes.StoreProduct[]
       count: number
     }>(`/store/products`, {
       method: "GET",
-      query: {
-        category_id,
-        collection_id,
-        limit,
-        offset,
-        region_id: region?.id,
-        fields: "*variants.calculated_price,*seller,*seller.products,*variants,*variants.inventory_quantity,*variants.manage_inventory,*variants.allow_backorder,*variants.inventory_items.inventory_item_id,*variants.inventory_items.required_quantity,*metadata,*categories,*categories.parent_category,*collection",
-        ...queryParams,
-      },
+      query: queryObject,
       headers,
       next: { revalidate: 300 }, // ✅ Next.js cache: 5 minutes
-    })
-
-    console.log('✅ listProducts: Fetch successful', {
-      productsCount: products?.length || 0,
-      totalCount: count,
-      regionId: region?.id
     })
 
     const nextPage = count > offset + limit ? pageParam + 1 : null
@@ -204,52 +191,50 @@ export const listProductsWithSort = async ({
   const limit = queryParams?.limit || 12
   const offset = queryParams?.offset !== undefined ? queryParams.offset : (page - 1) * limit
 
-  // For seller products, fetch ALL once and cache IN-MEMORY (not Next.js cache due to 2MB limit)
+  // ✅ PERFORMANCE FIX: For seller products, fetch ONLY the requested page
+  // Previous approach fetched ALL 200 products causing 3s+ delays
+  // New approach: Direct API call with seller filter for instant results
   if (seller_id) {
-    const cacheKey = `seller:all-products:${seller_id}:${countryCode}:${sortBy}`
+    const cacheKey = `seller:products:${seller_id}:${countryCode}:${sortBy}:${offset}:${limit}`
     
-    // ✅ Use client-side unified-cache to avoid Next.js 2MB cache limit
-    // Production error: 7MB response exceeds Next.js cache limit
-    const allSellerProducts = await unifiedCache.get(cacheKey, async () => {
-      // ✅ Reduced from 1000 to 200 to prevent cache bloat
-      // Most sellers have <100 products, 200 is safe limit
-      const result = await listProducts({
-        pageParam: 1,
+    // ✅ Fetch only the requested page with seller filter
+    const result = await unifiedCache.get(cacheKey, async () => {
+      return await listProducts({
+        pageParam: page,
         queryParams: {
           ...queryParams,
-          limit: 200, // Reduced to prevent 7MB responses
-          offset: 0,
+          limit,
+          offset,
           order: sortBy === 'created_at' ? '-created_at' : sortBy,
         },
+        seller_id,
         countryCode,
       })
-
-      if (!result || !result.response) {
-        return []
-      }
-
-      // Filter products by seller_id
-      const filteredProducts = result.response.products.filter(
-        (p: any) => p.seller?.id === seller_id
-      )
-
-      // Apply sorting
-      return sortBy && sortBy !== 'created_at'
-        ? sortProducts(filteredProducts, sortBy)
-        : filteredProducts
     }, CACHE_TTL.PRODUCT)
 
-    // Paginate the cached results
-    const paginatedProducts = allSellerProducts.slice(offset, offset + limit)
-    const totalCount = allSellerProducts.length
-    const hasMore = totalCount > offset + limit
+    if (!result || !result.response) {
+      return {
+        response: {
+          products: [],
+          count: 0,
+        },
+        nextPage: null,
+        queryParams,
+      }
+    }
+
+    // ✅ Backend now filters by seller_id, so no client-side filtering needed
+    // Apply sorting if needed
+    const sortedProducts = sortBy && sortBy !== 'created_at'
+      ? sortProducts(result.response.products, sortBy)
+      : result.response.products
 
     return {
       response: {
-        products: paginatedProducts,
-        count: totalCount,
+        products: sortedProducts,
+        count: result.response.count,
       },
-      nextPage: hasMore ? page + 1 : null,
+      nextPage: result.nextPage,
       queryParams,
     }
   }
@@ -303,8 +288,8 @@ export const listProductsWithSort = async ({
 }
 
 /**
- * Fetch products that have active promotions or price-list discounts
- * Uses hybrid approach: backend for promotions + frontend filtering for price-list discounts
+ * Fetch products that have active promotions
+ * Uses custom backend endpoint /store/products/promotions that returns products with promotion data
  */
 export const listProductsWithPromotions = async ({
   page = 1,
@@ -324,7 +309,7 @@ export const listProductsWithPromotions = async ({
   campaign?: string
 }): Promise<{
   response: {
-    products: (HttpTypes.StoreProduct & { seller?: SellerProps })[]
+    products: (HttpTypes.StoreProduct & { seller?: SellerProps, promotions?: any[], has_promotions?: boolean })[]
     count: number
   }
   nextPage: number | null
@@ -344,40 +329,48 @@ export const listProductsWithPromotions = async ({
 
       const headers = { ...(await getAuthHeaders()) }
 
-      // Fetch all products with proper fields for promotions
+      // Build query parameters for custom promotions endpoint
+      const queryParams: any = {
+        limit: limit || 50,
+        offset: (page - 1) * (limit || 50),
+        region_id: region?.id,
+      }
+
+      if (sortBy) {
+        queryParams.sortBy = sortBy
+      }
+      if (promotion) {
+        queryParams.promotion = promotion
+      }
+      if (seller) {
+        queryParams.seller = seller
+      }
+      if (campaign) {
+        queryParams.campaign = campaign
+      }
+
+      // Use custom backend endpoint that returns products WITH promotions
       const productsResponse = await sdk.client.fetch<{
-        products: (HttpTypes.StoreProduct & { seller?: SellerProps })[]
+        products: (HttpTypes.StoreProduct & { seller?: SellerProps, promotions?: any[], has_promotions?: boolean })[]
         count: number
-      }>(`/store/products`, {
-        query: {
-          limit: limit || 50,
-          offset: (page - 1) * (limit || 50),
-          region_id: region?.id,
-          fields: "*variants.calculated_price,*seller,*variants,*metadata,*categories,*collection",
-        },
+        promotions_found?: number
+        applicable_product_ids?: number
+      }>(`/store/products/promotions`, {
+        query: queryParams,
         headers,
         next: { revalidate: 300 },
       })
 
-      const allProducts = productsResponse?.products || []
+      const products = productsResponse?.products || []
+      const count = productsResponse?.count || 0
 
-      // Return all products (promotions are included in calculated_price)
-      const allDiscountedProducts = allProducts.map(p => ({ 
-        ...p, 
-        has_promotions: true // Flag for UI
-      }))
-
-      // Apply pagination
-      const startIndex = (page - 1) * limit
-      const endIndex = startIndex + limit
-      const paginatedProducts = allDiscountedProducts.slice(startIndex, endIndex)
-
-      const nextPage = endIndex < allDiscountedProducts.length ? page + 1 : null
+      // Calculate next page
+      const nextPage = count > (page * limit) ? page + 1 : null
 
       return {
         response: {
-          products: paginatedProducts,
-          count: allDiscountedProducts.length,
+          products,
+          count,
         },
         nextPage,
       }
@@ -393,7 +386,7 @@ export const listProductsWithPromotions = async ({
         nextPage: null,
       }
     }
-  }, CACHE_TTL.PRODUCT) // Use shorter TTL for promotional data
+  }, CACHE_TTL.PROMOTIONS) // Use shorter TTL for promotional data
 }
 
 /**

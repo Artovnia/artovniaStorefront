@@ -61,7 +61,9 @@ export const metadata: Metadata = {
   },
 }
 
-
+// ✅ PERFORMANCE: Cache with revalidation instead of force-dynamic
+// This gives us both caching AND loading skeleton support
+export const revalidate = 300 // Revalidate every 5 minutes
 
 interface PromotionsPageProps {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>

@@ -8,7 +8,7 @@ export const CACHE_TTL = {
   PRODUCT: 300, // 5 minutes
   PRICING: 60,  // 1 minute
   CART: 30,     // 30 seconds
-  PROMOTIONS: 60, // 1 minute
+  PROMOTIONS: 300, // ✅ OPTIMIZED: 5 minutes (was 1 minute) - promotions don't change frequently
   INVENTORY: 120, // 2 minutes
   MEASUREMENTS: 600, // 10 minutes
 } as const

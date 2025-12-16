@@ -106,13 +106,16 @@ export const SellerListing = ({
     setCurrentPage(initialPage)
   }, [initialSellers, initialCount, initialPage])
 
-  // Fetch sellers when filters change (client-side navigation)
+  // ✅ PERFORMANCE: Fetch sellers only when filters change AND we don't have matching data
   useEffect(() => {
-    // Skip initial render if we have initial data
-    if (sellers.length === 0 && initialSellers.length > 0) return
+    // Skip if we have initial data that matches current filters
+    // This prevents unnecessary re-fetch on mount
+    const hasMatchingInitialData = initialSellers.length > 0 && currentPage === initialPage
+    if (hasMatchingInitialData) return
     
     setCurrentPage(1)
     fetchSellers(1)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [letter, sortBy])
 
   const totalPages = Math.ceil(totalCount / limit)

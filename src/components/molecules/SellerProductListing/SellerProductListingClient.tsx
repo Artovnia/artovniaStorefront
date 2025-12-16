@@ -32,10 +32,10 @@ export function SellerProductListingClient({
   // ✅ OPTIMIZATION: Memoize user ID to prevent unnecessary re-fetches
   const userId = user?.id
   
-  // ✅ OPTIMIZATION: Fetch products on page change with stable dependencies
+  // ✅ PERFORMANCE: Fetch products client-side with proper pagination
   useEffect(() => {
     const fetchData = async () => {
-      // Use initial data for first page if available
+      // Use initial data for first page if available (server-side pre-fetch)
       if (currentPage === 1 && initialProducts && initialProducts.length > 0) {
         setProducts(initialProducts)
         setTotalCount(initialTotalCount || 0)
@@ -48,6 +48,7 @@ export function SellerProductListingClient({
       try {
         const offset = (currentPage - 1) * PRODUCT_LIMIT
         
+        // ✅ CRITICAL: Fetch only the current page (20 products), not all 200
         const [productsResult, wishlistData] = await Promise.all([
           listProductsWithSort({
             seller_id,
@@ -71,8 +72,8 @@ export function SellerProductListingClient({
     }
 
     fetchData()
-    // ✅ Use stable userId instead of user object to prevent unnecessary re-fetches
-  }, [seller_id, currentPage, userId, initialProducts, initialTotalCount, initialWishlists])
+    // ✅ Removed initialProducts from dependencies to prevent re-fetch loops
+  }, [seller_id, currentPage, userId])
 
   const totalPages = Math.ceil(totalCount / PRODUCT_LIMIT)
 

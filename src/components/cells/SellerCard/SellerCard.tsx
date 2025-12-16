@@ -1,8 +1,9 @@
 "use client"
 
-import React, { useState } from 'react'
+import React, { useState, useTransition } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { cn } from '@/lib/utils'
 import { ArrowRightIcon } from '@/icons'
 import { SellerProps } from '@/types/seller'
@@ -14,6 +15,8 @@ interface SellerCardProps {
 
 export const SellerCard = ({ seller, className }: SellerCardProps) => {
   const [isHovered, setIsHovered] = useState(false)
+  const [isPending, startTransition] = useTransition()
+  const router = useRouter()
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('pl-PL', {
@@ -25,14 +28,23 @@ export const SellerCard = ({ seller, className }: SellerCardProps) => {
   // Use seller photo or logo_url, fallback to placeholder
   const sellerImage = seller.photo || seller.logo_url || '/placeholder.webp'
 
+  const handleClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
+    e.preventDefault()
+    startTransition(() => {
+      router.push(`/sellers/${seller.handle}`)
+    })
+  }
+
   return (
     <Link 
       href={`/sellers/${seller.handle}`}
+      onClick={handleClick}
       className={cn(
         "group block relative w-[270px] h-[380px]",
         "transition-all duration-300 ease-out",
         "hover:shadow-xl hover:-translate-y-1",
         "focus:outline-none focus:ring-2 focus:ring-[#3B3634] focus:ring-offset-2",
+        isPending && "opacity-60 pointer-events-none",
         className
       )}
       onMouseEnter={() => setIsHovered(true)}
@@ -40,6 +52,13 @@ export const SellerCard = ({ seller, className }: SellerCardProps) => {
       aria-label={`View seller: ${seller.name}`}
     >
       <article className="relative overflow-hidden h-full bg-primary shadow-md">
+        {/* Loading Spinner Overlay */}
+        {isPending && (
+          <div className="absolute inset-0 z-50 bg-white/80 flex items-center justify-center">
+            <div className="w-12 h-12 border-4 border-[#3B3634]/20 border-t-[#3B3634] rounded-full animate-spin" />
+          </div>
+        )}
+        
         {/* Top Section - Seller Image (60%) - Expands to 100% on hover */}
         <div className={`relative w-full overflow-hidden bg-[#F4F0EB] transition-all duration-500 ${
           isHovered ? 'h-full' : 'h-[60%]'

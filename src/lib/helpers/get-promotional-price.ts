@@ -1,4 +1,5 @@
 import { HttpTypes } from "@medusajs/types"
+import { unifiedCache, CACHE_TTL } from "@/lib/utils/unified-cache"
 
 interface PromotionalProduct extends HttpTypes.StoreProduct {
   promotions?: Array<{
@@ -16,7 +17,7 @@ interface PromotionalProduct extends HttpTypes.StoreProduct {
   has_promotions?: boolean
 }
 
-interface PromotionalPriceResult {
+export interface PromotionalPriceResult {
   originalPrice: string
   promotionalPrice: string
   discountPercentage: number
@@ -32,8 +33,6 @@ export function getPromotionalPrice({
   regionId?: string
   variantId?: string
 }): PromotionalPriceResult {
- 
-  
   // Get the specific variant if variantId is provided, otherwise get cheapest variant
   const targetVariant = variantId 
     ? product.variants?.find(v => v.id === variantId)
@@ -170,14 +169,12 @@ export function getPromotionalPrice({
   const originalAmount = basePrice.amount || 0
   const promotionalAmount = Math.max(0, originalAmount - bestDiscountAmount)
 
-  const result = {
+  return {
     originalPrice: formatPrice(originalAmount),
     promotionalPrice: formatPrice(promotionalAmount),
     discountPercentage: Math.round(bestDiscountPercentage),
     hasPromotion: true
   }
-
-  return result
 }
 
 function formatPrice(amount: number): string {

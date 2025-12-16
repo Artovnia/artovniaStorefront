@@ -286,18 +286,20 @@ export const ProductDetailsHeader = ({
             </div>
           )}
         </div>
-        <div className="flex items-center gap-2">
-          {/* Share Button */}
-          <ProductShareButton
-            productTitle={product.title}
-          />
-          
+        <div className="flex flex-col sm:flex-row items-center gap-2">
+         
           {/* Add to Wishlist */}
           <WishlistButton
             productId={product.id}
             wishlist={wishlist}
             user={user}
           />
+
+           {/* Share Button */}
+          <ProductShareButton
+            productTitle={product.title}
+          />
+          
         </div>
       </div>
       {/* Product Variants */}

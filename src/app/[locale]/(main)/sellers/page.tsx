@@ -46,6 +46,8 @@ export const metadata: Metadata = {
   },
 }
 
+// ✅ PERFORMANCE: Cache with revalidation for better performance
+// Loading skeleton will still show during navigation
 export const revalidate = 300 // Revalidate every 5 minutes
 
 // Loading skeleton for Suspense
