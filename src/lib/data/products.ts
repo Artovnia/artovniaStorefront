@@ -66,6 +66,7 @@ export const listProducts = async ({
   queryParams?: HttpTypes.FindParams & HttpTypes.StoreProductParams
 }> => {
   if (!countryCode && !regionId) {
+    console.error('❌ listProducts: No countryCode or regionId provided')
     throw new Error("Country code or region ID is required")
   }
 
@@ -78,12 +79,26 @@ export const listProducts = async ({
   let region: HttpTypes.StoreRegion | undefined | null
 
   if (countryCode) {
+    console.log('🔍 listProducts: Fetching region for countryCode', { countryCode })
     region = await getRegion(countryCode)
+    console.log('📍 listProducts: Region result', { 
+      countryCode, 
+      regionFound: !!region, 
+      regionId: region?.id,
+      regionName: region?.name 
+    })
   } else {
+    console.log('🔍 listProducts: Fetching region by ID', { regionId })
     region = await retrieveRegion(regionId!)
+    console.log('📍 listProducts: Region result', { 
+      regionId, 
+      regionFound: !!region,
+      regionName: region?.name 
+    })
   }
 
   if (!region) {
+    console.error('❌ listProducts: No region found, returning empty products', { countryCode, regionId })
     return {
       response: { products: [], count: 0 },
       nextPage: null,
@@ -95,6 +110,15 @@ export const listProducts = async ({
   }
 
   try {
+    console.log('🔍 listProducts: Fetching from /store/products', {
+      region_id: region?.id,
+      limit,
+      offset,
+      category_id,
+      collection_id,
+      queryParams
+    })
+    
     const { products, count } = await sdk.client.fetch<{
       products: HttpTypes.StoreProduct[]
       count: number
@@ -113,6 +137,12 @@ export const listProducts = async ({
       next: { revalidate: 300 }, // ✅ Next.js cache: 5 minutes
     })
 
+    console.log('✅ listProducts: Fetch successful', {
+      productsCount: products?.length || 0,
+      totalCount: count,
+      regionId: region?.id
+    })
+
     const nextPage = count > offset + limit ? pageParam + 1 : null
     return {
       response: {
@@ -123,7 +153,12 @@ export const listProducts = async ({
       queryParams,
     }
   } catch (error) {
-    console.warn('Products fetch failed, returning empty result:', error)
+    console.error('❌ listProducts: Fetch failed', {
+      error: error instanceof Error ? error.message : error,
+      countryCode,
+      regionId: region?.id,
+      stack: error instanceof Error ? error.stack : undefined
+    })
     return {
       response: { products: [], count: 0 },
       nextPage: null,

@@ -26,16 +26,42 @@ export const SmartBestProductsSection = async ({
   try {
     const getCachedProducts = unstable_cache(
       async () => {
-        const result = await listProducts({
+        console.log('🔍 SmartBestProductsSection: Fetching products', {
+          locale,
+          limit,
+          env_region: process.env.NEXT_PUBLIC_DEFAULT_REGION,
+          node_env: process.env.NODE_ENV
+        })
+        
+        // Try with provided locale first
+        let result = await listProducts({
           countryCode: locale,
           queryParams: {
             limit: 50,
             order: "-created_at",
-         
           },
         })
         
-        return result?.response?.products || []
+        // If no products and locale is not 'pl', try fallback to 'pl'
+        if ((!result?.response?.products || result.response.products.length === 0) && locale.toLowerCase() !== 'pl') {
+          console.log('⚠️ SmartBestProductsSection: No products for locale, trying PL fallback', { locale })
+          result = await listProducts({
+            countryCode: 'pl',
+            queryParams: {
+              limit: 50,
+              order: "-created_at",
+            },
+          })
+        }
+        
+        const products = result?.response?.products || []
+        console.log('✅ SmartBestProductsSection: Fetched products', {
+          count: products.length,
+          locale,
+          hasRegion: !!result
+        })
+        
+        return products
       },
       [`homepage-best-${locale}-${limit}`],
       {
