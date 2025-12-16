@@ -17,15 +17,25 @@ interface CountrySelectorWrapperProps {
 export function CountrySelectorWrapper({ regions }: CountrySelectorWrapperProps) {
   const { cart, refreshCart } = useCart()
   
-  // Show loading placeholder instead of disappearing
+  // ✅ OPTIMIZATION: Default to Poland region immediately (no loading state)
+  // Find Poland region from server-provided regions
+  const polandRegion = regions.find(r => 
+    r.name === 'Poland' || 
+    r.name === 'Polska' ||
+    r.countries?.some(c => c.iso_2?.toLowerCase() === 'pl')
+  )
+  
+  // Show Poland flag immediately while regions load
   if (!regions || regions.length === 0) {
     return (
-      <div className="h-8 w-20 bg-gray-200 animate-pulse rounded" />
+      <div className="flex items-center gap-2 px-4 py-2.5 bg-primary border border-[#3B3634]/20">
+        <span className="text-xl">🇵🇱</span>
+      </div>
     )
   }
   
-  // Get current region from CartContext (no additional request needed!)
-  const currentRegionId = cart?.region_id
+  // Get current region from CartContext, default to Poland
+  const currentRegionId = cart?.region_id || polandRegion?.id
   
   // ✅ Pass refreshCart to CountrySelector so it can update after region change
   return (

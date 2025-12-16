@@ -15,7 +15,7 @@ interface FooterProps {
  * 
  * @param categories - Product categories to display in footer navigation
  */
-export async function Footer({ categories = [] }: FooterProps) {
+export function Footer({ categories = [] }: FooterProps) {
   // Categories now passed as props - no need to fetch here
   const getIcon = (label: string) => {
     switch(label) {

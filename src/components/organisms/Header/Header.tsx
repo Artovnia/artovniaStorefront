@@ -12,60 +12,51 @@ import { SafeI18nLink as Link } from "@/components/atoms/SafeI18nLink"
 import { UserDropdown } from "@/components/cells/UserDropdown/UserDropdown"
 import { CountrySelectorWrapper } from "@/components/cells/CountrySelector/CountrySelectorWrapper"
 import { WishlistBadge } from "@/components/cells/WishlistBadge"
-import { getEssentialCategories } from "@/lib/data/categories-static"
-import { listCategoriesWithProducts } from "@/lib/data/categories"
 import { retrieveCustomer } from "@/lib/data/customer"
 import { getUserWishlists } from "@/lib/data/wishlist"
-import { listRegions } from "@/lib/data/regions"
 
 /**
  * OPTIMIZED HEADER
  * 
  * Performance Strategy:
- * 1. Shows static categories immediately (no API wait)
- * 2. Fetches user data + full categories in background
- * 3. Updates seamlessly when data loads
+ * 1. Receives categories and regions from server-side layout (cached)
+ * 2. Fetches only user data in background
+ * 3. No duplicate category or region requests
  * 
- * Result: Instant navigation render, ~200ms FCP vs 3-5s
+ * Result: Instant navigation render with proper caching
  */
-export const Header = () => {
-  // ✅ Start with static categories for instant render
-  const [categories, setCategories] = useState(getEssentialCategories())
+interface HeaderProps {
+  categories?: HttpTypes.StoreProductCategory[]
+  regions?: HttpTypes.StoreRegion[]
+}
+
+export const Header = ({ 
+  categories: initialCategories = [],
+  regions: initialRegions = []
+}: HeaderProps) => {
+  const [categories] = useState(initialCategories)
+  const [regions] = useState(initialRegions)
   const [user, setUser] = useState<any>(null)
   const [wishlistCount, setWishlistCount] = useState(0)
-  const [regions, setRegions] = useState<HttpTypes.StoreRegion[]>([])
 
   useEffect(() => {
-    // Load all data in background after initial render
+    // Load user data in background after initial render
     let mounted = true
 
     const loadData = async () => {
       try {
-        // Fetch everything in parallel
-        const [userData, fullCategories, regionsData] = await Promise.all([
-          retrieveCustomer().catch((error) => {
-            if (error?.status !== 401) {
-              console.error("Error retrieving customer:", error)
-            }
-            return null
-          }),
-          listCategoriesWithProducts().catch((error) => {
-            console.error("Error loading categories:", error)
-            return null
-          }),
-          listRegions().catch(() => [])
-        ])
+        // Fetch only user data (regions come from props)
+        const userData = await retrieveCustomer().catch((error) => {
+          if (error?.status !== 401) {
+            console.error("Error retrieving customer:", error)
+          }
+          return null
+        })
 
         if (!mounted) return
 
-        // Update user and regions
+        // Update user
         setUser(userData)
-        setRegions(regionsData)
-
-        // Update categories if we got full data
-        if (fullCategories && fullCategories.categories.length > 0) {
-          setCategories(fullCategories)
-        }
 
         // Fetch wishlist if user is authenticated
         if (userData) {
@@ -83,8 +74,7 @@ export const Header = () => {
       }
     }
 
-    // Load regions immediately (cached), defer heavy category checks
-    const timer = setTimeout(loadData, 0) // Immediate for regions, categories cached
+    const timer = setTimeout(loadData, 0)
 
     return () => {
       mounted = false
@@ -92,7 +82,7 @@ export const Header = () => {
     }
   }, [])
 
-  const allCategoriesWithTree: HttpTypes.StoreProductCategory[] = categories?.categories || []
+  const allCategoriesWithTree: HttpTypes.StoreProductCategory[] = categories || []
 
   return (
     <header className="sticky top-0 z-50 bg-primary shadow-sm">

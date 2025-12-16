@@ -6,15 +6,40 @@ import { GuestWishlistProvider } from '@/components/context/GuestWishlistContext
 import { Suspense } from 'react';
 // ✅ OPTIMIZED: Lazy-loaded client components (Next.js 15 requires client wrapper for ssr: false)
 import { CookieConsent, MobileUserNavigation } from '@/components/providers/ClientOnlyProviders';
+import { listCategoriesWithProducts } from '@/lib/data/categories';
+import { getEssentialCategories } from '@/lib/data/categories-static';
+import { listRegions } from '@/lib/data/regions';
 
 export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  // ✅ OPTIMIZATION: No blocking category fetch
-  // Header shows static categories immediately, loads full data in background
-  // This eliminates 3-5s white screen on initial page load
+  // ✅ RESTORED: Fetch categories and regions on server-side with caching
+  // This prevents client-side requests on every page navigation
+  let categories: Awaited<ReturnType<typeof listCategoriesWithProducts>> | Awaited<ReturnType<typeof getEssentialCategories>>
+  let regions: Awaited<ReturnType<typeof listRegions>> = []
+  
+  try {
+    // Fetch categories and regions in parallel
+    const [categoriesResult, regionsResult] = await Promise.all([
+      listCategoriesWithProducts().catch(error => {
+        console.error('Error loading categories in layout:', error)
+        return getEssentialCategories()
+      }),
+      listRegions().catch(error => {
+        console.error('Error loading regions in layout:', error)
+        return []
+      })
+    ])
+    
+    categories = categoriesResult
+    regions = regionsResult
+  } catch (error) {
+    console.error('Error loading layout data:', error)
+    categories = getEssentialCategories()
+    regions = []
+  }
   
   const initialCart = null; // Always null - let CartContext handle it
 
@@ -22,7 +47,7 @@ export default async function RootLayout({
     <GuestWishlistProvider>
       <CartProvider initialCart={initialCart}>
         <div className="flex flex-col min-h-screen ">
-          <Header />
+          <Header categories={categories.categories || []} regions={regions} />
           <div className="flex-grow pb-0">
             {children}
           </div>
@@ -35,7 +60,7 @@ export default async function RootLayout({
           {/* ✅ OPTIMIZATION: Footer in Suspense for non-blocking render */}
           {/* Footer is below fold, so it can load after initial content */}
           <Suspense fallback={<div className="h-96 bg-tertiary" />}>
-            <Footer categories={[]} />
+            <Footer categories={categories.categories || []} />
           </Suspense>
         </div>
         <MobileUserNavigation />
