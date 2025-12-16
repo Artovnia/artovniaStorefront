@@ -1,7 +1,8 @@
 import { sdk } from "@/lib/config"
 import { HttpTypes } from "@medusajs/types"
-// Temporarily disabled to fix infinite requests
-// import { unifiedCache } from "@/lib/utils/unified-cache"
+import { cache } from "react"
+// unstable_cache breaks when called from client components (Header.tsx)
+// Using React cache() for request deduplication instead
 
 interface CategoriesProps {
   query?: {
@@ -13,13 +14,11 @@ interface CategoriesProps {
 
 /**
  * ✅ OPTIMIZED: Get categories that have products with SINGLE efficient query
- * Instead of N+1 queries (one per category), fetch all products once and extract category IDs
- * This reduces 10+ requests to just 1 request
+ * Uses React cache() for request deduplication + Next.js fetch cache for persistence
  */
-export const getCategoriesWithProductsFromDatabase = async (): Promise<Set<string>> => {
+const getCategoriesWithProductsFromDatabaseImpl = async (): Promise<Set<string>> => {
   try {
     // ✅ Single request: fetch all products with category info
-    // This replaces 10+ individual category checks
     const response = await sdk.client.fetch<{
       products: Array<{ 
         id: string
@@ -28,9 +27,12 @@ export const getCategoriesWithProductsFromDatabase = async (): Promise<Set<strin
     }>("/store/products", {
       query: {
         fields: "id,categories.id",
-        limit: 1000, // Get enough products to cover all categories
+        limit: 1000,
       },
-      next: { revalidate: 86400 }, // Cache for 24 hours
+      next: { 
+        revalidate: 86400, // 24h Next.js cache
+        tags: ['categories', 'products']
+      },
     })
 
     const products = response?.products || []
@@ -54,50 +56,49 @@ export const getCategoriesWithProductsFromDatabase = async (): Promise<Set<strin
   }
 }
 
+// ✅ cache() deduplicates requests within same render, fetch cache persists across requests
+export const getCategoriesWithProductsFromDatabase = cache(getCategoriesWithProductsFromDatabaseImpl)
+
 /**
  * SIMPLIFIED: Get all categories and build a clean hierarchy tree
- * No complex Algolia filtering - just fetch all categories and build the tree
- * Let the UI components decide what to show based on their needs
+ * Uses React cache() for request deduplication + Next.js fetch cache for persistence
  */
-export const listCategories = async (): Promise<{
+const listCategoriesImpl = async (): Promise<{
   parentCategories: HttpTypes.StoreProductCategory[]
   categories: HttpTypes.StoreProductCategory[]
 }> => {
-  return await (async () => {
-    try {
-      const response = await sdk.client.fetch<
-        HttpTypes.StoreProductCategoryListResponse
-      >(`/store/product-categories`, {
-        query: {
-          fields: "id, handle, name, rank, parent_category_id, mpath",
-          limit: 1000,
-        },
-        cache: "force-cache",
-        next: { 
-          revalidate: 3600, // ✅ Changed from 300
-          tags: ['all-categories']
-        }
-      })
+  try {
+    const response = await sdk.client.fetch<
+      HttpTypes.StoreProductCategoryListResponse
+    >("/store/product-categories", {
+      query: {
+        fields: "id, handle, name, rank, parent_category_id, mpath",
+        limit: 1000,
+      },
+      next: { 
+        revalidate: 3600, // 1h Next.js cache
+        tags: ['categories']
+      },
+    })
+  
+    const allCategories = response?.product_categories || []
+    const hierarchicalCategories = buildCategoryTree(allCategories)
+    const parentCategories = hierarchicalCategories.filter(
+      cat => !cat.parent_category_id
+    )
     
-      const allCategories = response?.product_categories || []
-      const hierarchicalCategories = buildCategoryTree(allCategories)
-      const parentCategories = hierarchicalCategories.filter(
-        cat => !cat.parent_category_id
-      )
-      
-      return {
-        parentCategories,
-        categories: hierarchicalCategories
-      }
-    } catch (error) {
-      console.error('Error in listCategories:', error)
-      return {
-        parentCategories: [],
-        categories: []
-      }
+    return {
+      parentCategories,
+      categories: hierarchicalCategories
     }
-  })()
+  } catch (error) {
+    console.error('Error in listCategories:', error)
+    return await getEssentialCategories()
+  }
 }
+
+// ✅ cache() deduplicates requests within same render, fetch cache persists across requests
+export const listCategories = cache(listCategoriesImpl)
 
 /**
  * Build a clean category tree from flat category array

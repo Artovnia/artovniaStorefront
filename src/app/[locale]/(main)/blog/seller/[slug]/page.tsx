@@ -10,12 +10,9 @@ import { ArrowRightIcon } from "@/icons"
 import PortableText from "../../components/PortableText"
 import BlogLayout from "../../components/BlogLayout"
 
-// ✅ OPTIMIZED: Use ISR with longer cache for seller posts (content rarely changes)
-export const revalidate = 3600 // 1 hour
-export const dynamicParams = true // Generate pages on-demand for new slugs
-
-// Note: Seller posts change less frequently than regular blog posts
-// Use Sanity webhooks to revalidate specific pages when content updates
+// ❌ ISR causes 500 errors in production - reverting to force-dynamic
+export const dynamic = 'force-dynamic'
+export const dynamicParams = true
 
 interface SellerPostPageProps {
   params: Promise<{

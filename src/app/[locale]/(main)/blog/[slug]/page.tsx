@@ -13,12 +13,8 @@ import { urlFor } from "../lib/sanity"
 import BlogLayoutWrapper from "../components/BlogLayoutWrapper"
 import PortableText from "../components/PortableText"
 
-// ✅ OPTIMIZED: Use ISR for blog posts with on-demand revalidation
-// Individual posts are more static, cache for 30 minutes
-export const revalidate = 1800 // 30 minutes
-
-// Note: Use Sanity webhooks to trigger revalidateTag() for immediate updates
-// This gives us both performance AND fresh content when needed
+// ❌ ISR causes 500 errors in production - reverting to force-dynamic
+export const dynamic = 'force-dynamic'
 
 interface BlogPostPageProps {
   params: Promise<{
