@@ -5,6 +5,7 @@ import {
   listCategories,
   getCategoriesWithProductsFromDatabase,
 } from '@/lib/data/categories'
+import { getSellers } from '@/lib/data/seller'
 
 // Helper function to add timeout to any promise
 const withTimeout = <T>(promise: Promise<T>, timeoutMs: number, fallback: T): Promise<T> => {
@@ -100,7 +101,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   try {
     // Fetch all data in parallel with timeouts
-    const [productsResult, categoriesResult, blogResult] = await Promise.allSettled([
+    const [productsResult, categoriesResult, blogResult, sellersResult] = await Promise.allSettled([
       // Products with 20-second timeout - using sitemap-specific function
       withTimeout(
         listProductsForSitemap({ limit: 1000 }),
@@ -121,12 +122,17 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         getBlogPosts(),
         10000,
         []
+      ),
+      // Sellers with 15-second timeout
+      withTimeout(
+        getSellers({ limit: 1000 }),
+        15000,
+        { sellers: [], count: 0, limit: 1000, offset: 0 }
       )
     ])
 
     // Extract products
     let productPages: MetadataRoute.Sitemap = []
-    let uniqueSellers = new Map<string, any>()
     
     if (productsResult.status === 'fulfilled') {
       const { products } = productsResult.value
@@ -142,13 +148,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
           changeFrequency: 'weekly' as const,
           priority: 0.7,
         }))
-      
-      // Extract sellers from already-fetched products
-      products.forEach((product) => {
-        if (product.seller?.handle && !uniqueSellers.has(product.seller.handle)) {
-          uniqueSellers.set(product.seller.handle, product.seller)
-        }
-      })
     } else {
       console.error('❌ Sitemap: Error fetching products:', productsResult.reason)
     }
@@ -196,14 +195,23 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       console.error('❌ Sitemap: Error fetching blog posts:', blogResult.reason)
     }
 
-    // Sellers already extracted from products above
-    console.log(`✅ Sitemap: Found ${uniqueSellers.size} sellers`)
-    const sellerPages = Array.from(uniqueSellers.values()).map((seller) => ({
-      url: `${baseUrl}/sellers/${seller.handle}`,
-      lastModified: new Date(),
-      changeFrequency: 'weekly' as const,
-      priority: 0.7,
-    }))
+    // Extract sellers
+    let sellerPages: MetadataRoute.Sitemap = []
+    if (sellersResult.status === 'fulfilled') {
+      const { sellers } = sellersResult.value
+      console.log(`✅ Sitemap: Found ${sellers.length} sellers`)
+      
+      sellerPages = sellers
+        .filter((seller) => seller.handle)
+        .map((seller) => ({
+          url: `${baseUrl}/sellers/${seller.handle}`,
+          lastModified: new Date(seller.created_at || new Date()),
+          changeFrequency: 'weekly' as const,
+          priority: 0.7,
+        }))
+    } else {
+      console.error('❌ Sitemap: Error fetching sellers:', sellersResult.reason)
+    }
 
     const allPages = [
       ...staticPages,

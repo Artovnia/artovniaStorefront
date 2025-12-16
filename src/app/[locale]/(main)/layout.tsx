@@ -15,12 +15,14 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+
   // ✅ RESTORED: Fetch categories and regions on server-side with caching
   // This prevents client-side requests on every page navigation
   let categories: Awaited<ReturnType<typeof listCategoriesWithProducts>> | Awaited<ReturnType<typeof getEssentialCategories>>
   let regions: Awaited<ReturnType<typeof listRegions>> = []
   
   try {
+    const startTime = Date.now()
     // Fetch categories and regions in parallel
     const [categoriesResult, regionsResult] = await Promise.all([
       listCategoriesWithProducts().catch(error => {
@@ -32,6 +34,8 @@ export default async function RootLayout({
         return []
       })
     ])
+    const fetchTime = Date.now() - startTime
+  
     
     categories = categoriesResult
     regions = regionsResult

@@ -29,7 +29,10 @@ export function SellerProductListingClient({
   const [wishlist, setWishlist] = useState<SerializableWishlist[]>(initialWishlists || [])
   const [isLoading, setIsLoading] = useState(!initialProducts)
   
-  // Fetch products on page change
+  // ✅ OPTIMIZATION: Memoize user ID to prevent unnecessary re-fetches
+  const userId = user?.id
+  
+  // ✅ OPTIMIZATION: Fetch products on page change with stable dependencies
   useEffect(() => {
     const fetchData = async () => {
       // Use initial data for first page if available
@@ -52,7 +55,7 @@ export function SellerProductListingClient({
             sortBy: "created_at",
             queryParams: { limit: PRODUCT_LIMIT, offset },
           }),
-          user ? getUserWishlists() : Promise.resolve({ wishlists: [] })
+          userId ? getUserWishlists() : Promise.resolve({ wishlists: [] })
         ])
 
         setProducts(productsResult?.response?.products || [])
@@ -68,7 +71,8 @@ export function SellerProductListingClient({
     }
 
     fetchData()
-  }, [seller_id, currentPage, user, initialProducts, initialTotalCount, initialWishlists])
+    // ✅ Use stable userId instead of user object to prevent unnecessary re-fetches
+  }, [seller_id, currentPage, userId, initialProducts, initialTotalCount, initialWishlists])
 
   const totalPages = Math.ceil(totalCount / PRODUCT_LIMIT)
 

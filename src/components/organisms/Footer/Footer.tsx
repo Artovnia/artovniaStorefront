@@ -1,6 +1,6 @@
 import { Link } from "@/i18n/routing"
 import { footerLinks } from "@/data/footerLinks"
-import { FacebookIcon, InstagramIcon, LinkedInIcon, YouTubeIcon } from "@/icons/social"
+import { FacebookIcon, InstagramIcon, LinkedInIcon, YouTubeIcon, PinterestIcon } from "@/icons/social"
 import { HttpTypes } from "@medusajs/types"
 
 interface FooterProps {
@@ -27,6 +27,8 @@ export function Footer({ categories = [] }: FooterProps) {
         return <LinkedInIcon size={32} className="hover:scale-110 transition-transform duration-200" />
       case 'YouTube':
         return <YouTubeIcon size={32} className="hover:scale-110 transition-transform duration-200" />
+      case 'Pinterest':
+        return <PinterestIcon size={32} className="hover:scale-110 transition-transform duration-200" />
       default:
         return null
     }
@@ -170,6 +172,16 @@ export function Footer({ categories = [] }: FooterProps) {
             >
               {getIcon('Instagram')}
               <span className="sr-only">Instagram</span>
+            </Link>
+            <Link
+              href="https://pl.pinterest.com/artovnia/"
+              className="text-white hover:text-primary focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-tertiary transition-all duration-200 p-2 rounded-full hover:bg-white/10"
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="Odwiedź nasz profil na Pinterest (otwiera się w nowej karcie)"
+            >
+              {getIcon('Pinterest')}
+              <span className="sr-only">Pinterest</span>
             </Link>
             {/*  <Link
               href="https://linkedin.com"

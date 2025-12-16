@@ -86,15 +86,18 @@ export default async function SellerPage({
       )
     }
 
-    // Fetch initial products and wishlists in parallel (like homepage pattern)
-    const [productsResult, wishlistData] = await Promise.allSettled([
+    // ✅ OPTIMIZATION: Fetch ALL data in parallel to reduce server-side delay
+    const [productsResult, wishlistData, availabilityResult, holidayModeResult, suspensionResult] = await Promise.allSettled([
       listProductsWithSort({
         seller_id: seller.id,
         countryCode: "pl",
         sortBy: "created_at",
         queryParams: { limit: PRODUCT_LIMIT, offset: 0 },
       }),
-      user ? getUserWishlists() : Promise.resolve({ wishlists: [] })
+      user ? getUserWishlists() : Promise.resolve({ wishlists: [] }),
+      getVendorAvailability(seller.id),
+      getVendorHolidayMode(seller.id),
+      getVendorSuspension(seller.id)
     ])
 
     const initialProducts = productsResult.status === 'fulfilled' 
@@ -116,17 +119,10 @@ export default async function SellerPage({
     
     const tab = "produkty"
   
-    // Get vendor availability data with better error handling
-    let availability = undefined
-    let holidayMode = undefined
-    let suspension = undefined
-    
-    try {
-      try {
-        availability = await getVendorAvailability(seller.id)
-      } catch (availabilityError) {
-        console.error(`Vendor availability error: ${availabilityError instanceof Error ? availabilityError.message : 'Unknown error'}`)
-        availability = {
+    // ✅ OPTIMIZATION: Extract vendor availability data from parallel fetch results
+    const availability = availabilityResult.status === 'fulfilled'
+      ? availabilityResult.value
+      : {
           available: true,
           suspended: false,
           onHoliday: false,
@@ -134,25 +130,28 @@ export default async function SellerPage({
           status: 'active' as 'active' | 'holiday' | 'suspended',
           suspension_expires_at: null
         }
-      }
-      
-      try {
-        holidayMode = await getVendorHolidayMode(seller.id)
-      } catch (holidayError) {
-        console.error(`Holiday mode error: ${holidayError instanceof Error ? holidayError.message : 'Unknown error'}`)
-      }
-      
-      try {
-        suspension = await getVendorSuspension(seller.id)
-      } catch (suspensionError) {
-        console.error(`Suspension error: ${suspensionError instanceof Error ? suspensionError.message : 'Unknown error'}`)
-      }
-    } catch (error) {
-      console.error(`General error in vendor availability section: ${error instanceof Error ? error.message : 'Unknown error'}`)
+    
+    const holidayMode = holidayModeResult.status === 'fulfilled'
+      ? holidayModeResult.value
+      : undefined
+    
+    const suspension = suspensionResult.status === 'fulfilled'
+      ? suspensionResult.value
+      : undefined
+    
+    // Log any errors for debugging
+    if (availabilityResult.status === 'rejected') {
+      console.error('Vendor availability error:', availabilityResult.reason)
+    }
+    if (holidayModeResult.status === 'rejected') {
+      console.error('Holiday mode error:', holidayModeResult.reason)
+    }
+    if (suspensionResult.status === 'rejected') {
+      console.error('Suspension error:', suspensionResult.reason)
     }
 
     return (
-      <PromotionDataProvider countryCode="PL">
+      <PromotionDataProvider countryCode="PL" productIds={[]} limit={0}>
         <BatchPriceProvider currencyCode="PLN">
           <main className="container">
             <VendorAvailabilityProvider

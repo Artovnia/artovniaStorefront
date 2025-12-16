@@ -26,6 +26,7 @@ export default function BlogLayout({
   breadcrumbs,
   categories,
 }: BlogLayoutProps) {
+  
   return (
     <div className="min-h-screen bg-[#F4F0EB]" lang="pl">
 

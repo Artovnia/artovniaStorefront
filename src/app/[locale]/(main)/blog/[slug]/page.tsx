@@ -1,5 +1,5 @@
 import { Metadata } from "next"
-import { notFound, redirect } from "next/navigation"
+import { notFound } from "next/navigation"
 import Image from "next/image"
 import Link from "next/link"
 import { format } from "date-fns"
@@ -7,10 +7,10 @@ import { pl } from "date-fns/locale"
 import {
   getBlogPost,
   getBlogPosts,
-  getSellerPost,
+  getBlogCategories,
 } from "../lib/data"
 import { urlFor } from "../lib/sanity"
-import BlogLayoutWrapper from "../components/BlogLayoutWrapper"
+import BlogLayout from "../components/BlogLayout"
 import PortableText from "../components/PortableText"
 
 // ❌ ISR causes 500 errors in production - reverting to force-dynamic
@@ -136,30 +136,36 @@ function generateStructuredData(post: any, imageUrl: string | null) {
 export default async function BlogPostPage({ params }: BlogPostPageProps) {
   const { slug } = await params
 
+  // ✅ CRITICAL FIX: If slug is "seller", this is actually /blog/seller/[slug] route
+  // Next.js is incorrectly routing it here, so we need to return 404
+  // The actual /blog/seller/[slug]/page.tsx will handle it
+  if (slug === 'seller') {
+    notFound()
+  }
 
-  // Try to get regular blog post first
-  const blogPost = await getBlogPost(slug).catch((error) => {
-    console.error("❌ Error fetching blog post:", slug, error)
-    return null
-  })
-
-  // If not found, check if it's a seller post and redirect
-  if (!blogPost) {
-    const sellerPost = await getSellerPost(slug).catch((error) => {
-      console.error("❌ Error fetching seller post:", slug, error)
+  // ✅ FIX: Fetch blog post and categories in parallel
+  const startTime = Date.now()
+  const [blogPost, categories] = await Promise.all([
+    getBlogPost(slug).catch((error) => {
+      console.error("❌ Error fetching blog post:", slug, error)
       return null
+    }),
+    getBlogCategories().catch((error) => {
+      console.error("❌ Error fetching categories:", error)
+      return []
     })
-    if (sellerPost) {
-      // Redirect to proper seller post URL
-      // IMPORTANT: redirect() throws internally, so it MUST be outside try-catch
-      redirect(`/blog/seller/${slug}`)
-    }
-    // Neither blog post nor seller post found
+  ])
+  const fetchTime = Date.now() - startTime
+ 
+
+  // If not found, return 404
+  // Note: We removed seller post redirect to prevent double-render
+  // Seller posts should ONLY be accessed via /blog/seller/[slug]
+  if (!blogPost) {
     notFound()
   }
 
   try {
-    
     let imageUrl: string | null = null
     try {
       imageUrl = blogPost.mainImage
@@ -172,12 +178,15 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
     const structuredData = generateStructuredData(blogPost, imageUrl)
 
     return (
-      <BlogLayoutWrapper
+      <BlogLayout
+        title={blogPost.title}
+        description={blogPost.excerpt}
         breadcrumbs={[
           { label: "Strona główna", path: "/" },
           { label: "Blog", path: "/blog" },
           { label: blogPost.title, path: `/blog/${blogPost.slug.current}` },
         ]}
+        categories={categories}
       >
         {/* JSON-LD Structured Data */}
         <script
@@ -360,7 +369,7 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
             </aside>
           )}
         </article>
-      </BlogLayoutWrapper>
+      </BlogLayout>
     )
   } catch (error) {
     console.error("❌ CRITICAL: Error rendering blog post page:", error)

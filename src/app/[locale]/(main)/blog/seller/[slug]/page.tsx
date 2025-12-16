@@ -4,11 +4,11 @@ import Image from "next/image"
 import Link from "next/link"
 import { format } from "date-fns"
 import { pl } from "date-fns/locale"
-import { getSellerPost, getSellerPosts } from "../../lib/data"
+import { getSellerPost, getSellerPosts, getBlogCategories } from "../../lib/data"
 import { urlFor } from "../../lib/sanity"
 import { ArrowRightIcon } from "@/icons"
 import PortableText from "../../components/PortableText"
-import BlogLayoutWrapper from "../../components/BlogLayoutWrapper"
+import BlogLayout from "../../components/BlogLayout"
 
 // ✅ Keep force-dynamic to avoid ISR issues
 export const dynamic = 'force-dynamic'
@@ -131,11 +131,19 @@ function generateStructuredData(post: any, imageUrl: string | null) {
 export default async function SellerPostPage({ params }: SellerPostPageProps) {
   const { slug } = await params
   
-  // ✅ FIX: Only fetch post data - BlogLayoutWrapper handles categories internally
-  const post = await getSellerPost(slug).catch((error) => {
-    console.error('❌ SELLER POST: Error fetching post:', error)
-    return null
-  })
+  // ✅ FIX: Fetch post and categories in parallel to avoid double-render
+  const startTime = Date.now()
+  const [post, categories] = await Promise.all([
+    getSellerPost(slug).catch((error) => {
+      console.error('❌ SELLER POST: Error fetching post:', error)
+      return null
+    }),
+    getBlogCategories().catch((error) => {
+      console.error('❌ SELLER POST: Error fetching categories:', error)
+      return []
+    })
+  ])
+  const fetchTime = Date.now() - startTime
 
   if (!post) {
     notFound()
@@ -148,6 +156,7 @@ export default async function SellerPostPage({ params }: SellerPostPageProps) {
     post.sellerUrl = `/sellers/${post.sellerHandle}`
   }
 
+  
   let mainImageUrl: string | null = null
   let secondaryImageUrl: string | null = null
 
@@ -165,12 +174,15 @@ export default async function SellerPostPage({ params }: SellerPostPageProps) {
   const structuredData = generateStructuredData(post, mainImageUrl)
 
   return (
-    <BlogLayoutWrapper
+    <BlogLayout
+      title={post.sellerName}
+      description={post.shortDescription}
       breadcrumbs={[
         { label: "Strona główna", path: "/" },
         { label: "Blog", path: "/blog" },
         { label: post.sellerName, path: `/blog/seller/${post.slug.current}` },
       ]}
+      categories={categories}
     >
       {/* JSON-LD Structured Data */}
       <script
@@ -185,6 +197,7 @@ export default async function SellerPostPage({ params }: SellerPostPageProps) {
       >
         {/* Hero Section with Artistic Layout */}
         <section className="relative min-h-[70vh] flex items-center justify-center overflow-hidden">
+          {/* ⚠️ INVESTIGATION: Large hero section may cause streaming delay */}
           {/* Background Pattern */}
           <div className="absolute inset-0 opacity-12" aria-hidden="true">
             <div className="absolute top-10 left-10 w-32 h-32 border border-[#BFB7AD] opacity-60 rounded-full"></div>
@@ -198,6 +211,7 @@ export default async function SellerPostPage({ params }: SellerPostPageProps) {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 items-center">
               {/* Left Content */}
               <header className="space-y-6 lg:space-y-8">
+                {/* ⚠️ INVESTIGATION: Multiple nested elements may delay initial paint */}
                 <div className="space-y-4">
                   <p className="text-[#3B3634] text-sm md:text-base lg:text-lg font-light tracking-wide uppercase">
                     Projektant tygodnia
@@ -389,6 +403,6 @@ export default async function SellerPostPage({ params }: SellerPostPageProps) {
           </div>
         </section>
       </article>
-    </BlogLayoutWrapper>
+    </BlogLayout>
   )
 }

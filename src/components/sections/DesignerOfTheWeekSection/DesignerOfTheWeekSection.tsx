@@ -118,7 +118,7 @@ export function DesignerOfTheWeekSection({ className = "" }: DesignerOfTheWeekSe
           
           {/* Button */}
           <Link 
-            href={`/blog/${featuredPost.slug.current}`}
+            href={`/blog/seller/${featuredPost.slug.current}`}
             className="inline-flex items-center justify-center px-8 py-3 ring-1 ring-[#3B3634] text-[#3B3634] font-medium text-sm lg:text-base hover:bg-[#3B3634] hover:text-white transition-colors duration-300 w-fit"
           >
             ZOBACZ POST

@@ -30,7 +30,8 @@ import { listProductsWithSort } from '@/lib/data/products'
 import { retrieveCustomer } from '@/lib/data/customer'
 import { getUserWishlists } from '@/lib/data/wishlist'
 import { SerializableWishlist } from '@/types/wishlist'
-import { useSearchParams } from 'next/navigation'
+import { useSearchParams, useRouter, usePathname } from 'next/navigation'
+import { Pagination } from '@/components/cells'
 
 // Define props interface matching AlgoliaProductsListing
 interface ProductListingProps {
@@ -55,8 +56,13 @@ export const ProductListing = ({
   const [user, setUser] = useState<HttpTypes.StoreCustomer | null>(null)
   const [wishlist, setWishlist] = useState<SerializableWishlist[]>([])
   
-  // Get URL search parameters for filtering
+  // Get URL search parameters for filtering and pagination
   const searchParams = useSearchParams()
+  const router = useRouter()
+  const pathname = usePathname()
+  
+  // ✅ Get current page from URL
+  const currentPage = parseInt(searchParams.get('page') || '1', 10)
 
   // Function to refresh wishlist data after wishlist changes
   const refreshWishlist = async () => {
@@ -94,8 +100,10 @@ export const ProductListing = ({
       const DEFAULT_REGION = process.env.NEXT_PUBLIC_DEFAULT_REGION || "pl"
 
       // Build query parameters from URL search params
+      const offset = (currentPage - 1) * PRODUCT_LIMIT
       const queryParams: any = {
         limit: PRODUCT_LIMIT,
+        offset,
       }
 
       // Add color filtering
@@ -165,10 +173,10 @@ export const ProductListing = ({
     fetchUserData()
   }, [])
 
-  // Fetch products when filters or category changes
+  // Fetch products when filters, category, or page changes
   useEffect(() => {
     fetchProducts()
-  }, [category_id, collection_id, seller_id, searchParams])
+  }, [category_id, collection_id, seller_id, searchParams, currentPage])
 
   if (isLoading) return <ProductListingSkeleton />
 
@@ -231,6 +239,22 @@ export const ProductListing = ({
               </BatchPriceProvider>
             )}
           </div>
+
+          {/* Pagination */}
+          {count > PRODUCT_LIMIT && (
+            <div className="mt-8 flex justify-center">
+              <Pagination
+                pages={Math.ceil(count / PRODUCT_LIMIT)}
+                setPage={(page: number) => {
+                  const params = new URLSearchParams(searchParams.toString())
+                  params.set('page', page.toString())
+                  router.push(`${pathname}?${params.toString()}`)
+                  window.scrollTo({ top: 0, behavior: 'smooth' })
+                }}
+                currentPage={currentPage}
+              />
+            </div>
+          )}
 
           {/* Mobile Results Count - Only visible below lg breakpoint */}
           <div className="lg:hidden mt-8 text-center">
