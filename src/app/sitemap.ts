@@ -6,6 +6,19 @@ import {
   getCategoriesWithProductsFromDatabase,
 } from '@/lib/data/categories'
 
+// Helper function to add timeout to any promise
+const withTimeout = <T>(promise: Promise<T>, timeoutMs: number, fallback: T): Promise<T> => {
+  return Promise.race([
+    promise,
+    new Promise<T>((_, reject) =>
+      setTimeout(() => reject(new Error('Timeout')), timeoutMs)
+    )
+  ]).catch(() => {
+    console.warn(`⏱️ Sitemap: Operation timed out after ${timeoutMs}ms, using fallback`)
+    return fallback
+  })
+}
+
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl =
     process.env.NEXT_PUBLIC_BASE_URL || 'https://artovnia.com'
@@ -86,37 +99,64 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   ]
 
   try {
-    // Fetch products with error handling
+    // Fetch all data in parallel with timeouts
+    const [productsResult, categoriesResult, blogResult] = await Promise.allSettled([
+      // Products with 20-second timeout
+      withTimeout(
+        listProducts({ queryParams: { limit: 1000 }, countryCode: 'PL' }),
+        20000,
+        { response: { products: [], count: 0 }, nextPage: null }
+      ),
+      // Categories with 15-second timeout
+      withTimeout(
+        Promise.all([
+          listCategories(),
+          getCategoriesWithProductsFromDatabase()
+        ]),
+        15000,
+        [{ categories: [], parentCategories: [] }, new Set<string>()]
+      ),
+      // Blog posts with 10-second timeout
+      withTimeout(
+        getBlogPosts(),
+        10000,
+        []
+      )
+    ])
+
+    // Extract products
     let productPages: MetadataRoute.Sitemap = []
-    try {
-      const { response } = await listProducts({
-        queryParams: { limit: 1000 },
-        countryCode: 'PL',
-      })
-
+    let uniqueSellers = new Map<string, any>()
+    
+    if (productsResult.status === 'fulfilled') {
+      const { response } = productsResult.value
       console.log(`✅ Sitemap: Found ${response.products.length} products`)
-
-    productPages = response.products
-  .filter((product) => product.handle)
-  .map((product) => ({
-    url: `${baseUrl}/products/${product.handle}`,
-    lastModified: product.created_at 
-      ? new Date(product.created_at) 
-      : new Date(), // Fallback if created_at is undefined
-    changeFrequency: 'weekly' as const,
-    priority: 0.7,
-  }))
-    } catch (error) {
-      console.error('❌ Sitemap: Error fetching products:', error)
+      
+      productPages = response.products
+        .filter((product) => product.handle)
+        .map((product) => ({
+          url: `${baseUrl}/products/${product.handle}`,
+          lastModified: product.created_at 
+            ? new Date(product.created_at) 
+            : new Date(),
+          changeFrequency: 'weekly' as const,
+          priority: 0.7,
+        }))
+      
+      // Extract sellers from already-fetched products
+      response.products.forEach((product) => {
+        if (product.seller?.handle && !uniqueSellers.has(product.seller.handle)) {
+          uniqueSellers.set(product.seller.handle, product.seller)
+        }
+      })
+    } else {
+      console.error('❌ Sitemap: Error fetching products:', productsResult.reason)
     }
 
-    // Fetch categories with error handling
+    // Extract categories
     let categoryPages: MetadataRoute.Sitemap = []
-    try {
-      const categoriesData = await listCategories()
-      const categoriesWithProducts =
-        await getCategoriesWithProductsFromDatabase()
-
+    if (categoriesResult.status === 'fulfilled') {
+      const [categoriesData, categoriesWithProducts] = categoriesResult.value
       console.log(
         `✅ Sitemap: Found ${categoriesData.categories.length} total categories, ${categoriesWithProducts.size} with products`
       )
@@ -134,15 +174,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
             priority,
           }
         })
-    } catch (error) {
-      console.error('❌ Sitemap: Error fetching categories:', error)
+    } else {
+      console.error('❌ Sitemap: Error fetching categories:', categoriesResult.reason)
     }
 
-    // Fetch blog posts with error handling
+    // Extract blog posts
     let blogPages: MetadataRoute.Sitemap = []
-    try {
-      const posts = await getBlogPosts()
-
+    if (blogResult.status === 'fulfilled') {
+      const posts = blogResult.value
       console.log(`✅ Sitemap: Found ${posts.length} blog posts`)
 
       blogPages = posts
@@ -153,37 +192,18 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
           changeFrequency: 'monthly' as const,
           priority: 0.6,
         }))
-    } catch (error) {
-      console.error('❌ Sitemap: Error fetching blog posts:', error)
+    } else {
+      console.error('❌ Sitemap: Error fetching blog posts:', blogResult.reason)
     }
 
-    // Fetch seller pages with error handling
-    let sellerPages: MetadataRoute.Sitemap = []
-    try {
-      // Get unique sellers from products
-      const { response } = await listProducts({
-        queryParams: { limit: 1000 },
-        countryCode: 'PL',
-      })
-
-      const uniqueSellers = new Map<string, any>()
-      response.products.forEach((product) => {
-        if (product.seller?.handle && !uniqueSellers.has(product.seller.handle)) {
-          uniqueSellers.set(product.seller.handle, product.seller)
-        }
-      })
-
-      console.log(`✅ Sitemap: Found ${uniqueSellers.size} sellers`)
-
-      sellerPages = Array.from(uniqueSellers.values()).map((seller) => ({
-        url: `${baseUrl}/sellers/${seller.handle}`,
-        lastModified: new Date(),
-        changeFrequency: 'weekly' as const,
-        priority: 0.7,
-      }))
-    } catch (error) {
-      console.error('❌ Sitemap: Error fetching sellers:', error)
-    }
+    // Sellers already extracted from products above
+    console.log(`✅ Sitemap: Found ${uniqueSellers.size} sellers`)
+    const sellerPages = Array.from(uniqueSellers.values()).map((seller) => ({
+      url: `${baseUrl}/sellers/${seller.handle}`,
+      lastModified: new Date(),
+      changeFrequency: 'weekly' as const,
+      priority: 0.7,
+    }))
 
     const allPages = [
       ...staticPages,
