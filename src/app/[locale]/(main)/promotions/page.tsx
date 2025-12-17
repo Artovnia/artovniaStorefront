@@ -1,7 +1,6 @@
 import { Metadata } from "next"
 import { HttpTypes } from "@medusajs/types"
 import Image from "next/image"
-import { Suspense } from "react"
 import { listProductsWithPromotions } from "@/lib/data/products"
 import { getPromotionFilterOptions } from "@/lib/data/promotions"
 import { PromotionListing } from "@/components/sections"
@@ -68,24 +67,6 @@ export const revalidate = 300 // Revalidate every 5 minutes
 interface PromotionsPageProps {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>
 }
-
-// Loading skeleton for promotions
-const PromotionsContentSkeleton = () => (
-  <div className="px-4 sm:px-6 lg:px-8 py-8">
-    <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4 sm:gap-12">
-      {Array.from({ length: 12 }).map((_, i) => (
-        <div key={i} className="bg-white rounded-lg shadow-md animate-pulse overflow-hidden">
-          <div className="aspect-square bg-gray-200" />
-          <div className="p-4 space-y-3">
-            <div className="h-4 bg-gray-200 rounded w-3/4" />
-            <div className="h-4 bg-gray-200 rounded w-1/2" />
-            <div className="h-6 bg-gray-200 rounded w-1/3" />
-          </div>
-        </div>
-      ))}
-    </div>
-  </div>
-)
 
 export default async function PromotionsPage({ searchParams }: PromotionsPageProps) {
   const resolvedSearchParams = await searchParams
@@ -214,24 +195,22 @@ export default async function PromotionsPage({ searchParams }: PromotionsPagePro
             />
           </div>
 
-          {/* Products Listing with Suspense */}
+          {/* Products Listing - No Suspense needed, data already fetched on server */}
           <div className="px-4 sm:px-6 lg:px-8 mx-auto">
-            <Suspense fallback={<PromotionsContentSkeleton />}>
-              <PromotionDataProvider 
+            <PromotionDataProvider 
+              countryCode={countryCode}
+              productIds={productIds}
+            >
+              <PromotionListing
+                initialProducts={products}
+                initialCount={count}
+                initialPage={page}
                 countryCode={countryCode}
-                productIds={productIds}
-              >
-                <PromotionListing
-                  initialProducts={products}
-                  initialCount={count}
-                  initialPage={page}
-                  countryCode={countryCode}
-                  limit={12}
-                  user={user}
-                  wishlist={wishlist}
-                />
-              </PromotionDataProvider>
-            </Suspense>
+                limit={12}
+                user={user}
+                wishlist={wishlist}
+              />
+            </PromotionDataProvider>
           </div>
         </div>
       </div>

@@ -48,7 +48,6 @@ export function SellerProductListingClient({
       try {
         const offset = (currentPage - 1) * PRODUCT_LIMIT
         
-        console.log('🔍 [SELLER LISTING] Fetching products:', { seller_id, offset, limit: PRODUCT_LIMIT })
         
         // ✅ CRITICAL: Fetch only the current page (20 products), not all 200
         const [productsResult, wishlistData] = await Promise.all([
@@ -61,12 +60,7 @@ export function SellerProductListingClient({
           userId ? getUserWishlists() : Promise.resolve({ wishlists: [] })
         ])
 
-        console.log('✅ [SELLER LISTING] Products fetched:', {
-          count: productsResult?.response?.products?.length || 0,
-          total: productsResult?.response?.count || 0,
-          firstProduct: productsResult?.response?.products?.[0]?.id
-        })
-
+     
         setProducts(productsResult?.response?.products || [])
         setTotalCount(productsResult?.response?.count || 0)
         setWishlist(wishlistData.wishlists || [])
@@ -87,8 +81,14 @@ export function SellerProductListingClient({
 
   const handlePageChange = (page: number) => {
     if (page < 1 || page > totalPages || page === currentPage) return
-    setCurrentPage(page)
+    
+    // ✅ CRITICAL: Scroll BEFORE state update to prevent loading skeleton from resetting position
     window.scrollTo({ top: 0, behavior: 'smooth' })
+    
+    // Small delay to ensure scroll starts before state update triggers re-render
+    setTimeout(() => {
+      setCurrentPage(page)
+    }, 0)
   }
 
   const refreshWishlist = async () => {

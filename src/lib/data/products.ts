@@ -109,13 +109,7 @@ export const listProducts = async ({
   try {
     // ✅ OPTIMIZED: For seller filtering, use custom endpoint that returns full product data
     if (seller_id) {
-      console.log('🔍 [FRONTEND] Calling seller products endpoint:', {
-        seller_id,
-        endpoint: `/store/seller/${seller_id}/products`,
-        limit,
-        offset,
-        region_id: region?.id
-      })
+    
 
       const { products, count } = await sdk.client.fetch<{
         products: HttpTypes.StoreProduct[]
@@ -132,10 +126,7 @@ export const listProducts = async ({
         next: { revalidate: 300 },
       })
 
-      console.log('✅ [FRONTEND] Seller products response:', {
-        productsCount: products?.length || 0,
-        totalCount: count
-      })
+   
 
       const nextPage = count > offset + limit ? pageParam + 1 : null
       return {

@@ -34,7 +34,6 @@ export const SmartBestProductsSection = async ({
     })
     const allProducts = result?.response?.products || []
     
-    console.log('🔍 [SMART BEST] Products fetched:', { count: allProducts.length })
     
     if (allProducts.length === 0) {
       console.warn('⚠️ [SMART BEST] No products found')

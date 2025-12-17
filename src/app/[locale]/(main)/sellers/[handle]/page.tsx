@@ -13,34 +13,22 @@ import { listProductsWithSort } from "../../../../../lib/data/products"
 import { getUserWishlists } from "../../../../../lib/data/wishlist"
 import { PRODUCT_LIMIT } from "../../../../../const"
 
+// ✅ PERFORMANCE: Simplified metadata - avoid duplicate seller fetch
+// The page component will fetch seller data, so we use basic metadata here
 export async function generateMetadata({
   params,
 }: {
   params: Promise<{ handle: string; locale: string }>
 }): Promise<Metadata> {
-  const { handle, locale } = await params
+  const { handle } = await params
 
-  try {
-    const seller = await getSellerByHandle(handle)
-    
-    if (!seller) {
-      return {
-        title: "Sprzedawca nie znaleziony",
-        description: "Nie mogliśmy znaleźć tego sprzedawcy.",
-        robots: {
-          index: false,
-          follow: false,
-        },
-      }
-    }
-
-    return generateSellerMetadata(seller, locale)
-  } catch (error) {
-    console.error("Error generating seller metadata:", error)
-    return {
-      title: "Sprzedawca",
-      description: "Profil sprzedawcy na Artovnia",
-    }
+  return {
+    title: `Sprzedawca - ${handle}`,
+    description: "Profil sprzedawcy na Artovnia - unikalne produkty od polskich artystów",
+    robots: {
+      index: true,
+      follow: true,
+    },
   }
 }
 
@@ -68,12 +56,14 @@ export default async function SellerPage({
       )
     }
     
-    // Parallel fetching for better performance
-    const [seller, user, { reviews = [] }] = await Promise.all([
+    // ✅ PERFORMANCE: Fetch only critical data, make others optional
+    const [seller, user, reviewsResult] = await Promise.all([
       getSellerByHandle(handle),
-      retrieveCustomer(),
-      getSellerReviews(handle),
+      retrieveCustomer().catch(() => null), // Non-blocking
+      getSellerReviews(handle).catch(() => ({ reviews: [] })), // Non-blocking
     ])
+    
+    const reviews = reviewsResult?.reviews || []
     
     if (!seller) {
       console.error(`Seller not found for handle: ${handle}`)
@@ -87,9 +77,7 @@ export default async function SellerPage({
       )
     }
 
-    // ✅ PERFORMANCE OPTIMIZATION: Fetch only critical non-blocking data
-    // Products will be fetched client-side for instant page load
-    // This reduces server-side blocking from ~3s to ~500ms
+    // ✅ PERFORMANCE: Availability checks are non-critical, use allSettled for resilience
     const [availabilityResult, holidayModeResult, suspensionResult] = await Promise.allSettled([
       getVendorAvailability(seller.id),
       getVendorHolidayMode(seller.id),

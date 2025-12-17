@@ -1,6 +1,5 @@
 import { Metadata } from 'next'
 import Image from 'next/image'
-import { Suspense } from 'react'
 import { SellerListing } from '@/components/sections/SellerListing/SellerListing'
 import { getSellers } from '@/lib/data/seller'
 import { generateBreadcrumbJsonLd, generateCollectionPageJsonLd } from '@/lib/helpers/seo'
@@ -47,36 +46,7 @@ export const metadata: Metadata = {
 }
 
 // ✅ PERFORMANCE: Cache with revalidation for better performance
-// Loading skeleton will still show during navigation
 export const revalidate = 300 // Revalidate every 5 minutes
-
-// Loading skeleton for Suspense
-const SellerListingSkeleton = () => (
-  <div className="w-full px-4 sm:px-6 lg:px-8 py-8">
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-4 gap-6 justify-items-center">
-      {Array.from({ length: 12 }).map((_, index) => (
-        <div 
-          key={index} 
-          className="w-[252px] h-[380px] bg-primary shadow-md animate-pulse"
-        >
-          {/* Top 60% - Image skeleton */}
-          <div className="h-[60%] bg-[#F4F0EB]" />
-          
-          {/* Bottom 40% - Content skeleton */}
-          <div className="h-[40%] bg-primary p-4 flex flex-col justify-between">
-            <div className="flex-1 flex flex-col justify-center items-center gap-2">
-              <div className="h-5 bg-[#BFB7AD]/30 rounded w-32" />
-              <div className="h-3 bg-[#BFB7AD]/20 rounded w-40" />
-            </div>
-            <div className="flex justify-center pt-2">
-              <div className="h-2 bg-[#BFB7AD]/15 rounded w-24" />
-            </div>
-          </div>
-        </div>
-      ))}
-    </div>
-  </div>
-)
 
 export default async function SellersPage({
   searchParams
@@ -173,16 +143,14 @@ export default async function SellersPage({
 
       {/* Main Content */}
       <div className="max-w-[1920px] mx-auto" id="sellers-content">
-        {/* Seller Listing Component with Suspense */}
+        {/* Seller Listing Component - No Suspense needed, data already fetched on server */}
         <div className="px-4 sm:px-6 lg:px-8 py-6">
-          <Suspense fallback={<SellerListingSkeleton />}>
-            <SellerListing 
-              initialSellers={sellersData.sellers}
-              initialCount={sellersData.count}
-              initialPage={page}
-              limit={limit}
-            />
-          </Suspense>
+          <SellerListing 
+            initialSellers={sellersData.sellers}
+            initialCount={sellersData.count}
+            initialPage={page}
+            limit={limit}
+          />
         </div>
       </div>
     </div>

@@ -141,7 +141,9 @@ export const ProductDetailsPage = async ({
           <Breadcrumbs items={breadcrumbs} />
         </div>
         
-        <PromotionDataProvider countryCode={locale}>
+        {/* ✅ FIX: Don't pass productIds - let provider fetch all promotional products (limit 50) */}
+        {/* Product detail pages need access to all promotional products for proper price display */}
+        <PromotionDataProvider countryCode={locale} limit={50}>
           <BatchPriceProvider currencyCode="PLN" days={30}>
             <VendorAvailabilityProvider
               vendorId={prod.seller?.id}
@@ -154,7 +156,7 @@ export const ProductDetailsPage = async ({
               {/* Mobile Layout: Stacked vertically */}
               <div className="flex flex-col md:hidden">
                 <div className="w-full">
-                  <ProductGallery images={prod?.images || []} />
+                  <ProductGallery images={prod?.images || []} title={prod?.title || ''} />
                 </div>
                 <div className="w-full mt-4">
                   {prod.seller ? (
@@ -171,7 +173,7 @@ export const ProductDetailsPage = async ({
               <div className="hidden md:flex md:flex-row md:gap-6 lg:gap-12 max-w-[1920px] mx-auto md:px-4 lg:px-0">
                 {/* Left: Sticky Product Gallery */}
                 <div className="md:w-1/2 md:max-w-[calc(50%-12px)] lg:max-w-none md:px-0 md:sticky md:top-20 md:self-start">
-                  <ProductGallery images={prod?.images || []} />
+                  <ProductGallery images={prod?.images || []} title={prod?.title || ''} />
                 </div>
                 
                 {/* Right: Scrollable Product Details */}

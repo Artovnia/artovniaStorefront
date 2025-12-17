@@ -11,8 +11,10 @@ import { ArrowLeftIcon, ArrowRightIcon, ArrowUpIcon, ArrowDownIcon } from "@/ico
 
 export const ProductCarousel = ({
   slides = [],
+  title = "Product image",
 }: {
   slides: MedusaProductImage[]
+  title?: string
 }) => {
   const screenSize = useScreenSize()
   const [selectedImageIndex, setSelectedImageIndex] = useState(0)
@@ -131,7 +133,7 @@ export const ProductCarousel = ({
                 >
                   <Image
                     src={slide.url}
-                    alt="Product image"
+                    alt={title}
                     width={700}
                     height={700}
                     quality={index === 0 ? 85 : 75} // Higher quality for first image
@@ -187,7 +189,7 @@ export const ProductCarousel = ({
                   >
                     <Image
                       src={slide.url}
-                      alt={`Product thumbnail ${index + 1}`}
+                      alt={title}
                       fill
                       quality={60}
                       loading="lazy"
@@ -243,7 +245,7 @@ export const ProductCarousel = ({
                 {slides[selectedImageIndex] && (
                   <Image
                     src={slides[selectedImageIndex].url}
-                    alt="Product image"
+                    alt={title}
                     fill
                     quality={90}
                     priority={selectedImageIndex === 0} // Only first image gets priority
