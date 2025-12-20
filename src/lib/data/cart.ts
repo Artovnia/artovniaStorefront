@@ -1015,21 +1015,23 @@ export async function placeOrder(cartId?: string, skipRedirectCheck: boolean = f
   const baseUrl = process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || 'http://localhost:9000'
   
   try {
-    // First, get the current cart to check payment session status
-    const cartUrl = `${baseUrl}/store/carts/${id}?fields=*payment_collection.payment_sessions`
-    const cartResponse = await fetch(cartUrl, {
-      headers
-    })
-    
-    if (!cartResponse.ok) {
-      throw new Error(`Failed to get cart: ${cartResponse.statusText}`)
-    }
-    
-    const { cart } = await cartResponse.json()
-    const paymentSessions = cart?.payment_collection?.payment_sessions || []
-    
-    // Check if any payment session requires redirect (skip this check if skipRedirectCheck is true)
+    // PERFORMANCE OPTIMIZATION: Skip cart fetch if returning from payment provider
+    // When skipRedirectCheck=true, we already know payment is authorized, no need to check sessions
     if (!skipRedirectCheck) {
+      // First, get the current cart to check payment session status
+      const cartUrl = `${baseUrl}/store/carts/${id}?fields=*payment_collection.payment_sessions`
+      const cartResponse = await fetch(cartUrl, {
+        headers
+      })
+      
+      if (!cartResponse.ok) {
+        throw new Error(`Failed to get cart: ${cartResponse.statusText}`)
+      }
+      
+      const { cart } = await cartResponse.json()
+      const paymentSessions = cart?.payment_collection?.payment_sessions || []
+      
+      // Check if any payment session requires redirect
       for (const session of paymentSessions) {
         const isPayUProvider = session.provider_id?.includes('payu')
         const isStripeProvider = session.provider_id?.includes('stripe')

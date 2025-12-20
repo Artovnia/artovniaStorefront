@@ -21,16 +21,11 @@ export default async function ReturnOrderPage({
   // If this is an order set, use the first order's ID
   const orderIdForReturnMethods = transformedOrder.orders?.[0]?.id || id
   const returnMethods = await retrieveReturnMethods(orderIdForReturnMethods)
-  
-  
-  const order = transformedOrder.orders?.[0] || transformedOrder
-
 
   return (
     <main className="container">
       <OrderReturnSection
-        order={order}
-        orderSet={transformedOrder.is_order_set ? transformedOrder : undefined}
+        orderSet={transformedOrder}
         returnReasons={returnReasons}
         shippingMethods={returnMethods as any}
       />

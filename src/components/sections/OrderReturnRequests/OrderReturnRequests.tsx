@@ -2,6 +2,7 @@ import { OrdersPagination } from "@/components/organisms/OrdersPagination/Orders
 import { SingleOrderReturn } from "@/components/organisms/SingleOrderReturn/SingleOrderReturn"
 import { Heading } from "@medusajs/ui"
 import { isEmpty } from "lodash"
+import { ReturnReasonsProvider } from "@/components/context/ReturnReasonsContext"
 
 const LIMIT = 10
 
@@ -41,21 +42,23 @@ export const OrderReturnRequests = ({
   }
 
   return (
-    <div>
-      {processedReturns.map((item) => {
-        
-        return (
-          <SingleOrderReturn
-            key={item.id}
-            item={item}
-            user={user}
-            defaultOpen={currentReturn === item.id}
-          />
-        );
-      })}
-      <div className="mt-8 flex justify-center">
-        <OrdersPagination pages={pages} />
+    <ReturnReasonsProvider>
+      <div>
+        {processedReturns.map((item) => {
+          
+          return (
+            <SingleOrderReturn
+              key={item.id}
+              item={item}
+              user={user}
+              defaultOpen={currentReturn === item.id}
+            />
+          );
+        })}
+        <div className="mt-8 flex justify-center">
+          <OrdersPagination pages={pages} />
+        </div>
       </div>
-    </div>
+    </ReturnReasonsProvider>
   )
 }

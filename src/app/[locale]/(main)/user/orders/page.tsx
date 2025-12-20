@@ -44,18 +44,21 @@ export default async function UserPage({
     // Use payment_collection.amount as the authoritative total
     const orderSetTotal = orderSet.payment_collection?.amount || 
       (orderSet.orders || []).reduce((sum: number, order: any) => {
-        const orderItemsTotal = (order.items || []).reduce((itemSum: number, item: any) => {
-          return itemSum + (item.total || (item.unit_price * item.quantity))
-        }, 0)
-        const shippingTotal = order.shipping_total || 0
-        return sum + orderItemsTotal + shippingTotal
+        return sum + (order.total || 0)
       }, 0)
+    
+    // Get order numbers from linked orders
+    const orderNumbers = (orderSet.orders || [])
+      .map((order: any) => order.display_id)
+      .filter(Boolean)
+      .sort((a: number, b: number) => a - b)
     
     return {
       id: orderSet.id,
       orders: orderSet.orders || [],
       created_at: orderSet.created_at,
       display_id: orderSet.display_id,
+      order_numbers: orderNumbers, // Array of actual order numbers
       total: orderSetTotal,
       currency_code: orderSet.orders?.[0]?.currency_code || 'PLN',
     }
@@ -68,7 +71,10 @@ export default async function UserPage({
           <ParcelAccordion
             key={orderSet.id}
             orderId={orderSet.id}
-            orderDisplayId={`#${orderSet.display_id}`}
+            orderDisplayId={orderSet.order_numbers.length > 0 
+              ? orderSet.order_numbers.map((num: number) => `#${num}`).join(', ')
+              : `#${orderSet.display_id}`
+            }
             createdAt={orderSet.created_at}
             total={orderSet.total}
             items={orderSet.orders.flatMap((order: any) => order.items || [])}

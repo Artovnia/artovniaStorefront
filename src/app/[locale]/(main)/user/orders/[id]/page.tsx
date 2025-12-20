@@ -29,10 +29,17 @@ export default async function UserPage({
       return redirect("/user/orders")
     }
 
+    // Get order numbers from linked orders
+    const orderNumbers = ((order as any).orders || [order])
+      .map((o: any) => o.display_id)
+      .filter(Boolean)
+      .sort((a: number, b: number) => a - b)
+    
     // Ensure we have the correct data structure for OrderDetailsSection
     const orderData = {
       id: order.id,
       display_id: order.display_id,
+      order_numbers: orderNumbers, // Array of actual order numbers
       created_at: order.created_at,
       currency_code: order.currency_code,
       shipping_total: 0, // Will be calculated from orders
@@ -64,7 +71,10 @@ export default async function UserPage({
             </LocalizedClientLink>
             <div className="sm:flex items-center justify-between ">
               <h1 className="heading-md uppercase my-8">
-                Zamówienie #{orderData.display_id}
+                Zamówienie {orderData.order_numbers.length > 0 
+                  ? orderData.order_numbers.map((num: number) => `#${num}`).join(', ')
+                  : `#${orderData.display_id}`
+                }
               </h1>
               <p className="label-md text-secondary">
                 Data zamówienia:{" "}

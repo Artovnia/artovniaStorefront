@@ -53,48 +53,26 @@ const StripeReturnPageContent: React.FC = () => {
          
             
             // Clear the cart completely after successful completion
-            // If placeOrder succeeded (returned any result), we should clear the cart
+            // placeOrder already calls removeCartId() on success, but we ensure client-side is cleared too
             if (result) {
-              
-              // 1. Clear server-side cart cookie (this should already be done by placeOrder, but let's ensure it)
-              try {
-                await removeCartId()
-              } catch (error) {
-              }
-              
-              // 2. Clear client-side cart context and storage
+              // Clear client-side cart context and storage (fast, synchronous operations)
               clearCart()
               
-              // 3. Clear any remaining client-side storage manually
               if (typeof window !== 'undefined') {
                 try {
                   localStorage.removeItem('_medusa_cart_id')
                   localStorage.removeItem('medusa_cart_id')
-                  document.cookie = '_medusa_cart_id=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=' + window.location.hostname
-                  document.cookie = '_medusa_cart_id=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;'
-                
                 } catch (error) {
+                  // Ignore localStorage errors
                 }
               }
-              
-              // 4. Small delay to ensure all changes propagate
-              await new Promise(resolve => setTimeout(resolve, 1000))
-              
-              // 5. Force refresh cart to sync with server state (should be empty now)
-              await refreshCart()
-              
-              // 6. Debug: Check final cart state
-              setTimeout(() => {
-              
-              }, 2000)
             } else {
-              console.warn('⚠️ STRIPE RETURN: No result from placeOrder, but still attempting cart clear as fallback')
               // Fallback cart clearing even if no result
               try {
                 await removeCartId()
                 clearCart()
-                await refreshCart()
               } catch (error) {
+                // Ignore errors
               }
             }
             

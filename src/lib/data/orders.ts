@@ -6,6 +6,7 @@ import { sdk } from "../config"
 import { HttpTypes } from "@medusajs/types"
 import { transformOrderSetToOrder, type OrderSet } from "../utils/order-transformations"
 import medusaError from "../helpers/medusa-error"
+import { batchRetrieveOrders, batchRetrieveOrderSets } from "./batch-orders"
 
 // Define order set response type
 export interface OrderSetResponse {
@@ -398,151 +399,37 @@ export const getReturns = async () => {
   try {
     const headers = await getAuthHeaders()
     
-    // First try the /store/return-request endpoint
-    try {
-      const response = await sdk.client.fetch<{
-        order_return_requests: Array<any>
-      }>(`/store/return-request`, {
-        method: "GET",
-        // Remove all field queries - backend rejects any field specifications
-        headers,
-        cache: "no-store", // Ensure fresh data on each request
-        credentials: "include", // Include cookies for authentication
-        next: { revalidate: 0 }, // Next.js 15 cache busting
-      })
-      
-      if (response && response.order_return_requests) {
-        // Always return an array even if backend returns null
-        const returnRequests = Array.isArray(response.order_return_requests) ? 
-          response.order_return_requests : [];
-
-        // If we got an empty array, continue to try the other endpoint
-        if (returnRequests.length === 0) {
-          // Continue to try alternate endpoint
-        } else {
-          // Transform return requests and fetch complete order data for each (same logic as /store/returns)
-          const transformedReturnRequests = await Promise.all(returnRequests.map(async (returnItem) => {
-            // Fetch complete order data if we have an order_id and missing critical data
-            let completeOrderData = returnItem.order;
-        
-            // Get order ID from either order_id field or order.id field
-            const orderId = returnItem.order_id || returnItem.order?.id;
-
-            // ALWAYS fetch complete order data for return requests
-            if (orderId) {
-              try {
-                // CRITICAL: Try to fetch from order_set first (has manual calculations)
-                // Check if this order belongs to an order_set
-                let fullOrder = null;
-                
-                // Try to get order_set_id from the order
-                const orderResponse = await sdk.client.fetch<{ order: any }>(
-                  `/store/orders/${orderId}`,
-                  {
-                    method: "GET",
-                    query: { fields: "id,order_set_id" },
-                    headers: await getAuthHeaders(),
-                    cache: "no-cache"
-                  }
-                );
-                
-                const orderSetId = orderResponse?.order?.order_set_id;
-                
-                if (orderSetId && orderSetId.startsWith('ordset_')) {
-                  const orderSetData = await retrieveOrderSet(orderSetId);
-                  if (orderSetData?.orders?.[0]) {
-                    fullOrder = orderSetData.orders[0];
-                  }
-                } 
-                
-                // Fallback to individual order if no order_set
-                if (!fullOrder) {
-                  fullOrder = await retrieveIndividualOrder(orderId);
-                }
-                
-                if (fullOrder) {
-                  completeOrderData = fullOrder;
-                } 
-              } catch (error) {
-                console.error(`❌ Error fetching complete order data for return request ${orderId}:`, error);
-                // Continue with existing order data
-              }
-            }
-            
-            const finalReturnItem = {
-              ...returnItem,
-              // Add any missing fields to match the expected format
-              id: returnItem.id || `temp_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
-              status: returnItem.status || 'pending',
-              // Use line_items as provided
-              line_items: Array.isArray(returnItem.line_items) ? returnItem.line_items : [],
-              // Use complete order data with shipping information
-              order: completeOrderData
-            };
-          
-            return finalReturnItem;
-          }));
-          
-          return { order_return_requests: transformedReturnRequests }
-        }
-      }
-    } catch (firstError) {
-      console.error("Error fetching from /store/return-request:", firstError)
-    }
-    
-    // Try the alternate /store/returns endpoint if first one failed or returned empty
+    // OPTIMIZATION: Use /store/returns endpoint with caching enabled
     try {
       const response = await sdk.client.fetch<{
         returns: Array<any>
       }>(`/store/returns`, {
         method: "GET",
-        // Remove all field queries - backend rejects any field specifications
         headers,
-        cache: "no-store",
-        credentials: "include",
-        next: { revalidate: 0 },
+        cache: "force-cache", // Enable caching for better performance
+        next: { revalidate: 60 }, // Revalidate every 60 seconds
       })
       
       if (response && response.returns) {
-        const returns = Array.isArray(response.returns) ? response.returns : [];
+        const returns = Array.isArray(response.returns) ? response.returns : []
         
-        // Transform returns and fetch complete order data for each
-        const transformedReturns = await Promise.all(returns.map(async (returnItem) => {
-          // Fetch complete order data if we have an order_id and missing critical data
-          let completeOrderData = returnItem.order;
-          
-          // ALWAYS fetch complete order data for returns since the return API doesn't include complete data
-          if (returnItem.order_id) {
-            try {
-              const fullOrder = await retrieveIndividualOrder(returnItem.order_id);
-              if (fullOrder) {
-                completeOrderData = fullOrder;
-              }
-            } catch (error) {
-              console.error(`Error fetching complete order data for ${returnItem.order_id}:`, error);
-              // Continue with existing order data
-            }
-          }
-          
-          return {
-            ...returnItem,
-            // Add any missing fields to match the expected format
-            id: returnItem.id || `temp_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
-            status: returnItem.status || 'pending',
-            // FIX: Use returnItem.line_items instead of returnItem.items
-            line_items: Array.isArray(returnItem.line_items) ? returnItem.line_items : [],
-            // Use complete order data with shipping information
-            order: completeOrderData
-          };
-        }));
+        // Backend now includes order data in the response, no need for batch fetch
+        // The optimized backend query already includes minimal order fields
+        const transformedReturns = returns.map((returnItem) => ({
+          ...returnItem,
+          id: returnItem.id || `temp_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
+          status: returnItem.status || 'pending',
+          line_items: Array.isArray(returnItem.line_items) ? returnItem.line_items : [],
+          order: returnItem.order || {}
+        }))
         
         return { order_return_requests: transformedReturns }
       }
-    } catch (secondError) {
-      console.error("Error fetching from /store/returns:", secondError)
+    } catch (error) {
+      console.error("Error fetching returns:", error)
     }
     
-    // If both endpoints failed, return empty array
+    // If fetch failed, return empty array
     return { order_return_requests: [] }
     
   } catch (error: any) {
@@ -574,13 +461,38 @@ export const retrieveReturnMethods = async (order_id: string) => {
 }
 
 /**
- * Retrieve return reasons
+ * Cancel an order
+ */
+export const cancelOrder = async (orderId: string) => {
+  try {
+    const headers = await getAuthHeaders()
+
+    const response = await sdk.client.fetch<{
+      message: string
+      order_id: string
+    }>(`/store/orders/${orderId}/cancel`, {
+      method: "POST",
+      headers,
+      cache: "no-cache",
+    })
+
+    return { success: true, message: response.message }
+  } catch (error) {
+    console.error(`Error cancelling order ${orderId}:`, error)
+    const errorMessage = error instanceof Error ? error.message : 'Failed to cancel order'
+    return { success: false, error: errorMessage }
+  }
+}
+
+/**
+ * Retrieve return reasons with caching
+ * Return reasons don't change frequently, so we can cache them
  */
 export const retrieveReturnReasons = async () => {
   try {
     const headers = await getAuthHeaders()
 
-    // Use the proper endpoint for return reasons
+    // Use the proper endpoint for return reasons with caching
     const response = await sdk.client.fetch<{
       return_reasons: Array<{
         id: string
@@ -591,9 +503,9 @@ export const retrieveReturnReasons = async () => {
     }>(`/store/return-reasons`, {
       method: "GET",
       headers,
-      cache: "no-store", // Ensure fresh data
-      credentials: "include", // Include cookies for authentication
-      next: { revalidate: 0 }, // Always fetch fresh data
+      cache: "force-cache", // Cache return reasons
+      credentials: "include",
+      next: { revalidate: 3600 }, // Revalidate every hour (return reasons rarely change)
     })
 
     if (!response || !response.return_reasons) {

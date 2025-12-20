@@ -13,30 +13,78 @@ import { createReturnRequest } from "@/lib/data/orders"
 import { useRouter } from "next/navigation"
 
 export const OrderReturnSection = ({
-  order,
   orderSet,
   returnReasons,
-  shippingMethods,
+  shippingMethods: initialShippingMethods,
 }: {
-  order: any
-  orderSet?: any
+  orderSet: any
   returnReasons: any[]
   shippingMethods: any[]
 }) => {
+  // Filter returnable items from all orders
+  // Only show items that are delivered (fulfilled) and not already returned
+  const getReturnableOrders = () => {
+    if (!orderSet?.orders || orderSet.orders.length === 0) {
+      // Single order case
+      return [orderSet]
+    }
+    
+    // Split order case - filter orders with delivered items
+    return orderSet.orders.filter((order: any) => {
+      // Check if order has any fulfilled items
+      const hasFulfilledItems = order.fulfillments?.some((f: any) => 
+        f.shipped_at || f.delivered_at
+      )
+      return hasFulfilledItems
+    })
+  }
+  
+  const returnableOrders = getReturnableOrders()
+  
+  // For display purposes, use the first returnable order
+  const primaryOrder = returnableOrders[0] || orderSet
   const [tab, setTab] = useState(0)
   const [selectedItems, setSelectedItems] = useState<any[]>([])
   const [error, setError] = useState<boolean>(false)
   const [returnMethod, setReturnMethod] = useState<any>(null)
+  const [shippingMethods, setShippingMethods] = useState<any[]>(initialShippingMethods)
+  const [isLoadingShipping, setIsLoadingShipping] = useState<boolean>(false)
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false)
+  const [targetOrder, setTargetOrder] = useState<any>(primaryOrder)
   const router = useRouter()
   
   // CRITICAL: Use ref for synchronous submission guard
   // React state updates are async, so a ref prevents double-clicks
   const isSubmittingRef = useRef(false)
 
-  const handleTabChange = (tab: number) => {
+  const handleTabChange = async (tab: number) => {
     const noReason = selectedItems.filter((item) => !item.reason_id)
     if (!noReason.length) {
+      // CRITICAL: When moving to shipping methods tab, fetch fresh shipping options
+      // for the order that the selected items belong to
+      if (tab === 1 && selectedItems.length > 0) {
+        setIsLoadingShipping(true)
+        try {
+          // Determine which order the selected items belong to
+          const selectedItemIds = new Set(selectedItems.map(si => si.line_item_id))
+          const foundTargetOrder = returnableOrders.find((o: any) => 
+            o.items?.some((item: any) => selectedItemIds.has(item.id))
+          ) || primaryOrder
+          
+          // Update target order state for seller display
+          setTargetOrder(foundTargetOrder)
+          
+          // Fetch fresh shipping methods for this specific order
+          const { retrieveReturnMethods } = await import('@/lib/data/orders')
+          const freshMethods = await retrieveReturnMethods(foundTargetOrder.id)
+          setShippingMethods(freshMethods as any[])
+          setReturnMethod(null) // Reset selected method
+        } catch (error) {
+          console.error('Failed to fetch shipping methods:', error)
+        } finally {
+          setIsLoadingShipping(false)
+        }
+      }
       setTab(tab)
     } else {
       setError(true)
@@ -114,7 +162,13 @@ export const OrderReturnSection = ({
       
       // CRITICAL: Use individual order.id for return request (not order set ID)
       // The backend needs the order ID to look up the seller
-      const orderId = order.id
+      // For split orders, we need to determine which order the selected items belong to
+      const selectedItemIds = new Set(selectedItems.map(si => si.line_item_id))
+      const targetOrder = returnableOrders.find((o: any) => 
+        o.items?.some((item: any) => selectedItemIds.has(item.id))
+      ) || primaryOrder
+      
+      const orderId = targetOrder.id
       
       const data = {
         order_id: orderId,
@@ -142,7 +196,7 @@ export const OrderReturnSection = ({
       </div>
       <div className="md:col-span-3 mb-8 md:mb-0">
         {tab === 0 ? (
-          <LocalizedClientLink href={`/user/orders/${orderSet?.id || order.id}`}>
+          <LocalizedClientLink href={`/user/orders/${orderSet?.id || primaryOrder.id}`}>
             <Button
               variant="tonal"
               className="label-md text-action-on-secondary uppercase flex items-center gap-2"
@@ -170,35 +224,46 @@ export const OrderReturnSection = ({
               />
             </div>
             {tab === 0 && (
-              <ReturnItemsTab
-                order={order}
-                selectedItems={selectedItems}
-                handleSelectItem={handleSelectItem}
-                returnReasons={returnReasons}
-                error={error}
-              />
+              <>
+                {returnableOrders.map((order: any) => (
+                  <ReturnItemsTab
+                    key={order.id}
+                    order={order}
+                    selectedItems={selectedItems}
+                    handleSelectItem={handleSelectItem}
+                    returnReasons={returnReasons}
+                    error={error}
+                  />
+                ))}
+              </>
             )}
             {tab === 1 && (
-              <ReturnMethodsTab
-                shippingMethods={shippingMethods}
-                handleSetReturnMethod={handleSetReturnMethod}
-                returnMethod={returnMethod}
-                seller={order.seller}
-              />
+              isLoadingShipping ? (
+                <div className="py-8 text-center">
+                  <p className="label-lg">Ładowanie metod zwrotu...</p>
+                </div>
+              ) : (
+                <ReturnMethodsTab
+                  shippingMethods={shippingMethods}
+                  handleSetReturnMethod={handleSetReturnMethod}
+                  returnMethod={returnMethod}
+                  seller={targetOrder.seller}
+                />
+              )
             )}
           </div>
           <div />
           <div className="col-span-4 md:col-span-3">
             <ReturnSummaryTab
-              currency_code={order.currency_code}
+              currency_code={primaryOrder.currency_code}
               selectedItems={selectedItems}
-              items={order.items}
+              items={returnableOrders.flatMap((o: any) => o.items || [])}
               handleTabChange={handleTabChange}
               tab={tab}
               returnMethod={returnMethod}
               handleSubmit={handleSubmit}
-              originalOrder={order}
-              shippingCost={order.shipping_total} // Extract shipping_total from order or use default
+              originalOrder={primaryOrder}
+              shippingCost={primaryOrder.shipping_total}
               isSubmitting={isSubmitting}
             />
           </div>

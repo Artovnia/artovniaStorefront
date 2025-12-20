@@ -1,5 +1,5 @@
 // F:\StronyInternetowe\mercur\ArtovniaStorefront\src\lib\helpers\parcel-statuses.ts
-export const steps = ["Zamówienie otrzymane", "W Przygotowaniu", "Wysłano", "Dostarczono"]
+export const steps = ["Zamówienie otrzymane", "W Przygotowaniu", "Wysłano", "Dostarczono", "Anulowano"]
 
 export const parcelStatuses = (
   status: string | undefined
@@ -22,7 +22,7 @@ export const parcelStatuses = (
     case "completed":  // Dodano, ponieważ order.status używa "completed"
       return 3 // Dostarczono
     case "canceled":
-      return 0 // W przypadku anulowania, pokazujemy jako "Przyjęto"
+      return 4 // Anulowano - nowy status
     default:
       console.log('Nieznany status realizacji:', status)
       return 0

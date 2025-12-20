@@ -1,6 +1,6 @@
-// Force dynamic rendering to ensure fresh data on each request
-export const dynamic = 'force-dynamic'
-export const revalidate = 0
+// Enable ISR caching with 60-second revalidation
+// Returns don't change frequently, so caching improves performance significantly
+export const revalidate = 60
 
 import { UserPageLayout } from "@/components/molecules"
 import { OrderReturnRequests } from "@/components/sections/OrderReturnRequests/OrderReturnRequests"

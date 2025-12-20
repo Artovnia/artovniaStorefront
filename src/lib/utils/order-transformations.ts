@@ -173,62 +173,21 @@ export function transformOrderSetToOrder(orderSet: OrderSet): Order & { orders?:
     order_set_display_id: orderSet.display_id,
     
     // Aggregate items from all orders
-    // Backend divides values incorrectly - use proportional distribution from payment_collections
+    // CRITICAL: Backend now correctly calculates item.total and item.discount_total
+    // We should use those values directly instead of recalculating
     items: orders.flatMap(order => {
       const items = order.items || []
       
-      // Get ACTUAL paid amount from payment_collections (source of truth)
-      const paymentAmount = order.payment_collection?.captured_amount || 
-                           orderSet.payment_collection?.amount || 
-                           order.total || 0
-      const shippingAmount = order.shipping_methods?.[0]?.amount || order.shipping_total || 1
-      const actualItemTotal = paymentAmount - shippingAmount
-      
-      // Calculate total base price
-      const totalBasePrice = items.reduce((sum: number, item: any) => 
-        sum + ((item.unit_price || 0) * (item.quantity || 1)), 0
-      )
-      
-      // Separate items into no-discount and discounted
-      const noDiscountItems = items.filter((item: any) => !item.discount_total || item.discount_total === 0)
-      const discountedItems = items.filter((item: any) => item.discount_total && item.discount_total > 0)
-      
-      // Calculate total for no-discount items (use full price)
-      const noDiscountTotal = noDiscountItems.reduce((sum: number, item: any) => 
-        sum + ((item.unit_price || 0) * (item.quantity || 1)), 0
-      )
-      
-      // Remaining amount goes to discounted items
-      const remainingForDiscounted = actualItemTotal - noDiscountTotal
-      
-      // Calculate base price for discounted items only
-      const discountedBaseTotal = discountedItems.reduce((sum: number, item: any) => 
-        sum + ((item.unit_price || 0) * (item.quantity || 1)), 0
-      )
-      
+      // Backend already handles the calculation correctly
+      // Just pass through the values with proper field mapping
       return items.map((item: any) => {
-        const baseAmount = (item.unit_price || 0) * (item.quantity || 1)
-        
-        let finalAmount: number
-        let calculatedDiscount: number
-        
-        // If item has no discount, use full price
-        if (!item.discount_total || item.discount_total === 0) {
-          finalAmount = baseAmount
-          calculatedDiscount = 0
-        } else {
-          // Distribute remaining amount proportionally among discounted items
-          finalAmount = discountedBaseTotal > 0
-            ? (baseAmount / discountedBaseTotal) * remainingForDiscounted
-            : baseAmount
-          calculatedDiscount = baseAmount - finalAmount
-        }
-        
         return {
           ...item,
-          subtotal: finalAmount,
-          total: finalAmount,
-          discount_total: calculatedDiscount,
+          // Backend provides correct values after recalculation
+          subtotal: item.total || item.subtotal || 0,
+          total: item.total || 0,
+          discount_total: item.discount_total || 0,
+          // Keep original values for debugging if needed
           _original_subtotal: item.subtotal,
           _original_total: item.total,
           _original_discount: item.discount_total
@@ -241,68 +200,14 @@ export function transformOrderSetToOrder(orderSet: OrderSet): Order & { orders?:
     shipping_methods: firstOrder?.shipping_methods || [],
     payments: firstOrder?.payments || [],
     
-    // CRITICAL: Include the detailed orders array with manual calculations
-    // Each order in this array has item_total, shipping_total, discount_total calculated
-    // ALSO apply proportional distribution to items inside each order
-    orders: orders.map(order => {
-      const items = order.items || []
-      
-      // Get ACTUAL paid amount from payment_collections
-      const paymentAmount = order.payment_collection?.captured_amount || 
-                           orderSet.payment_collection?.amount || 
-                           order.total || 0
-      const shippingAmount = order.shipping_methods?.[0]?.amount || order.shipping_total || 1
-      const actualItemTotal = paymentAmount - shippingAmount
-      
-      // Calculate total base price
-      const totalBasePrice = items.reduce((sum: number, item: any) => 
-        sum + ((item.unit_price || 0) * (item.quantity || 1)), 0
-      )
-      
-      // SMART APPROACH: Items with discount_total=0 have NO promotion, use full price
-      const noDiscountItems = items.filter((item: any) => !item.discount_total || item.discount_total === 0)
-      const discountedItems = items.filter((item: any) => item.discount_total && item.discount_total > 0)
-      
-      const noDiscountTotal = noDiscountItems.reduce((sum: number, item: any) => 
-        sum + ((item.unit_price || 0) * (item.quantity || 1)), 0
-      )
-      
-      const remainingForDiscounted = actualItemTotal - noDiscountTotal
-      
-      const discountedBaseTotal = discountedItems.reduce((sum: number, item: any) => 
-        sum + ((item.unit_price || 0) * (item.quantity || 1)), 0
-      )
-      
-      return {
-        ...order,
-        items: items.map((item: any) => {
-          const baseAmount = (item.unit_price || 0) * (item.quantity || 1)
-          
-          let finalAmount: number
-          let calculatedDiscount: number
-          
-          if (!item.discount_total || item.discount_total === 0) {
-            finalAmount = baseAmount
-            calculatedDiscount = 0
-          } else {
-            finalAmount = discountedBaseTotal > 0
-              ? (baseAmount / discountedBaseTotal) * remainingForDiscounted
-              : baseAmount
-            calculatedDiscount = baseAmount - finalAmount
-          }
-          
-          return {
-            ...item,
-            subtotal: finalAmount,
-            total: finalAmount,
-            discount_total: calculatedDiscount,
-            _original_subtotal: item.subtotal,
-            _original_total: item.total,
-            _original_discount: item.discount_total
-          }
-        })
-      }
-    }),
+    // CRITICAL: Pass through orders array with backend-calculated values
+    // Backend already correctly calculates item.total and item.discount_total
+    // DO NOT recalculate here - it causes wrong values due to BigNumber timing issues
+    orders: orders.map(order => ({
+      ...order,
+      // Keep all backend-calculated values as-is
+      // Backend handles: item.total, item.discount_total, item.subtotal
+    })),
     
     // Payment collection info
     payment_collection: orderSet.payment_collection ? {

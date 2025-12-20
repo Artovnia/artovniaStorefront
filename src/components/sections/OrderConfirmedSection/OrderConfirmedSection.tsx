@@ -82,14 +82,29 @@ export const OrderConfirmedSection = ({
   const t = translations[locale as keyof typeof translations] || translations.pl
   
   // Extract order information with fallbacks
-  const displayId = order?.display_id || order?.id?.replace('ordset_', '') || 'N/A'
+  // For order sets, extract individual order numbers from linked orders
+  const orderNumbers = order?.orders?.map((o: any) => o.display_id).filter(Boolean) || []
+  const displayId = orderNumbers.length > 0 
+    ? orderNumbers.map((num: number) => `#${num}`).join(', ')
+    : order?.display_id 
+      ? `#${order.display_id}` 
+      : order?.id?.replace('ordset_', '') || 'N/A'
+  
   const orderEmail = order?.email || order?.customer?.email
-  // CRITICAL FIX: Use payment_collection.amount (actual paid) as primary source
-  const orderTotal = order?.payment_collection?.amount || order?.total || 0
+  // Use order.total from database (already correct from order_transaction)
+  const orderTotal = order?.total || 0
   const orderCurrency = order?.currency_code || 'PLN'
   const createdAt = order?.created_at ? new Date(order.created_at) : new Date()
   const ordersCount = order?.orders?.length || 0
   const itemsCount = order?.items?.length || 0
+  
+  // Calculate aggregated totals for split orders
+  const aggregatedTotals = isOrderSet && order?.orders ? {
+    item_total: order.orders.reduce((sum: number, o: any) => sum + (o.item_total || 0), 0),
+    shipping_total: order.orders.reduce((sum: number, o: any) => sum + (o.shipping_total || 0), 0),
+    tax_total: order.orders.reduce((sum: number, o: any) => sum + (o.tax_total || 0), 0),
+    discount_total: order.orders.reduce((sum: number, o: any) => sum + (o.discount_total || 0), 0)
+  } : null
 
   // Check if order contains items from multiple sellers
   const hasMultipleSellers = () => {
@@ -213,133 +228,186 @@ export const OrderConfirmedSection = ({
           )}
 
           {/* Order Items Details */}
-          {order?.items && order.items.length > 0 && (
+          {/* For split orders, iterate through order.orders[] to get correct backend-recalculated values */}
+          {/* For single orders, use order.items[] */}
+          {((isOrderSet && order?.orders && order.orders.length > 0) || (order?.items && order.items.length > 0)) && (
             <div className="bg-stone-50 border border-stone-200 rounded-sm p-6 mb-8">
               <h3 className="text-lg font-medium text-stone-800 mb-4 font-instrument-serif">
                 {t.orderItems}
               </h3>
               <div className="space-y-4">
-                {order.items.map((item: any, index: number) => {
-                  const sellerName = item?.product?.seller?.name || item?.seller?.name || t.defaultSeller
-                  const productTitle = item?.product_title || item?.title || t.unknownProduct
-                  const variantTitle = item?.variant_title !== 'Default variant' ? item?.variant_title : ''
-                  const quantity = item?.quantity || 1
-                  const unitPrice = item?.unit_price || 0
-                  
-                  // CRITICAL FIX: Use item.subtotal (actual item value) instead of item.total
-                  // item.subtotal = unit_price * quantity (correct per-item calculation)
-                  // item.total might be incorrectly divided by backend
-                  const itemSubtotal = item?.subtotal || (unitPrice * quantity)
-                  const total = itemSubtotal
-                  const thumbnail = item?.thumbnail || item?.product?.thumbnail
-                  
-                  // DEBUG: Log item pricing
-                  console.log(`🛒 Order Item: ${productTitle}`, {
-                    unit_price: unitPrice,
-                    subtotal: item?.subtotal,
-                    total: item?.total,
-                    calculated_total: total,
-                    discount: item?.discount_total,
-                    quantity
-                  })
-                  
-                  return (
-                    <div key={index} className="flex items-start space-x-4 p-4 bg-white rounded border border-stone-100">
-                      {/* Product Image */}
-                      {thumbnail && (
-                        <div className="flex-shrink-0 w-16 h-16 bg-stone-100 rounded overflow-hidden">
-                          <img 
-                            src={thumbnail} 
-                            alt={productTitle}
-                            className="w-full h-full object-cover"
-                          />
-                        </div>
-                      )}
+                {/* For split orders, iterate through each order and its items */}
+                {isOrderSet && order?.orders ? (
+                  order.orders.flatMap((subOrder: any) => 
+                    (subOrder.items || []).map((item: any, index: number) => {
+                      // CRITICAL: Get seller from ORDER level, not item level
+                      const sellerName = subOrder?.seller?.name || t.defaultSeller
+                      const productTitle = item?.product_title || item?.title || t.unknownProduct
+                      const variantTitle = item?.variant_title !== 'Default variant' ? item?.variant_title : ''
+                      const quantity = item?.quantity || 1
                       
-                      {/* Product Details */}
-                      <div className="flex-grow min-w-0">
-                        <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-3">
-                          <div>
-                            <h4 className="text-sm font-medium text-stone-800 font-instrument-serif">
-                              {productTitle}
-                            </h4>
-                            {variantTitle && (
-                              <p className="text-xs text-stone-500 font-instrument-sans">
-                                {variantTitle}
-                              </p>
-                            )}
-                            <p className="text-xs text-stone-600 mt-1 font-instrument-sans">
-                              {t.seller}: <span className="font-medium">{sellerName}</span>
-                            </p>
-                            <p className="text-xs text-stone-500 font-instrument-sans">
-                              {t.quantity}: {quantity}
-                            </p>
-                          </div>
+                      // CRITICAL: Use item.total from backend (already recalculated with discounts)
+                      const total = item?.total || 0
+                      const thumbnail = item?.thumbnail || item?.product?.thumbnail
+                      
+                      return (
+                        <div key={`${subOrder.id}-${index}`} className="flex items-start space-x-4 p-4 bg-white rounded border border-stone-100">
+                          {/* Product Image */}
+                          {thumbnail && (
+                            <div className="flex-shrink-0 w-16 h-16 bg-stone-100 rounded overflow-hidden">
+                              <img 
+                                src={thumbnail} 
+                                alt={productTitle}
+                                className="w-full h-full object-cover"
+                              />
+                            </div>
+                          )}
                           
-                          {/* Price */}
-                          <div className="text-left md:text-right md:flex-shrink-0">
-                            <p className="text-sm font-medium text-stone-800 font-instrument-sans">
-                              {formatCurrency(total, orderCurrency)}
-                            </p>
-                            {quantity > 1 && (
-                              <p className="text-xs text-stone-500 font-instrument-sans">
-                                {/* Show per-unit promotional price, not base price */}
-                                {formatCurrency(total / quantity, orderCurrency)} {t.each}
+                          {/* Product Details */}
+                          <div className="flex-grow min-w-0">
+                            <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-3">
+                              <div>
+                                <h4 className="text-sm font-medium text-stone-800 font-instrument-serif">
+                                  {productTitle}
+                                </h4>
+                                {variantTitle && (
+                                  <p className="text-xs text-stone-500 font-instrument-sans">
+                                    {variantTitle}
+                                  </p>
+                                )}
+                                <p className="text-xs text-stone-600 mt-1 font-instrument-sans">
+                                  {t.seller}: <span className="font-medium">{sellerName}</span>
+                                </p>
+                                <p className="text-xs text-stone-500 font-instrument-sans">
+                                  {t.quantity}: {quantity}
+                                </p>
+                              </div>
+                              
+                              {/* Price */}
+                              <div className="text-left md:text-right md:flex-shrink-0">
+                                <p className="text-sm font-medium text-stone-800 font-instrument-sans">
+                                  {formatCurrency(total, orderCurrency)}
+                                </p>
+                                {quantity > 1 && (
+                                  <p className="text-xs text-stone-500 font-instrument-sans">
+                                    {formatCurrency(total / quantity, orderCurrency)} {t.each}
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      )
+                    })
+                  )
+                ) : (
+                  /* Single order - use order.items directly */
+                  (order.items || []).map((item: any, index: number) => {
+                    const sellerName = order?.seller?.name || t.defaultSeller
+                    const productTitle = item?.product_title || item?.title || t.unknownProduct
+                    const variantTitle = item?.variant_title !== 'Default variant' ? item?.variant_title : ''
+                    const quantity = item?.quantity || 1
+                    const total = item?.total || 0
+                    const thumbnail = item?.thumbnail || item?.product?.thumbnail
+                    
+                    return (
+                      <div key={index} className="flex items-start space-x-4 p-4 bg-white rounded border border-stone-100">
+                        {/* Product Image */}
+                        {thumbnail && (
+                          <div className="flex-shrink-0 w-16 h-16 bg-stone-100 rounded overflow-hidden">
+                            <img 
+                              src={thumbnail} 
+                              alt={productTitle}
+                              className="w-full h-full object-cover"
+                            />
+                          </div>
+                        )}
+                        
+                        {/* Product Details */}
+                        <div className="flex-grow min-w-0">
+                          <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-3">
+                            <div>
+                              <h4 className="text-sm font-medium text-stone-800 font-instrument-serif">
+                                {productTitle}
+                              </h4>
+                              {variantTitle && (
+                                <p className="text-xs text-stone-500 font-instrument-sans">
+                                  {variantTitle}
+                                </p>
+                              )}
+                              <p className="text-xs text-stone-600 mt-1 font-instrument-sans">
+                                {t.seller}: <span className="font-medium">{sellerName}</span>
                               </p>
-                            )}
+                              <p className="text-xs text-stone-500 font-instrument-sans">
+                                {t.quantity}: {quantity}
+                              </p>
+                            </div>
+                            
+                            {/* Price */}
+                            <div className="text-left md:text-right md:flex-shrink-0">
+                              <p className="text-sm font-medium text-stone-800 font-instrument-sans">
+                                {formatCurrency(total, orderCurrency)}
+                              </p>
+                              {quantity > 1 && (
+                                <p className="text-xs text-stone-500 font-instrument-sans">
+                                  {formatCurrency(total / quantity, orderCurrency)} {t.each}
+                                </p>
+                              )}
+                            </div>
                           </div>
                         </div>
                       </div>
-                    </div>
-                  )
-                })}
+                    )
+                  })
+                )}
               </div>
             </div>
           )}
 
           {/* Price Breakdown */}
-          {order && (order.item_total !== undefined || order.shipping_total !== undefined || order.tax_total !== undefined || order.discount_total !== undefined) && (
+          {/* For split orders, check if we have aggregated totals. For single orders, check order fields */}
+          {(aggregatedTotals || (order && (order.item_total !== undefined || order.shipping_total !== undefined || order.tax_total !== undefined || order.discount_total !== undefined))) && (
             <div className="bg-stone-50 border border-stone-200 rounded-sm p-6 mb-8">
               <h3 className="text-lg font-medium text-stone-800 mb-4 font-instrument-serif">
                 {t.priceBreakdown}
               </h3>
               <div className="space-y-3">
                 {/* Item Total */}
-                {order.item_total !== undefined && (
+                {(aggregatedTotals?.item_total !== undefined || order.item_total !== undefined) && (
                   <div className="flex justify-between items-center">
                     <span className="text-sm text-stone-600 font-instrument-sans">{t.subtotal}</span>
                     <span className="text-sm font-medium text-stone-800 font-instrument-sans">
-                      {formatCurrency(order.item_total, orderCurrency)}
+                      {formatCurrency(aggregatedTotals?.item_total || order.item_total, orderCurrency)}
                     </span>
                   </div>
                 )}
                 
                 {/* Shipping Total */}
-                {order.shipping_total !== undefined && order.shipping_total > 0 && (
+                {((aggregatedTotals?.shipping_total !== undefined && aggregatedTotals.shipping_total > 0) || (order.shipping_total !== undefined && order.shipping_total > 0)) && (
                   <div className="flex justify-between items-center">
                     <span className="text-sm text-stone-600 font-instrument-sans">{t.shipping}</span>
                     <span className="text-sm font-medium text-stone-800 font-instrument-sans">
-                      {formatCurrency(order.shipping_total, orderCurrency)}
+                      {formatCurrency(aggregatedTotals?.shipping_total || order.shipping_total, orderCurrency)}
                     </span>
                   </div>
                 )}
                 
                 {/* Tax Total */}
-                {order.tax_total !== undefined && order.tax_total > 0 && (
+                {((aggregatedTotals?.tax_total !== undefined && aggregatedTotals.tax_total > 0) || (order.tax_total !== undefined && order.tax_total > 0)) && (
                   <div className="flex justify-between items-center">
                     <span className="text-sm text-stone-600 font-instrument-sans">{t.tax}</span>
                     <span className="text-sm font-medium text-stone-800 font-instrument-sans">
-                      {formatCurrency(order.tax_total, orderCurrency)}
+                      {formatCurrency(aggregatedTotals?.tax_total || order.tax_total, orderCurrency)}
                     </span>
                   </div>
                 )}
                 
                 {/* Discount Total */}
-                {order.discount_total !== undefined && order.discount_total > 0 && (
+                {((aggregatedTotals?.discount_total !== undefined && aggregatedTotals.discount_total > 0) || (order.discount_total !== undefined && order.discount_total > 0)) && (
                   <div className="flex justify-between items-center">
                     <span className="text-sm text-green-600 font-instrument-sans">-{t.discount}</span>
                     <span className="text-sm font-medium text-green-600 font-instrument-sans">
-                      -{formatCurrency(order.discount_total, orderCurrency)}
+                      -{formatCurrency(aggregatedTotals?.discount_total || order.discount_total, orderCurrency)}
                     </span>
                   </div>
                 )}

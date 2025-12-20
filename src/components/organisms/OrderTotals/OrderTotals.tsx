@@ -8,34 +8,25 @@ export const OrderTotals = ({ orderSet }: { orderSet: any }) => {
                        orderSet.orders?.[0]?.currency_code || 
                        'PLN'
 
-  
+  // Get order numbers from linked orders
+  const orderNumbers = (orderSet.orders || [])
+    .map((order: any) => order.display_id)
+    .filter(Boolean)
+    .sort((a: number, b: number) => a - b)
 
   // Calculate totals from individual orders
   const totals = (orderSet.orders || []).reduce((acc: any, order: any) => {
     const orderTotal = order.total || 0
     
-    // Calculate item subtotal from order.item_total or sum of items
-    let itemSubtotal = 0
-    
-    // PRIORITY 1: Use order.item_total if available (most accurate)
-    if (order.item_total !== undefined && order.item_total !== null) {
-      itemSubtotal = order.item_total
-    } 
-    // PRIORITY 2: Use order.subtotal (includes items but not shipping)
-    else if (order.subtotal !== undefined && order.subtotal !== null) {
-      itemSubtotal = order.subtotal
-    }
-    // PRIORITY 3: Calculate from individual items
-    else {
-      itemSubtotal = (order.items || []).reduce((itemAcc: number, item: any) => {
-        // Use item.total (actual price paid with promotions)
-        // item.total already includes promotional discounts and quantity
-        const itemTotal = item.total || ((item.unit_price || 0) * (item.quantity || 0))
-        return itemAcc + itemTotal
-      }, 0)
-    }
-    
-    
+    // CRITICAL FIX: Always calculate item subtotal from actual item totals
+    // Backend's order.item_total has incorrect negative values
+    // We must sum the actual item.total values which include promotional discounts
+    const itemSubtotal = (order.items || []).reduce((itemAcc: number, item: any) => {
+      // Use item.total (actual price paid with promotions)
+      // item.total already includes promotional discounts and quantity
+      const itemTotal = item.total || ((item.unit_price || 0) * (item.quantity || 1))
+      return itemAcc + itemTotal
+    }, 0)
     
     // Calculate shipping cost
     let shippingCost = 0
@@ -71,6 +62,13 @@ export const OrderTotals = ({ orderSet }: { orderSet: any }) => {
 
   return (
     <Card className="mb-8 p-4 border-b border-[#3B3634]">
+      {orderNumbers.length > 0 && (
+        <p className="text-secondary label-md mb-4 font-instrument-sans">
+          Zamówienia: <span className="text-black font-semibold">
+            {orderNumbers.map((num: number) => `#${num}`).join(', ')}
+          </span>
+        </p>
+      )}
       <p className="text-secondary label-md mb-2 font-instrument-sans flex justify-between ">
         Podsumowanie:
         <span className="text-black font-instrument-sans">
