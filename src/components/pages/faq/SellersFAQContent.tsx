@@ -53,8 +53,8 @@ const SellersFAQContent = () => {
               <Disclosure.Panel className="pt-4 text-gray-700 space-y-3">
                 <p>
                   Wystarczy wejść na stronę Artovnia, w prawym górnym rogu
-                  kliknąć „ZAŁÓŻ SKLEP" i wypełnić formularz rejestracyjny,
-                  akceptując regulamin.
+                  kliknąć &ldquo;ZAŁÓŻ SKLEP&rdquo; i wypełnić formularz
+                  rejestracyjny, akceptując regulamin.
                 </p>
               </Disclosure.Panel>
             </>
@@ -546,8 +546,8 @@ const SellersFAQContent = () => {
               </Disclosure.Button>
               <Disclosure.Panel className="pt-4 text-gray-700 space-y-3">
                 <p>
-                  Na stronie znajduje się poradnik „krok po kroku", dostępny w
-                  stopce lub w sekcji dla sprzedawców.
+                  Na stronie znajduje się poradnik &ldquo;krok po kroku&rdquo;,
+                  dostępny w stopce lub w sekcji dla sprzedawców.
                 </p>
               </Disclosure.Panel>
             </>
@@ -599,8 +599,8 @@ const SellersFAQContent = () => {
                   Twoje prace mogą zostać pokazane na naszych social mediach, w
                   płatnych reklamach, dedykowanych artykułach o Twojej
                   twórczości oraz w wyróżnionych sekcjach na stronie (np.
-                  „Sprzedawca tygodnia"). Wybrane produkty mogą również pojawić
-                  się w artykułach na naszym blogu.
+                  &ldquo;Sprzedawca tygodnia&rdquo;). Wybrane produkty mogą
+                  również pojawić się w artykułach na naszym blogu.
                 </p>
               </Disclosure.Panel>
             </>
