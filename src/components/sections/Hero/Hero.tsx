@@ -10,6 +10,7 @@ export interface HeroBanner {
   url?: string
   content?: {
     heading?: string
+    subheading?: string
     paragraph?: string
     cta?: string
     alignment?: 'left' | 'center' | 'right'
@@ -53,9 +54,17 @@ export const Hero = ({
             <div className={`absolute inset-0 z-10 flex items-${firstBanner.content.verticalAlignment || 'center'} justify-${firstBanner.content.alignment || 'center'} px-4 sm:px-6 lg:px-8`}>
               <div className={`w-full text-${firstBanner.content.alignment || 'center'}`}>
                 {firstBanner.content.heading && (
-                  <h1 className="text-3xl sm:text-4xl lg:text-5xl font-instrument-serif text-white mb-4 sm:mb-6 ">
+                  <h1 className={`text-3xl sm:text-4xl lg:text-5xl text-white mb-4 sm:mb-6 ${
+                    firstBanner.id === 'nowy-rok' ? 'font-instrument-serif italic' : 'font-instrument-serif'
+                  }`}>
                     {firstBanner.content.heading}
                   </h1>
+                )}
+                
+                {firstBanner.content.subheading && (
+                  <h2 className="text-4xl sm:text-5xl lg:text-7xl font-instrument-serif uppercase text-white mb-4 sm:mb-6">
+                    {firstBanner.content.subheading}
+                  </h2>
                 )}
                 
                 {firstBanner.content.paragraph && (

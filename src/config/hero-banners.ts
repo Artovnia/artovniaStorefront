@@ -3,6 +3,19 @@ import type { HeroBanner } from "@/components/sections/Hero/Hero"
 
 
 export const HERO_BANNERS: HeroBanner[] = [
+
+  {
+    id: "nowy-rok",
+    image: "/images/hero/Hero06.webp",
+    mobileImage: "/images/hero/Hero06-mobile.webp",
+    alt: "Szczęśliwego Nowego Roku 2026",
+    url: "/categories",
+    content: {
+      heading: "Szczęśliwego",
+      subheading: "NOWEGO ROKU 2026",
+      paragraph: "Życzy zespół Artovnia"
+    }
+  },
   {
     id: "main-odkrywaj",
     image: "/images/hero/Hero01.webp",
