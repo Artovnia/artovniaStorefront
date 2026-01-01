@@ -8,6 +8,7 @@ export interface HeroBanner {
   mobileImage?: string
   alt: string
   url?: string
+  objectPosition?: string
   content?: {
     heading?: string
     subheading?: string
@@ -42,6 +43,7 @@ export const Hero = ({
             alt={firstBanner.alt}
             fill
             className="object-cover"
+            style={{ objectPosition: firstBanner.objectPosition || 'center' }}
             priority
             fetchPriority="high"
             quality={HERO_CONFIG.imageQuality}

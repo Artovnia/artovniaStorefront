@@ -6,6 +6,9 @@ import { ArrowLeftIcon, ArrowRightIcon } from "@/icons"
 import { HeroBanner } from "./Hero"
 import { HERO_CONFIG } from "@/config/hero-banners"
 
+// Track image loading errors for debugging
+const imageLoadErrors = new Set<string>()
+
 interface HeroClientProps {
   banners: HeroBanner[]
   className?: string
@@ -126,10 +129,23 @@ export const HeroClient = ({
                 alt={banner.alt}
                 fill
                 className="object-cover transition-transform duration-700 group-hover:scale-105"
-                priority={index === 0}
-                fetchPriority={index === 0 ? "high" : "auto"}
+                style={{ objectPosition: banner.objectPosition || 'center' }}
+                priority={index < HERO_CONFIG.priorityLoadCount}
+                loading={index < HERO_CONFIG.priorityLoadCount ? "eager" : "eager"}
+                fetchPriority={index < HERO_CONFIG.priorityLoadCount ? "high" : "auto"}
                 quality={HERO_CONFIG.imageQuality}
                 sizes="100vw"
+                onError={(e) => {
+                  if (!imageLoadErrors.has(banner.id)) {
+                    imageLoadErrors.add(banner.id)
+                    console.error(`[Hero] Failed to load image for banner: ${banner.id}`, banner.image)
+                  }
+                }}
+                onLoad={() => {
+                  if (process.env.NODE_ENV === 'development') {
+                    console.log(`[Hero] Image loaded successfully: ${banner.id}`)
+                  }
+                }}
               />
               
               <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />

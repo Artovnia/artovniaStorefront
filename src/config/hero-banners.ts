@@ -10,6 +10,7 @@ export const HERO_BANNERS: HeroBanner[] = [
     mobileImage: "/images/hero/Hero06-mobile.webp",
     alt: "Szczęśliwego Nowego Roku 2026",
     url: "/categories",
+    objectPosition: 'left center',
     content: {
       heading: "Szczęśliwego",
       subheading: "NOWEGO ROKU 2026",
