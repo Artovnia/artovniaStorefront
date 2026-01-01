@@ -81,5 +81,5 @@ export const HERO_CONFIG = {
   resumeAfterManualNavigation: 12000,
   transitionDuration: 700,
   imageQuality: 90,
-  priorityLoadCount: 2
+  priorityLoadCount: 5 // Load all carousel images with priority to prevent production loading issues
 }

@@ -131,20 +131,24 @@ export const HeroClient = ({
                 className="object-cover transition-transform duration-700 group-hover:scale-105"
                 style={{ objectPosition: banner.objectPosition || 'center' }}
                 priority={index < HERO_CONFIG.priorityLoadCount}
-                loading={index < HERO_CONFIG.priorityLoadCount ? "eager" : "eager"}
+                loading="eager"
                 fetchPriority={index < HERO_CONFIG.priorityLoadCount ? "high" : "auto"}
                 quality={HERO_CONFIG.imageQuality}
                 sizes="100vw"
+                unoptimized={banner.id === 'obrazy'}
                 onError={(e) => {
                   if (!imageLoadErrors.has(banner.id)) {
                     imageLoadErrors.add(banner.id)
-                    console.error(`[Hero] Failed to load image for banner: ${banner.id}`, banner.image)
+                    console.error(`[Hero] ❌ Failed to load image for banner: ${banner.id}`, {
+                      image: banner.image,
+                      index,
+                      priority: index < HERO_CONFIG.priorityLoadCount,
+                      error: e
+                    })
                   }
                 }}
                 onLoad={() => {
-                  if (process.env.NODE_ENV === 'development') {
-                    console.log(`[Hero] Image loaded successfully: ${banner.id}`)
-                  }
+                  console.log(`[Hero] ✅ Image loaded successfully: ${banner.id} (index: ${index})`, banner.image)
                 }}
               />
               
