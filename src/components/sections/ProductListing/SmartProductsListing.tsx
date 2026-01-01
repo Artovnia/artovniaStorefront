@@ -31,9 +31,15 @@ interface SmartProductsListingProps {
 }
 
 /**
- * Smart component that chooses between Algolia and Database based on bot detection
- * - Bots get database queries (better for SEO, no Algolia costs)
- * - Human users get Algolia (better UX with instant search)
+ * DEPLOYMENT-SAFE Smart Product Listing
+ * 
+ * Strategy:
+ * - Bots (confirmed) → Database listing (better for SEO, no Algolia costs)
+ * - Humans (default) → Algolia listing (better UX with instant search)
+ * - Uncertain (env issues, cold starts) → Algolia (prefer user experience)
+ * 
+ * This prevents users from seeing database listings during deployments
+ * when environment variables may be temporarily unavailable.
  */
 export const SmartProductsListing = (props: SmartProductsListingProps) => {
   const {
@@ -52,13 +58,12 @@ export const SmartProductsListing = (props: SmartProductsListingProps) => {
   const ALGOLIA_SEARCH_KEY = process.env.NEXT_PUBLIC_ALGOLIA_SEARCH_KEY
   const hasAlgoliaConfig = !!(ALGOLIA_ID && ALGOLIA_SEARCH_KEY)
 
-  // ✅ OPTIMIZED: Use server-side bot detection directly (no hydration delay)
-  // Bot detection happens on server, so we can use it immediately
-  const isBot = serverSideIsBot
-  const shouldUseAlgolia = hasAlgoliaConfig && !isBot
+  // 🎯 CRITICAL CHANGE: Only use database for CONFIRMED bots
+  // Default to Algolia for humans and uncertain cases
+  const isConfirmedBot = serverSideIsBot === true
 
-  // Force database mode if no Algolia config
-  if (!hasAlgoliaConfig) {
+  // ✅ DEPLOYMENT-SAFE: Use database ONLY for confirmed bots
+  if (isConfirmedBot) {
     return (
       <ProductListing
         category_id={category_id}
@@ -71,24 +76,9 @@ export const SmartProductsListing = (props: SmartProductsListingProps) => {
     )
   }
 
-  // Bot detected - use database listing
-  if (isBot) {
-    // Using database listing for bot
-    return (
-      <ProductListing
-        category_id={category_id}
-        category_ids={category_ids}
-        collection_id={collection_id}
-        seller_id={seller_handle}
-        categories={categories}
-        currentCategory={currentCategory}
-      />
-    )
-  }
-
-  // Human user with Algolia config - use Algolia
-  if (shouldUseAlgolia) {
-    // Using Algolia for human user
+  // ✅ DEPLOYMENT-SAFE: Prefer Algolia for all non-bot traffic
+  // Even if env temporarily unavailable, try Algolia (client-side will handle gracefully)
+  if (hasAlgoliaConfig) {
     return (
       <AlgoliaProductsListing
         category_id={category_id}
@@ -102,7 +92,8 @@ export const SmartProductsListing = (props: SmartProductsListingProps) => {
     )
   }
 
-  // Fallback to database listing
+  // ⚠️ FALLBACK: Only use database if Algolia config truly missing
+  // This should only happen in development or if Algolia is intentionally disabled
   return (
     <ProductListing
       category_id={category_id}

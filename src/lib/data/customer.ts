@@ -63,7 +63,6 @@ export const retrieveCustomer =
     }
     } catch (error) {
       // Handle static generation gracefully - cookies() not available during build
-      console.log('retrieveCustomer: Running in static generation mode, skipping auth check')
       return null
     }
   }

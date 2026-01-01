@@ -26,9 +26,18 @@ const StripeReturnPageContent: React.FC = () => {
         const paymentIntent = searchParams.get('payment_intent')
         const paymentIntentClientSecret = searchParams.get('payment_intent_client_secret')
         const redirectStatus = searchParams.get('redirect_status')
+        const sessionId = searchParams.get('session_id') // Stripe Checkout Session ID
         const cartId = searchParams.get('cart_id')
         const status = searchParams.get('status') // Our custom status parameter
         
+        console.log('🔍 Stripe Return Page - URL Parameters:', {
+          paymentIntent,
+          sessionId,
+          redirectStatus,
+          cartId,
+          status,
+          allParams: Object.fromEntries(searchParams.entries())
+        })
         
         if (!cartId) {
           throw new Error('Missing cart_id parameter')
@@ -36,20 +45,193 @@ const StripeReturnPageContent: React.FC = () => {
         
         // Use our custom status parameter if redirect_status is not available
         const finalStatus = redirectStatus || status
+        
+        console.log('🔍 Final Status:', finalStatus)
 
         if (finalStatus === 'succeeded' || finalStatus === 'success') {
           
-          // For Stripe Checkout payments, the payment providers now automatically detect
-          // completed Stripe Checkout sessions and authorize the payment accordingly
-          try {
-            
-            // Use placeOrder function directly (bypassing server action routing issues)
-            let result
+          // 🛡️ SAFEGUARD: Retry logic with exponential backoff
+          // If order completion fails after successful payment, we'll:
+          // 1. Retry up to 3 times (handles transient failures)
+          // 2. Trigger automatic refund if all retries fail
+          
+          let result
+          let lastError: Error | null = null
+          const maxRetries = 3
+          
+          for (let attempt = 1; attempt <= maxRetries; attempt++) {
             try {
               result = await placeOrder(cartId, true)
+              // Success! Break out of retry loop
+              break
             } catch (placeOrderError: any) {
+              lastError = placeOrderError
+              
+              if (attempt < maxRetries) {
+                // Exponential backoff: 1s, 2s, 4s
+                const delay = 1000 * Math.pow(2, attempt - 1)
+                await new Promise(resolve => setTimeout(resolve, delay))
+                continue
+              }
+              
+              // All retries exhausted - result remains undefined
               result = undefined
             }
+          }
+          
+          // 🛡️ SAFEGUARD: If all retries failed, trigger automatic refund
+          if (!result && lastError && cartId) {
+            try {
+              // Get publishable API key for authentication
+              const publishableKey = process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY
+              
+              // 🔍 Get the real Stripe payment intent
+              // Priority 1: If we have a session_id, get payment intent from Stripe Checkout Session
+              // Priority 2: Get from cart's payment collection (for webhook-updated sessions)
+              let realPaymentIntentId = paymentIntent
+              
+              try {
+                // Try to get payment intent from session_id first (most reliable for Checkout)
+                if (sessionId) {
+                  console.log('🔍 Retrieving payment intent from Stripe Checkout Session:', sessionId)
+                  const sessionResponse = await fetch(
+                    `${process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL}/store/stripe/session-payment-intent?session_id=${sessionId}`,
+                    {
+                      headers: {
+                        'x-publishable-api-key': publishableKey || ''
+                      }
+                    }
+                  )
+                  
+                  if (sessionResponse.ok) {
+                    const sessionData = await sessionResponse.json()
+                    if (sessionData.paymentIntentId) {
+                      realPaymentIntentId = sessionData.paymentIntentId
+                      console.log('✅ Retrieved real payment intent from session:', realPaymentIntentId)
+                    }
+                  }
+                } else {
+                  // Fallback: Try to get from cart payment collection
+                  console.log('🔍 Retrieving payment intent from cart payment collection')
+                  const paymentIntentResponse = await fetch(
+                    `${process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL}/store/carts/${cartId}/stripe-payment-intent`,
+                    {
+                      headers: {
+                        'x-publishable-api-key': publishableKey || ''
+                      }
+                    }
+                  )
+                  
+                  if (paymentIntentResponse.ok) {
+                    const paymentIntentData = await paymentIntentResponse.json()
+                    
+                    // Use the real payment intent if found
+                    if (paymentIntentData.paymentIntentId) {
+                      realPaymentIntentId = paymentIntentData.paymentIntentId
+                      console.log('✅ Retrieved real payment intent from cart:', realPaymentIntentId)
+                    }
+                  
+                    // Check if this is a placeholder payment
+                    if (paymentIntentData.isPlaceholder) {
+                      console.warn('🧪 Skipping refund for placeholder payment:', realPaymentIntentId)
+                      setError(
+                        locale === 'pl'
+                          ? `🧪 TRYB TESTOWY: Zamówienie nie powiodło się (symulacja). W trybie produkcyjnym płatność zostałaby automatycznie zwrócona. ID płatności: ${realPaymentIntentId}`
+                          : `🧪 TEST MODE: Order failed (simulated). In production, payment would be automatically refunded. Payment ID: ${realPaymentIntentId}`
+                      )
+                      
+                      setTimeout(() => {
+                        router.push('/')
+                      }, 5000)
+                      
+                      return
+                    }
+                  }
+                }
+              } catch (paymentIntentError) {
+                console.error('Failed to retrieve real payment intent:', paymentIntentError)
+                // Continue with the payment intent from URL if retrieval fails
+              }
+              
+              // Verify this is a real Stripe payment intent
+              const isRealStripePayment = realPaymentIntentId?.startsWith('pi_')
+              
+              if (!isRealStripePayment) {
+                console.warn('🧪 Skipping refund for non-Stripe payment:', realPaymentIntentId)
+                setError(
+                  locale === 'pl'
+                    ? `🧪 TRYB TESTOWY: Zamówienie nie powiodło się (symulacja). W trybie produkcyjnym płatność zostałaby automatycznie zwrócona. ID płatności: ${realPaymentIntentId}`
+                    : `🧪 TEST MODE: Order failed (simulated). In production, payment would be automatically refunded. Payment ID: ${realPaymentIntentId}`
+                )
+                
+                setTimeout(() => {
+                  router.push('/')
+                }, 5000)
+                
+                return
+              }
+              
+              // Trigger automatic refund for real Stripe payment
+              console.log('💰 Triggering automatic refund for payment:', realPaymentIntentId)
+              
+              const refundResponse = await fetch(
+                `${process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL}/store/stripe/refund-safeguard`,
+                {
+                  method: 'POST',
+                  headers: { 
+                    'Content-Type': 'application/json',
+                    'x-publishable-api-key': publishableKey || ''
+                  },
+                  body: JSON.stringify({
+                    cartId,
+                    paymentIntentId: realPaymentIntentId,
+                    reason: `Order completion failed after ${maxRetries} attempts: ${lastError.message}`
+                  })
+                }
+              )
+              
+              if (refundResponse.ok) {
+                const refundData = await refundResponse.json()
+                
+                // Check if this was a test mode response
+                if (refundData.testMode) {
+                  setError(
+                    locale === 'pl'
+                      ? `🧪 TRYB TESTOWY: Zamówienie nie powiodło się (symulacja). W trybie produkcyjnym płatność zostałaby automatycznie zwrócona. ID płatności: ${paymentIntent}`
+                      : `🧪 TEST MODE: Order failed (simulated). In production, payment would be automatically refunded. Payment ID: ${paymentIntent}`
+                  )
+                } else {
+                  // Show user-friendly refund message for real refunds
+                  setError(
+                    locale === 'pl' 
+                      ? `Płatność została automatycznie zwrócona. Kwota zostanie zwrócona na Twoje konto w ciągu 5-10 dni roboczych. Przepraszamy za niedogodności. Numer płatności: ${paymentIntent}`
+                      : `Payment has been automatically refunded. The amount will be returned to your account within 5-10 business days. We apologize for the inconvenience. Payment ID: ${paymentIntent}`
+                  )
+                }
+                
+                // Redirect to homepage after showing error
+                setTimeout(() => {
+                  router.push('/')
+                }, 5000)
+                
+                return
+              }
+            } catch (refundError) {
+              // Refund safeguard failed - show contact support message
+            }
+            
+            // If refund failed or wasn't triggered, show contact support message
+            setError(
+              locale === 'pl'
+                ? `Płatność zakończona sukcesem, ale finalizacja zamówienia nie powiodła się. Skontaktuj się z obsługą klienta podając numer płatności: ${paymentIntent}`
+                : `Payment succeeded but order completion failed. Please contact support with payment ID: ${paymentIntent}`
+            )
+            
+            return
+          }
+          
+          // Continue with normal flow if order was placed successfully
+          try {
          
             
             // Clear the cart completely after successful completion
@@ -97,7 +279,12 @@ const StripeReturnPageContent: React.FC = () => {
             }
             
           } catch (error: any) {
-            setError(locale === 'pl' ? 'Płatność zakończona sukcesem, ale finalizacja zamówienia nie powiodła się. Skontaktuj się z obsługą klienta.' : 'Payment succeeded but order completion failed. Please contact support.')
+            // This catch block should rarely be hit now due to retry logic above
+            setError(
+              locale === 'pl' 
+                ? `Płatność zakończona sukcesem, ale finalizacja zamówienia nie powiodła się. Skontaktuj się z obsługą klienta podając numer płatności: ${paymentIntent || 'nieznany'}`
+                : `Payment succeeded but order completion failed. Please contact support with payment ID: ${paymentIntent || 'unknown'}`
+            )
           }
           
         } else if (finalStatus === 'failed') {

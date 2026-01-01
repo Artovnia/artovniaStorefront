@@ -2,6 +2,7 @@ import { LoginForm, ParcelAccordion, UserPageLayout } from "@/components/molecul
 import { retrieveCustomer } from "@/lib/data/customer"
 import { OrdersPagination } from "@/components/sections"
 import { listOrderSets } from "@/lib/data/orders"
+import { transformOrderSetToOrder } from "@/lib/utils/order-transformations"
 
 const LIMIT = 10
 
@@ -39,13 +40,13 @@ export default async function UserPage({
   // Calculate total pages based on count from backend
   const pages = Math.ceil(count / LIMIT)
 
-  // Transform order sets to display format
-  const processedOrders = order_sets.map((orderSet: any) => {
-    // Use payment_collection.amount as the authoritative total
-    const orderSetTotal = orderSet.payment_collection?.amount || 
-      (orderSet.orders || []).reduce((sum: number, order: any) => {
-        return sum + (order.total || 0)
-      }, 0)
+
+  // CRITICAL: Transform order sets using the same logic as order details page
+  // This ensures items have correct subtotal, total, discount_total, unit_price, and quantity
+  const processedOrders = order_sets.map((orderSet: any, index: number) => {
+    // Use transformOrderSetToOrder to get properly structured data
+    const transformedOrder = transformOrderSetToOrder(orderSet)
+    
     
     // Get order numbers from linked orders
     const orderNumbers = (orderSet.orders || [])
@@ -54,15 +55,26 @@ export default async function UserPage({
       .sort((a: number, b: number) => a - b)
     
     return {
-      id: orderSet.id,
-      orders: orderSet.orders || [],
-      created_at: orderSet.created_at,
-      display_id: orderSet.display_id,
-      order_numbers: orderNumbers, // Array of actual order numbers
-      total: orderSetTotal,
-      currency_code: orderSet.orders?.[0]?.currency_code || 'PLN',
+      id: transformedOrder.id,
+      orders: transformedOrder.orders || [],
+      created_at: transformedOrder.created_at,
+      display_id: transformedOrder.display_id,
+      order_numbers: orderNumbers,
+      total: transformedOrder.total || 0,
+      currency_code: transformedOrder.currency_code || 'PLN',
     }
   })
+  
+  
+  if (processedOrders[0]) {
+   
+    
+    // Log what will be passed to ParcelAccordion
+    const itemsForAccordion = processedOrders[0].orders.flatMap((order: any) => order.items || [])
+   
+    
+  }
+
 
   return (
     <UserPageLayout title="Zamówienia">
@@ -75,7 +87,7 @@ export default async function UserPage({
               ? orderSet.order_numbers.map((num: number) => `#${num}`).join(', ')
               : `#${orderSet.display_id}`
             }
-            createdAt={orderSet.created_at}
+            createdAt={orderSet.created_at || new Date().toISOString()}
             total={orderSet.total}
             items={orderSet.orders.flatMap((order: any) => order.items || [])}
             currency_code={orderSet.currency_code}

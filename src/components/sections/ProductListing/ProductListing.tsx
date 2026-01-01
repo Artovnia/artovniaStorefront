@@ -6,6 +6,7 @@ import { ProductCard } from "@/components/organisms"
 import { BatchPriceProvider } from "@/components/context/BatchPriceProvider"
 import { CategorySidebar } from "@/components/organisms"
 import { ProductFilterBar } from "@/components/organisms"
+import Link from "next/link"
 // Simple loading component since skeleton import has issues
 const ProductListingSkeleton = () => (
   <div className="animate-pulse">
@@ -182,6 +183,19 @@ export const ProductListing = ({
 
   return (
     <>
+      {/* Bot Detection Message */}
+      <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6 mb-6 text-center">
+        <p className="text-gray-800 text-lg">
+          Ta strona przeznaczona jest dla botów. Jeżeli ją widzisz, prosimy o zgłoszenie problemu w{" "}
+          <Link 
+            href="/support" 
+            className="text-secondary hover:text-primary underline transition-colors duration-200"
+          >
+            Kontakt
+          </Link>
+        </p>
+      </div>
+
       {/* Main Layout: (Results Count + Category Sidebar) + (Filter Bar + Products) */}
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
         {/* Left Column: Results Count + Category Sidebar - Hidden below 768px (md breakpoint) */}

@@ -63,13 +63,16 @@ const Form = ({ compact, redirectUrl, onSuccess }: { compact: boolean; redirectU
     }
     setError("")
     
+    // Dispatch auth event to update Header component
+    window.dispatchEvent(new Event('auth:login'))
+    
     // Sync guest wishlist to database after successful login
     if (guestWishlist.length > 0) {
-      console.log(`🔄 Syncing ${guestWishlist.length} guest wishlist items after login...`)
+    
       try {
         await syncGuestWishlistToDatabase(guestWishlist)
         clearGuestWishlist()
-        console.log('✅ Guest wishlist synced and cleared')
+       
       } catch (error) {
         console.error('❌ Failed to sync guest wishlist:', error)
       }
@@ -119,6 +122,9 @@ const Form = ({ compact, redirectUrl, onSuccess }: { compact: boolean; redirectU
       }
       
       if (result?.success) {
+        // Dispatch auth event to update Header component
+        window.dispatchEvent(new Event('auth:login'))
+        
         // Priority 1: Redirect URL from query parameter
         if (redirectUrl) {
           router.push(redirectUrl)

@@ -43,8 +43,8 @@ type SimpleShippingOption = {
 }
 
 /**
- * Fetches shipping methods available for a cart
- * This function implements multiple fallback strategies to ensure shipping options are retrieved
+ * Fetches shipping methods available for a cart with capacity aggregation
+ * This function uses the aggregated endpoint that filters options based on cart item capacities
  */
 export const listCartShippingMethods = async (
   cartId: string,
@@ -63,6 +63,36 @@ export const listCartShippingMethods = async (
   const cacheOptions = {
     ...(await getCacheOptions("fulfillment")),
     ...next
+  }
+
+  // Try aggregated endpoint first (with capacity filtering)
+  try {
+    const aggregatedResponse = await sdk.client.fetch<{ 
+      shipping_options: ExtendedShippingMethod[] 
+      aggregation_info?: any
+    }>(
+      `/store/shipping-options/aggregated`,
+      {
+        method: "GET",
+        query: { cart_id: cartId },
+        headers: authHeaders,
+        cache: "no-store",
+      }
+    )
+
+    if (aggregatedResponse?.shipping_options && Array.isArray(aggregatedResponse.shipping_options)) {
+      
+      
+      return aggregatedResponse.shipping_options.map((option: any) => ({
+        ...option,
+        rules: option.rules || [],
+        seller_id: option.seller_id || '',
+        price_type: option.price_type || 'flat',
+        seller_name: option.seller_name
+      }))
+    }
+  } catch (aggregatedError: any) {
+    console.warn(`⚠️ [Aggregated Shipping] Aggregated endpoint failed, falling back to standard endpoint:`, aggregatedError.message)
   }
 
   // Using the ExtendedShippingMethod type defined at the top of the file

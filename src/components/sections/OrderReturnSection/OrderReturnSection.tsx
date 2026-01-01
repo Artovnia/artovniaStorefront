@@ -16,10 +16,12 @@ export const OrderReturnSection = ({
   orderSet,
   returnReasons,
   shippingMethods: initialShippingMethods,
+  targetOrderId,
 }: {
   orderSet: any
   returnReasons: any[]
   shippingMethods: any[]
+  targetOrderId?: string
 }) => {
   // Filter returnable items from all orders
   // Only show items that are delivered (fulfilled) and not already returned
@@ -29,7 +31,16 @@ export const OrderReturnSection = ({
       return [orderSet]
     }
     
-    // Split order case - filter orders with delivered items
+    // If targetOrderId is provided, filter to show only that specific order
+    if (targetOrderId) {
+      const targetOrder = orderSet.orders.find((o: any) => o.id === targetOrderId)
+      if (targetOrder) {
+        
+        return [targetOrder]
+      }
+    }
+    
+    // Fallback: Split order case - filter orders with delivered items
     return orderSet.orders.filter((order: any) => {
       // Check if order has any fulfilled items
       const hasFulfilledItems = order.fulfillments?.some((f: any) => 
@@ -257,7 +268,7 @@ export const OrderReturnSection = ({
             <ReturnSummaryTab
               currency_code={primaryOrder.currency_code}
               selectedItems={selectedItems}
-              items={returnableOrders.flatMap((o: any) => o.items || [])}
+              items={primaryOrder.items || []}
               handleTabChange={handleTabChange}
               tab={tab}
               returnMethod={returnMethod}

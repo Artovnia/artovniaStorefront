@@ -36,15 +36,10 @@ export const QuantityChanger = ({
     try {
       setIsUpdating(true)
       
-      console.log('🔄 Syncing quantity via CartContext:', { 
-        itemId, 
-        quantity: newQuantity,
-        previouslySynced: lastSyncedQuantity
-      })
+   
       
       await updateItem(itemId, newQuantity)
       setLastSyncedQuantity(newQuantity)
-      console.log('✅ Quantity synced successfully via CartContext:', { itemId, quantity: newQuantity })
       
     } catch (error) {
       console.warn('⚠️ CartContext sync error:', error)
@@ -61,12 +56,7 @@ export const QuantityChanger = ({
     
     if (clampedQuantity === quantity) return // No change needed
     
-    console.log('📊 Quantity changed:', { 
-      itemId, 
-      from: quantity, 
-      to: clampedQuantity,
-      maxStock: maxQuantity
-    })
+
     
     // Update UI immediately
     setQuantity(clampedQuantity)

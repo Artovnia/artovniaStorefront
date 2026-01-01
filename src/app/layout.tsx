@@ -88,14 +88,16 @@ export const metadata: Metadata = {
     process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"
   ),
   icons: {
-    icon: '/A.svg',
-    shortcut: '/A.svg',
-    apple: '/A.svg',
-    other: {
-      rel: 'apple-touch-icon',
-      url: '/A.svg',
-    },
+    icon: [
+      { url: '/favicon.ico', sizes: 'any' },
+      { url: '/favicon-16x16.png', sizes: '16x16', type: 'image/png' },
+      { url: '/favicon-32x32.png', sizes: '32x32', type: 'image/png' },
+      { url: '/android-chrome-192x192.png', sizes: '192x192', type: 'image/png' },
+    ],
+    shortcut: '/favicon.ico',
+    apple: '/apple-touch-icon.png',
   },
+  manifest: '/manifest.webmanifest',
   other: {
     'preconnect': [
       process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || 'http://localhost:9000',

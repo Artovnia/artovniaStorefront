@@ -29,6 +29,7 @@ export default async function UserPage({
       return redirect("/user/orders")
     }
 
+    
     // Get order numbers from linked orders
     const orderNumbers = ((order as any).orders || [order])
       .map((o: any) => o.display_id)

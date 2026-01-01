@@ -67,18 +67,67 @@ export const CartShippingMethodRow = ({
 
   const isInpostPaczkomat = method.name?.toLowerCase().includes('paczkomat')
   
+  // Extract capacity info from method data
+  const capacityInfo = method.data?.capacity_info as any
+  
+  // The method.amount now includes the overage (updated by backend)
+  // We need to extract base price and overage from capacity_info
+  const totalAmount = method?.amount || 0
+  const overageCharge = capacityInfo?.overage_charge || 0
+  const baseAmount = capacityInfo?.overage_charge ? totalAmount - overageCharge : totalAmount
+  const hasOverage = overageCharge > 0
+  
   return (
     <div className="mb-4 border rounded-md p-4">
       <div className="flex items-center justify-between">
         <div className="flex-1">
           <Text className="txt-medium-plus text-ui-fg-base mb-1">Metoda dostawy</Text>
           <Text className="txt-medium text-ui-fg-subtle">
-            {method?.name}{" "}
-            {convertToLocale({
-              amount: method?.amount!,
-              currency_code: currency_code,
-            })}
+            {method?.name}
           </Text>
+          
+          {/* Show pricing breakdown if there's capacity overage */}
+          {hasOverage ? (
+            <div className="mt-2 space-y-1">
+              <div className="flex justify-between text-sm">
+                <span className="text-ui-fg-subtle">Cena bazowa:</span>
+                <span className="text-ui-fg-subtle">
+                  {convertToLocale({
+                    amount: baseAmount,
+                    currency_code: currency_code,
+                  })}
+                </span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-ui-fg-subtle">Przekroczono pojemność paczki</span>
+                <span className="text-amber-600">Dopłata za pojemność:</span>
+                <span className="text-amber-600">
+                  +{convertToLocale({
+                    amount: overageCharge,
+                    currency_code: currency_code,
+                  })}
+                </span>
+              </div>
+              <div className="flex justify-between text-sm font-medium border-t pt-1">
+                <span>Razem:</span>
+                <span>
+                  {convertToLocale({
+                    amount: totalAmount,
+                    currency_code: currency_code,
+                  })}
+                </span>
+              </div>
+         
+            </div>
+          ) : (
+            <Text className="txt-medium text-ui-fg-subtle mt-1">
+              {convertToLocale({
+                amount: totalAmount,
+                currency_code: currency_code,
+              })}
+            </Text>
+          )}
+          
           {deleteError && (
             <Text className="txt-small text-ui-fg-error mt-1">{deleteError}</Text>
           )}

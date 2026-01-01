@@ -392,25 +392,9 @@ export const OrderConfirmedSection = ({
                   </div>
                 )}
                 
-                {/* Tax Total */}
-                {((aggregatedTotals?.tax_total !== undefined && aggregatedTotals.tax_total > 0) || (order.tax_total !== undefined && order.tax_total > 0)) && (
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-stone-600 font-instrument-sans">{t.tax}</span>
-                    <span className="text-sm font-medium text-stone-800 font-instrument-sans">
-                      {formatCurrency(aggregatedTotals?.tax_total || order.tax_total, orderCurrency)}
-                    </span>
-                  </div>
-                )}
+               
                 
-                {/* Discount Total */}
-                {((aggregatedTotals?.discount_total !== undefined && aggregatedTotals.discount_total > 0) || (order.discount_total !== undefined && order.discount_total > 0)) && (
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-green-600 font-instrument-sans">-{t.discount}</span>
-                    <span className="text-sm font-medium text-green-600 font-instrument-sans">
-                      -{formatCurrency(aggregatedTotals?.discount_total || order.discount_total, orderCurrency)}
-                    </span>
-                  </div>
-                )}
+                
                 
                 {/* Divider */}
                 <div className="border-t border-stone-300 pt-3">

@@ -8,20 +8,6 @@ import InpostParcelInfo from "@/components/molecules/InpostParcelInfo/InpostParc
 import { InpostParcelData } from "@/lib/services/inpost-api"
 import { useTerms } from "../CheckoutWrapper/CheckoutWrapper"
 
-// Helper function to calculate shipping total from shipping methods
-const calculateShippingTotal = (shippingMethods?: any[]): number => {
-  if (!shippingMethods || shippingMethods.length === 0) {
-    return 0
-  }
-  
-  return shippingMethods.reduce((total, method) => {
-    const amount = method?.amount || 0
-    
-    return total + amount
-  }, 0)
-}
-
-
 const Review = ({ cart }: { cart: any }) => {
   // Use Terms Context instead of props to avoid cart caching issues
   const { termsAccepted } = useTerms()
@@ -57,7 +43,7 @@ const Review = ({ cart }: { cart: any }) => {
         
         <CartSummary
           item_total={cart?.item_total || 0}
-          shipping_total={cart?.shipping_total || calculateShippingTotal(cart?.shipping_methods)}
+          shipping_total={cart?.shipping_total || 0}
           total={cart?.total || 0}
           currency_code={cart?.currency_code || ""}
           tax={cart?.tax_total || 0}

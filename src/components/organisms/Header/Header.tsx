@@ -38,15 +38,18 @@ export const Header = ({
   const [regions] = useState(initialRegions)
   const [user, setUser] = useState<any>(null)
   const [wishlistCount, setWishlistCount] = useState(0)
+  const [refreshTrigger, setRefreshTrigger] = useState(0)
 
   useEffect(() => {
     // Load user data in background after initial render
+    // Also refresh when auth state changes (login/logout)
     let mounted = true
 
     const loadData = async () => {
       try {
-        // Fetch only user data (regions come from props)
-        const userData = await retrieveCustomer().catch((error) => {
+        // Force no-cache on refresh to get latest auth state
+        const useCache = refreshTrigger === 0
+        const userData = await retrieveCustomer(useCache).catch((error) => {
           if (error?.status !== 401) {
             console.error("Error retrieving customer:", error)
           }
@@ -68,6 +71,11 @@ export const Header = ({
           } catch (error) {
             console.error("Error retrieving wishlists:", error)
           }
+        } else {
+          // Clear wishlist count when user is logged out
+          if (mounted) {
+            setWishlistCount(0)
+          }
         }
       } catch (error) {
         console.error("Error loading header data:", error)
@@ -79,6 +87,24 @@ export const Header = ({
     return () => {
       mounted = false
       clearTimeout(timer)
+    }
+  }, [refreshTrigger])
+
+  // Listen for auth state changes (login/logout)
+useEffect(() => {
+  const handleAuthChange = () => {
+    setRefreshTrigger(prev => prev + 1)
+  }
+
+    
+    // Listen for custom auth events
+    window.addEventListener('auth:login', handleAuthChange)
+    window.addEventListener('auth:logout', handleAuthChange)
+
+    return () => {
+     
+      window.removeEventListener('auth:login', handleAuthChange)
+      window.removeEventListener('auth:logout', handleAuthChange)
     }
   }, [])
 

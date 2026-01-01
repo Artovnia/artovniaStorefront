@@ -28,7 +28,8 @@ interface ExtendedStoreCart extends Omit<HttpTypes.StoreCart, 'promotions'> {
 }
 
 // Consolidated field list to avoid duplication
-const CART_FIELDS = "*items,*region,*region.countries,*items.product,*items.variant,*items.variant.options,items.variant.options.option.title,*items.thumbnail,*items.metadata,+items.total,+items.unit_price,+items.original_total,+items.original_unit_price,*promotions,*promotions.application_method,*shipping_methods,*items.product.seller,*payment_collection,*payment_collection.payment_sessions,email,*shipping_address,*billing_address,*customer,subtotal,total,tax_total,item_total,shipping_total,currency_code"
+// CRITICAL: Include shipping_methods.adjustments to fetch capacity overage adjustments
+const CART_FIELDS = "*items,*region,*region.countries,*items.product,*items.variant,*items.variant.options,items.variant.options.option.title,*items.thumbnail,*items.metadata,+items.total,+items.unit_price,+items.original_total,+items.original_unit_price,*promotions,*promotions.application_method,*shipping_methods,*shipping_methods.adjustments,*items.product.seller,*payment_collection,*payment_collection.payment_sessions,email,*shipping_address,*billing_address,*customer,subtotal,total,tax_total,item_total,shipping_total,currency_code"
 
 async function getPaymentHeaders() {
   return {

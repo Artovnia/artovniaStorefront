@@ -171,7 +171,6 @@ export const ProductShareButton = ({
       try {
         await navigator.share({
           title: productTitle,
-          text: `Sprawdź ten produkt: ${productTitle}`,
           url: shareUrl,
         })
         setIsOpen(false)

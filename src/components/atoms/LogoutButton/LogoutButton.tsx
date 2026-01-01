@@ -12,6 +12,10 @@ export const LogoutButton: React.FC<LogoutButtonProps> = ({
   children,
 }) => {
   const handleLogout = async () => {
+    // Dispatch auth event to update Header component before redirect
+    
+    window.dispatchEvent(new Event('auth:logout'))
+   
     await signout()
   }
 

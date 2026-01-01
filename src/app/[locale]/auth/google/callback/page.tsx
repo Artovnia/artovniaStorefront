@@ -24,7 +24,6 @@ export default function GoogleCallbackPage() {
         const flowType = localStorage.getItem('google_oauth_flow')
         const isRegisterFlow = flowType === 'registration'
         setIsRegistration(isRegisterFlow)
-        console.log('🔍 OAuth flow type detected:', flowType, 'isRegisterFlow:', isRegisterFlow)
         
         // Clear the flow type from localStorage after reading it
         localStorage.removeItem('google_oauth_flow')
@@ -49,6 +48,9 @@ export default function GoogleCallbackPage() {
         setMessage(isRegisterFlow ? "Rejestracja pomyślna! Przekierowywanie..." : "Uwierzytelnienie pomyślne! Przekierowywanie...")
         setIsSuccess(true)
         setStatus("success")
+
+        // Dispatch auth event to update Header component
+        window.dispatchEvent(new Event('auth:login'))
 
         // Redirect to user page after a brief delay
         setTimeout(() => {

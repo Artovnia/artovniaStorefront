@@ -27,6 +27,9 @@ const ALGOLIA_ID = process.env.NEXT_PUBLIC_ALGOLIA_ID || "";
 const ALGOLIA_SEARCH_KEY = process.env.NEXT_PUBLIC_ALGOLIA_SEARCH_KEY || "";
 const ALGOLIA_INDEX_NAME = process.env.NEXT_PUBLIC_ALGOLIA_PRODUCTS_INDEX || "products";
 
+// 🛡️ DEPLOYMENT-SAFE: Validate Algolia configuration
+const hasValidAlgoliaConfig = !!(ALGOLIA_ID && ALGOLIA_SEARCH_KEY && ALGOLIA_INDEX_NAME);
+
 // Import these after the constants to avoid hoisting issues
 import { useSearchParams } from "next/navigation"
 import { getFacedFilters } from "@/lib/helpers/get-faced-filters"
@@ -46,6 +49,47 @@ interface AlgoliaProductsListingProps {
 }
 
 export const AlgoliaProductsListing = (props: AlgoliaProductsListingProps) => {
+  // 🛡️ DEPLOYMENT-SAFE: Check config first, render fallback component if missing
+  // This avoids React Hooks violations by handling the fallback at component level
+  if (!hasValidAlgoliaConfig) {
+    return <AlgoliaProductsListingFallback {...props} />
+  }
+  
+  return <AlgoliaProductsListingWithConfig {...props} />
+}
+
+// Fallback component when Algolia config is missing
+const AlgoliaProductsListingFallback = (props: AlgoliaProductsListingProps) => {
+  const {
+    category_id,
+    category_ids,
+    collection_id,
+    seller_handle,
+    categories = [],
+    currentCategory,
+  } = props
+  
+  // Dynamically import ProductListing to avoid circular dependencies
+  const ProductListingFallback = React.lazy(() => 
+    import('./ProductListing').then(mod => ({ default: mod.ProductListing }))
+  )
+  
+  return (
+    <React.Suspense fallback={<ProductListingSkeleton />}>
+      <ProductListingFallback
+        category_id={category_id}
+        category_ids={category_ids}
+        collection_id={collection_id}
+        seller_id={seller_handle}
+        categories={categories}
+        currentCategory={currentCategory}
+      />
+    </React.Suspense>
+  )
+}
+
+// Main Algolia component with all hooks
+const AlgoliaProductsListingWithConfig = (props: AlgoliaProductsListingProps) => {
   const {
     category_id,
     category_ids,

@@ -134,7 +134,7 @@ export default async function SellerPage({
                   <SellerSidebar seller={sellerWithReviews as SellerProps} user={user} />
                 </aside>
                 
-                <div className="w-full">
+                <div className="w-full mx-auto">
                   <SellerTabs
                     tab={tab}
                     seller_id={seller.id}

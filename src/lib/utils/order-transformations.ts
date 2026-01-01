@@ -173,31 +173,32 @@ export function transformOrderSetToOrder(orderSet: OrderSet): Order & { orders?:
     order_set_display_id: orderSet.display_id,
     
     // Aggregate items from all orders
-    // CRITICAL: Backend now correctly calculates item.total and item.discount_total
-    // We should use those values directly instead of recalculating
+    // CRITICAL: Backend correctly calculates all values - pass them through unchanged
+    // Backend provides:
+    // - item.subtotal: unit_price * quantity (base price before discounts)
+    // - item.total: subtotal - discount_total (final price after discounts)
+    // - item.discount_total: sum of all adjustments (discount amount)
     items: orders.flatMap(order => {
       const items = order.items || []
       
-      // Backend already handles the calculation correctly
-      // Just pass through the values with proper field mapping
+      // Pass through backend-calculated values without modification
       return items.map((item: any) => {
         return {
           ...item,
-          // Backend provides correct values after recalculation
-          subtotal: item.total || item.subtotal || 0,
-          total: item.total || 0,
-          discount_total: item.discount_total || 0,
-          // Keep original values for debugging if needed
-          _original_subtotal: item.subtotal,
-          _original_total: item.total,
-          _original_discount: item.discount_total
+          // Use backend values directly - they are already correct
+          subtotal: item.subtotal || 0,           // Base price (unit_price * quantity)
+          total: item.total || 0,                 // Final price (subtotal - discounts)
+          discount_total: item.discount_total || 0, // Discount amount
+          unit_price: item.unit_price || 0,       // Price per unit
+          quantity: item.quantity || 1            // Quantity
         }
       })
     }),
     
     // Use shipping info from first order
     shipping_address: firstOrder?.shipping_address || {},
-    shipping_methods: firstOrder?.shipping_methods || [],
+    // CRITICAL: Aggregate ALL shipping methods from ALL orders (for split parcels)
+    shipping_methods: orders.flatMap(order => order.shipping_methods || []),
     payments: firstOrder?.payments || [],
     
     // CRITICAL: Pass through orders array with backend-calculated values

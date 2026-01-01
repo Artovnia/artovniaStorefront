@@ -213,7 +213,7 @@ export const OrderReturn = ({ order }: OrderReturnProps) => {
           </LocalizedClientLink>.
         </p>
       </div>
-      <LocalizedClientLink href={`/user/orders/${order.order_set_id || order.id}/return`}>
+      <LocalizedClientLink href={`/user/orders/${order.order_set_id || order.id}/return?order_id=${order.id}`}>
         <Button 
           variant="filled" 
           className="uppercase hover:bg-black hover:text-white transition-colors"

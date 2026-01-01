@@ -163,7 +163,6 @@ export const SingleOrderReturn = ({
         const returnedQty = returnLineItem.quantity || 1
         const originalQty = orderItem.quantity || 1
         
-        
         // Calculate proportional refund if partial quantity returned
         const refundAmount = originalQty > 0 
           ? (itemPrice / originalQty) * returnedQty

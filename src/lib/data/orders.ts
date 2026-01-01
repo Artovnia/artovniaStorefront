@@ -187,8 +187,36 @@ export const retrieveOrder = async (id: string): Promise<Order | null> => {
       
       return transformedOrder
     } else {
-      // Regular order retrieval
-      return await retrieveIndividualOrder(id)
+      // CRITICAL: For individual orders, retrieve via order set for correct price transformation
+      // Individual order API returns incorrect prices (net instead of gross)
+      
+      
+      // First get the individual order to find its order_set_id
+      const individualOrder = await retrieveIndividualOrder(id)
+      
+      if (!individualOrder) {
+        console.error('❌ [retrieveOrder] Individual order not found:', id)
+        return null
+      }
+      
+ 
+      
+      // If order has an order_set_id, retrieve via order set for correct prices
+      const orderSetId = (individualOrder as any).order_set_id
+      if (orderSetId) {
+        
+        
+        const orderSet = await retrieveOrderSet(orderSetId)
+        if (orderSet) {
+          // Transform order set to get correct prices
+          const transformedOrder = transformOrderSetToOrder(orderSet)
+          return transformedOrder
+        }
+      }
+      
+      // Fallback: return individual order (may have incorrect prices)
+      console.warn('⚠️ [retrieveOrder] Using individual order (prices may be incorrect):', id)
+      return individualOrder
     }
     
   } catch (error) {

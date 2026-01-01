@@ -16,8 +16,6 @@ export const OrderTotals = ({ orderSet }: { orderSet: any }) => {
 
   // Calculate totals from individual orders
   const totals = (orderSet.orders || []).reduce((acc: any, order: any) => {
-    const orderTotal = order.total || 0
-    
     // CRITICAL FIX: Always calculate item subtotal from actual item totals
     // Backend's order.item_total has incorrect negative values
     // We must sum the actual item.total values which include promotional discounts
@@ -41,15 +39,13 @@ export const OrderTotals = ({ orderSet }: { orderSet: any }) => {
         return shippingAcc + (method.total || method.amount || method.price || 0)
       }, 0)
     }
-    // PRIORITY 3: Calculate as difference
-    else if (orderTotal > 0 && itemSubtotal > 0) {
-      shippingCost = orderTotal - itemSubtotal
-    }
-   
     
+    // CRITICAL: Calculate order total from items + shipping, NOT from order.total
+    // order.total from backend is incorrect when items are missing adjustments
+    const calculatedOrderTotal = itemSubtotal + shippingCost
     
     return {
-      total: acc.total + orderTotal,
+      total: acc.total + calculatedOrderTotal,
       itemSubtotal: acc.itemSubtotal + itemSubtotal,
       shipping: acc.shipping + shippingCost
     }

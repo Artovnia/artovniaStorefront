@@ -67,7 +67,7 @@ export interface CartContextType {
   addItem: (variantId: string, quantity: number, metadata?: any) => Promise<void>
   updateItem: (itemId: string, quantity: number) => Promise<void>
   removeItem: (itemId: string) => Promise<void>
-  setShipping: (methodId: string) => Promise<void>
+  setShipping: (methodId: string, data?: Record<string, any>) => Promise<void>
   setPayment: (providerId: string) => Promise<void>
   setAddress: (address: any) => Promise<void>
   completeOrder: (skipRedirectCheck?: boolean, cartId?: string) => Promise<any>
@@ -316,7 +316,7 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children, initialCar
   }, [state.cart, refreshCart, clearCart])
 
   // Set shipping method
-  const setShipping = useCallback(async (methodId: string) => {
+  const setShipping = useCallback(async (methodId: string, data?: Record<string, any>) => {
     if (!state.cart) return
     
     dispatch({ type: 'SET_ERROR', payload: null })
@@ -324,7 +324,8 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children, initialCar
     try {
       const response = await setShippingMethod({
         cartId: state.cart.id,
-        shippingMethodId: methodId
+        shippingMethodId: methodId,
+        data
       })
       
       if (response && response.cart) {

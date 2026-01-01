@@ -46,7 +46,13 @@ export const ReturnSummaryTab = ({
   }, 0)
   
   // Check if all items are selected for return
-  const allItemsSelected = selected.length === items.length
+  // CRITICAL: For split orders, we need to check if all items FROM THE TARGET ORDER are selected
+  // Not all items from all orders combined
+  const targetOrderItems = originalOrder?.items || []
+  const selectedItemIds = new Set(selected.map(s => s.id))
+  const allItemsFromTargetOrderSelected = targetOrderItems.every((item: any) => selectedItemIds.has(item.id))
+  
+  
   
   // Get shipping cost using the comprehensive approach from OrderTotals
   let orderShippingCost = shippingCost || 0
@@ -77,9 +83,9 @@ export const ReturnSummaryTab = ({
     }
   }
   
-  
-  // Calculate final return amount - always include shipping cost if all items are selected
-  const returnTotal = allItemsSelected ? itemsTotal + orderShippingCost : itemsTotal;
+
+  // Calculate final return amount - include shipping cost if all items FROM TARGET ORDER are selected
+  const returnTotal = allItemsFromTargetOrderSelected ? itemsTotal + orderShippingCost : itemsTotal;
   
 
   return (
