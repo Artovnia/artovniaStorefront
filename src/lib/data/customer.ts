@@ -97,6 +97,17 @@ export const updateCustomer = async (body: HttpTypes.StoreUpdateCustomer) => {
   return updateRes
 }
 
+/**
+ * Customer registration with "claim existing identity" flow.
+ * 
+ * When a seller tries to register as a customer with the same email:
+ * 1. First attempts normal registration with sdk.auth.register()
+ * 2. If "Identity with email already exists" error occurs, attempts login instead
+ * 3. If login succeeds (password matches), uses that token to create the customer
+ * 4. If login fails (wrong password), throws appropriate error
+ * 
+ * This allows sellers to become customers using the same email/password.
+ */
 export async function signup(formData: FormData) {
   const password = formData.get("password") as string
   const customerForm = {
@@ -107,23 +118,85 @@ export async function signup(formData: FormData) {
   }
 
   try {
-    const token = await sdk.auth.register("customer", "emailpass", {
-      email: customerForm.email,
-      password: password,
-    })
+    let token: string
+    let isExistingIdentity = false
+    
+    try {
+      // Step 1: Try normal registration
+      token = await sdk.auth.register("customer", "emailpass", {
+        email: customerForm.email,
+        password: password,
+      }) as string
+    } catch (registerError: any) {
+      // Step 2: Check if error is "Identity with email already exists"
+      const errorMessage = registerError?.message || registerError?.body?.message || registerError?.toString() || ''
+      const isExistingIdentityError = 
+        errorMessage.toLowerCase().includes('identity with email already exists') ||
+        errorMessage.toLowerCase().includes('identity already exists') ||
+        (registerError?.status === 401 && errorMessage.toLowerCase().includes('identity'))
+      
+      if (isExistingIdentityError) {
+        // Step 3: Try to login with customer actor type to claim the identity
+        try {
+          const loginResult = await sdk.auth.login("customer", "emailpass", {
+            email: customerForm.email,
+            password: password,
+          })
+          
+          token = typeof loginResult === 'string' ? loginResult : (loginResult as any).location || ''
+          isExistingIdentity = true
+        } catch (loginError: any) {
+          // Step 4: Login failed - password doesn't match existing identity
+          const loginErrorMessage = loginError?.message || loginError?.body?.message || ''
+          
+          if (loginErrorMessage.toLowerCase().includes('invalid') || 
+              loginErrorMessage.toLowerCase().includes('password') ||
+              loginError?.status === 401) {
+            // Password doesn't match - this email belongs to someone else
+            throw new Error('Konto z tym adresem email już istnieje. Użyj innego adresu email lub skontaktuj się z pomocą techniczną.')
+          }
+          
+          // Re-throw other login errors
+          throw loginError
+        }
+      } else {
+        // Re-throw non-identity errors
+        throw registerError
+      }
+    }
 
-    await unifiedSetAuthToken(token as string)
+    await unifiedSetAuthToken(token)
 
     const headers = {
       ...(await getAuthHeaders()),
     }
 
-    const { customer: createdCustomer } = await sdk.store.customer.create(
-      customerForm,
-      {},
-      headers
-    )
+    // Only create customer record if this is a new registration (not claiming existing identity)
+    // For existing identity, the customer record should already exist or will be created on first access
+    let createdCustomer
+    if (!isExistingIdentity) {
+      const { customer } = await sdk.store.customer.create(
+        customerForm,
+        {},
+        headers
+      )
+      createdCustomer = customer
+    } else {
+      // For existing identity, try to create customer record (may already exist)
+      try {
+        const { customer } = await sdk.store.customer.create(
+          customerForm,
+          {},
+          headers
+        )
+        createdCustomer = customer
+      } catch (createError: any) {
+        // Customer might already exist for this identity, try to retrieve
+        createdCustomer = await retrieveCustomer()
+      }
+    }
 
+    // Re-login to get fresh token with customer actor
     const loginToken = await sdk.auth.login("customer", "emailpass", {
       email: customerForm.email,
       password,

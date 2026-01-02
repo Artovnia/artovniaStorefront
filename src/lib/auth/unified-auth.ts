@@ -199,7 +199,7 @@ export async function setAuthToken(token: string): Promise<void> {
       document.cookie = `${JWT_COOKIE_NAME}=${token}; Max-Age=${maxAge}; Path=/; SameSite=Strict${secure}`
     }
 
-    console.log('✅ Auth token set successfully')
+  
   } catch (error) {
     console.error('❌ Error setting auth token:', error)
     throw error
@@ -230,7 +230,7 @@ export async function removeAuthToken(): Promise<void> {
       sessionStorage.removeItem(JWT_COOKIE_NAME)
     }
 
-    console.log('✅ Auth token removed successfully')
+    
   } catch (error) {
     console.error('❌ Error removing auth token:', error)
     throw error
@@ -288,7 +288,6 @@ export async function unifiedLogout(): Promise<void> {
       sessionStorage.clear()
     }
     
-    console.log('✅ Logout completed successfully')
   } catch (error) {
     console.error('❌ Error during logout:', error)
     throw error
@@ -308,5 +307,5 @@ export async function isAuthenticated(): Promise<boolean> {
  */
 export function refreshAuthState(): void {
   clearAuthCache()
-  console.log('🔄 Auth state cache cleared')
+  
 }

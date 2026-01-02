@@ -50,7 +50,7 @@ export async function DesignerOfTheWeekSectionServer({
           className="group block"
         >
           {/* Hero Card with Overlay */}
-          <div className="relative w-full aspect-[3/4] max-h-[70vh] overflow-hidden rounded-lg shadow-xl">
+          <div className="relative w-full aspect-[3/4] max-h-[70vh] overflow-hidden shadow-xl">
             {/* Background Image - TEST MODE */}
             {TEST_WITH_BRIGHT_IMAGE ? (
               <Image
