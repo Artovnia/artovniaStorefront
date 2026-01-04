@@ -7,7 +7,7 @@ import { format } from "date-fns"
 import { pl } from "date-fns/locale"
 
 const TermsOfUseContent = () => {
-  const [lastUpdated] = useState(new Date(2025, 10, 5))
+  const [lastUpdated] = useState(new Date(2026, 1, 4))
   const [effectiveDate] = useState(new Date(2025, 10, 5))
 
   return (
@@ -1669,7 +1669,7 @@ const TermsOfUseContent = () => {
               <Disclosure.Button className="flex w-full justify-between items-center text-left gap-4">
                 
                 <h2 className="text-xl font-medium font-instrument-sans flex-1">
-                   ZAŁĄCZNIK NR 1 DO REGULAMINU SERWISU ARTOVNIA -  PROMOCJA DLA PIERWSZYCH 100 SPRZEDAWCÓW
+                   ZAŁĄCZNIK NR 1 DO REGULAMINU SERWISU ARTOVNIA - PROMOCJA DLA PIERWSZYCH 100 SPRZEDAWCÓW
                 </h2>
                 <CollapseIcon
                   size={18}
