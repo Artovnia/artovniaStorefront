@@ -7,7 +7,7 @@ import { format } from "date-fns"
 import { pl } from "date-fns/locale"
 
 const TermsOfUseContent = () => {
-  const [lastUpdated] = useState(new Date(2026, 1, 4))
+  const [lastUpdated] = useState(new Date(2026, 0, 4))
   const [effectiveDate] = useState(new Date(2025, 10, 5))
 
   return (
