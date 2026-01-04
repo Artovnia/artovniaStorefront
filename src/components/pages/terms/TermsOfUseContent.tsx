@@ -533,30 +533,28 @@ const TermsOfUseContent = () => {
                   transakcji.
                 </p>
                 <p>
-                  6.4. Po dokonaniu zakupu przez Kupującego oraz zaksięgowaniu
-                  płatności, system automatycznie przypisuje zamówienie do
-                  odpowiedniego Sprzedającego. Informacja o nowym zamówieniu
-                  pojawia się w panelu Sprzedawcy.
+                 6.4 Sprzedający ma obowiązek aktualizowania statusów zamówienia w panelu Sprzedawcy, w szczególności:
+                </p>
+                <ul className="list-disc list-inside ml-4">
+                  <li>a. oznaczenia zamówienia jako „wysłane” wraz z podaniem numeru przesyłki (tracking) – niezwłocznie po nadaniu,</li>
+                  <li>b. oznaczenia zamówienia jako „dostarczone” wraz z podaniem daty dostarczenia – niezwłocznie po uzyskaniu potwierdzenia doręczenia.</li>
+                </ul>
+                <p>
+                  Od momentu oznaczenia zamówienia jako „dostarczone” (z podaniem daty dostarczenia) liczony jest okres 14 dni, o którym mowa w pkt 6.5, przeznaczony na ewentualne zgłoszenie zwrotu/odstąpienia od umowy przez Kupującego.
                 </p>
                 <p>
-                  6.5. Środki należne Sprzedającemu z tytułu zrealizowanych
-                  zamówień są rozliczane w cyklu miesięcznym. Rozliczenie środków
-                  następuje do 8 dnia kolejnego miesiąca kalendarzowego, obejmując
-                  wszystkie zamówienia oznaczone jako zrealizowane do ostatniego
-                  dnia miesiąca poprzedniego.
+                  6.5. Środki należne Sprzedającemu z tytułu zrealizowanych zamówień są rozliczane w cyklu dwukrotnym w miesiącu:
+                  <ul className="list-disc list-inside ml-4">
+                    <li>a. do 15. dnia miesiąca oraz</li>
+                    <li>b. do ostatniego dnia miesiąca.</li>
+                  </ul>
+                  Do rozliczenia w danym cyklu wliczają się wyłącznie zamówienia, które zostały oznaczone w systemie jako dostarczone oraz od których daty dostarczenia upłynęło co najmniej 14 dni, liczone jako okres oczekiwania na ewentualny zwrot (odstąpienie od umowy).
                 </p>
                 <p>
-                  6.6. Kwota do wypłaty stanowi sumę wartości zamówień
-                  zrealizowanych pomniejszoną o prowizję serwisu, która wynosi 20%
-                  + VAT wartości brutto sprzedanych produktów (zgodnie z cennikiem
-                  obowiązującym w dniu sprzedaży).
+                  6.6. Kwota do wypłaty stanowi sumę wartości zamówień zrealizowanych pomniejszoną o prowizję serwisu, która wynosi 20% + VAT wartości brutto sprzedanych produktów (zgodnie z cennikiem obowiązującym w dniu sprzedaży).
                 </p>
                 <p>
-                  6.7. Wypłaty realizowane są za pośrednictwem serwisu PayU na
-                  numer konta wskazany przez Sprzedającego w ustawieniach konta.
-                  Sprzedający zobowiązany jest do utrzymywania aktualnych danych
-                  rozliczeniowych. Administrator nie ponosi odpowiedzialności za
-                  opóźnienia wynikające z błędnie podanych danych.
+                  6.7. Wypłaty realizowane są za pośrednictwem serwisu Stripe na numer konta wskazany przez Sprzedającego w ustawieniach konta. Sprzedający zobowiązany jest do utrzymywania aktualnych danych rozliczeniowych. Administrator nie ponosi odpowiedzialności za opóźnienia wynikające z błędnie podanych danych.
                 </p>
                 <p>
                   6.8. Administrator zastrzega sobie prawo do wstrzymania wypłaty
@@ -705,11 +703,7 @@ const TermsOfUseContent = () => {
                   aktywacji statusu urlopowego w panelu administracyjnym konta.
                 </p>
                 <p>
-                  7.9. Sprzedający przyjmuje do wiadomości, że prowizja serwisu
-                  wynosi 20% od ceny brutto produktu + obowiązujący podatek VAT.
-                  Prowizja ta jest pobierana automatycznie przez Administratora z
-                  kwoty wpłaconej przez Kupującego. Prowizja jest liczona wyłącznie
-                  od ceny produktu i nie obejmuje ceny wysyłki.
+                  7.9. Sprzedający przyjmuje do wiadomości, że prowizja serwisu wynosi 20% od ceny brutto produktu + obowiązujący podatek VAT. Prowizja ta jest pobierana automatycznie przez Administratora z kwoty wpłaconej przez Kupującego. Prowizja jest liczona wyłącznie od ceny produktu i nie obejmuje ceny wysyłki.
                 </p>
                 <p>
                   7.10. Sprzedający zobowiązuje się do zachowania standardów
@@ -857,11 +851,7 @@ const TermsOfUseContent = () => {
               </Disclosure.Button>
               <Disclosure.Panel className="pt-4 text-gray-700 space-y-3">
                 <p>
-                  9.1. Administrator zapewnia techniczne funkcjonowanie platformy,
-                  umożliwiające zawieranie umów sprzedaży pomiędzy Użytkownikami,
-                  jednak nie jest stroną tych umów. Odpowiedzialność za realizację
-                  transakcji, zgodność oferty z opisem oraz jakość i legalność
-                  sprzedawanych produktów spoczywa wyłącznie na Sprzedających.
+                  9.1. Administrator zapewnia techniczne funkcjonowanie platformy Artovnia.com, umożliwiające zawieranie umów sprzedaży pomiędzy Użytkownikami, jednak nie jest stroną tych umów. Odpowiedzialność za realizację transakcji, zgodność oferty z opisem oraz jakość i legalność sprzedawanych produktów spoczywa wyłącznie na Sprzedających.
                 </p>
                 <p>9.2. Administrator nie ponosi odpowiedzialności za:</p>
                 <ul className="list-disc ml-5 space-y-1">
@@ -1592,12 +1582,7 @@ const TermsOfUseContent = () => {
                   przeciwdziałania praniu pieniędzy (AML) oraz finansowania terroryzmu.
                 </p>
                 <p>
-                  15.10. Środki uzyskane ze sprzedaży produktów są przechowywane na
-                  koncie Stripe Sprzedawcy i wypłacane zgodnie z harmonogramem
-                  określonym w Regulaminie, tj. raz w miesiącu do 8 dnia miesiąca
-                  następującego po miesiącu sprzedaży (z zastrzeżeniem ewentualnych
-                  opóźnień wynikających z procedur Stripe lub sytuacji wyjątkowych
-                  opisanych w niniejszym Regulaminie).
+                  15.10. Środki uzyskane ze sprzedaży produktów są przechowywane na koncie Stripe Sprzedawcy i wypłacane zgodnie z harmonogramem określonym w Regulaminie, tj. 2 razy w miesiącu (z zastrzeżeniem ewentualnych opóźnień wynikających z procedur Stripe lub sytuacji wyjątkowych opisanych w niniejszym Regulaminie).
                 </p>
                 <p>
                   15.11. Administrator pobiera prowizję od sprzedaży bezpośrednio z
@@ -1676,6 +1661,146 @@ const TermsOfUseContent = () => {
             </>
           )}
         </Disclosure>
+
+        {/* ZAŁĄCZNIK NR 1 - PROMOCJA DLA PIERWSZYCH 100 SPRZEDAWCÓW */}
+        <Disclosure as="div" className="border-b border-gray-200 pb-6">
+          {({ open }) => (
+            <>
+              <Disclosure.Button className="flex w-full justify-between items-center text-left gap-4">
+                
+                <h2 className="text-xl font-medium font-instrument-sans flex-1">
+                   ZAŁĄCZNIK NR 1 DO REGULAMINU SERWISU ARTOVNIA -  PROMOCJA DLA PIERWSZYCH 100 SPRZEDAWCÓW
+                </h2>
+                <CollapseIcon
+                  size={18}
+                  className={`${
+                    open ? "transform rotate-180" : ""
+                  } text-gray-500`}
+                />
+              </Disclosure.Button>
+              <Disclosure.Panel className="pt-4 text-gray-700 space-y-3">
+                {/* § 1. Postanowienia ogólne */}
+                <p className="font-medium">§ 1. Postanowienia ogólne</p>
+                <p>
+                  1. Niniejszy Załącznik nr 1 do Regulaminu Serwisu Artovnia określa
+                  zasady udziału w promocji pod nazwą „Promocja dla pierwszych 100
+                  Sprzedawców” (dalej: „Promocja”).
+                </p>
+                <p>
+                  2. Promocja stanowi integralną część Regulaminu i ma zastosowanie
+                  wyłącznie do Sprzedawców spełniających warunki określone w niniejszym
+                  Załączniku.
+                </p>
+                <p>
+                  3. W sprawach nieuregulowanych w niniejszym Załączniku zastosowanie
+                  mają postanowienia Regulaminu Serwisu Artovnia.
+                </p>
+
+                {/* § 2. Czas trwania Promocji */}
+                <p className="font-medium mt-4">§ 2. Czas trwania Promocji</p>
+                <p>
+                  1. Promocja obowiązuje do momentu zakwalifikowania się 100 (stu)
+                  Sprzedawców, którzy spełnią warunki określone w § 3 niniejszego
+                  Załącznika.
+                </p>
+                <p>
+                  2. Administrator zastrzega sobie prawo do:
+                </p>
+                <ul className="list-disc ml-5 space-y-1">
+                  <li>
+                    a. zakończenia Promocji przed osiągnięciem limitu 100 Sprzedawców,
+                    lub
+                  </li>
+                  <li>
+                    b. przedłużenia okresu trwania Promocji,
+                  </li>
+                </ul>
+                <p>
+                  według własnego uznania, w szczególności z przyczyn organizacyjnych,
+                  marketingowych lub technicznych.
+                </p>
+                <p>
+                  3. Zakończenie lub przedłużenie Promocji nie narusza praw Sprzedawców,
+                  którzy skutecznie nabyli uprawnienie do Promocji przed dniem jej
+                  zakończenia lub zmiany.
+                </p>
+
+                {/* § 3. Warunki udziału w Promocji */}
+                <p className="font-medium mt-4">§ 3. Warunki udziału w Promocji</p>
+                <p>
+                  1. Do Promocji kwalifikują się wyłącznie Sprzedawcy, którzy łącznie:
+                </p>
+                <ul className="list-disc ml-5 space-y-1">
+                  <li>
+                    a. założą konto Sprzedawcy w Serwisie i dokonają jego pełnej
+                    konfiguracji, w tym uzupełnią wymagane dane rozliczeniowe oraz
+                    skonfigurują konto u operatora płatności,
+                  </li>
+                  <li>
+                    b. dodadzą w Serwisie co najmniej 10 (dziesięć) aktywnych ofert
+                    produktów.
+                  </li>
+                </ul>
+                <p>
+                  2. Sprzedawcy, którzy nie spełnią warunku określonego w ust. 1 lit.
+                  b, nie kwalifikują się do Promocji.
+                </p>
+                <p>
+                  3. O zakwalifikowaniu się do Promocji decyduje kolejność spełnienia
+                  warunków określonych w ust. 1, liczona do momentu osiągnięcia limitu
+                  100 Sprzedawców.
+                </p>
+
+                {/* § 4. Zasady prowizji promocyjnej */}
+                <p className="font-medium mt-4">§ 4. Zasady prowizji promocyjnej</p>
+                <p>
+                  1. Z chwilą dodania przez Sprzedawcę 10. (dziesiątego) produktu w
+                  Serwisie, prowizja należna Administratorowi zostaje obniżona do 10%
+                  od ceny brutto produktu + obowiązujący podatek VAT.
+                </p>
+                <p>
+                  2. Prowizja promocyjna:
+                </p>
+                <ul className="list-disc ml-5 space-y-1">
+                  <li>
+                    a. naliczana jest wyłącznie od ceny produktu i nie obejmuje
+                    kosztów dostawy,
+                  </li>
+                  <li>
+                    b. obowiązuje przez okres 183 dni (pół roku), liczony od dnia
+                    dodania przez Sprzedawcę 10. produktu w Serwisie.
+                  </li>
+                </ul>
+                <p>
+                  3. Po upływie okresu Promocji, o którym mowa w ust. 2 lit. b,
+                  prowizja zostaje automatycznie przywrócona do poziomu standardowego,
+                  zgodnie z zasadami określonymi w dziale 6 Regulaminu.
+                </p>
+
+                {/* § 5. Postanowienia końcowe */}
+                <p className="font-medium mt-4">§ 5. Postanowienia końcowe</p>
+                <p>
+                  1. Promocja nie łączy się z innymi promocjami dotyczącymi wysokości
+                  prowizji, chyba że Administrator postanowi inaczej.
+                </p>
+                <p>
+                  2. Administrator zastrzega sobie prawo do interpretacji niniejszego
+                  Załącznika w granicach obowiązującego prawa.
+                </p>
+                <p>
+                  3. Administrator może informować Sprzedawców o statusie Promocji
+                  (np. liczbie dostępnych miejsc) za pośrednictwem Serwisu lub
+                  komunikacji elektronicznej.
+                </p>
+                <p>
+                  4. Załącznik nr 1 wchodzi w życie z dniem jego opublikowania w
+                  Serwisie.
+                </p>
+              </Disclosure.Panel>
+            </>
+          )}
+        </Disclosure>
+
       </div>
 
       {/* Footer with Contact Info */}
