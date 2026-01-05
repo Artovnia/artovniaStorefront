@@ -62,6 +62,7 @@ export default async function SellerPage({
       getSellerReviews(handle).catch(() => ({ reviews: [] })), // Non-blocking
     ])
     
+    
     const reviews = reviewsResult?.reviews || []
     
     if (!seller) {

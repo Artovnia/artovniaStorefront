@@ -24,6 +24,8 @@ export const SellerCard = ({ seller, className }: SellerCardProps) => {
 
   // Use seller photo or logo_url, fallback to placeholder
   const sellerImage = seller.photo || seller.logo_url || '/placeholder.webp'
+  
+ 
 
   // ✅ PERFORMANCE: Use native Link navigation instead of useTransition
   // This allows loading.tsx to show immediately without waiting for full page render
