@@ -3,8 +3,12 @@ import { sdk } from "../config"
 
 export const getSellerByHandle = async (handle: string): Promise<SellerProps | null> => {
   try {
+    // Encode the handle to properly handle special characters like dots
+    // This prevents Next.js from treating handles like 'ganna.pottery' as file extensions
+    const encodedHandle = encodeURIComponent(handle)
+    
     const { seller } = await sdk.client
-      .fetch<{ seller: SellerProps }>(`/store/seller/${handle}`, {
+      .fetch<{ seller: SellerProps }>(`/store/seller/${encodedHandle}`, {
         query: {
           fields:
             "+created_at,+rating,+email", // Removed *reviews references

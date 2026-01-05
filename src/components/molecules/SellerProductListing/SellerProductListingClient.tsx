@@ -9,6 +9,7 @@ import { PRODUCT_LIMIT } from "@/const"
 import { listProductsWithSort } from '@/lib/data/products'
 import { getUserWishlists } from '@/lib/data/wishlist'
 import { SerializableWishlist } from '@/types/wishlist'
+import { PromotionDataProvider } from "@/components/context/PromotionDataProvider"
 
 export function SellerProductListingClient({
   seller_id,
@@ -105,9 +106,16 @@ export function SellerProductListingClient({
     return <ProductListingSkeleton />
   }
 
+  // Extract product IDs for promotion data provider
+  const productIds = products.map(p => p.id)
+
   return (
-    <div className="mt-8">
-      {!products.length ? (
+    <PromotionDataProvider 
+      countryCode="PL"
+      productIds={productIds}
+    >
+      <div className="mt-8">
+        {!products.length ? (
         <div className="text-center my-10">
           <h2 className="uppercase heading-lg">Brak produktów</h2>
           <p className="mt-4 text-lg">
@@ -122,7 +130,7 @@ export function SellerProductListingClient({
             </div>
           </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-2 mx-auto">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-y-4 mx-auto">
             {products.map((product) => (
               <ProductCard
                 key={product.id}
@@ -145,6 +153,7 @@ export function SellerProductListingClient({
           )}
         </>
       )}
-    </div>
+      </div>
+    </PromotionDataProvider>
   )
 }

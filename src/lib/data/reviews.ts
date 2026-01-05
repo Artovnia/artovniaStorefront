@@ -358,9 +358,12 @@ const getSellerReviews = async (sellerHandle: string) => {
       'x-publishable-api-key': `${process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || ''}`
     }
     
+    // Encode the handle to properly handle special characters like dots
+    const encodedHandle = encodeURIComponent(sellerHandle)
+    
     // Use the seller reviews endpoint
     const response = await fetch(
-      `${process.env.MEDUSA_BACKEND_URL}/store/seller/${sellerHandle}/reviews?limit=100`,
+      `${process.env.MEDUSA_BACKEND_URL}/store/seller/${encodedHandle}/reviews?limit=100`,
       {
         method: 'GET',
         headers: commonHeaders,

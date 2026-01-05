@@ -5,7 +5,6 @@ import { getSellerByHandle } from "../../../../../lib/data/seller"
 import { getVendorAvailability, getVendorHolidayMode, getVendorSuspension } from "../../../../../lib/data/vendor-availability"
 import { getSellerReviews } from "../../../../../lib/data/reviews"
 import { SellerProps } from "../../../../../types/seller"
-import { PromotionDataProvider } from "../../../../../components/context/PromotionDataProvider"
 import { BatchPriceProvider } from "../../../../../components/context/BatchPriceProvider"
 import { generateSellerMetadata } from "../../../../../lib/helpers/seo"
 import type { Metadata } from "next"
@@ -118,40 +117,38 @@ export default async function SellerPage({
       : undefined
 
     return (
-      <PromotionDataProvider countryCode="PL" productIds={[]} limit={0}>
-        <BatchPriceProvider currencyCode="PLN">
-          <main className="container">
-            <VendorAvailabilityProvider
-              vendorId={seller.id}
-              vendorName={seller.name}
-              availability={availability}
-              holidayMode={holidayMode}
-              suspension={suspension}
-              showModalOnLoad={!!availability?.onHoliday}
-            >
-              <div className="grid grid-cols-1 lg:grid-cols-[30%_70%] gap-6 mt-8">
-                <aside className="lg:sticky lg:top-40 lg:self-start">
-                  <SellerSidebar seller={sellerWithReviews as SellerProps} user={user} />
-                </aside>
-                
-                <div className="w-full mx-auto">
-                  <SellerTabs
-                    tab={tab}
-                    seller_id={seller.id}
-                    seller_handle={seller.handle}
-                    seller_name={seller.name}
-                    user={user}
-                    locale={locale}
-                    initialProducts={initialProducts}
-                    initialTotalCount={initialTotalCount}
-                    initialWishlists={initialWishlists}
-                  />
-                </div>
+      <BatchPriceProvider currencyCode="PLN">
+        <main className="container">
+          <VendorAvailabilityProvider
+            vendorId={seller.id}
+            vendorName={seller.name}
+            availability={availability}
+            holidayMode={holidayMode}
+            suspension={suspension}
+            showModalOnLoad={!!availability?.onHoliday}
+          >
+            <div className="grid grid-cols-1 lg:grid-cols-[30%_70%] gap-6 mt-8 ">
+              <aside className="lg:sticky lg:top-40 lg:self-start">
+                <SellerSidebar seller={sellerWithReviews as SellerProps} user={user} />
+              </aside>
+              
+              <div className="w-full mx-auto">
+                <SellerTabs
+                  tab={tab}
+                  seller_id={seller.id}
+                  seller_handle={seller.handle}
+                  seller_name={seller.name}
+                  user={user}
+                  locale={locale}
+                  initialProducts={initialProducts}
+                  initialTotalCount={initialTotalCount}
+                  initialWishlists={initialWishlists}
+                />
               </div>
-            </VendorAvailabilityProvider>
-          </main>
-        </BatchPriceProvider>
-      </PromotionDataProvider>
+            </div>
+          </VendorAvailabilityProvider>
+        </main>
+      </BatchPriceProvider>
     )
   } catch (error) {
     console.error(`Error in SellerPage: ${error instanceof Error ? error.message : 'Unknown error'}`)
