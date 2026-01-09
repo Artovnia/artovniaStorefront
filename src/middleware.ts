@@ -6,11 +6,9 @@ export default createMiddleware(routing);
 export const config = {
   matcher: [
     '/',
-    `/(gb)/:path*`,
-    // Allow dots in seller handles (e.g., /sellers/ganna.pottery)
+    '/(gb)/:path*',
     '/(pl|en)?/sellers/:handle*',
     '/sellers/:handle*',
-    // Exclude static files, API routes, and Next.js internals
-    '/((?!api|_next|_vercel|.*\\.(?:jpg|jpeg|png|gif|svg|ico|webp|webmanifest|css|js|woff|woff2|ttf|eot)).*)',
+    '/((?!api|_next|_vercel|.*\\.(?:jpg|jpeg|png|gif|svg|ico|webp|webmanifest|css|js|woff|woff2|ttf|eot|txt|xml)).*)',
   ],
 };
