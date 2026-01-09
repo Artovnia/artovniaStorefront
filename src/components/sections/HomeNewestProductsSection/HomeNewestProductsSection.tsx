@@ -1,5 +1,5 @@
 import { HomeProductsCarousel } from "@/components/organisms"
-import { listProducts } from "@/lib/data/products"
+import { listProductsLean } from "@/lib/data/products"
 import { Product } from "@/types/product"
 import { HttpTypes } from "@medusajs/types"
 import { SerializableWishlist } from "@/types/wishlist"
@@ -26,7 +26,7 @@ export const HomeNewestProductsSection = async ({
     // ✅ Use Next.js server-side cache to prevent skeleton loading on navigation
     const getCachedProducts = unstable_cache(
       async () => {
-        const result = await listProducts({
+        const result = await listProductsLean({
           countryCode: locale,
           queryParams: {
             limit: limit,

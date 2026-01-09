@@ -30,14 +30,6 @@ const StripeReturnPageContent: React.FC = () => {
         const cartId = searchParams.get('cart_id')
         const status = searchParams.get('status') // Our custom status parameter
         
-        console.log('🔍 Stripe Return Page - URL Parameters:', {
-          paymentIntent,
-          sessionId,
-          redirectStatus,
-          cartId,
-          status,
-          allParams: Object.fromEntries(searchParams.entries())
-        })
         
         if (!cartId) {
           throw new Error('Missing cart_id parameter')
@@ -45,8 +37,7 @@ const StripeReturnPageContent: React.FC = () => {
         
         // Use our custom status parameter if redirect_status is not available
         const finalStatus = redirectStatus || status
-        
-        console.log('🔍 Final Status:', finalStatus)
+
 
         if (finalStatus === 'succeeded' || finalStatus === 'success') {
           
@@ -93,7 +84,6 @@ const StripeReturnPageContent: React.FC = () => {
               try {
                 // Try to get payment intent from session_id first (most reliable for Checkout)
                 if (sessionId) {
-                  console.log('🔍 Retrieving payment intent from Stripe Checkout Session:', sessionId)
                   const sessionResponse = await fetch(
                     `${process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL}/store/stripe/session-payment-intent?session_id=${sessionId}`,
                     {
@@ -107,12 +97,11 @@ const StripeReturnPageContent: React.FC = () => {
                     const sessionData = await sessionResponse.json()
                     if (sessionData.paymentIntentId) {
                       realPaymentIntentId = sessionData.paymentIntentId
-                      console.log('✅ Retrieved real payment intent from session:', realPaymentIntentId)
                     }
                   }
                 } else {
                   // Fallback: Try to get from cart payment collection
-                  console.log('🔍 Retrieving payment intent from cart payment collection')
+                
                   const paymentIntentResponse = await fetch(
                     `${process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL}/store/carts/${cartId}/stripe-payment-intent`,
                     {
@@ -128,7 +117,7 @@ const StripeReturnPageContent: React.FC = () => {
                     // Use the real payment intent if found
                     if (paymentIntentData.paymentIntentId) {
                       realPaymentIntentId = paymentIntentData.paymentIntentId
-                      console.log('✅ Retrieved real payment intent from cart:', realPaymentIntentId)
+                    
                     }
                   
                     // Check if this is a placeholder payment
@@ -172,7 +161,7 @@ const StripeReturnPageContent: React.FC = () => {
               }
               
               // Trigger automatic refund for real Stripe payment
-              console.log('💰 Triggering automatic refund for payment:', realPaymentIntentId)
+              
               
               const refundResponse = await fetch(
                 `${process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL}/store/stripe/refund-safeguard`,

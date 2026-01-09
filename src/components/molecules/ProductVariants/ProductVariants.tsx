@@ -119,22 +119,45 @@ export const ProductVariants = ({
       .filter(Boolean) // Remove null entries
   }, [product.options, product.variants])
 
-  // ARCHITECTURAL CHANGE: Ultra-simple option setter for URL-first navigation
+  // CRITICAL FIX: Maintain all option selections when changing one option
   const setOptionValue = useCallback((optionTitle: string, value: string) => {
     if (!value || !product.variants) return
     
+    // Get fresh current variant data to avoid stale closures
+    const currentVariant = selectedVariantId 
+      ? product.variants.find(v => v.id === selectedVariantId)
+      : product.variants[0]
     
+    if (!currentVariant) return
     
-    // Find variant by matching the specific option change
+    // Build current options map from the actual current variant
+    const currentOptions: Record<string, string> = {}
+    currentVariant.options?.forEach(opt => {
+      if (opt.option?.title && opt.value) {
+        currentOptions[opt.option.title.toLowerCase()] = opt.value
+      }
+    })
+    
+    // Build the desired option combination by updating only the changed option
+    // Keep all other currently selected options unchanged
+    const desiredOptions: Record<string, string> = { ...currentOptions }
+    desiredOptions[optionTitle.toLowerCase()] = value
+    
+    // Find variant that matches ALL desired options
     const matchingVariant = product.variants.find(variant => {
-      return variant.options?.some(variantOption => {
-        return variantOption.option?.title?.toLowerCase() === optionTitle.toLowerCase() && 
-               variantOption.value === value
+      if (!variant.options || variant.options.length === 0) return false
+      
+      // Check if this variant matches ALL desired option values
+      return Object.entries(desiredOptions).every(([optTitle, optValue]) => {
+        return variant.options?.some(variantOption => {
+          return variantOption.option?.title?.toLowerCase() === optTitle.toLowerCase() && 
+                 variantOption.value === optValue
+        })
       })
     })
     
     if (matchingVariant && matchingVariant.id !== selectedVariantId) {
-      // ARCHITECTURAL CHANGE: Direct URL navigation - no React state management
+      // Direct URL navigation - no React state management
       setSelectedVariantId(matchingVariant.id)
     }
   }, [product.variants, selectedVariantId, setSelectedVariantId])

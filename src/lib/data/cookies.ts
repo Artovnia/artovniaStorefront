@@ -243,14 +243,16 @@ export const getCacheTag = async (
       return `${tag}-${cacheId}`;
     }
     
-    return ''; // No cache ID found
+    // ✅ FIX: Return generic tag instead of empty string to prevent 400 errors
+    return tag; // Fallback to tag name without cache ID
   } catch (error) {
     // Only log real errors, not expected cookie access issues
     if (error instanceof Error && 
         !error.message.includes('outside a request scope')) {
       console.error('Error in getCacheTag:', error);
     }
-    return '';
+    // ✅ FIX: Return tag instead of empty string on error
+    return tag;
   }
 };
 

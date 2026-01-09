@@ -100,6 +100,20 @@ const nextConfig: NextConfig = {
   
   async headers() {
     return [
+      // SEO: robots.txt file must be served as text/plain
+      {
+        source: '/robots.txt',
+        headers: [
+          {
+            key: 'Content-Type',
+            value: 'text/plain; charset=utf-8',
+          },
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=3600, s-maxage=3600',
+          },
+        ],
+      },
       // SEO: ads.txt file must be served as text/plain
       {
         source: '/ads.txt',

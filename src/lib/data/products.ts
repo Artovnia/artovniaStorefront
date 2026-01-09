@@ -6,6 +6,7 @@ import { getRegion, retrieveRegion } from "./regions"
 import { HttpTypes } from "@medusajs/types"
 import { SellerProps } from "@/types/seller"
 import { unifiedCache, CACHE_TTL } from "@/lib/utils/unified-cache"
+import { fetchWithRetry } from "@/lib/utils/fetch-with-timeout"
 
 // Type for allowed sort keys in server-side product listing
 type SortOptions = "created_at" | "title" | "price" | "updated_at"
@@ -40,6 +41,142 @@ const sortProducts = (products: HttpTypes.StoreProduct[], sortBy: SortOptions): 
   })
 }
 
+/**
+ * LEAN product listing for homepage/listing pages
+ * Minimal fields to stay under Vercel's 2MB cache limit
+ * Use this for: Homepage sections, category listings, search results
+ */
+export const listProductsLean = async ({
+  pageParam = 1,
+  queryParams,
+  countryCode,
+  regionId,
+  category_id,
+  collection_id,
+  seller_id,
+}: {
+  pageParam?: number
+  queryParams?: HttpTypes.FindParams &
+    HttpTypes.StoreProductParams & {
+      handle?: string
+    }
+  category_id?: string
+  collection_id?: string
+  seller_id?: string
+  countryCode?: string
+  regionId?: string
+}): Promise<{
+  response: {
+    products: (HttpTypes.StoreProduct & { seller?: SellerProps })[]
+    count: number
+  }
+  nextPage: number | null
+  queryParams?: HttpTypes.FindParams & HttpTypes.StoreProductParams
+}> => {
+  if (!countryCode && !regionId) {
+    console.error('❌ listProductsLean: No countryCode or regionId provided')
+    throw new Error("Country code or region ID is required")
+  }
+
+  const limit = queryParams?.limit || 12
+  const _pageParam = Math.max(pageParam, 1)
+  const offset = (_pageParam - 1) * limit
+
+  let region: HttpTypes.StoreRegion | undefined | null
+
+  if (countryCode) {
+    region = await getRegion(countryCode)
+  } else {
+    region = await retrieveRegion(regionId!)
+  }
+
+  if (!region) {
+    const isBuildTime = process.env.NEXT_PHASE === 'phase-production-build'
+    if (isBuildTime) {
+      console.warn('⚠️ listProductsLean: No region found during build (backend offline?), returning empty products', { countryCode, regionId })
+    } else {
+      console.error('❌ listProductsLean: No region found, returning empty products', { countryCode, regionId })
+    }
+    return {
+      response: { products: [], count: 0 },
+      nextPage: null,
+    }
+  }
+
+  const headers = {
+    ...(await getAuthHeaders()),
+  }
+
+  try {
+    // ✅ OPTIMIZED: Minimal fields for homepage - stays under 2MB cache limit
+    const queryObject: any = {
+      category_id,
+      collection_id,
+      limit,
+      offset,
+      region_id: region?.id,
+      // ✅ LEAN FIELDS: Only essential data for display
+      fields: "id,title,handle,thumbnail,description,created_at,status," +
+              "variants.id,variants.title,variants.calculated_price," +
+              "seller.id,seller.handle,seller.store_name,seller.name," + // ✅ Added seller.name for ProductCard
+              "categories.id,categories.name,categories.handle," +
+              "collection.id,collection.handle,collection.title," +
+              "metadata.featured,metadata.seller_id",
+      ...queryParams,
+    }
+    
+    if (seller_id) {
+      queryObject.seller_id = seller_id
+    }
+    
+    const { products, count } = await fetchWithRetry(
+      () => sdk.client.fetch<{
+        products: HttpTypes.StoreProduct[]
+        count: number
+      }>(`/store/products`, {
+        method: "GET",
+        query: queryObject,
+        headers,
+        next: { revalidate: 300, tags: ['products'] },
+      }),
+      {
+        timeout: process.env.NODE_ENV === 'development' ? 30000 : 15000,
+        maxRetries: 3,
+        onRetry: (attempt, error) => {
+          console.warn(`🔄 Retrying listProductsLean (attempt ${attempt}):`, error.message)
+        }
+      }
+    )
+
+    const nextPage = count > offset + limit ? pageParam + 1 : null
+    return {
+      response: {
+        products,
+        count,
+      },
+      nextPage: nextPage,
+      queryParams,
+    }
+  } catch (error) {
+    console.error('❌ listProductsLean: Fetch failed', {
+      error: error instanceof Error ? error.message : error,
+      countryCode,
+      regionId: region?.id,
+      stack: error instanceof Error ? error.stack : undefined
+    })
+    return {
+      response: { products: [], count: 0 },
+      nextPage: null,
+      queryParams,
+    }
+  }
+}
+
+/**
+ * FULL product listing for detail pages
+ * Includes all fields including seller products, inventory, etc.
+ * Use this for: Product detail pages, seller pages where full data is needed
+ */
 export const listProducts = async ({
   pageParam = 1,
   queryParams,
@@ -463,6 +600,7 @@ export const getProductShippingOptions = async (
 /**
  * Batch fetch products by handles - optimized for seller product fetching
  * Reduces multiple individual API calls to a single batch request
+ * Uses Next.js cache with lean fields for optimal performance
  */
 export const batchFetchProductsByHandles = async ({
   handles,
@@ -475,19 +613,17 @@ export const batchFetchProductsByHandles = async ({
 }): Promise<(HttpTypes.StoreProduct & { seller?: SellerProps })[]> => {
   if (!handles.length) return []
   
-  const cacheKey = `products:batch:${countryCode}:${handles.sort().join(',')}`
-  
-  return unifiedCache.get(cacheKey, async () => {
-    try {
-      const region = await getRegion(countryCode)
-      if (!region) return []
+  try {
+    const region = await getRegion(countryCode)
+    if (!region) return []
 
-      const headers = {
-        ...(await getAuthHeaders()),
-      }
+    const headers = {
+      ...(await getAuthHeaders()),
+    }
 
-      // Use a single API call to fetch multiple products by handles
-      const { products } = await sdk.client.fetch<{
+    // ✅ OPTIMIZED: Use Next.js cache with lean fields and timeout/retry
+    const { products } = await fetchWithRetry(
+      () => sdk.client.fetch<{
         products: HttpTypes.StoreProduct[]
         count: number
       }>(`/store/products`, {
@@ -496,21 +632,33 @@ export const batchFetchProductsByHandles = async ({
           limit,
           region_id: region.id,
           handle: handles, // Pass multiple handles
-          fields: "*variants.calculated_price,*seller,*variants,*variants.inventory_quantity,*variants.manage_inventory,*variants.allow_backorder,*variants.inventory_items.inventory_item_id,*variants.inventory_items.required_quantity,*metadata,*categories,*categories.parent_category,*collection",
+          // ✅ LEAN FIELDS: Only essential data for seller product display
+          fields: "id,title,handle,thumbnail,description,created_at,status," +
+                  "variants.id,variants.title,variants.calculated_price," +
+                  "seller.id,seller.handle,seller.store_name," +
+                  "categories.id,categories.name,categories.handle," +
+                  "metadata.featured",
         },
         headers,
-        cache: "no-cache",
-      })
+        next: { revalidate: 600, tags: ['products', 'seller-products'] }, // ✅ 10-minute cache
+      }),
+      {
+        timeout: 15000,
+        maxRetries: 3,
+        onRetry: (attempt, error) => {
+          console.warn(`🔄 Retrying batchFetchProductsByHandles (attempt ${attempt}):`, error.message)
+        }
+      }
+    )
 
-      // Ensure products are returned in the same order as requested handles
-      const orderedProducts = handles.map(handle => 
-        products.find(p => p.handle === handle)
-      ).filter(Boolean) as (HttpTypes.StoreProduct & { seller?: SellerProps })[]
+    // Ensure products are returned in the same order as requested handles
+    const orderedProducts = handles.map(handle => 
+      products.find(p => p.handle === handle)
+    ).filter(Boolean) as (HttpTypes.StoreProduct & { seller?: SellerProps })[]
 
-      return orderedProducts
-    } catch (error) {
-      console.error('Batch fetch products failed:', error)
-      return []
-    }
-  }, CACHE_TTL.PRODUCT)
+    return orderedProducts
+  } catch (error) {
+    console.error('Batch fetch products failed:', error)
+    return []
+  }
 }

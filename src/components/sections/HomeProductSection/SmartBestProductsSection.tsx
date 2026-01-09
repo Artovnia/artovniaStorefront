@@ -1,5 +1,5 @@
 import { HomeProductsCarousel } from "@/components/organisms"
-import { listProducts } from "@/lib/data/products"
+import { listProductsLean } from "@/lib/data/products"
 import { Product } from "@/types/product"
 import { BatchPriceProvider } from "@/components/context/BatchPriceProvider"
 import { HttpTypes } from "@medusajs/types"
@@ -24,8 +24,8 @@ export const SmartBestProductsSection = async ({
   wishlist = []
 }: SmartBestProductsSectionProps) => {
   try {
-    // Fetch products directly without caching IDs
-    const result = await listProducts({
+    // Fetch products directly without caching IDs - using LEAN version for homepage
+    const result = await listProductsLean({
       countryCode: locale,
       queryParams: {
         limit: 50,

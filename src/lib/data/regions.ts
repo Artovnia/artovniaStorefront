@@ -25,32 +25,44 @@ export const retrieveRegion = async (id: string) => {
     .catch(medusaError)
 }
 
-const regionMap = new Map<string, HttpTypes.StoreRegion>()
-
-export const getRegion = async (countryCode: string) => {
+// ⚠️ NOTE: Region selection is PER-USER (client-side selection in CountrySelector)
+// Cannot use unstable_cache because different users may have different regions
+// The countryCode parameter comes from user's cart region, not a global setting
+// 
+// Caching strategy:
+// - listRegions() uses next: { revalidate: 3600 } for raw region data
+// - This function builds the mapping on each call (cheap operation)
+// - Next.js will deduplicate identical calls within same request
+export const getRegion = async (countryCode: string): Promise<HttpTypes.StoreRegion | null> => {
   try {
-    if (regionMap.has(countryCode)) {
-      return regionMap.get(countryCode)
-    }
-
     const regions = await listRegions()
 
     if (!regions) {
       return null
     }
 
+    // Build lookup map (fast operation, no need to cache)
+    const countryToRegionMap = new Map<string, HttpTypes.StoreRegion>()
     regions.forEach((region) => {
       region.countries?.forEach((c) => {
-        regionMap.set(c?.iso_2 ?? "", region)
+        if (c?.iso_2) {
+          countryToRegionMap.set(c.iso_2.toLowerCase(), region)
+        }
       })
     })
 
-    const region = countryCode
-      ? regionMap.get(countryCode)
-      : regionMap.get("us")
+    // Find region by country code
+    const region = countryToRegionMap.get(countryCode.toLowerCase())
+    
+    // Fallback to US or first region
+    if (!region) {
+      const fallback = countryToRegionMap.get('us') || regions[0]
+      return fallback || null
+    }
 
     return region
-  } catch (e: any) {
+  } catch (e) {
+    console.error('❌ getRegion failed:', { countryCode, error: e })
     return null
   }
 }
