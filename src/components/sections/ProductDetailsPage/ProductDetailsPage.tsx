@@ -46,16 +46,16 @@ export const ProductDetailsPage = async ({
     breadcrumbsResult,
     eligibilityResult
   ] = await Promise.allSettled([
-    // Seller products
-    prod.seller?.id && prod.seller.products && prod.seller.products.length > 0
-      ? batchFetchProductsByHandles({
-          handles: (prod.seller.products as any[])
-            .slice(0, 8)
-            .map((p: any) => p.handle)
-            .filter(Boolean),
-          countryCode: locale,
-          limit: 8
-        })
+    // Seller products - fetch by seller_id instead of using seller.products array
+    prod.seller?.id
+      ? (async () => {
+          const { response } = await listProducts({
+            seller_id: prod.seller.id,
+            countryCode: locale,
+            queryParams: { limit: 8 }
+          })
+          return response.products
+        })()
       : Promise.resolve([]),
     
     // User data (customer + wishlist)

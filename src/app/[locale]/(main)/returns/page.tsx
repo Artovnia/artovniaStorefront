@@ -11,6 +11,8 @@ export async function generateMetadata(): Promise<Metadata> {
   }
 }
 
+export const revalidate = 604800 // Revalidate every 7 days (legal document)
+
 export default async function ReturnsPage() {
   return (
     <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">

@@ -45,6 +45,8 @@ export async function generateMetadata({
   }
 }
 
+export const revalidate = 1800 // Revalidate every 30 minutes (product listings should be relatively fresh)
+
 export default async function TagPage({ params, searchParams }: Props) {
   const { tag, locale } = await params
   const urlParams = await searchParams

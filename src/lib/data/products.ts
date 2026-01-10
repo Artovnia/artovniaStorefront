@@ -274,13 +274,15 @@ export const listProducts = async ({
     }
     
     // ✅ Standard product fetching (no seller filter)
+    // ⚠️ PERFORMANCE FIX: Removed *seller.products - ProductDetailsPage fetches seller products separately
+    // ✅ Keep inventory fields - needed for ProductDetailsHeader "Add to Cart" button logic
     const queryObject: any = {
       category_id,
       collection_id,
       limit,
       offset,
       region_id: region?.id,
-      fields: "*variants.calculated_price,*seller,*seller.products,*variants,*variants.inventory_quantity,*variants.manage_inventory,*variants.allow_backorder,*variants.inventory_items.inventory_item_id,*variants.inventory_items.required_quantity,*metadata,*categories,*categories.parent_category,*collection",
+      fields: "*variants.calculated_price,*seller,*variants,*variants.inventory_quantity,*variants.manage_inventory,*variants.allow_backorder,*metadata,*categories,*collection",
       ...queryParams,
     }
     

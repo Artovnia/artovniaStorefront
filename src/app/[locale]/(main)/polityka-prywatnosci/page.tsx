@@ -27,6 +27,8 @@ export async function generateMetadata({
   } as Metadata
 }
 
+export const revalidate = 604800 // Revalidate every 7 days (legal document)
+
 export default async function PrivacyPage() {
   return (
     <div className="min-h-screen bg-[#F4F0EB]">

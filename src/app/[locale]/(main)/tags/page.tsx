@@ -12,6 +12,8 @@ export const metadata: Metadata = {
   },
 }
 
+export const revalidate = 3600 // Revalidate every hour (tag cloud for SEO/internal linking)
+
 export default async function TagsIndexPage() {
   const popularTags = await getPopularTags(50)
 

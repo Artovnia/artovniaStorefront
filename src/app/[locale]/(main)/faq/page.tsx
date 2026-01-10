@@ -48,7 +48,7 @@ export async function generateMetadata(): Promise<Metadata> {
   }
 }
 
-export const revalidate = 3600 // Revalidate every hour
+export const revalidate = 259200 // Revalidate every 3 days
 
 export default async function FAQPage() {
   // Generate structured data
