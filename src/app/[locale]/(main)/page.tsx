@@ -64,8 +64,7 @@ export const metadata: Metadata = {
   alternates: {
     canonical: process.env.NEXT_PUBLIC_BASE_URL,
     languages: {
-      'pl': `${process.env.NEXT_PUBLIC_BASE_URL}/pl`,
-      'en': `${process.env.NEXT_PUBLIC_BASE_URL}/en`,
+      'pl': process.env.NEXT_PUBLIC_BASE_URL,
       'x-default': process.env.NEXT_PUBLIC_BASE_URL,
     },
   },

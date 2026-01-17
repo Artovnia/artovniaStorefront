@@ -30,7 +30,9 @@ const getCachedProduct = cache(async (handle: string, locale: string) => {
   return response.products[0]
 })
 
-export async function generateMetadata({
+    
+    // ✅ Enhanced metadata with canonical URLs and Open Graph
+  export async function generateMetadata({
   params,
 }: {
   params: Promise<{ handle: string; locale: string }>
@@ -38,7 +40,6 @@ export async function generateMetadata({
   const { handle, locale } = await params
 
   try {
-    // ✅ OPTIMIZATION: Use cached product fetch (deduplicates with page render)
     const product = await getCachedProduct(handle, locale)
     
     if (!product) {
@@ -53,22 +54,20 @@ export async function generateMetadata({
     }
 
     const baseMetadata = generateProductMetadata(product, locale)
+    const canonicalUrl = `${process.env.NEXT_PUBLIC_BASE_URL}/products/${product.handle}`
     
-    // ✅ Enhanced metadata with canonical URLs and Open Graph
     return {
       ...baseMetadata,
       alternates: {
-        canonical: locale === 'pl' 
-          ? `${process.env.NEXT_PUBLIC_BASE_URL}/products/${product.handle}`
-          : `${process.env.NEXT_PUBLIC_BASE_URL}/${locale}/products/${product.handle}`,
+        canonical: canonicalUrl,
         languages: {
-          'pl': `${process.env.NEXT_PUBLIC_BASE_URL}/products/${product.handle}`,
-          'en': `${process.env.NEXT_PUBLIC_BASE_URL}/en/products/${product.handle}`,
-          'x-default': `${process.env.NEXT_PUBLIC_BASE_URL}/products/${product.handle}`,
+          'pl': canonicalUrl,
+          'x-default': canonicalUrl,
         },
       },
       openGraph: {
         ...baseMetadata.openGraph,
+        url: canonicalUrl,
         images: product.images?.[0] ? [
           {
             url: product.images[0].url.startsWith('http') 
