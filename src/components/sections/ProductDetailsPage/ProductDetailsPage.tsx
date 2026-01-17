@@ -26,7 +26,7 @@ export const ProductDetailsPage = async ({
 }) => {
   // ✅ OPTIMIZATION: Use passed product or fetch if not provided
   let prod = productProp
-  
+
   if (!prod) {
     const { response } = await listProducts({
       countryCode: locale,
@@ -44,7 +44,7 @@ export const ProductDetailsPage = async ({
     reviewsResult,
     vendorStatusResult,
     breadcrumbsResult,
-    eligibilityResult
+    eligibilityResult,
   ] = await Promise.allSettled([
     // Seller products - fetch by seller_id instead of using seller.products array
     prod.seller?.id
@@ -52,12 +52,12 @@ export const ProductDetailsPage = async ({
           const { response } = await listProducts({
             seller_id: prod.seller.id,
             countryCode: locale,
-            queryParams: { limit: 8 }
+            queryParams: { limit: 8 },
           })
           return response.products
         })()
       : Promise.resolve([]),
-    
+
     // User data (customer + wishlist)
     retrieveCustomer()
       .then(async (user) => {
@@ -69,58 +69,96 @@ export const ProductDetailsPage = async ({
         return { user: null, wishlist: [], authenticated: false }
       })
       .catch(() => ({ user: null, wishlist: [], authenticated: false })),
-    
+
     // Reviews
     getProductReviews(prod.id).catch(() => ({ reviews: [] })),
-    
+
     // ✅ OPTIMIZED: Batched vendor status (3 requests → 1 request)
     prod.seller?.id
       ? Promise.race([
           getVendorCompleteStatus(prod.seller.id),
-          new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 500))
-        ]).catch(() => ({ availability: undefined, holiday: undefined, suspension: undefined }))
-      : Promise.resolve({ availability: undefined, holiday: undefined, suspension: undefined }),
-    
+          new Promise((_, reject) =>
+            setTimeout(() => reject(new Error("Timeout")), 500)
+          ),
+        ]).catch(() => ({
+          availability: undefined,
+          holiday: undefined,
+          suspension: undefined,
+        }))
+      : Promise.resolve({
+          availability: undefined,
+          holiday: undefined,
+          suspension: undefined,
+        }),
+
     // Breadcrumbs
     buildProductBreadcrumbs(prod, locale),
-    
+
     // Review eligibility (check if user has purchased this product)
-    checkProductReviewEligibility(prod.id).catch(() => ({ isEligible: false, hasPurchased: false }))
+    checkProductReviewEligibility(prod.id).catch(() => ({
+      isEligible: false,
+      hasPurchased: false,
+    })),
   ])
 
   // Extract results with fallbacks
-  const sellerProducts = sellerProductsResult.status === 'fulfilled' 
-    ? sellerProductsResult.value 
-    : []
-  
-  const { user: customer, wishlist, authenticated: isUserAuthenticated } = userResult.status === 'fulfilled' 
-    ? userResult.value 
+  const sellerProducts =
+    sellerProductsResult.status === "fulfilled"
+      ? sellerProductsResult.value
+      : []
+
+  const {
+    user: customer,
+    wishlist,
+    authenticated: isUserAuthenticated,
+  } = userResult.status === "fulfilled"
+    ? userResult.value
     : { user: null, wishlist: [], authenticated: false }
-  
-  const reviews = reviewsResult.status === 'fulfilled' 
-    ? reviewsResult.value?.reviews || [] 
-    : []
-  
+
+  const reviews =
+    reviewsResult.status === "fulfilled"
+      ? reviewsResult.value?.reviews || []
+      : []
+
   // ✅ Extract batched vendor status
-  const vendorStatus = vendorStatusResult.status === 'fulfilled' 
-    ? (vendorStatusResult.value as any)
-    : { availability: undefined, holiday: undefined, suspension: undefined }
-  
+  const vendorStatus =
+    vendorStatusResult.status === "fulfilled"
+      ? (vendorStatusResult.value as any)
+      : { availability: undefined, holiday: undefined, suspension: undefined }
+
   const availability = vendorStatus?.availability
   const holidayMode = vendorStatus?.holiday
   const suspension = vendorStatus?.suspension
-  
-  const breadcrumbs = breadcrumbsResult.status === 'fulfilled'
-    ? breadcrumbsResult.value
-    : []
-  
-  const eligibility = eligibilityResult.status === 'fulfilled'
-    ? eligibilityResult.value
-    : { isEligible: false, hasPurchased: false }
+
+  const breadcrumbs =
+    breadcrumbsResult.status === "fulfilled" ? breadcrumbsResult.value : []
+
+  const eligibility =
+    eligibilityResult.status === "fulfilled"
+      ? eligibilityResult.value
+      : { isEligible: false, hasPurchased: false }
+
+  // ✅ FIX: Get price from variant's calculated_price
+  const getProductPrice = (): number | undefined => {
+    // Try variant calculated price first
+    const variant = prod.variants?.[0]
+    if (variant?.calculated_price?.calculated_amount) {
+      return variant.calculated_price.calculated_amount
+    }
+    // Fallback to original price
+    if (variant?.calculated_price?.original_amount) {
+      return variant.calculated_price.original_amount
+    }
+    // Try product-level price (some setups have this)
+    if ((prod as any).calculated_price?.calculated_amount) {
+      return (prod as any).calculated_price.calculated_amount
+    }
+    return undefined
+  }
 
   // Generate structured data for SEO
-  const productPrice = (prod as any).calculated_price?.calculated_amount
-  const productJsonLd = generateProductJsonLd(prod, productPrice, 'PLN', reviews)
+  const productPrice = getProductPrice()
+  const productJsonLd = generateProductJsonLd(prod, productPrice, "PLN", reviews)
   const breadcrumbJsonLd = generateBreadcrumbJsonLd(breadcrumbs)
 
   return (
@@ -134,13 +172,13 @@ export const ProductDetailsPage = async ({
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
       />
-      
+
       <ProductErrorBoundary>
         {/* Breadcrumbs */}
         <div className="max-w-[1920px] mx-auto px-4 lg:px-12 py-2 lg:py-6 mb-4 text-xl">
           <Breadcrumbs items={breadcrumbs} />
         </div>
-        
+
         {/* ✅ FIX: Don't pass productIds - let provider fetch all promotional products (limit 50) */}
         {/* Product detail pages need access to all promotional products for proper price display */}
         <PromotionDataProvider countryCode={locale} limit={50}>
@@ -156,11 +194,17 @@ export const ProductDetailsPage = async ({
               {/* Mobile Layout: Stacked vertically */}
               <div className="flex flex-col md:hidden">
                 <div className="w-full">
-                  <ProductGallery images={prod?.images || []} title={prod?.title || ''} />
+                  <ProductGallery
+                    images={prod?.images || []}
+                    title={prod?.title || ""}
+                  />
                 </div>
                 <div className="w-full mt-4">
                   {prod.seller ? (
-                    <ProductDetails product={{...prod, seller: prod.seller}} locale={locale} />
+                    <ProductDetails
+                      product={{ ...prod, seller: prod.seller }}
+                      locale={locale}
+                    />
                   ) : (
                     <div className="p-4 bg-red-50 text-red-800 rounded">
                       Seller information is missing for this product.
@@ -173,13 +217,19 @@ export const ProductDetailsPage = async ({
               <div className="hidden md:flex md:flex-row md:gap-6 lg:gap-12 max-w-[1920px] mx-auto md:px-4 lg:px-0">
                 {/* Left: Sticky Product Gallery */}
                 <div className="md:w-1/2 md:max-w-[calc(50%-12px)] lg:max-w-none md:px-0 md:sticky md:top-20 md:self-start">
-                  <ProductGallery images={prod?.images || []} title={prod?.title || ''} />
+                  <ProductGallery
+                    images={prod?.images || []}
+                    title={prod?.title || ""}
+                  />
                 </div>
-                
+
                 {/* Right: Scrollable Product Details */}
                 <div className="md:w-1/2 md:max-w-[calc(50%-12px)] lg:max-w-none md:px-0">
                   {prod.seller ? (
-                    <ProductDetails product={{...prod, seller: prod.seller}} locale={locale} />
+                    <ProductDetails
+                      product={{ ...prod, seller: prod.seller }}
+                      locale={locale}
+                    />
                   ) : (
                     <div className="p-4 bg-red-50 text-red-800 rounded">
                       Seller information is missing for this product.
@@ -187,20 +237,22 @@ export const ProductDetailsPage = async ({
                   )}
                 </div>
               </div>
-              
+
               <div className="my-24 text-black max-w-[1920px] mx-auto">
                 {/* Custom heading with mixed styling */}
                 <div className="mb-6 text-center">
                   <h2 className="heading-lg font-bold tracking-tight text-black">
                     <span className="font-instrument-serif">Więcej od </span>
-                    <span className="font-instrument-serif italic">{prod.seller?.name}</span>
+                    <span className="font-instrument-serif italic">
+                      {prod.seller?.name}
+                    </span>
                   </h2>
                 </div>
-                
+
                 {/* HomeProductSection with properly fetched seller products */}
                 <HomeProductSection
-                  heading="" 
-                  headingSpacing="mb-0" 
+                  heading=""
+                  headingSpacing="mb-0"
                   theme="dark"
                   products={sellerProducts as any}
                   isSellerSection={true}
@@ -208,7 +260,7 @@ export const ProductDetailsPage = async ({
                   wishlist={wishlist}
                 />
               </div>
-              
+
               {/* Product Reviews moved from ProductDetails */}
               <div className="max-w-[1920px] mx-auto">
                 <ProductReviews
