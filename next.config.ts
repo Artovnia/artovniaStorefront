@@ -100,6 +100,29 @@ const nextConfig: NextConfig = {
   
   async headers() {
     return [
+      // SEO: Favicon files with proper caching
+      {
+        source: '/favicon.ico',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=86400, s-maxage=86400', // 1 day cache
+          },
+          {
+            key: 'Content-Type',
+            value: 'image/x-icon',
+          },
+        ],
+      },
+      {
+        source: '/(favicon-16x16.png|favicon-32x32.png|apple-touch-icon.png|android-chrome-192x192.png|android-chrome-512x512.png)',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=86400, s-maxage=86400', // 1 day cache
+          },
+        ],
+      },
       // SEO: robots.txt file must be served as text/plain
       {
         source: '/robots.txt',

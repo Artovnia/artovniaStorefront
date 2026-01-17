@@ -374,8 +374,10 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children, initialCar
     try {
       const formData = new FormData()
       const shippingAddress = address.shipping_address || address
+      const billingAddress = address.billing_address || shippingAddress
       const email = address.email || state.cart.email || ''
       
+      // Shipping address fields
       formData.append('shipping_address.first_name', shippingAddress.first_name || '')
       formData.append('shipping_address.last_name', shippingAddress.last_name || '')
       formData.append('shipping_address.address_1', shippingAddress.address_1 || '')
@@ -387,6 +389,13 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children, initialCar
       formData.append('shipping_address.province', shippingAddress.province || '')
       formData.append('shipping_address.phone', shippingAddress.phone || '')
       formData.append('email', email)
+      
+      // ✅ Billing address with invoice metadata support
+      if (billingAddress.metadata) {
+        formData.append('billing_address.metadata.want_invoice', String(billingAddress.metadata.want_invoice || false))
+        formData.append('billing_address.metadata.nip', billingAddress.metadata.nip || '')
+        formData.append('billing_address.metadata.is_company', String(billingAddress.metadata.is_company || false))
+      }
       
       const result = await setAddresses(null, formData)
       

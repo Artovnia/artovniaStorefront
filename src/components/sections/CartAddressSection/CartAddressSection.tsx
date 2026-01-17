@@ -16,6 +16,31 @@ import { CheckCircleSolid } from "@medusajs/icons"
 import { Link } from "@/i18n/routing"
 import { useCart } from "@/components/context/CartContext"
 
+/**
+ * Validates Polish NIP (Numer Identyfikacji Podatkowej)
+ * NIP has 10 digits with a control digit (checksum) at the end
+ */
+const validateNIP = (nip: string): boolean => {
+  if (!nip) return true // Empty is valid (optional field)
+  
+  // Remove PL prefix if present (EU NIP format)
+  let cleanNip = nip.toUpperCase().replace(/^PL/, '')
+  cleanNip = cleanNip.replace(/[\s\-\.]/g, '')
+  
+  if (!/^\d{10}$/.test(cleanNip)) return false
+  
+  const weights = [6, 5, 7, 2, 3, 4, 5, 6, 7]
+  const digits = cleanNip.split('').map(Number)
+  
+  let sum = 0
+  for (let i = 0; i < 9; i++) {
+    sum += digits[i] * weights[i]
+  }
+  
+  const controlDigit = sum % 11
+  return controlDigit !== 10 && controlDigit === digits[9]
+}
+
 export const CartAddressSection = ({
   cart: propCart,
   customer,
@@ -83,8 +108,24 @@ export const CartAddressSection = ({
       
       // ✅ Validate cart ID matches active cart
       
+      // ✅ Extract invoice metadata from form
+      const nip = formData["billing_address.metadata.nip"] || ''
+      // If NIP is provided, customer wants invoice (regardless of checkbox state)
+      const wantInvoice = formData["billing_address.metadata.want_invoice"] === true || formData["billing_address.metadata.want_invoice"] === "true" || !!nip
+      
+      // ✅ Validate NIP if provided
+      if (nip && !validateNIP(nip)) {
+        throw new Error("Nieprawidłowy NIP - sprawdź poprawność numeru (10 cyfr z prawidłową cyfrą kontrolną)")
+      }
+      
+      // ✅ Validate company name is required when NIP is provided
+      const companyName = formData["shipping_address.company"] || ''
+      if (nip && !companyName.trim()) {
+        throw new Error("Nazwa firmy jest wymagana przy podaniu NIP")
+      }
+      
       // ✅ Build address data with validation
-      const addressData = {
+      const addressData: any = {
         email: formData.email || activeCart.email || '',
         shipping_address: {
           first_name: formData["shipping_address.first_name"] || '',
@@ -97,8 +138,29 @@ export const CartAddressSection = ({
           country_code: formData["shipping_address.country_code"] || '',
           province: formData["shipping_address.province"] || '',
           phone: formData["shipping_address.phone"] || '',
+        },
+        // ✅ Billing address with invoice metadata (same as shipping by default)
+        billing_address: {
+          first_name: formData["shipping_address.first_name"] || '',
+          last_name: formData["shipping_address.last_name"] || '',
+          address_1: formData["shipping_address.address_1"] || '',
+          address_2: formData["shipping_address.address_2"] || '',
+          company: formData["shipping_address.company"] || '',
+          city: formData["shipping_address.city"] || '',
+          postal_code: formData["shipping_address.postal_code"] || '',
+          country_code: formData["shipping_address.country_code"] || '',
+          province: formData["shipping_address.province"] || '',
+          phone: formData["shipping_address.phone"] || '',
+          // ✅ Invoice metadata stored in billing_address.metadata per Medusa docs
+          metadata: {
+            want_invoice: wantInvoice,
+            nip: nip,
+            is_company: !!nip, // If NIP provided, it's a company purchase
+          }
         }
       }
+      
+      console.log('📋 Address data with invoice metadata:', { wantInvoice, nip, addressData })
       
       // ✅ Validate required fields
       if (!addressData.email || !addressData.shipping_address.first_name || 

@@ -846,6 +846,12 @@ export async function setAddresses(currentState: unknown, formData: FormData) {
       }
     }
     
+    // ✅ Extract invoice metadata from form data
+    const nip = formData.get("billing_address.metadata.nip") as string || ''
+    // If NIP is provided, customer wants invoice (regardless of checkbox state)
+    const wantInvoice = formData.get("billing_address.metadata.want_invoice") === 'true' || !!nip
+    const isCompany = formData.get("billing_address.metadata.is_company") === 'true' || !!nip
+    
     const data = {
       shipping_address: {
         first_name: formData.get("shipping_address.first_name"),
@@ -862,116 +868,70 @@ export async function setAddresses(currentState: unknown, formData: FormData) {
       email: formData.get("email"),
     } as any
 
-    data.billing_address = data.shipping_address
-    
-
-    
-    const customerInfo = {
-      email: formData.get("email"),
-      billing_address: {
-        first_name: data.shipping_address.first_name,
-        last_name: data.shipping_address.last_name,
-        address_1: data.shipping_address.address_1,
-        address_2: data.shipping_address.address_2 || "",
-        company: data.shipping_address.company,
-        postal_code: data.shipping_address.postal_code,
-        city: data.shipping_address.city,
-        country_code: data.shipping_address.country_code,
-        province: data.shipping_address.province,
-        phone: data.shipping_address.phone,
-      },
-      shipping_address: data.shipping_address
+    // ✅ Billing address with invoice metadata per Medusa docs
+    data.billing_address = {
+      ...data.shipping_address,
+      metadata: {
+        want_invoice: wantInvoice,
+        nip: nip,
+        is_company: isCompany,
+      }
     }
+        
 
+    
+    // ✅ FIXED: Use billing_address with metadata for both shipping and billing
+    // This prevents duplicate address entries - Medusa creates one record per unique address
+    const addressWithMetadata = {
+      first_name: data.shipping_address.first_name,
+      last_name: data.shipping_address.last_name,
+      address_1: data.shipping_address.address_1,
+      address_2: data.shipping_address.address_2 || "",
+      company: data.shipping_address.company,
+      postal_code: data.shipping_address.postal_code,
+      city: data.shipping_address.city,
+      country_code: data.shipping_address.country_code,
+      province: data.shipping_address.province,
+      phone: data.shipping_address.phone,
+      // ✅ Include invoice metadata
+      metadata: {
+        want_invoice: wantInvoice,
+        nip: nip,
+        is_company: isCompany,
+      }
+    }
+    
+    // ✅ Use SDK's updateCart which properly handles address updates
+    // This ensures consistent handling and avoids duplicate address entries
+    const cartUpdateData: HttpTypes.StoreUpdateCart = {
+      email: formData.get("email") as string,
+      // Both addresses use the same object with metadata
+      billing_address: addressWithMetadata as any,
+      shipping_address: addressWithMetadata as any
+    }
+    
+   
     try {
-      // ✅ Add cache-busting and tracking headers
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL}/store/carts/${cartId}`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Cache-Control': 'no-cache, no-store, must-revalidate',
-            'Pragma': 'no-cache',
-            'X-Request-ID': requestId,
-            'X-Session-ID': sessionId || '',
-            ...headers
-          },
-          body: JSON.stringify(customerInfo),
-          cache: 'no-store'
-        }
-      )
-
-      if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(
-          `Failed to associate customer data: ${errorData.message || response.statusText}`
-        )
-      }
-
-      // If user is authenticated, try to associate cart with customer ID
-      if ('authorization' in headers) {
-        try {
-          const customerResponse = await fetch(`${process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL}/store/customers/me`, {
-            method: 'GET',
-            headers
-          })
-
-          if (customerResponse.ok) {
-            const customerData = await customerResponse.json()
-            if (customerData.customer?.id) {
-              try {
-                await sdk.client.fetch('/store/customers/me/carts', {
-                  method: 'POST',
-                  headers: {
-                    'Content-Type': 'application/json',
-                    ...headers
-                  },
-                  body: {
-                    cart_id: cartId
-                  }
-                })
-                
-              } catch (associationError) {
-                try {
-                  await sdk.client.fetch(`/store/customers/me/carts`, {
-                    method: 'POST',
-                    headers: {
-                      'Content-Type': 'application/json',
-                      ...headers
-                    },
-                    body: {
-                      cart_id: cartId
-                    }
-                  })
-         
-                } catch (altError) {
-                  // Continue even if this fails
-                }
-              }
-            }
-          }
-        } catch (customerError) {
-          // Don't fail the entire process if this step fails
-        }
-      }
-
-      await updateCart(data)
+      // Use SDK updateCart for proper handling
+      await sdk.store.cart.update(cartId, cartUpdateData, { fields: CART_FIELDS }, headers)
+      
+      // Invalidate caches
+      const cartCacheTag = await getCacheTag("carts")
+      await revalidateTag(cartCacheTag)
+      unifiedCache.invalidateAfterCartChange()
+      
       // 🔒 CRITICAL: Revalidate both cart and checkout pages
       await revalidatePath("/cart", "page")
       await revalidatePath("/checkout", "page")
       
-    } catch (fetchError: any) {
-      console.error("❌ [setAddresses] Fetch error:", {
+    } catch (updateError: any) {
+      console.error("❌ [setAddresses] Update error:", {
         requestId,
         cartId,
         sessionId,
-        error: fetchError.message
+        error: updateError.message
       })
-      await updateCart(data)
-      await revalidatePath("/cart", "page")
-      await revalidatePath("/checkout", "page")
-      return `Warning: Customer data may not be fully associated: ${fetchError?.message || 'Unknown error'}`
+      throw updateError
     }
     
     return "success"
