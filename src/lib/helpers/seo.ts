@@ -48,22 +48,62 @@ const getProductAvailability = (product: HttpTypes.StoreProduct): string => {
   return "https://schema.org/InStock"
 }
 
-// ✅ Helper to extract price from product (checks multiple locations)
-const extractProductPrice = (product: HttpTypes.StoreProduct): number | undefined => {
-  // Try variant calculated price
+// ✅ IMPROVED: Extract price from product (checks MORE locations)
+const extractProductPrice = (
+  product: HttpTypes.StoreProduct
+): number | undefined => {
   const variant = product.variants?.[0]
+
+  // Try variant calculated price
   if (variant?.calculated_price?.calculated_amount) {
     return variant.calculated_price.calculated_amount
   }
-  // Fallback to original price
+
+  // Try variant original price from calculated_price
   if (variant?.calculated_price?.original_amount) {
     return variant.calculated_price.original_amount
   }
-  // Try product-level price
+
+  // Try variant prices array (common in Medusa)
+  if (variant?.prices?.[0]?.amount) {
+    return variant.prices[0].amount
+  }
+
+  // Try variant original_price directly
+  if ((variant as any)?.original_price) {
+    return (variant as any).original_price
+  }
+
+  // Try product-level calculated price
   if ((product as any).calculated_price?.calculated_amount) {
     return (product as any).calculated_price.calculated_amount
   }
+
+  // Try product-level prices array
+  if ((product as any).prices?.[0]?.amount) {
+    return (product as any).prices[0].amount
+  }
+
   return undefined
+}
+
+// ✅ Helper to ensure valid image URL
+const ensureValidImageUrl = (
+  imageUrl: string | undefined | null,
+  fallback?: string
+): string => {
+  const baseUrl = getBaseUrl()
+  const defaultFallback = `${baseUrl}/images/placeholder.webp`
+
+  if (!imageUrl) return fallback || defaultFallback
+
+  // Already absolute URL
+  if (imageUrl.startsWith("http://") || imageUrl.startsWith("https://")) {
+    return imageUrl
+  }
+
+  // Relative URL - make absolute
+  return `${baseUrl}${imageUrl.startsWith("/") ? "" : "/"}${imageUrl}`
 }
 
 // ============================================
@@ -135,9 +175,10 @@ export const generateProductMetadata = (
       siteName: "Artovnia",
       images: [
         {
-          url: product?.thumbnail?.startsWith("http")
-            ? product.thumbnail
-            : `${baseUrl}${product?.thumbnail || "/images/placeholder.webp"}`,
+          url: ensureValidImageUrl(
+            product?.thumbnail,
+            `${baseUrl}/images/placeholder.webp`
+          ),
           width: 1200,
           height: 630,
           alt: product?.title,
@@ -158,7 +199,9 @@ export const generateProductMetadata = (
       creator: "@artovnia",
       title: product?.title,
       description,
-      images: [product?.thumbnail || `${baseUrl}/placeholder.webp`],
+      images: [
+        ensureValidImageUrl(product?.thumbnail, `${baseUrl}/placeholder.webp`),
+      ],
     },
   }
 }
@@ -178,7 +221,7 @@ export const generateCategoryMetadata = (
 
   const getCategoryImage = (): string => {
     if (category.metadata?.image) {
-      return category.metadata.image as string
+      return ensureValidImageUrl(category.metadata.image as string)
     }
     return `${baseUrl}/images/categories/${category.handle}.png`
   }
@@ -236,8 +279,8 @@ export const generateSellerMetadata = (
     name: string
     handle: string
     description?: string
-    logo?: string
-    banner?: string
+    photo?: string      // ✅ Changed from logo
+    logo_url?: string   // ✅ Changed from banner
   },
   locale: string = "pl"
 ): Metadata => {
@@ -250,21 +293,11 @@ export const generateSellerMetadata = (
     155
   )
 
-  const getSellerImage = (): string => {
-    if (seller.banner) {
-      return seller.banner.startsWith("http")
-        ? seller.banner
-        : `${baseUrl}${seller.banner}`
-    }
-    if (seller.logo) {
-      return seller.logo.startsWith("http")
-        ? seller.logo
-        : `${baseUrl}${seller.logo}`
-    }
-    return `${baseUrl}/ArtovniaOgImage.png`
-  }
-
-  const sellerImage = getSellerImage()
+  // ✅ Updated: Use photo (banner) first, then logo_url
+  const sellerImage = ensureValidImageUrl(
+    seller.photo || seller.logo_url,
+    `${baseUrl}/ArtovniaOgImage.png`
+  )
 
   return {
     robots: "index, follow",
@@ -378,19 +411,15 @@ export const generateProductJsonLd = (
         }))
       : undefined
 
-  const productTags =
-    product.tags?.map((t) => t.value).filter(Boolean) || []
+  const productTags = product.tags?.map((t) => t.value).filter(Boolean) || []
   const category = (product as any).categories?.[0]?.name
   const sellerName = (product as any).seller?.name || "Artovnia"
 
-  // ✅ FIX: ALWAYS include offers - Google requires at least one of offers/review/aggregateRating
-  // Even if price is 0 or undefined, include the offer with availability
-  const offers = {
+  // ✅ FIX: Build offers object - ONLY include price if we have a valid one
+  const offers: Record<string, any> = {
     "@type": "Offer",
     url: `${baseUrl}/products/${product.handle}`,
     priceCurrency: currency,
-    // If no price available, use "0" - Google will still accept the schema
-    price: effectivePrice ? (effectivePrice / 100).toFixed(2) : "0.00",
     priceValidUntil: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
       .toISOString()
       .split("T")[0],
@@ -402,28 +431,119 @@ export const generateProductJsonLd = (
     },
   }
 
+  // ✅ FIX: Only add price if we have a valid one (> 0)
+  if (effectivePrice && effectivePrice > 0) {
+    offers.price = (effectivePrice / 100).toFixed(2)
+  }
+
+  // ✅ FIX: Ensure valid image URLs
+  const images =
+    product.images?.map((img) => ensureValidImageUrl(img.url)) || []
+  if (images.length === 0 && product.thumbnail) {
+    images.push(ensureValidImageUrl(product.thumbnail))
+  }
+  if (images.length === 0) {
+    images.push(`${baseUrl}/images/placeholder.webp`)
+  }
+
+  // Log warning if no price and no reviews (may fail Google validation)
+  const hasValidOffer = effectivePrice && effectivePrice > 0
+  const hasReviews = reviewsSchema && reviewsSchema.length > 0
+  const hasAggregateRating = !!aggregateRating
+
+  if (!hasValidOffer && !hasReviews && !hasAggregateRating) {
+    console.warn(
+      `[SEO] Product "${product.handle}" has no price and no reviews - may fail Google validation`
+    )
+  }
+
   return {
     "@context": "https://schema.org",
     "@type": "Product",
     name: product.title,
     description: product.description || product.title,
-    image: product.images?.map((img) => img.url) || [
-      product.thumbnail || `${baseUrl}/placeholder.webp`,
-    ],
+    image: images,
     sku: product.variants?.[0]?.sku || product.id,
     mpn: product.variants?.[0]?.sku || product.id,
     brand: {
       "@type": "Brand",
       name: sellerName,
     },
-    ...(category && { category: category }),
+    ...(category && { category }),
     ...(productTags.length > 0 && { keywords: productTags.join(", ") }),
-    // ✅ FIX: Always include offers
-    offers: offers,
-    // Add aggregateRating if reviews exist
-    ...(aggregateRating && { aggregateRating: aggregateRating }),
-    // Add reviews if they exist
-    ...(reviewsSchema && reviewsSchema.length > 0 && { review: reviewsSchema }),
+    offers,
+    ...(aggregateRating && { aggregateRating }),
+    ...(hasReviews && { review: reviewsSchema }),
+  }
+}
+
+/**
+ * ✅ NEW: Generate Seller/Artist ProfilePage JSON-LD
+ *
+ * GOOGLE REQUIREMENT for ProfilePage:
+ * - MUST include "mainEntity" field
+ * - DO NOT use "mainEntityOfPage" (deprecated/unrecognized)
+ * - Image URLs MUST be valid absolute URLs
+ */
+export const generateSellerJsonLd = (
+  seller: {
+    id?: string
+    name: string
+    handle: string
+    description?: string
+    photo?: string      // ✅ Changed from banner
+    logo_url?: string   // ✅ Changed from logo
+    created_at?: string
+  },
+  reviews?: Array<{
+    rating: number
+    comment?: string
+    customer_name?: string
+    created_at?: string
+  }>
+): JsonLdBase & Record<string, any> => {
+  const baseUrl = getBaseUrl()
+  const sellerUrl = `${baseUrl}/sellers/${seller.handle}`
+
+  // ✅ Updated: Use logo_url first (profile pic), then photo (banner)
+  const sellerImage = ensureValidImageUrl(
+    seller.logo_url || seller.photo,
+    `${baseUrl}/images/default-seller.png`
+  )
+
+  const aggregateRating =
+    reviews && reviews.length > 0
+      ? {
+          "@type": "AggregateRating",
+          ratingValue: (
+            reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length
+          ).toFixed(1),
+          reviewCount: reviews.length,
+          bestRating: "5",
+          worstRating: "1",
+        }
+      : undefined
+
+  return {
+    "@context": "https://schema.org",
+    "@type": "ProfilePage",
+    mainEntity: {
+      "@type": "Person",
+      "@id": `${sellerUrl}#artist`,
+      name: seller.name,
+      url: sellerUrl,
+      image: sellerImage,
+      ...(seller.description && { description: seller.description }),
+      ...(aggregateRating && { aggregateRating }),
+      sameAs: [sellerUrl],
+    },
+    name: `${seller.name} - Artysta na Artovnia`,
+    description:
+      seller.description ||
+      `Odkryj unikalne dzieła sztuki i rękodzieła od ${seller.name} na Artovnia.`,
+    url: sellerUrl,
+    ...(seller.created_at && { dateCreated: seller.created_at }),
+    dateModified: new Date().toISOString(),
   }
 }
 
@@ -439,10 +559,7 @@ export const generateOrganizationJsonLd = (): JsonLdBase &
     logo: `${baseUrl}/Logo.png`,
     description:
       "Marketplace sztuki i rękodzieła artystycznego - łączymy artystów z miłośnikami sztuki",
-    sameAs: [
-      "https://facebook.com/artovnia",
-      "https://instagram.com/artovnia",
-    ],
+    sameAs: ["https://facebook.com/artovnia", "https://instagram.com/artovnia"],
     contactPoint: {
       "@type": "ContactPoint",
       contactType: "Customer Service",
