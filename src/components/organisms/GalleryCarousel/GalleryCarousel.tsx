@@ -9,7 +9,7 @@ export const GalleryCarousel = ({
   title?: string;
 }) => {
   return (
-    <div className='w-full max-w-full p-1 rounded-sm overflow-hidden'>
+    <div className='w-full max-w-full p-1 rounded-sm overflow-hidden bg-[#F4F0EB]'>
       <ProductCarousel slides={images} title={title} />
     </div>
   );

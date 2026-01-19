@@ -175,7 +175,7 @@ export const ProductDetailsPage = async ({
 
       <ProductErrorBoundary>
         {/* Breadcrumbs */}
-        <div className="max-w-[1920px] mx-auto px-4 lg:px-12 py-2 lg:py-6 mb-4 text-xl">
+        <div className="max-w-[1920px] mx-auto  py-2 lg:py-6 mb-4 text-xl">
           <Breadcrumbs items={breadcrumbs} />
         </div>
 
@@ -193,7 +193,7 @@ export const ProductDetailsPage = async ({
             >
               {/* Mobile Layout: Stacked vertically */}
               <div className="flex flex-col md:hidden">
-                <div className="w-full">
+                <div className="w-full ">
                   <ProductGallery
                     images={prod?.images || []}
                     title={prod?.title || ""}

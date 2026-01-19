@@ -45,6 +45,7 @@ import { ImageZoomModal } from "./ImageZoomModal/ImageZoomModal"
 import { SellerProductListingClient } from "./SellerProductListing/SellerProductListingClient"
 import { GuestCheckoutModal } from "./GuestCheckoutModal/GuestCheckoutModal"
 
+
 export {
   PrimeCategoryNavbar,
   CategoryNavbar,
@@ -90,7 +91,8 @@ export {
   ImageZoomModal,
   SellerProductListingClient,
   GuestCheckoutModal,
-  NewsletterForm,
+  NewsletterForm
+ 
 }
 
 // Re-export LocalizedLink as a named export

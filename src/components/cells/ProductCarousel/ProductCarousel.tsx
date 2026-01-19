@@ -3,6 +3,7 @@
 import useEmblaCarousel from "embla-carousel-react"
 import Image from "next/image"
 import { ProductCarouselIndicator } from "@/components/molecules"
+import { KenBurnsSlide } from "@/components/cells"
 import { ImageZoomModal } from "@/components/molecules/ImageZoomModal/ImageZoomModal"
 import { useScreenSize } from "@/hooks/useScreenSize"
 import { MedusaProductImage } from "@/types/product"
@@ -24,23 +25,31 @@ export const ProductCarousel = ({
   const [thumbnailScrollPosition, setThumbnailScrollPosition] = useState(0)
   const [canScrollUp, setCanScrollUp] = useState(false)
   const [canScrollDown, setCanScrollDown] = useState(false)
+  const [isAnimatedSlideActive, setIsAnimatedSlideActive] = useState(false)
   const thumbnailContainerRef = useRef<HTMLDivElement>(null)
+  
+  // Check if we should show animated slide (only if we have at least 1 image)
+  const showAnimatedSlide = slides.length >= 1
+  // Total slides including animated slide
+  const totalSlides = showAnimatedSlide ? slides.length + 1 : slides.length
+  // Index of the animated slide (last position)
+  const animatedSlideIndex = slides.length
 
-  // Navigation functions for arrows
+  // Navigation functions for arrows (now includes animated slide)
   const goToPrevious = () => {
-    if (slides.length <= 1) return
+    if (totalSlides <= 1) return
     setIsTransitioning(true)
     setTimeout(() => {
-      setSelectedImageIndex((prev) => (prev === 0 ? slides.length - 1 : prev - 1))
+      setSelectedImageIndex((prev) => (prev === 0 ? totalSlides - 1 : prev - 1))
       setIsTransitioning(false)
     }, 150)
   }
 
   const goToNext = () => {
-    if (slides.length <= 1) return
+    if (totalSlides <= 1) return
     setIsTransitioning(true)
     setTimeout(() => {
-      setSelectedImageIndex((prev) => (prev === slides.length - 1 ? 0 : prev + 1))
+      setSelectedImageIndex((prev) => (prev === totalSlides - 1 ? 0 : prev + 1))
       setIsTransitioning(false)
     }, 150)
   }
@@ -53,6 +62,22 @@ export const ProductCarousel = ({
       setIsTransitioning(false)
     }, 150)
   }
+  
+  // Handle animated slide activation
+  const handleAnimatedSlideClick = () => {
+    if (selectedImageIndex === animatedSlideIndex) return
+    setIsTransitioning(true)
+    setTimeout(() => {
+      setSelectedImageIndex(animatedSlideIndex)
+      setIsAnimatedSlideActive(true)
+      setIsTransitioning(false)
+    }, 150)
+  }
+  
+  // Update animated slide active state when index changes
+  useEffect(() => {
+    setIsAnimatedSlideActive(selectedImageIndex === animatedSlideIndex)
+  }, [selectedImageIndex, animatedSlideIndex])
 
   const openZoomModal = (index: number) => {
     setZoomModalInitialIndex(index)
@@ -125,6 +150,7 @@ export const ProductCarousel = ({
             ref={emblaRef}
           >
             <div className="embla__container h-[350px] flex w-full">
+              {/* Regular image slides */}
               {(slides || []).map((slide, index) => (
                 <div
                   key={slide.id}
@@ -136,9 +162,9 @@ export const ProductCarousel = ({
                     alt={title}
                     width={700}
                     height={700}
-                    quality={index === 0 ? 85 : 75} // Higher quality for first image
-                    priority={index === 0} // ✅ Only first image gets priority
-                    loading={index === 0 ? "eager" : "lazy"} // ✅ Lazy load non-first images
+                    quality={index === 0 ? 85 : 75}
+                    priority={index === 0}
+                    loading={index === 0 ? "eager" : "lazy"}
                     placeholder="blur"
                     blurDataURL="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFQEBAQAAAAAAAAAAAAAAAAAAAAX/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oADAMBAAIRAxEAPwCdABmX/9k="
                     sizes="(max-width: 640px) 100vw, (max-width: 768px) 90vw, 700px"
@@ -147,6 +173,21 @@ export const ProductCarousel = ({
                   />
                 </div>
               ))}
+              
+              {/* Animated slide for mobile */}
+              {showAnimatedSlide && slides.length > 0 && (
+                <div
+                  key="animated-slide"
+                  className="embla__slide min-w-0 h-[350px] relative"
+                >
+                  <KenBurnsSlide
+                    images={slides}
+                    alt={`${title} - podgląd animowany`}
+                    isActive={true}
+                    className="h-full"
+                  />
+                </div>
+              )}
             </div>
             {slides?.length ? (
               <ProductCarouselIndicator slides={slides} embla={emblaApi} />
@@ -156,10 +197,10 @@ export const ProductCarousel = ({
       </div>
 
       {/* Desktop: Thumbnails on left, main image on right */}
-      <div className="hidden lg:block">
+      <div className="hidden lg:block bg-[#F4F0EB]">
         <div className="flex gap-4">
           {/* Left: Thumbnail Column with Scroll */}
-          {slides.length > 1 && (
+          {totalSlides > 1 && (
             <div className="relative flex flex-col w-20 flex-shrink-0 py-4">
               {/* Scroll Up Button */}
               {canScrollUp && (
@@ -177,6 +218,7 @@ export const ProductCarousel = ({
                 ref={thumbnailContainerRef}
                 className="flex flex-col gap-2 max-h-[624px] overflow-y-auto no-scrollbar scroll-smooth mt-5"
               >
+                {/* Regular image thumbnails */}
                 {slides.map((slide, index) => (
                   <button
                     key={slide.id}
@@ -199,6 +241,38 @@ export const ProductCarousel = ({
                     />
                   </button>
                 ))}
+                
+                {/* Animated slide thumbnail */}
+                {showAnimatedSlide && slides[0] && (
+                  <button
+                    onClick={handleAnimatedSlideClick}
+                    className={`relative w-20 h-20 rounded-xs overflow-hidden border-2 transition-all duration-300 flex-shrink-0 ${
+                      selectedImageIndex === animatedSlideIndex
+                        ? "border-[#3B3634] ring-2 ring-[#3B3634] shadow-md"
+                        : "border-gray-200 hover:border-[#3B3634]/50"
+                    }`}
+                    title="Podgląd animowany"
+                  >
+                    <Image
+                      src={slides[0].url}
+                      alt={`${title} - animacja`}
+                      fill
+                      quality={60}
+                      loading="lazy"
+                      className="object-cover transition-transform duration-300 hover:scale-105"
+                      sizes="80px"
+                      unoptimized={false}
+                    />
+                    {/* Play icon overlay */}
+                    <div className="absolute inset-0 bg-black/30 flex items-center justify-center">
+                      <div className="w-6 h-6 rounded-full bg-white/90 flex items-center justify-center">
+                        <svg className="w-3 h-3 text-[#3B3634] ml-0.5" fill="currentColor" viewBox="0 0 24 24">
+                          <path d="M8 5v14l11-7z" />
+                        </svg>
+                      </div>
+                    </div>
+                  </button>
+                )}
               </div>
               
               {/* Scroll Down Button */}
@@ -218,7 +292,7 @@ export const ProductCarousel = ({
           <div className="flex-1 min-w-0">
             <div className="relative aspect-square w-full max-h-[698px] overflow-hidden rounded-xs group">
               {/* Navigation Arrows */}
-              {slides.length > 1 && (
+              {totalSlides > 1 && (
                 <>
                   <button
                     onClick={goToPrevious}
@@ -237,18 +311,18 @@ export const ProductCarousel = ({
                 </>
               )}
               
-              {/* Main Image with Transition */}
-              <div 
-                className="relative w-full h-full cursor-zoom-in"
-                onClick={() => openZoomModal(selectedImageIndex)}
-              >
-                {slides[selectedImageIndex] && (
+              {/* Main Image with Transition - Regular images */}
+              {selectedImageIndex < slides.length && slides[selectedImageIndex] && (
+                <div 
+                  className="relative w-full h-full cursor-zoom-in"
+                  onClick={() => openZoomModal(selectedImageIndex)}
+                >
                   <Image
                     src={slides[selectedImageIndex].url}
                     alt={title}
                     fill
                     quality={90}
-                    priority={selectedImageIndex === 0} // Only first image gets priority
+                    priority={selectedImageIndex === 0}
                     loading={selectedImageIndex === 0 ? "eager" : "lazy"}
                     placeholder="blur"
                     blurDataURL="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFQEBAQAAAAAAAAAAAAAAAAAAAAX/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oADAMBAAIRAxEAPwCdABmX/9k="
@@ -260,14 +334,26 @@ export const ProductCarousel = ({
                     sizes="(max-width: 640px) 100vw, (max-width: 1024px) 90vw, (max-width: 1440px) 50vw, (max-width: 1920px) 45vw, 800px"
                     unoptimized={false}
                   />
-                )}
-                
-                {/* Elegant overlay gradient for premium feel */}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/5 via-transparent to-transparent pointer-events-none" />
-              </div>
+                  
+                  {/* Elegant overlay gradient for premium feel */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/5 via-transparent to-transparent pointer-events-none" />
+                </div>
+              )}
               
-              {/* Image counter for multiple images */}
-              {slides.length > 1 && (
+              {/* Ken Burns Animated Slide */}
+              {selectedImageIndex === animatedSlideIndex && showAnimatedSlide && slides.length > 0 && (
+                <KenBurnsSlide
+                  images={slides}
+                  alt={`${title} - podgląd animowany`}
+                  isActive={isAnimatedSlideActive && !isTransitioning}
+                  className={`transition-opacity duration-500 ${
+                    isTransitioning ? "opacity-0" : "opacity-100"
+                  }`}
+                />
+              )}
+              
+              {/* Image counter for regular images only (Ken Burns has its own counter) */}
+              {totalSlides > 1 && selectedImageIndex !== animatedSlideIndex && (
                 <div className="absolute bottom-3 right-3 bg-black/60 text-white text-sm px-3 py-1 rounded-full backdrop-blur-sm">
                   {selectedImageIndex + 1} / {slides.length}
                 </div>

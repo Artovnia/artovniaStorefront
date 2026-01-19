@@ -9,7 +9,7 @@ export const ProductGallery = ({
   title?: string;
 }) => {
   return (
-    <div className="w-full items-center justify-center max-w-full overflow-hidden">
+    <div className="w-full items-center justify-center max-w-full overflow-hidden ">
       <GalleryCarousel images={images} title={title} />
     </div>
   );

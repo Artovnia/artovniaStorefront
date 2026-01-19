@@ -12,12 +12,49 @@ interface JsonLdBase {
   "@type": string
 }
 
+interface ShippingConfig {
+  shippingCost?: number // In PLN (not cents)
+  freeShippingThreshold?: number
+  handlingDays?: { min: number; max: number }
+  transitDays?: { min: number; max: number }
+  countries?: string[]
+}
+
+interface ReturnPolicyConfig {
+  returnDays?: number
+  freeReturn?: boolean
+  returnMethod?: "ByMail" | "InStore" | "AtKiosk"
+}
+
+// ============================================
+// CONSTANTS - Platform-wide defaults
+// ============================================
+
+const DEFAULT_SHIPPING: ShippingConfig = {
+  shippingCost: 15, // 15 PLN default
+  freeShippingThreshold: 200,
+  handlingDays: { min: 1, max: 3 },
+  transitDays: { min: 2, max: 7 },
+  countries: ["PL"],
+}
+
+// Platform-wide return policy (not per-seller)
+const PLATFORM_RETURN_POLICY: ReturnPolicyConfig = {
+  returnDays: 14, // EU consumer rights
+  freeReturn: false, // Customer pays return shipping
+  returnMethod: "ByMail",
+}
+
 // ============================================
 // HELPERS
 // ============================================
 
 const getBaseUrl = (): string => {
   return process.env.NEXT_PUBLIC_BASE_URL || "https://artovnia.com"
+}
+
+const getSiteName = (): string => {
+  return process.env.NEXT_PUBLIC_SITE_NAME || "Artovnia"
 }
 
 const generateDescription = (
@@ -48,7 +85,10 @@ const getProductAvailability = (product: HttpTypes.StoreProduct): string => {
   return "https://schema.org/InStock"
 }
 
-// ✅ IMPROVED: Extract price from product (checks MORE locations)
+/**
+ * Extract price from product - checks multiple locations
+ * NOTE: Prices are stored as full values (e.g., 99.99), NOT cents
+ */
 const extractProductPrice = (
   product: HttpTypes.StoreProduct
 ): number | undefined => {
@@ -64,7 +104,7 @@ const extractProductPrice = (
     return variant.calculated_price.original_amount
   }
 
-  // Try variant prices array (common in Medusa)
+  // Try variant prices array
   if (variant?.prices?.[0]?.amount) {
     return variant.prices[0].amount
   }
@@ -87,7 +127,65 @@ const extractProductPrice = (
   return undefined
 }
 
-// ✅ Helper to ensure valid image URL
+/**
+ * Get the best quality image from product
+ * Priority: images[0] > thumbnail > placeholder
+ */
+const getProductImage = (
+  product: HttpTypes.StoreProduct,
+  fallback?: string
+): string => {
+  const baseUrl = getBaseUrl()
+  const defaultFallback = `${baseUrl}/images/placeholder.webp`
+
+  // Priority 1: First image from images array (highest quality)
+  if (product.images?.[0]?.url) {
+    return ensureValidImageUrl(product.images[0].url)
+  }
+
+  // Priority 2: Thumbnail
+  if (product.thumbnail) {
+    return ensureValidImageUrl(product.thumbnail)
+  }
+
+  return fallback || defaultFallback
+}
+
+/**
+ * Get all product images as absolute URLs
+ */
+const getProductImages = (product: HttpTypes.StoreProduct): string[] => {
+  const baseUrl = getBaseUrl()
+  const images: string[] = []
+
+  // Add all images from images array
+  if (product.images?.length) {
+    product.images.forEach((img) => {
+      if (img.url) {
+        images.push(ensureValidImageUrl(img.url))
+      }
+    })
+  }
+
+  // Add thumbnail if not already included
+  if (product.thumbnail) {
+    const thumbnailUrl = ensureValidImageUrl(product.thumbnail)
+    if (!images.includes(thumbnailUrl)) {
+      images.push(thumbnailUrl)
+    }
+  }
+
+  // Fallback to placeholder
+  if (images.length === 0) {
+    images.push(`${baseUrl}/images/placeholder.webp`)
+  }
+
+  return images
+}
+
+/**
+ * Ensure valid absolute image URL
+ */
 const ensureValidImageUrl = (
   imageUrl: string | undefined | null,
   fallback?: string
@@ -119,11 +217,12 @@ export const generateProductMetadata = (
   }
 
   const baseUrl = getBaseUrl()
+  const siteName = getSiteName()
   const productUrl = `${baseUrl}/products/${product.handle}`
 
   const description = generateDescription(
     product?.description,
-    `${product?.title} - Unikalne dzieło sztuki dostępne na ${process.env.NEXT_PUBLIC_SITE_NAME}`,
+    `${product?.title} - Unikalne dzieło sztuki dostępne na ${siteName}`,
     155
   )
 
@@ -135,16 +234,19 @@ export const generateProductMetadata = (
 
     if (categoryName && sellerName) {
       const fullTitle = `${productTitle} | ${categoryName} - ${sellerName}`
-      if (fullTitle.length <= 50) return fullTitle
+      if (fullTitle.length <= 60) return fullTitle
     }
 
     if (categoryName) {
       const mediumTitle = `${productTitle} | ${categoryName}`
-      if (mediumTitle.length <= 50) return mediumTitle
+      if (mediumTitle.length <= 60) return mediumTitle
     }
 
     return productTitle
   }
+
+  // Use highest quality image
+  const ogImage = getProductImage(product)
 
   return {
     title: buildSeoTitle(),
@@ -157,6 +259,7 @@ export const generateProductMetadata = (
       "polski artysta",
       ...(product?.tags?.map((t) => t.value) || []),
     ]
+      .filter(Boolean)
       .slice(0, 10)
       .join(", "),
     robots: "index, follow",
@@ -172,16 +275,14 @@ export const generateProductMetadata = (
       title: product?.title,
       description,
       url: productUrl,
-      siteName: "Artovnia",
+      siteName,
       images: [
         {
-          url: ensureValidImageUrl(
-            product?.thumbnail,
-            `${baseUrl}/images/placeholder.webp`
-          ),
+          url: ogImage,
           width: 1200,
           height: 630,
           alt: product?.title,
+          type: "image/webp",
         },
       ],
       type: "website",
@@ -199,39 +300,52 @@ export const generateProductMetadata = (
       creator: "@artovnia",
       title: product?.title,
       description,
-      images: [
-        ensureValidImageUrl(product?.thumbnail, `${baseUrl}/placeholder.webp`),
-      ],
+      images: [ogImage],
     },
   }
 }
 
 export const generateCategoryMetadata = (
   category: HttpTypes.StoreProductCategory,
-  locale: string = "pl"
+  locale: string = "pl",
+  productImage?: string // Optional: first product image from category
 ): Metadata => {
   const baseUrl = getBaseUrl()
+  const siteName = getSiteName()
   const categoryUrl = `${baseUrl}/categories/${category.handle}`
 
   const description = generateDescription(
     category.description,
-    `Przeglądaj ${category.name} - unikalne dzieła sztuki i rękodzieła od polskich artystów na ${process.env.NEXT_PUBLIC_SITE_NAME}`,
+    `Przeglądaj ${category.name} - unikalne dzieła sztuki i rękodzieła od polskich artystów na ${siteName}`,
     155
   )
 
+  // Image priority: metadata.image > productImage > default category image
   const getCategoryImage = (): string => {
     if (category.metadata?.image) {
       return ensureValidImageUrl(category.metadata.image as string)
+    }
+    if (productImage) {
+      return ensureValidImageUrl(productImage)
     }
     return `${baseUrl}/images/categories/${category.handle}.png`
   }
 
   const categoryImage = getCategoryImage()
 
+  // Build SEO title with parent category if available
+  const buildCategoryTitle = (): string => {
+    const parentName = (category as any).parent_category?.name
+    if (parentName) {
+      return `${category.name} | ${parentName} - ${siteName}`
+    }
+    return `${category.name} - Kategoria | ${siteName}`
+  }
+
   return {
     robots: "index, follow",
     metadataBase: new URL(baseUrl),
-    title: category.name,
+    title: buildCategoryTitle(),
     description,
     keywords: [
       category.name,
@@ -239,7 +353,11 @@ export const generateCategoryMetadata = (
       "sztuka",
       "rękodzieło",
       "marketplace",
-    ].join(", "),
+      "polski artysta",
+      ...(category.metadata?.keywords as string[] || []),
+    ]
+      .filter(Boolean)
+      .join(", "),
     alternates: {
       canonical: categoryUrl,
       languages: {
@@ -248,10 +366,10 @@ export const generateCategoryMetadata = (
       },
     },
     openGraph: {
-      title: category.name,
+      title: `${category.name} - ${siteName}`,
       description,
       url: categoryUrl,
-      siteName: "Artovnia",
+      siteName,
       images: [
         {
           url: categoryImage,
@@ -279,21 +397,22 @@ export const generateSellerMetadata = (
     name: string
     handle: string
     description?: string
-    photo?: string      // ✅ Changed from logo
-    logo_url?: string   // ✅ Changed from banner
+    photo?: string
+    logo_url?: string
   },
   locale: string = "pl"
 ): Metadata => {
   const baseUrl = getBaseUrl()
+  const siteName = getSiteName()
   const sellerUrl = `${baseUrl}/sellers/${seller.handle}`
 
   const description = generateDescription(
     seller.description,
-    `Odkryj unikalne dzieła sztuki i rękodzieła od ${seller.name}. Zobacz kolekcję produktów i poznaj artystę na Artovnia.`,
+    `Odkryj unikalne dzieła sztuki i rękodzieła od ${seller.name}. Zobacz kolekcję produktów i poznaj artystę na ${siteName}.`,
     155
   )
 
-  // ✅ Updated: Use photo (banner) first, then logo_url
+  // Use photo (banner) first, then logo_url
   const sellerImage = ensureValidImageUrl(
     seller.photo || seller.logo_url,
     `${baseUrl}/ArtovniaOgImage.png`
@@ -302,7 +421,7 @@ export const generateSellerMetadata = (
   return {
     robots: "index, follow",
     metadataBase: new URL(baseUrl),
-    title: `${seller.name} - Artysta`,
+    title: `${seller.name} - Artysta | ${siteName}`,
     description,
     keywords: [
       seller.name,
@@ -321,10 +440,10 @@ export const generateSellerMetadata = (
       },
     },
     openGraph: {
-      title: `${seller.name} - Artysta na Artovnia`,
+      title: `${seller.name} - Artysta na ${siteName}`,
       description,
       url: sellerUrl,
-      siteName: "Artovnia",
+      siteName,
       images: [
         {
           url: sellerImage,
@@ -352,12 +471,75 @@ export const generateSellerMetadata = (
 // ============================================
 
 /**
+ * Generate shipping details schema
+ */
+const generateShippingDetailsSchema = (
+  config: ShippingConfig = DEFAULT_SHIPPING,
+  currency: string = "PLN"
+): Record<string, any> => {
+  const countries = config.countries || DEFAULT_SHIPPING.countries!
+
+  return {
+    "@type": "OfferShippingDetails",
+    shippingRate: {
+      "@type": "MonetaryAmount",
+      value: (config.shippingCost ?? DEFAULT_SHIPPING.shippingCost!).toFixed(2),
+      currency: currency,
+    },
+    shippingDestination: countries.map((country) => ({
+      "@type": "DefinedRegion",
+      addressCountry: country,
+    })),
+    deliveryTime: {
+      "@type": "ShippingDeliveryTime",
+      handlingTime: {
+        "@type": "QuantitativeValue",
+        minValue: config.handlingDays?.min ?? DEFAULT_SHIPPING.handlingDays!.min,
+        maxValue: config.handlingDays?.max ?? DEFAULT_SHIPPING.handlingDays!.max,
+        unitCode: "DAY",
+      },
+      transitTime: {
+        "@type": "QuantitativeValue",
+        minValue: config.transitDays?.min ?? DEFAULT_SHIPPING.transitDays!.min,
+        maxValue: config.transitDays?.max ?? DEFAULT_SHIPPING.transitDays!.max,
+        unitCode: "DAY",
+      },
+    },
+  }
+}
+
+/**
+ * Generate platform-wide return policy schema
+ */
+const generateReturnPolicySchema = (
+  config: ReturnPolicyConfig = PLATFORM_RETURN_POLICY
+): Record<string, any> => {
+  const returnMethod = config.returnMethod || PLATFORM_RETURN_POLICY.returnMethod
+  const returnDays = config.returnDays ?? PLATFORM_RETURN_POLICY.returnDays
+  const freeReturn = config.freeReturn ?? PLATFORM_RETURN_POLICY.freeReturn
+
+  return {
+    "@type": "MerchantReturnPolicy",
+    applicableCountry: "PL",
+    returnPolicyCategory:
+      "https://schema.org/MerchantReturnFiniteReturnWindow",
+    merchantReturnDays: returnDays,
+    returnMethod: `https://schema.org/Return${returnMethod}`,
+    returnFees: freeReturn
+      ? "https://schema.org/FreeReturn"
+      : "https://schema.org/ReturnShippingFees",
+  }
+}
+
+/**
  * Generate Product JSON-LD structured data for SEO
  *
- * GOOGLE REQUIREMENT: Product schema MUST include at least ONE of:
- * - offers (price information)
- * - review (individual reviews)
- * - aggregateRating (average rating from reviews)
+ * GOOGLE REQUIREMENTS:
+ * - Product schema MUST include offers
+ * - shippingDetails and hasMerchantReturnPolicy are recommended
+ * - review/aggregateRating are optional but recommended
+ *
+ * NOTE: Prices are stored as full values (e.g., 99.99), NOT cents
  */
 export const generateProductJsonLd = (
   product: HttpTypes.StoreProduct,
@@ -368,14 +550,15 @@ export const generateProductJsonLd = (
     comment?: string
     customer_name?: string
     created_at?: string
-  }>
+  }>,
+  shippingConfig?: ShippingConfig
 ): JsonLdBase & Record<string, any> => {
   const baseUrl = getBaseUrl()
 
-  // ✅ FIX: Extract price from product if not provided
+  // Extract price from product if not provided
   const effectivePrice = price ?? extractProductPrice(product)
 
-  // Calculate aggregate rating from reviews
+  // Calculate aggregate rating from reviews (only if reviews exist)
   const aggregateRating =
     reviews && reviews.length > 0
       ? {
@@ -389,7 +572,7 @@ export const generateProductJsonLd = (
         }
       : undefined
 
-  // Format individual reviews for schema
+  // Format individual reviews for schema (only if reviews exist)
   const reviewsSchema =
     reviews && reviews.length > 0
       ? reviews.slice(0, 5).map((review) => ({
@@ -415,7 +598,7 @@ export const generateProductJsonLd = (
   const category = (product as any).categories?.[0]?.name
   const sellerName = (product as any).seller?.name || "Artovnia"
 
-  // ✅ FIX: Build offers object - ONLY include price if we have a valid one
+  // Build offers object with shipping and return policy
   const offers: Record<string, any> = {
     "@type": "Offer",
     url: `${baseUrl}/products/${product.handle}`,
@@ -429,31 +612,24 @@ export const generateProductJsonLd = (
       "@type": "Organization",
       name: sellerName,
     },
+    // Add shipping details (required by Google for merchant listings)
+    shippingDetails: generateShippingDetailsSchema(shippingConfig, currency),
+    // Add platform-wide return policy
+    hasMerchantReturnPolicy: generateReturnPolicySchema(),
   }
 
-  // ✅ FIX: Only add price if we have a valid one (> 0)
+  // Add price if available (prices are NOT in cents)
   if (effectivePrice && effectivePrice > 0) {
-    offers.price = (effectivePrice / 100).toFixed(2)
+    offers.price = effectivePrice.toFixed(2)
   }
 
-  // ✅ FIX: Ensure valid image URLs
-  const images =
-    product.images?.map((img) => ensureValidImageUrl(img.url)) || []
-  if (images.length === 0 && product.thumbnail) {
-    images.push(ensureValidImageUrl(product.thumbnail))
-  }
-  if (images.length === 0) {
-    images.push(`${baseUrl}/images/placeholder.webp`)
-  }
+  // Get all product images (highest quality first)
+  const images = getProductImages(product)
 
-  // Log warning if no price and no reviews (may fail Google validation)
-  const hasValidOffer = effectivePrice && effectivePrice > 0
-  const hasReviews = reviewsSchema && reviewsSchema.length > 0
-  const hasAggregateRating = !!aggregateRating
-
-  if (!hasValidOffer && !hasReviews && !hasAggregateRating) {
+  // Log warning if no price (may affect Google rich results)
+  if (!effectivePrice || effectivePrice <= 0) {
     console.warn(
-      `[SEO] Product "${product.handle}" has no price and no reviews - may fail Google validation`
+      `[SEO] Product "${product.handle}" has no valid price - rich results may be limited`
     )
   }
 
@@ -472,18 +648,14 @@ export const generateProductJsonLd = (
     ...(category && { category }),
     ...(productTags.length > 0 && { keywords: productTags.join(", ") }),
     offers,
+    // Only include rating fields if reviews exist
     ...(aggregateRating && { aggregateRating }),
-    ...(hasReviews && { review: reviewsSchema }),
+    ...(reviewsSchema && reviewsSchema.length > 0 && { review: reviewsSchema }),
   }
 }
 
 /**
- * ✅ NEW: Generate Seller/Artist ProfilePage JSON-LD
- *
- * GOOGLE REQUIREMENT for ProfilePage:
- * - MUST include "mainEntity" field
- * - DO NOT use "mainEntityOfPage" (deprecated/unrecognized)
- * - Image URLs MUST be valid absolute URLs
+ * Generate Seller/Artist ProfilePage JSON-LD
  */
 export const generateSellerJsonLd = (
   seller: {
@@ -491,8 +663,8 @@ export const generateSellerJsonLd = (
     name: string
     handle: string
     description?: string
-    photo?: string      // ✅ Changed from banner
-    logo_url?: string   // ✅ Changed from logo
+    photo?: string
+    logo_url?: string
     created_at?: string
   },
   reviews?: Array<{
@@ -505,12 +677,13 @@ export const generateSellerJsonLd = (
   const baseUrl = getBaseUrl()
   const sellerUrl = `${baseUrl}/sellers/${seller.handle}`
 
-  // ✅ Updated: Use logo_url first (profile pic), then photo (banner)
+  // Use logo_url first (profile pic), then photo (banner)
   const sellerImage = ensureValidImageUrl(
     seller.logo_url || seller.photo,
     `${baseUrl}/images/default-seller.png`
   )
 
+  // Only include aggregate rating if reviews exist
   const aggregateRating =
     reviews && reviews.length > 0
       ? {
@@ -544,6 +717,66 @@ export const generateSellerJsonLd = (
     url: sellerUrl,
     ...(seller.created_at && { dateCreated: seller.created_at }),
     dateModified: new Date().toISOString(),
+  }
+}
+
+/**
+ * Generate Category/Collection JSON-LD with enhanced SEO
+ */
+export const generateCategoryJsonLd = (
+  category: HttpTypes.StoreProductCategory,
+  productCount?: number,
+  sampleProductImage?: string
+): JsonLdBase & Record<string, any> => {
+  const baseUrl = getBaseUrl()
+  const categoryUrl = `${baseUrl}/categories/${category.handle}`
+
+  const image = sampleProductImage
+    ? ensureValidImageUrl(sampleProductImage)
+    : category.metadata?.image
+      ? ensureValidImageUrl(category.metadata.image as string)
+      : `${baseUrl}/images/categories/${category.handle}.png`
+
+  return {
+    "@context": "https://schema.org",
+    "@type": "CollectionPage",
+    name: category.name,
+    description:
+      category.description ||
+      `Przeglądaj produkty z kategorii ${category.name} - unikalne dzieła sztuki i rękodzieła od polskich artystów.`,
+    url: categoryUrl,
+    image: image,
+    ...(productCount !== undefined && {
+      numberOfItems: productCount,
+    }),
+    isPartOf: {
+      "@type": "WebSite",
+      name: "Artovnia",
+      url: baseUrl,
+    },
+    breadcrumb: {
+      "@type": "BreadcrumbList",
+      itemListElement: [
+        {
+          "@type": "ListItem",
+          position: 1,
+          name: "Strona główna",
+          item: baseUrl,
+        },
+        {
+          "@type": "ListItem",
+          position: 2,
+          name: "Kategorie",
+          item: `${baseUrl}/categories`,
+        },
+        {
+          "@type": "ListItem",
+          position: 3,
+          name: category.name,
+          item: categoryUrl,
+        },
+      ],
+    },
   }
 }
 
@@ -609,7 +842,9 @@ export const generateBreadcrumbJsonLd = (
 export const generateCollectionPageJsonLd = (
   name: string,
   description: string,
-  url: string
+  url: string,
+  image?: string,
+  itemCount?: number
 ): JsonLdBase & Record<string, any> => {
   return {
     "@context": "https://schema.org",
@@ -617,6 +852,8 @@ export const generateCollectionPageJsonLd = (
     name: name,
     description: description,
     url: url,
+    ...(image && { image: ensureValidImageUrl(image) }),
+    ...(itemCount !== undefined && { numberOfItems: itemCount }),
   }
 }
 
@@ -630,10 +867,27 @@ export const generateItemListJsonLd = (
     "@context": "https://schema.org",
     "@type": "ItemList",
     name: listName,
+    numberOfItems: products.length,
     itemListElement: products.map((product, index) => ({
       "@type": "ListItem",
       position: index + 1,
       url: `${baseUrl}/products/${product.handle}`,
+      name: product.title,
+      image: getProductImage(product),
     })),
   }
+}
+
+// ============================================
+// UTILITY EXPORTS
+// ============================================
+
+export {
+  getBaseUrl,
+  getSiteName,
+  ensureValidImageUrl,
+  getProductImage,
+  getProductImages,
+  extractProductPrice,
+  generateDescription,
 }

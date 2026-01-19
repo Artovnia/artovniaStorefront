@@ -36,7 +36,7 @@ export const ProductPageDetails = ({ details }: { details: string }) => {
             i: ({node, ...props}) => <em className="italic" {...props} />,
             
             // Headings - all levels with explicit font-weight
-            h1: ({node, ...props}) => <h1 className="text-3xl font-bold mb-3 mt-6" style={{ fontWeight: 700 }} {...props} />,
+            h1: ({node, ...props}) => <h2 className="text-3xl font-bold mb-3 mt-6" style={{ fontWeight: 700 }} {...props} />, // SEO: Render as h2 to avoid multiple h1 on page
             h2: ({node, ...props}) => <h2 className="text-2xl font-bold mb-2 mt-5" style={{ fontWeight: 700 }} {...props} />,
             h3: ({node, ...props}) => <h3 className="text-xl font-bold mb-2 mt-4" style={{ fontWeight: 700 }} {...props} />,
             h4: ({node, ...props}) => <h4 className="text-lg font-bold mb-2 mt-3" style={{ fontWeight: 700 }} {...props} />,

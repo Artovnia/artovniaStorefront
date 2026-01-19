@@ -40,6 +40,7 @@ import { CookieConsent } from "./CookieConsent/CookieConsent"
 import NewsletterSubscription from "./NewsletterSubscription/NewsletterSubscription"
 import { ConditionalNewsletter } from "./ConditionalNewsletter"
 import { ProductShareButton } from "./ProductShareButton/ProductShareButton"
+import { KenBurnsSlide } from "./KenBurnsSlide/KenBurnsSlide"
 // ProductGPSRDetails has been moved to molecules/ProductGPSR
 
 export {
@@ -85,4 +86,5 @@ export {
   NewsletterSubscription,
   ConditionalNewsletter,
   ProductShareButton,
+  KenBurnsSlide,
 }

@@ -1,11 +1,18 @@
+// src/app/[locale]/(main)/categories/[category]/page.tsx
+
 import { Metadata } from "next"
-import { ProductListingSkeleton } from "@/components/organisms/ProductListingSkeleton/ProductListingSkeleton"
 import { getCategoryByHandle, listCategoriesWithProducts, getAllDescendantCategoryIds } from "@/lib/data/categories"
 import { isServerSideBot } from "@/lib/utils/server-bot-detection"
 import { retrieveCustomer } from "@/lib/data/customer"
 import { getUserWishlists } from "@/lib/data/wishlist"
-import { listProductsWithPromotions } from "@/lib/data/products"
-import { generateCategoryMetadata, generateBreadcrumbJsonLd, generateCollectionPageJsonLd } from "@/lib/helpers/seo"
+import { listProductsWithPromotions, listProducts } from "@/lib/data/products"
+import { 
+  generateCategoryMetadata, 
+  generateBreadcrumbJsonLd, 
+  generateCategoryJsonLd,
+  generateItemListJsonLd,
+  getProductImage 
+} from "@/lib/helpers/seo"
 import { notFound } from "next/navigation"
 import { HttpTypes } from "@medusajs/types"
 import { SmartProductsListing } from "@/components/sections/ProductListing/SmartProductsListing"
@@ -17,49 +24,60 @@ type Props = {
   params: Promise<{ category: string; locale: string }>
 }
 
-export async function generateMetadata({
-  params,
-}: {
-  params: Promise<{ category: string }>
-}): Promise<Metadata> {
-  const { category } = await params
+// Helper to get first product image from category
+async function getCategoryPreviewImage(
+  categoryId: string,
+  locale: string
+): Promise<string | undefined> {
+  try {
+    const { response } = await listProducts({
+      countryCode: locale,
+      category_id: categoryId, // ✅ Top-level param, not in queryParams
+      queryParams: {
+        limit: 1,
+      },
+    })
+    const firstProduct = response.products[0]
+    if (firstProduct) {
+      return getProductImage(firstProduct)
+    }
+  } catch {
+    // Ignore errors, return undefined
+  }
+  return undefined
+}
 
-  const cat = await getCategoryByHandle([category])
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { category: handle, locale } = await params
+
+  const cat = await getCategoryByHandle([handle])
   
-  // If category doesn't exist, return default metadata
   if (!cat) {
     return {
-      title: `Category not found`,
-      description: `Category not found - ${process.env.NEXT_PUBLIC_SITE_NAME}`,
+      title: `Kategoria nie znaleziona`,
+      description: `Kategoria nie znaleziona - ${process.env.NEXT_PUBLIC_SITE_NAME}`,
       robots: "noindex",
     }
   }
 
-  return generateCategoryMetadata(cat)
+  // Get a product image to use as category image
+  const productImage = await getCategoryPreviewImage(cat.id, locale)
+
+  return generateCategoryMetadata(cat, locale, productImage)
 }
 
-async function Category({
-  params,
-}: {
-  params: Promise<{
-    category: string
-    locale: string
-  }>
-}) {
+async function Category({ params }: Props) {
   const { category: handle, locale } = await params
   const decodedHandle = decodeURIComponent(handle)
   
-  // ✅ OPTIMIZATION 1: PARALLEL FETCHES - Fetch everything at once (400ms → 250ms)
+  // Parallel fetches
   const [botResult, categoriesResult, categoryResult] = await Promise.allSettled([
     isServerSideBot(),
     listCategoriesWithProducts(),
     getCategoryByHandle([handle])
   ])
 
-  const serverSideIsBot = botResult.status === 'fulfilled' 
-    ? botResult.value 
-    : false
-  
+  const serverSideIsBot = botResult.status === 'fulfilled' ? botResult.value : false
   const allCategoriesWithTree = categoriesResult.status === 'fulfilled' 
     ? categoriesResult.value?.categories || []
     : []
@@ -68,79 +86,49 @@ async function Category({
     ? categoryResult.value 
     : null
   
-  // If not found, try the direct approach
+  // Fallback matching logic...
   if (!category) {
-    
-    // Try exact match on handle
-    const exactHandleMatch = allCategoriesWithTree.find((cat: HttpTypes.StoreProductCategory) => 
-      cat.handle?.toLowerCase() === decodedHandle.toLowerCase()
+    const exactMatch = allCategoriesWithTree.find(
+      (cat) => cat.handle?.toLowerCase() === decodedHandle.toLowerCase()
     )
-    if (exactHandleMatch) {
-      category = exactHandleMatch
-    }
-    
-    // If not found, try matching on name
-    if (!category) {
-      const nameMatch = allCategoriesWithTree.find((cat: HttpTypes.StoreProductCategory) => 
-        cat.name?.toLowerCase() === decodedHandle.toLowerCase()
-      )
-      if (nameMatch) {
-        category = nameMatch
-      }
-    }
-    
-    // If still not found, try partial matching
-    if (!category) {
-      const partialMatch = allCategoriesWithTree.find((cat: HttpTypes.StoreProductCategory) => 
-        cat.handle?.toLowerCase().includes(decodedHandle.toLowerCase()) ||
-        cat.name?.toLowerCase().includes(decodedHandle.toLowerCase())
-      )
-      if (partialMatch) {
-        category = partialMatch
-      }
-    }
+    if (exactMatch) category = exactMatch
   }
 
-  // If category still doesn't exist, show a custom not found page
   if (!category) {
-    console.error(`Category not found after all attempts: ${handle} / ${decodedHandle}`)
     return notFound()
   }
 
-  // ✅ OPTIMIZATION: Fetch remaining data in parallel (category IDs, user data, promotional data)
-  const [categoryIdsResult, userResult, promotionalDataResult] = await Promise.allSettled([
-    getAllDescendantCategoryIds(category.id),
-    // Fetch user and wishlist
-    retrieveCustomer()
-      .then(async (user) => {
-        if (user) {
-          const wishlistData = await getUserWishlists()
-          return { user, wishlist: wishlistData.wishlists || [] }
-        }
-        return { user: null, wishlist: [] }
-      })
-      .catch((error) => {
-        // User not authenticated - this is normal
-        if ((error as any)?.status !== 401) {
-          console.error("Error fetching user data:", error)
-        }
-        return { user: null, wishlist: [] }
-      }),
-    // Fetch promotional products
-    listProductsWithPromotions({
-      page: 1,
-      limit: 50,
-      countryCode: 'PL'
-    }).catch((error) => {
-      console.error("Error fetching promotional data:", error)
-      return { response: { products: [], count: 0 }, nextPage: null }
-    })
+  // Fetch remaining data in parallel
+  const [categoryIdsResult, userResult, promotionalDataResult, previewProductResult] = 
+    await Promise.allSettled([
+      getAllDescendantCategoryIds(category.id),
+      retrieveCustomer()
+        .then(async (user) => {
+          if (user) {
+            const wishlistData = await getUserWishlists()
+            return { user, wishlist: wishlistData.wishlists || [] }
+          }
+          return { user: null, wishlist: [] }
+        })
+        .catch(() => ({ user: null, wishlist: [] })),
+      listProductsWithPromotions({
+        page: 1,
+        limit: 50,
+        countryCode: 'PL'
+      }).catch(() => ({ response: { products: [], count: 0 }, nextPage: null })),
+      // Fetch first few products for SEO (ItemList schema)
+       listProducts({
+      countryCode: locale,
+      category_id: category.id, // ✅ Top-level, string not array
+      queryParams: {
+        limit: 10,
+      },
+    }).catch(() => ({ response: { products: [], count: 0 } })),
   ])
 
   const categoryIds = categoryIdsResult.status === 'fulfilled' 
     ? categoryIdsResult.value 
     : [category.id]
-  
   
   const { user, wishlist } = userResult.status === 'fulfilled' 
     ? userResult.value 
@@ -150,16 +138,22 @@ async function Category({
     ? promotionalDataResult.value
     : { response: { products: [], count: 0 }, nextPage: null }
 
-  // Convert products array to Map for PromotionDataProvider
+  const previewProducts = previewProductResult.status === 'fulfilled'
+    ? previewProductResult.value.response.products
+    : []
+
+  const productCount = previewProductResult.status === 'fulfilled'
+    ? previewProductResult.value.response.count
+    : undefined
+
   const promotionalProductsMap = new Map(
     promotionalData.response.products.map(p => [p.id, p])
   )
 
   // Build breadcrumb path
-  const breadcrumbs = []
+  const breadcrumbs: Array<{ name: string; handle: string; id: string }> = []
   let currentCategory: HttpTypes.StoreProductCategory | null = category
   
-  // Build breadcrumbs by traversing up the parent chain
   while (currentCategory) {
     breadcrumbs.unshift({
       name: currentCategory.name,
@@ -167,33 +161,46 @@ async function Category({
       id: currentCategory.id
     })
     
-    // Find parent category if exists
     if (currentCategory?.parent_category_id && allCategoriesWithTree) {
-      const parentCategory = allCategoriesWithTree.find(cat => cat.id === currentCategory!.parent_category_id)
+      const parentCategory = allCategoriesWithTree.find(
+        cat => cat.id === currentCategory!.parent_category_id
+      )
       currentCategory = parentCategory || null
     } else {
       currentCategory = null
     }
   }
 
-  // ✅ OPTIMIZATION 3: Generate JSON-LD structured data for SEO
+  // Get first product image for category schema
+  const sampleProductImage = previewProducts[0] 
+    ? getProductImage(previewProducts[0]) 
+    : undefined
+
+  // Generate enhanced JSON-LD structured data
   const breadcrumbJsonLd = generateBreadcrumbJsonLd([
     { label: "Strona główna", path: "/" },
     { label: "Kategorie", path: "/categories" },
     ...breadcrumbs.map(b => ({ label: b.name, path: `/categories/${b.handle}` }))
   ])
   
-  const collectionJsonLd = generateCollectionPageJsonLd(
-    category.name,
-    category.description || `Przeglądaj produkty z kategorii ${category.name} - unikalne dzieła sztuki i rękodzieła od polskich artystów.`,
-    `${process.env.NEXT_PUBLIC_BASE_URL}/categories/${category.handle}` 
+  // Use the new enhanced category JSON-LD
+  const categoryJsonLd = generateCategoryJsonLd(
+    category,
+    productCount,
+    sampleProductImage
   )
+
+  // Add ItemList for first products (helps with indexing)
+  const itemListJsonLd = previewProducts.length > 0
+    ? generateItemListJsonLd(previewProducts, `Produkty w kategorii ${category.name}`)
+    : null
 
   return (
     <>
-      {/* ✅ Structured Data (JSON-LD) for SEO */}
+      {/* Enhanced Structured Data for SEO */}
       <JsonLd data={breadcrumbJsonLd} />
-      <JsonLd data={collectionJsonLd} />
+      <JsonLd data={categoryJsonLd} />
+      {itemListJsonLd && <JsonLd data={itemListJsonLd} />}
       
       <PromotionDataProvider 
         countryCode="PL" 
@@ -202,15 +209,19 @@ async function Category({
       >
         <BatchPriceProvider currencyCode="PLN">
           <main className="container">
-            {/* Category Children Navigation (if any) */}
-            {category.category_children && category.category_children.length > 0 && (
-              <div className="flex flex-col gap-4 mb-8">
-                
-              </div>
-            )}
+            {/* Category header with description for SEO */}
+            <header className="mb-8">
+              <h1 className="text-3xl font-bold mb-2">{category.name}</h1>
+              {category.description && (
+                <p className="text-ui-fg-subtle">{category.description}</p>
+              )}
+              {productCount !== undefined && productCount > 0 && (
+                <p className="text-sm text-ui-fg-muted mt-2">
+                  {productCount} {productCount === 1 ? 'produkt' : 'produktów'}
+                </p>
+              )}
+            </header>
 
-            {/* ✅ No Suspense needed - promotional data already loaded on server */}
-            {/* Note: User/wishlist data fetched client-side in ProductListing component */}
             <SmartProductsListing 
               category_ids={categoryIds}
               locale={locale}

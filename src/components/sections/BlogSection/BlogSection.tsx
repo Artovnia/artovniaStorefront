@@ -44,7 +44,7 @@ export async function BlogSection() {
       </div>
       
       {/* Mobile: Carousel */}
-      <div className='lg:hidden px-4 sm:px-6'>
+      <div className='lg:hidden '>
         <BlogCarousel posts={blogPosts} />
       </div>
       

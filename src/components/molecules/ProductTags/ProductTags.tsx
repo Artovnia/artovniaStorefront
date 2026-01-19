@@ -12,7 +12,7 @@ export const ProductTags = ({
       {tags.map(({ id, value }) => (
         <Link 
           key={id} 
-          href={`/tags/${encodeURIComponent(value.toLowerCase().replace(/\s+/g, '-'))}`}
+          href={`/tags/${encodeURIComponent(value.toLowerCase())}`}
           itemProp="keywords"
           className="cursor-pointer hover:opacity-80 transition-opacity"
         >

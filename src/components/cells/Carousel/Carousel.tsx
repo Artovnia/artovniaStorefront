@@ -117,7 +117,7 @@ export const CustomCarousel = ({
 
         {/* Content Column - Scrollable container */}
         <div 
-          className='overflow-x-auto scrollbar-hide'
+          className='overflow-x-auto scrollbar-hide mx-4'
           ref={scrollContainerRef}
           onScroll={handleScroll}
           style={{
