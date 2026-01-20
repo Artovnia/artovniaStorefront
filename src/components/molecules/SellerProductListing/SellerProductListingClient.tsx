@@ -24,31 +24,31 @@ export function SellerProductListingClient({
   initialTotalCount?: number
   initialWishlists?: SerializableWishlist[]
 }) {
+  // ✅ Track if we have server-side data (only check once on mount)
+  const hasInitialData = Boolean(initialProducts && initialProducts.length > 0)
+  
   const [products, setProducts] = useState<HttpTypes.StoreProduct[]>(initialProducts || [])
   const [totalCount, setTotalCount] = useState(initialTotalCount || 0)
   const [currentPage, setCurrentPage] = useState(1)
   const [wishlist, setWishlist] = useState<SerializableWishlist[]>(initialWishlists || [])
-  const [isLoading, setIsLoading] = useState(!initialProducts)
+  // ✅ No loading state if we have initial data from server
+  const [isLoading, setIsLoading] = useState(!hasInitialData)
   
   // ✅ OPTIMIZATION: Memoize user ID to prevent unnecessary re-fetches
   const userId = user?.id
   
-  // ✅ PERFORMANCE: Fetch products client-side with proper pagination
+  // ✅ PERFORMANCE: Only fetch on page change (page > 1) or if no initial data
   useEffect(() => {
     const fetchData = async () => {
-      // Use initial data for first page if available (server-side pre-fetch)
-      if (currentPage === 1 && initialProducts && initialProducts.length > 0) {
-        setProducts(initialProducts)
-        setTotalCount(initialTotalCount || 0)
-        setWishlist(initialWishlists || [])
-        setIsLoading(false)
+      // ✅ Skip fetch for page 1 if we have initial data from server
+      if (currentPage === 1 && hasInitialData) {
+        // Data already set in useState initialization
         return
       }
 
       setIsLoading(true)
       try {
         const offset = (currentPage - 1) * PRODUCT_LIMIT
-        
         
         // ✅ CRITICAL: Fetch only the current page (20 products), not all 200
         const [productsResult, wishlistData] = await Promise.all([
@@ -61,7 +61,6 @@ export function SellerProductListingClient({
           userId ? getUserWishlists() : Promise.resolve({ wishlists: [] })
         ])
 
-     
         setProducts(productsResult?.response?.products || [])
         setTotalCount(productsResult?.response?.count || 0)
         setWishlist(wishlistData.wishlists || [])
@@ -75,8 +74,9 @@ export function SellerProductListingClient({
     }
 
     fetchData()
-    // ✅ Removed initialProducts from dependencies to prevent re-fetch loops
-  }, [seller_id, currentPage, userId])
+    // ✅ Only re-fetch when page changes or seller changes
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [seller_id, currentPage, hasInitialData])
 
   const totalPages = Math.ceil(totalCount / PRODUCT_LIMIT)
 

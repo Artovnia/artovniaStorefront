@@ -70,11 +70,11 @@ export const CartShippingMethodRow = ({
   // Extract capacity info from method data
   const capacityInfo = method.data?.capacity_info as any
   
-  // The method.amount now includes the overage (updated by backend)
-  // We need to extract base price and overage from capacity_info
+  // UPDATED 2026-01-20: After workflow optimization, method.amount contains the TOTAL amount
+  // (base + overage already included). We extract base and overage for display breakdown.
   const totalAmount = method?.amount || 0
   const overageCharge = capacityInfo?.overage_charge || 0
-  const baseAmount = capacityInfo?.overage_charge ? totalAmount - overageCharge : totalAmount
+  const baseAmount = overageCharge > 0 ? totalAmount - overageCharge : totalAmount
   const hasOverage = overageCharge > 0
   
   return (

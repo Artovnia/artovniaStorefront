@@ -107,16 +107,33 @@ export default async function SellerPage({
       )
     }
 
-    const [availabilityResult, holidayModeResult, suspensionResult] =
+    // ✅ OPTIMIZATION: Fetch products, availability, and wishlists in parallel
+    const [availabilityResult, holidayModeResult, suspensionResult, productsResult, wishlistsResult] =
       await Promise.allSettled([
         getVendorAvailability(seller.id),
         getVendorHolidayMode(seller.id),
         getVendorSuspension(seller.id),
+        // ✅ Pre-fetch first page of products on server to avoid skeleton
+        listProductsWithSort({
+          seller_id: seller.id,
+          countryCode: "pl",
+          sortBy: "created_at",
+          queryParams: { limit: PRODUCT_LIMIT, offset: 0 },
+        }),
+        // ✅ Pre-fetch wishlists if user is logged in
+        user ? getUserWishlists().catch(() => ({ wishlists: [] })) : Promise.resolve({ wishlists: [] }),
       ])
 
-    const initialProducts = undefined
-    const initialTotalCount = undefined
-    const initialWishlists = undefined
+    // Extract products data from settled promise
+    const initialProducts = productsResult.status === "fulfilled" 
+      ? productsResult.value?.response?.products 
+      : undefined
+    const initialTotalCount = productsResult.status === "fulfilled" 
+      ? productsResult.value?.response?.count 
+      : undefined
+    const initialWishlists = wishlistsResult.status === "fulfilled"
+      ? wishlistsResult.value?.wishlists
+      : undefined
 
     const sellerWithReviews = {
       ...seller,
