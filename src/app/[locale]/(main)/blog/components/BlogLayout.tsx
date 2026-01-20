@@ -93,12 +93,18 @@ export default function BlogLayout({
           </nav>
         )}
 
-        {/* Search Bar */}
+        {/* Search Bar - Wrapped in Suspense for useSearchParams compatibility */}
         <div className="bg-[#F4F0EB]">
           <div className="px-4 sm:px-6 lg:px-8 ">
             <div className="flex items-center justify-end">
               <div className="w-full max-w-md">
-                <BlogSearchWrapper />
+                <Suspense fallback={
+                  <div className="flex justify-end">
+                    <div className="h-10 w-24 bg-gray-200 rounded-sm animate-pulse"></div>
+                  </div>
+                }>
+                  <BlogSearchWrapper />
+                </Suspense>
               </div>
             </div>
           </div>

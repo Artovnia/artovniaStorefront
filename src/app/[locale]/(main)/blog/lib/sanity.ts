@@ -13,11 +13,18 @@ if (!dataset && process.env.NODE_ENV === 'production') {
   console.error('Missing NEXT_PUBLIC_SANITY_DATASET environment variable')
 }
 
+// ✅ Determine if we're in build/SSG phase vs runtime
+// During Vercel build, we should NOT use CDN to avoid stale data issues
+const isVercelBuild = process.env.VERCEL_ENV && process.env.CI === 'true'
+const isProduction = process.env.NODE_ENV === 'production'
+
 export const client = createClient({
   projectId: projectId || 'placeholder', // Fallback to prevent build errors
   dataset: dataset || 'production',
-  useCdn: true, // Always use CDN for better performance
-  apiVersion: '2024-01-01',
+  // ✅ Use CDN only in production runtime, not during build
+  // This prevents stale data during static generation on Vercel
+  useCdn: isProduction && !isVercelBuild,
+  apiVersion: '2024-03-01', // Updated API version for stability
   token: process.env.SANITY_API_TOKEN,
   perspective: 'published', // Only fetch published content for better caching
   stega: false, // Disable stega for production performance

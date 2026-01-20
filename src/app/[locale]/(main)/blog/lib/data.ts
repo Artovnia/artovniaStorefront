@@ -1,4 +1,4 @@
-import { unstable_cache } from 'next/cache'
+import { cache } from 'react'
 import {
   client,
   isSanityConfigured,
@@ -191,6 +191,7 @@ async function withRetry<T>(
 
 /**
  * Safe Sanity fetch with timeout, retry, and graceful fallback
+ * ✅ Optimized for Vercel serverless functions
  */
 async function safeFetch<T>(
   query: string,
@@ -200,9 +201,10 @@ async function safeFetch<T>(
     retries?: number
     context?: string
     fallback?: T
+    revalidate?: number | false
   } = {}
 ): Promise<T | null> {
-  const { timeout = 15000, retries = 2, context = 'Sanity', fallback = null } = options
+  const { timeout = 15000, retries = 2, context = 'Sanity', fallback = null, revalidate = 60 } = options
 
   // Return fallback if Sanity is not configured (during build)
   if (!isSanityConfigured()) {
@@ -211,10 +213,21 @@ async function safeFetch<T>(
   }
 
   try {
-    return await withRetry(
-      () => fetchWithTimeout<T>(query, params, timeout),
+    // ✅ Use Sanity client with Next.js cache options for Vercel compatibility
+    const result = await withRetry(
+      async () => {
+        const data = await client.fetch<T>(query, params, {
+          // ✅ Next.js fetch cache options - works better on Vercel than unstable_cache
+          next: {
+            revalidate: revalidate === false ? undefined : revalidate,
+            tags: ['sanity', context.toLowerCase().replace(/[^a-z0-9]/g, '-')],
+          },
+        })
+        return data
+      },
       { retries, context }
     )
+    return result
   } catch (error) {
     console.error(`[${context}] Fetch failed after retries:`, error)
     return fallback
@@ -245,153 +258,114 @@ function transformBlogPost(post: any): BlogPost {
 }
 
 // ============== CACHED DATA FUNCTIONS ==============
+// ✅ Using React cache + safeFetch with Next.js fetch caching for Vercel compatibility
+// This approach is more reliable than unstable_cache on Vercel serverless
 
 /**
  * Get all blog posts with caching
  */
-export const getBlogPosts = unstable_cache(
-  async (): Promise<BlogPost[]> => {
-    const posts = await safeFetch<any[]>(BLOG_POSTS_QUERY, {}, {
-      context: 'getBlogPosts',
-      fallback: [],
-    })
-    return (posts || []).map(transformBlogPost)
-  },
-  ['blog-posts'],
-  {
+export const getBlogPosts = cache(async (): Promise<BlogPost[]> => {
+  const posts = await safeFetch<any[]>(BLOG_POSTS_QUERY, {}, {
+    context: 'getBlogPosts',
+    fallback: [],
     revalidate: 60,
-    tags: ['blog', 'blog-posts'],
-  }
-)
+  })
+  return (posts || []).map(transformBlogPost)
+})
 
 /**
  * Get featured posts with caching
  */
-export const getFeaturedPosts = unstable_cache(
-  async (): Promise<BlogPost[]> => {
-    const posts = await safeFetch<any[]>(FEATURED_POSTS_QUERY, {}, {
-      context: 'getFeaturedPosts',
-      fallback: [],
-    })
-    return (posts || []).map(transformBlogPost)
-  },
-  ['blog-featured'],
-  {
+export const getFeaturedPosts = cache(async (): Promise<BlogPost[]> => {
+  const posts = await safeFetch<any[]>(FEATURED_POSTS_QUERY, {}, {
+    context: 'getFeaturedPosts',
+    fallback: [],
     revalidate: 60,
-    tags: ['blog', 'blog-featured'],
-  }
-)
+  })
+  return (posts || []).map(transformBlogPost)
+})
 
 /**
  * Get latest 3 blog posts with caching
  */
-export const getLatestBlogPosts = unstable_cache(
-  async (): Promise<BlogPost[]> => {
-    const query = `
-      *[_type == "blogPost" && !(_id in path("drafts.**"))] | order(publishedAt desc)[0...3] {
-        _id,
-        title,
-        slug,
-        excerpt,
-        publishedAt,
-        "authorName": author->name,
-        "authorImage": author->image,
-        mainImage,
-        "categoryTitles": categories[]->title,
-        "categorySlugs": categories[]->slug.current,
-        tags
-      }
-    `
-    const posts = await safeFetch<any[]>(query, {}, {
-      context: 'getLatestBlogPosts',
-      fallback: [],
-    })
-    return (posts || []).map(transformBlogPost)
-  },
-  ['blog-latest'],
-  {
+export const getLatestBlogPosts = cache(async (): Promise<BlogPost[]> => {
+  const query = `
+    *[_type == "blogPost" && !(_id in path("drafts.**"))] | order(publishedAt desc)[0...3] {
+      _id,
+      title,
+      slug,
+      excerpt,
+      publishedAt,
+      "authorName": author->name,
+      "authorImage": author->image,
+      mainImage,
+      "categoryTitles": categories[]->title,
+      "categorySlugs": categories[]->slug.current,
+      tags
+    }
+  `
+  const posts = await safeFetch<any[]>(query, {}, {
+    context: 'getLatestBlogPosts',
+    fallback: [],
     revalidate: 60,
-    tags: ['blog', 'blog-latest'],
-  }
-)
+  })
+  return (posts || []).map(transformBlogPost)
+})
 
 /**
  * Get single blog post by slug
+ * ✅ Uses React cache for request deduplication + Next.js fetch cache for ISR
  */
-export async function getBlogPost(slug: string): Promise<BlogPost | null> {
-  const getCachedPost = unstable_cache(
-    async (postSlug: string): Promise<BlogPost | null> => {
-      const post = await safeFetch<any>(
-        BLOG_POST_QUERY,
-        { slug: postSlug },
-        { context: `getBlogPost(${postSlug})` }
-      )
-      return post ? transformBlogPost(post) : null
-    },
-    [`blog-post-${slug}`],
-    {
+export const getBlogPost = cache(async (slug: string): Promise<BlogPost | null> => {
+  const post = await safeFetch<any>(
+    BLOG_POST_QUERY,
+    { slug },
+    { 
+      context: `getBlogPost-${slug}`,
       revalidate: 1800, // 30 minutes
-      tags: ['blog', 'blog-posts', `blog-post-${slug}`],
     }
   )
-
-  return getCachedPost(slug)
-}
+  return post ? transformBlogPost(post) : null
+})
 
 /**
  * Get blog categories with caching
  */
-export const getBlogCategories = unstable_cache(
-  async (): Promise<BlogCategory[]> => {
-    const categories = await safeFetch<BlogCategory[]>(BLOG_CATEGORIES_QUERY, {}, {
-      context: 'getBlogCategories',
-      fallback: [],
-    })
-    return categories || []
-  },
-  ['blog-categories'],
-  {
+export const getBlogCategories = cache(async (): Promise<BlogCategory[]> => {
+  const categories = await safeFetch<BlogCategory[]>(BLOG_CATEGORIES_QUERY, {}, {
+    context: 'getBlogCategories',
+    fallback: [],
     revalidate: 3600, // 1 hour
-    tags: ['blog', 'blog-categories'],
-  }
-)
+  })
+  return categories || []
+})
 
 /**
  * Get posts by category with caching
  */
-export async function getPostsByCategory(categorySlug: string): Promise<BlogPost[]> {
-  const getCachedPosts = unstable_cache(
-    async (slug: string): Promise<BlogPost[]> => {
-      const query = `
-        *[_type == "blogPost" && references(*[_type == "blogCategory" && slug.current == $categorySlug]._id) && !(_id in path("drafts.**"))] | order(publishedAt desc) {
-          _id,
-          title,
-          slug,
-          excerpt,
-          publishedAt,
-          "authorName": author->name,
-          "authorImage": author->image,
-          mainImage,
-          "categoryTitles": categories[]->title,
-          "categorySlugs": categories[]->slug.current,
-          tags
-        }
-      `
-      const posts = await safeFetch<any[]>(query, { categorySlug: slug }, {
-        context: `getPostsByCategory(${slug})`,
-        fallback: [],
-      })
-      return (posts || []).map(transformBlogPost)
-    },
-    [`blog-category-${categorySlug}`],
-    {
-      revalidate: 600, // 10 minutes
-      tags: ['blog', 'blog-posts', `blog-category-${categorySlug}`],
+export const getPostsByCategory = cache(async (categorySlug: string): Promise<BlogPost[]> => {
+  const query = `
+    *[_type == "blogPost" && references(*[_type == "blogCategory" && slug.current == $categorySlug]._id) && !(_id in path("drafts.**"))] | order(publishedAt desc) {
+      _id,
+      title,
+      slug,
+      excerpt,
+      publishedAt,
+      "authorName": author->name,
+      "authorImage": author->image,
+      mainImage,
+      "categoryTitles": categories[]->title,
+      "categorySlugs": categories[]->slug.current,
+      tags
     }
-  )
-
-  return getCachedPosts(categorySlug)
-}
+  `
+  const posts = await safeFetch<any[]>(query, { categorySlug }, {
+    context: `getPostsByCategory-${categorySlug}`,
+    fallback: [],
+    revalidate: 600, // 10 minutes
+  })
+  return (posts || []).map(transformBlogPost)
+})
 
 /**
  * Search blog posts - NO CACHE (real-time results)
@@ -435,103 +409,70 @@ export async function searchBlogPosts(searchTerm: string): Promise<BlogPost[]> {
 /**
  * Get featured seller post with caching
  */
-export const getFeaturedSellerPost = unstable_cache(
-  async (): Promise<SellerPost | null> => {
-    const post = await safeFetch<SellerPost>(FEATURED_SELLER_POST_QUERY, {}, {
-      context: 'getFeaturedSellerPost',
-    })
-    return post || null
-  },
-  ['seller-featured'],
-  {
+export const getFeaturedSellerPost = cache(async (): Promise<SellerPost | null> => {
+  const post = await safeFetch<SellerPost>(FEATURED_SELLER_POST_QUERY, {}, {
+    context: 'getFeaturedSellerPost',
     revalidate: 600,
-    tags: ['blog', 'sellers', 'seller-featured'],
-  }
-)
+  })
+  return post || null
+})
 
 /**
  * Get single seller post by slug
+ * ✅ Uses React cache for request deduplication + Next.js fetch cache for ISR
  */
-export async function getSellerPost(slug: string): Promise<SellerPost | null> {
-  const getCachedPost = unstable_cache(
-    async (postSlug: string): Promise<SellerPost | null> => {
-      const post = await safeFetch<SellerPost>(
-        SELLER_POST_QUERY,
-        { slug: postSlug },
-        { context: `getSellerPost(${postSlug})` }
-      )
-      return post || null
-    },
-    [`seller-post-${slug}`],
-    {
-      revalidate: 1800,
-      tags: ['blog', 'sellers', `seller-post-${slug}`],
+export const getSellerPost = cache(async (slug: string): Promise<SellerPost | null> => {
+  const post = await safeFetch<SellerPost>(
+    SELLER_POST_QUERY,
+    { slug },
+    { 
+      context: `getSellerPost-${slug}`,
+      revalidate: 1800, // 30 minutes
     }
   )
-
-  return getCachedPost(slug)
-}
+  return post || null
+})
 
 /**
  * Get all seller posts with caching
  */
-export const getSellerPosts = unstable_cache(
-  async (): Promise<SellerPost[]> => {
-    const posts = await safeFetch<SellerPost[]>(SELLER_POSTS_QUERY, {}, {
-      context: 'getSellerPosts',
-      fallback: [],
-    })
-    return posts || []
-  },
-  ['seller-posts'],
-  {
+export const getSellerPosts = cache(async (): Promise<SellerPost[]> => {
+  const posts = await safeFetch<SellerPost[]>(SELLER_POSTS_QUERY, {}, {
+    context: 'getSellerPosts',
+    fallback: [],
     revalidate: 600,
-    tags: ['blog', 'sellers', 'seller-posts'],
-  }
-)
+  })
+  return posts || []
+})
 
 // ============== NEWSLETTERS ==============
 
 /**
  * Get all newsletters with caching
  */
-export const getNewsletters = unstable_cache(
-  async (): Promise<Newsletter[]> => {
-    const newsletters = await safeFetch<Newsletter[]>(NEWSLETTERS_QUERY, {}, {
-      context: 'getNewsletters',
-      fallback: [],
-    })
-    return newsletters || []
-  },
-  ['newsletters'],
-  {
+export const getNewsletters = cache(async (): Promise<Newsletter[]> => {
+  const newsletters = await safeFetch<Newsletter[]>(NEWSLETTERS_QUERY, {}, {
+    context: 'getNewsletters',
+    fallback: [],
     revalidate: 300,
-    tags: ['newsletters'],
-  }
-)
+  })
+  return newsletters || []
+})
 
 /**
  * Get single newsletter by ID
  */
-export async function getNewsletter(id: string): Promise<Newsletter | null> {
-  const getCachedNewsletter = unstable_cache(
-    async (newsletterId: string): Promise<Newsletter | null> => {
-      const newsletter = await safeFetch<Newsletter>(
-        NEWSLETTER_QUERY,
-        { id: newsletterId },
-        { context: `getNewsletter(${newsletterId})` }
-      )
-      return newsletter || null
-    },
-    [`newsletter-${id}`],
-    {
+export const getNewsletter = cache(async (id: string): Promise<Newsletter | null> => {
+  const newsletter = await safeFetch<Newsletter>(
+    NEWSLETTER_QUERY,
+    { id },
+    { 
+      context: `getNewsletter-${id}`,
       revalidate: 300,
-      tags: ['newsletters', `newsletter-${id}`],
     }
   )
-
-  return getCachedNewsletter(id)
-}
+  return newsletter || null
+})
 
 /**
  * Get ready newsletters - NO CACHE

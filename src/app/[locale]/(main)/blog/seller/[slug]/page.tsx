@@ -21,8 +21,14 @@ interface SellerPostPageProps {
 }
 
 export async function generateStaticParams() {
-  const slugs = await getSellerPostSlugs()
-  return slugs.map((slug) => ({ slug }))
+  // ✅ Wrap in try-catch for Vercel build stability
+  try {
+    const slugs = await getSellerPostSlugs()
+    return slugs.map((slug) => ({ slug }))
+  } catch (error) {
+    console.error('Error generating seller post static params:', error)
+    return []
+  }
 }
 
 export async function generateMetadata({ params }: SellerPostPageProps): Promise<Metadata> {

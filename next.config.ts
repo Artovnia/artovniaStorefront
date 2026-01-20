@@ -221,7 +221,7 @@ const nextConfig: NextConfig = {
         ],
       },
       
-      // ✅ CACHE: Static content pages
+      // CACHE: Static content pages
       {
         source: '/(about|how-to-buy|delivery|payment|returns|selling-guide|sellers-faq)',
         headers: [
@@ -232,7 +232,35 @@ const nextConfig: NextConfig = {
         ],
       },
       
-      // 🔒 NO CACHE: Checkout pages (user-specific data)
+      // CACHE: Blog pages (Sanity CMS content with ISR)
+      {
+        source: '/blog',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, s-maxage=60, stale-while-revalidate=3600', // 1min CDN, 1hr stale
+          },
+          {
+            key: 'CDN-Cache-Control',
+            value: 'public, s-maxage=60, stale-while-revalidate=3600',
+          },
+        ],
+      },
+      {
+        source: '/blog/:path*',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, s-maxage=300, stale-while-revalidate=3600', // 5min CDN, 1hr stale
+          },
+          {
+            key: 'CDN-Cache-Control',
+            value: 'public, s-maxage=300, stale-while-revalidate=3600',
+          },
+        ],
+      },
+      
+      // NO CACHE: Checkout pages (user-specific data)
       {
         source: '/checkout/:path*',
         headers: [

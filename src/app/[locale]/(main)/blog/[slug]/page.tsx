@@ -22,8 +22,14 @@ interface BlogPostPageProps {
 }
 
 export async function generateStaticParams() {
-  const slugs = await getBlogPostSlugs()
-  return slugs.map((slug) => ({ slug }))
+  // ✅ Wrap in try-catch for Vercel build stability
+  try {
+    const slugs = await getBlogPostSlugs()
+    return slugs.map((slug) => ({ slug }))
+  } catch (error) {
+    console.error('Error generating blog post static params:', error)
+    return []
+  }
 }
 
 export async function generateMetadata({ params }: BlogPostPageProps): Promise<Metadata> {

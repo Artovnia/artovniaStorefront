@@ -1,9 +1,13 @@
 import { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { Suspense } from 'react'
-import { getBlogCategories, getPostsByCategory } from '../../lib/data'
+import { getBlogCategories, getPostsByCategory, getCategorySlugs } from '../../lib/data'
 import BlogLayout from '../../components/BlogLayout'
 import BlogPostCard from '../../components/BlogPostCard'
+
+// ✅ ISR - revalidate every 10 minutes
+export const revalidate = 600
+export const dynamicParams = true
 
 interface CategoryPageProps {
   params: Promise<{
@@ -12,10 +16,14 @@ interface CategoryPageProps {
 }
 
 export async function generateStaticParams() {
-  const categories = await getBlogCategories()
-  return categories.map((category) => ({
-    slug: category.slug.current,
-  }))
+  // ✅ Use lightweight slugs query for static generation
+  try {
+    const slugs = await getCategorySlugs()
+    return slugs.map((slug) => ({ slug }))
+  } catch (error) {
+    console.error('Error generating category static params:', error)
+    return []
+  }
 }
 
 export async function generateMetadata({ params }: CategoryPageProps): Promise<Metadata> {
