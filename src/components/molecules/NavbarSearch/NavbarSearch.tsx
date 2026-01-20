@@ -3,14 +3,22 @@
 import { Input } from "@/components/atoms"
 import { SearchIcon } from "@/icons"
 import { useRouter } from '@/i18n/routing'
-import { useSearchParams } from 'next/navigation'
-import { useState } from "react"
+import { useState, useEffect } from "react"
 
 export const NavbarSearch = () => {
-  const searchParams = useSearchParams()
   const router = useRouter()
+  // ✅ Don't use useSearchParams() - it causes SSG bailout on Vercel
+  // Read URL params via window.location in useEffect instead
+  const [search, setSearch] = useState("")
 
-  const [search, setSearch] = useState(searchParams.get("query") || "")
+  // ✅ Read search params only on client-side to avoid SSG bailout
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search)
+    const query = urlParams.get("query")
+    if (query) {
+      setSearch(query)
+    }
+  }, [])
 
   const submitHandler = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
