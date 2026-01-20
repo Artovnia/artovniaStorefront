@@ -31,12 +31,12 @@ export const MobileCategoryItem = ({
       className={cn(
         "flex items-center justify-between w-full py-4 px-4",
         "border-b border-gray-200 last:border-b-0",
-        "hover:bg-gray-50 active:bg-gray-100 transition-colors",
+        "  transition-colors",
         "text-left"
       )}
       onClick={hasChildren ? handleClick : undefined}
     >
-      <span className="text-base font-instrument-sans font-medium text-gray-900 capitalize">
+      <span className="text-base font-instrument-sans font-medium text-[#3B3634]">
         {category.name}
       </span>
       {hasChildren && (

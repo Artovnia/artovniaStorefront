@@ -1,17 +1,21 @@
 import { createClient } from '@sanity/client'
 import imageUrlBuilder from '@sanity/image-url'
 
-if (!process.env.NEXT_PUBLIC_SANITY_PROJECT_ID) {
-  throw new Error('Missing NEXT_PUBLIC_SANITY_PROJECT_ID environment variable')
+// ✅ Graceful handling for build time - don't throw during static generation
+const projectId = process.env.NEXT_PUBLIC_SANITY_PROJECT_ID
+const dataset = process.env.NEXT_PUBLIC_SANITY_DATASET
+
+if (!projectId && process.env.NODE_ENV === 'production') {
+  console.error('Missing NEXT_PUBLIC_SANITY_PROJECT_ID environment variable')
 }
 
-if (!process.env.NEXT_PUBLIC_SANITY_DATASET) {
-  throw new Error('Missing NEXT_PUBLIC_SANITY_DATASET environment variable')
+if (!dataset && process.env.NODE_ENV === 'production') {
+  console.error('Missing NEXT_PUBLIC_SANITY_DATASET environment variable')
 }
 
 export const client = createClient({
-  projectId: process.env.NEXT_PUBLIC_SANITY_PROJECT_ID,
-  dataset: process.env.NEXT_PUBLIC_SANITY_DATASET,
+  projectId: projectId || 'placeholder', // Fallback to prevent build errors
+  dataset: dataset || 'production',
   useCdn: true, // Always use CDN for better performance
   apiVersion: '2024-01-01',
   token: process.env.SANITY_API_TOKEN,
@@ -22,7 +26,18 @@ export const client = createClient({
 const builder = imageUrlBuilder(client)
 
 export function urlFor(source: any) {
+  if (!source) {
+    return {
+      width: () => ({ height: () => ({ url: () => '/images/placeholder.jpg' }) }),
+      url: () => '/images/placeholder.jpg',
+    }
+  }
   return builder.image(source)
+}
+
+// ✅ Check if Sanity is properly configured
+export function isSanityConfigured(): boolean {
+  return Boolean(projectId && dataset)
 }
 
 // OPTIMIZED GROQ queries for blog posts - reduced references for better performance
@@ -195,4 +210,17 @@ export const READY_NEWSLETTERS_QUERY = `
     status,
     publishedAt
   }
+`
+
+// ✅ Slugs queries for static generation (lightweight)
+export const BLOG_POST_SLUGS_QUERY = `
+  *[_type == "blogPost" && !(_id in path("drafts.**"))][0...100].slug.current
+`
+
+export const SELLER_POST_SLUGS_QUERY = `
+  *[_type == "sellerPost" && !(_id in path("drafts.**"))][0...100].slug.current
+`
+
+export const CATEGORY_SLUGS_QUERY = `
+  *[_type == "blogCategory" && !(_id in path("drafts.**"))].slug.current
 `

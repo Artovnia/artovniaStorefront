@@ -2,7 +2,6 @@
 
 import { ArrowLeftIcon } from '@/icons';
 import { SafeI18nLink as Link } from '@/components/atoms/SafeI18nLink';
-import { cn } from '@/lib/utils';
 import { MobileCategoryItem } from './MobileCategoryItem';
 import { MobileCategoryLevelProps } from './types';
 
@@ -21,13 +20,13 @@ export const MobileCategoryLevel = ({
           {!isRoot && (
             <button
               onClick={onBack}
-              className="mr-3 p-1 hover:bg-gray-100 rounded-full transition-colors"
+              className="mr-3 p-1  rounded-full transition-colors"
               aria-label="Wróć do poprzedniego poziomu"
             >
               <ArrowLeftIcon size={20} className="text-gray-600" />
             </button>
           )}
-          <h2 className="text-lg font-semibold text-gray-900 capitalize">
+          <h2 className="text-lg font-semibold text-[#3B3634]">
             {isRoot ? 'Kategorie' : level.name}
           </h2>
         </div>
@@ -42,8 +41,8 @@ export const MobileCategoryLevel = ({
             className="block w-full"
             onClick={() => setTimeout(() => onClose(), 100)}
           >
-            <div className="flex items-center justify-between w-full py-4 px-4 border-b border-gray-200 hover:bg-gray-50 active:bg-gray-100 transition-colors">
-              <span className="text-base font-instrument-sans font-medium text-gray-900">
+            <div className="flex items-center justify-between w-full py-4 px-4 border-b border-gray-200  transition-colors">
+              <span className="text-base font-instrument-sans font-medium text-[#3B3634] ">
                 Wszystkie produkty
               </span>
             </div>
@@ -58,7 +57,7 @@ export const MobileCategoryLevel = ({
             onClick={() => setTimeout(() => onClose(), 100)}
           >
             <div className="flex items-center justify-between w-full py-4 px-4 border-b-2 border-primary/20 bg-primary/5 hover:bg-primary/10 transition-colors">
-              <span className="text-base font-semibold text-primary capitalize">
+              <span className="text-base font-semibold text-primary">
                 Zobacz wszystkie: {level.parentCategory.name}
               </span>
             </div>

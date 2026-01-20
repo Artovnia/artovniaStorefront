@@ -1,50 +1,50 @@
-import { Suspense } from "react"
-import { Metadata } from "next"
-import { generateBreadcrumbJsonLd } from "@/lib/helpers/seo"
+import { Suspense } from 'react'
+import { Metadata } from 'next'
+import { generateBreadcrumbJsonLd } from '@/lib/helpers/seo'
 import {
   getBlogPosts,
   getFeaturedPosts,
   getSellerPosts,
   getBlogCategories,
-} from "./lib/data"
-import BlogLayout from "./components/BlogLayout"
-import BlogPostCard from "./components/BlogPostCard"
-import PaginatedBlogPosts from "./components/PaginatedBlogPosts"
-import PaginatedSellerPosts from "./components/PaginatedSellerPosts"
+} from './lib/data'
+import BlogLayout from './components/BlogLayout'
+import BlogPostCard from './components/BlogPostCard'
+import PaginatedBlogPosts from './components/PaginatedBlogPosts'
+import PaginatedSellerPosts from './components/PaginatedSellerPosts'
 
-// ❌ ISR causes 500 errors in production - reverting to force-dynamic
-export const dynamic = 'force-dynamic'
+// ✅ ISR - revalidate every 60 seconds
+export const revalidate = 60
 
 export const metadata: Metadata = {
-  title: "Blog - Artovnia | Inspiracje, Porady i Nowości ze Świata Sztuki",
+  title: 'Blog - Artovnia | Inspiracje, Porady i Nowości ze Świata Sztuki',
   description:
-    "Odkryj najnowsze wpisy blogowe, inspiracje artystyczne, porady dla twórców i poznaj naszych utalentowanych artystów. Blog Artovnia to źródło wiedzy o sztuce współczesnej.",
+    'Odkryj najnowsze wpisy blogowe, inspiracje artystyczne, porady dla twórców i poznaj naszych utalentowanych artystów. Blog Artovnia to źródło wiedzy o sztuce współczesnej.',
   keywords:
-    "blog artystyczny, inspiracje artystyczne, porady dla artystów, sztuka współczesna, artyści, galeria",
-  authors: [{ name: "Artovnia" }],
+    'blog artystyczny, inspiracje artystyczne, porady dla artystów, sztuka współczesna, artyści, galeria',
+  authors: [{ name: 'Artovnia' }],
   alternates: {
     canonical: `${process.env.NEXT_PUBLIC_BASE_URL}/blog`,
     languages: {
-      'pl': `${process.env.NEXT_PUBLIC_BASE_URL}/blog`,
+      pl: `${process.env.NEXT_PUBLIC_BASE_URL}/blog`,
       'x-default': `${process.env.NEXT_PUBLIC_BASE_URL}/blog`,
     },
   },
   openGraph: {
-    title: "Blog - Artovnia | Inspiracje, Porady i Nowości ze Świata Sztuki",
+    title: 'Blog - Artovnia | Inspiracje, Porady i Nowości ze Świata Sztuki',
     description:
-      "Odkryj najnowsze wpisy blogowe, inspiracje artystyczne, porady dla twórców i poznaj naszych utalentowanych artystów.",
-    type: "website",
-    locale: "pl_PL",
-    siteName: "Artovnia",
+      'Odkryj najnowsze wpisy blogowe, inspiracje artystyczne, porady dla twórców i poznaj naszych utalentowanych artystów.',
+    type: 'website',
+    locale: 'pl_PL',
+    siteName: 'Artovnia',
     url: `${process.env.NEXT_PUBLIC_BASE_URL}/blog`,
   },
   twitter: {
-    card: "summary_large_image",
-    site: "@artovnia",
-    creator: "@artovnia",
-    title: "Blog - Artovnia",
+    card: 'summary_large_image',
+    site: '@artovnia',
+    creator: '@artovnia',
+    title: 'Blog - Artovnia',
     description:
-      "Odkryj najnowsze wpisy blogowe, inspiracje artystyczne i poznaj naszych artystów.",
+      'Odkryj najnowsze wpisy blogowe, inspiracje artystyczne i poznaj naszych artystów.',
   },
   robots: {
     index: true,
@@ -80,111 +80,100 @@ function BlogPostsSkeleton() {
 }
 
 async function FeaturedPosts() {
-  try {
-    const featuredPosts = await getFeaturedPosts()
+  const featuredPosts = await getFeaturedPosts()
 
-    if (featuredPosts.length === 0) {
-      return null
-    }
-
-    return (
-      <section
-        className="mb-12 font-instrument-sans bg-[#F4F0EB]"
-        aria-labelledby="featured-posts-heading"
-      >
-        <h2
-          id="featured-posts-heading"
-          className="text-2xl lg:text-3xl xl:text-4xl text-[#3B3634] mb-6 font-instrument-serif"
-        >
-          Wyróżnione posty
-        </h2>
-        <div
-          className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-6 auto-rows-fr"
-          role="list"
-        >
-          {featuredPosts.map((post) => (
-            <div key={post._id} role="listitem" className="flex w-full">
-              <BlogPostCard post={post} featured />
-            </div>
-          ))}
-        </div>
-      </section>
-    )
-  } catch (error) {
-    console.error("Error rendering featured posts:", error)
+  if (!featuredPosts || featuredPosts.length === 0) {
     return null
   }
+
+  return (
+    <section
+      className="mb-12 font-instrument-sans bg-[#F4F0EB]"
+      aria-labelledby="featured-posts-heading"
+    >
+      <h2
+        id="featured-posts-heading"
+        className="text-2xl lg:text-3xl xl:text-4xl text-[#3B3634] mb-6 font-instrument-serif"
+      >
+        Wyróżnione posty
+      </h2>
+      <div
+        className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-6 auto-rows-fr"
+        role="list"
+      >
+        {featuredPosts.map((post) => (
+          <div key={post._id} role="listitem" className="flex w-full">
+            <BlogPostCard post={post} featured />
+          </div>
+        ))}
+      </div>
+    </section>
+  )
 }
 
 async function AllPosts() {
-  try {
-    const posts = await getBlogPosts()
-    return <PaginatedBlogPosts posts={posts} />
-  } catch (error) {
-    console.error("Error rendering all posts:", error)
+  const posts = await getBlogPosts()
+
+  if (!posts || posts.length === 0) {
     return (
-      <div
-        className="text-center py-12 font-instrument-sans bg-[#F4F0EB]"
-        role="alert"
-        aria-live="assertive"
-      >
+      <div className="text-center py-12 font-instrument-sans bg-[#F4F0EB]" role="status">
         <h3 className="text-2xl lg:text-3xl xl:text-4xl text-[#3B3634] mb-2">
-          Wystąpił błąd podczas ładowania postów
+          Brak postów do wyświetlenia
         </h3>
-        <p className="text-[#3B3634]">Spróbuj odświeżyć stronę</p>
+        <p className="text-[#3B3634]">Sprawdź ponownie później</p>
       </div>
     )
   }
+
+  return <PaginatedBlogPosts posts={posts} />
 }
 
 async function AllSellerPosts() {
-  try {
-    const posts = await getSellerPosts()
-    return <PaginatedSellerPosts posts={posts} />
-  } catch (error) {
-    console.error("Error rendering seller posts:", error)
+  const posts = await getSellerPosts()
+
+  if (!posts || posts.length === 0) {
     return null
   }
+
+  return <PaginatedSellerPosts posts={posts} />
 }
 
 export default async function BlogPage() {
   const categories = await getBlogCategories()
-  
-  // Generate breadcrumb structured data
+
   const breadcrumbJsonLd = generateBreadcrumbJsonLd([
-    { label: "Strona główna", path: "/" },
-    { label: "Blog", path: "/blog" },
+    { label: 'Strona główna', path: '/' },
+    { label: 'Blog', path: '/blog' },
   ])
 
   return (
     <>
-      {/* Structured Data (JSON-LD) for SEO */}
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
       />
-      
+
       <BlogLayout
-      title="Witaj w naszym Blogu"
-      description="Odkryj najnowsze informacje, porady i wiedzę z naszego zespołu."
-      breadcrumbs={[
-        { label: "Strona główna", path: "/" },
-        { label: "Blog", path: "/blog" },
-      ]}
-      categories={categories}
-    >
-      <Suspense fallback={<BlogPostsSkeleton />}>
-        <FeaturedPosts />
-      </Suspense>
+        title="Witaj w naszym Blogu"
+        description="Odkryj najnowsze informacje, porady i wiedzę z naszego zespołu."
+        breadcrumbs={[
+          { label: 'Strona główna', path: '/' },
+          { label: 'Blog', path: '/blog' },
+        ]}
+        categories={categories}
+      >
+        <Suspense fallback={<BlogPostsSkeleton />}>
+          <FeaturedPosts />
+        </Suspense>
 
-      <Suspense fallback={<BlogPostsSkeleton />}>
-        <AllPosts />
-      </Suspense>
+        <Suspense fallback={<BlogPostsSkeleton />}>
+          <AllPosts />
+        </Suspense>
 
-      <Suspense fallback={<BlogPostsSkeleton />}>
-        <AllSellerPosts />
-      </Suspense>
-    </BlogLayout>
+        <Suspense fallback={<BlogPostsSkeleton />}>
+          <AllSellerPosts />
+        </Suspense>
+      </BlogLayout>
     </>
   )
 }
