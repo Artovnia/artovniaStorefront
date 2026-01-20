@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useRouter } from 'next/navigation'
 
 interface BlogSearchProps {
   onSearch?: (searchTerm: string) => void
@@ -15,18 +15,24 @@ export default function BlogSearch({
   className = "" 
 }: BlogSearchProps) {
   const router = useRouter()
-  const searchParams = useSearchParams()
-  const [searchTerm, setSearchTerm] = useState(searchParams.get('q') || '')
+  // ✅ Don't use useSearchParams() directly - it causes SSG bailout on Vercel
+  // Instead, read from window.location on client-side only
+  const [searchTerm, setSearchTerm] = useState('')
   const [isOpen, setIsOpen] = useState(false)
+  const [isClient, setIsClient] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
 
+  // ✅ Read search params only on client-side to avoid SSG bailout
   useEffect(() => {
-    const query = searchParams.get('q')
+    setIsClient(true)
+    // Read query param from URL on client-side
+    const urlParams = new URLSearchParams(window.location.search)
+    const query = urlParams.get('q')
     if (query) {
       setSearchTerm(query)
       setIsOpen(true)
     }
-  }, [searchParams])
+  }, [])
 
   useEffect(() => {
     if (isOpen && inputRef.current) {

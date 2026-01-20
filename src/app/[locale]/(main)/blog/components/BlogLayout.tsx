@@ -1,4 +1,3 @@
-import { Suspense } from "react"
 import Image from "next/image"
 import { SafeI18nLink as Link } from "@/components/atoms/SafeI18nLink"
 import { Breadcrumbs } from "@/components/atoms/Breadcrumbs/Breadcrumbs"
@@ -93,18 +92,12 @@ export default function BlogLayout({
           </nav>
         )}
 
-        {/* Search Bar - Wrapped in Suspense for useSearchParams compatibility */}
+        {/* Search Bar */}
         <div className="bg-[#F4F0EB]">
           <div className="px-4 sm:px-6 lg:px-8 ">
             <div className="flex items-center justify-end">
               <div className="w-full max-w-md">
-                <Suspense fallback={
-                  <div className="flex justify-end">
-                    <div className="h-10 w-24 bg-gray-200 rounded-sm animate-pulse"></div>
-                  </div>
-                }>
-                  <BlogSearchWrapper />
-                </Suspense>
+                <BlogSearchWrapper />
               </div>
             </div>
           </div>

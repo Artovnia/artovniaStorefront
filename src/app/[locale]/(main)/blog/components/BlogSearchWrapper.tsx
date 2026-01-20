@@ -1,18 +1,12 @@
 'use client'
 
-import { Suspense } from 'react'
 import BlogSearch from './BlogSearch'
 
 /**
- * Client-side wrapper for BlogSearch that ensures useSearchParams() is properly wrapped in Suspense
- * This fixes the "useSearchParams() should be wrapped in a suspense boundary" error
+ * Client-side wrapper for BlogSearch
+ * Note: BlogSearch no longer uses useSearchParams() to avoid SSG bailout on Vercel
+ * It reads URL params via window.location in useEffect instead
  */
 export default function BlogSearchWrapper() {
-  return (
-    <Suspense fallback={
-      <div className="h-10 bg-gray-200 rounded-lg animate-pulse"></div>
-    }>
-      <BlogSearch />
-    </Suspense>
-  )
+  return <BlogSearch />
 }
