@@ -80,12 +80,20 @@ const PaymentButton: React.FC<PaymentButtonProps> = ({
       )
     default:
       return (
-        <div className="flex flex-col gap-y-2">
-          <Button disabled>
+        <div className="flex flex-col gap-4">
+          <button
+            disabled
+            className={`
+              w-full py-4 px-6
+              bg-plum-muted text-cream-50 text-sm font-medium tracking-wide uppercase
+              border-none cursor-not-allowed
+              flex items-center justify-center gap-2
+            `}
+          >
             {!termsAccepted ? 'Zaakceptuj regulamin' : !hasValidPaymentSession ? 'Wybierz metodę płatności' : 'Ładowanie...'}
-          </Button>
+          </button>
           {paymentSessions.length === 0 && (
-            <p className="text-sm text-gray-500 text-center">
+            <p className="text-sm text-plum-muted text-center">
               Odśwież stronę, jeśli metody płatności nie są widoczne
             </p>
           )}
@@ -233,32 +241,37 @@ const StripePaymentButton: React.FC<StripePaymentButtonProps> = ({
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="border rounded-lg p-4">
-        <div className="font-medium mb-3">Metoda płatności:</div>
-        <div className="flex items-center p-3 border rounded-md bg-primary border-[#3B3634]">
-          <div className="flex-grow">
-            {getPaymentMethodLabel(paymentProviderId)}
-          </div>
-        </div>
-        <div className="mt-2 text-sm text-gray-500">
-          Metoda płatności została wybrana w poprzednim kroku.
-        </div>
-      </div>
-      
-      <Button
+      <button
         disabled={!isPaymentReady || submitting}
         onClick={handleStripePayment}
-        loading={submitting}
-        className="w-full"
+        className={`
+          w-full py-4 px-6
+          bg-plum text-cream-50 text-sm font-medium tracking-wide uppercase
+          border-none cursor-pointer
+          transition-all duration-200
+          hover:bg-plum-dark
+          disabled:bg-plum-muted disabled:cursor-not-allowed
+          flex items-center justify-center gap-2
+        `}
         data-testid={dataTestId}
       >
-        {!termsAccepted ? 'Zaakceptuj regulamin' : 'Złóż zamówienie'}
-      </Button>
+        {submitting ? (
+          <span className="flex items-center gap-2">
+            <span className="w-4 h-4 border-2 border-cream-50 border-t-transparent rounded-full animate-spin" />
+            Przetwarzanie...
+          </span>
+        ) : !termsAccepted ? (
+          'Zaakceptuj regulamin'
+        ) : (
+          'Złóż zamówienie'
+        )}
+      </button>
       
-      <ErrorMessage
-        error={errorMessage}
-        data-testid="stripe-payment-error-message"
-      />
+      {errorMessage && (
+        <div className="p-3 bg-red-50 border border-red-200 text-red-700 text-sm">
+          {errorMessage}
+        </div>
+      )}
     </div>
   )
 }
@@ -314,19 +327,37 @@ const ManualTestPaymentButton: React.FC<ManualTestPaymentButtonProps> = ({
   }
 
   return (
-    <div className="w-full">
-      <Button
+    <div className="flex flex-col gap-4">
+      <button
         disabled={!isPaymentReady || submitting}
         onClick={handleManualPayment}
-        className="w-full mt-6"
+        className={`
+          w-full py-4 px-6
+          bg-plum text-cream-50 text-sm font-medium tracking-wide uppercase
+          border-none cursor-pointer
+          transition-all duration-200
+          hover:bg-plum-dark
+          disabled:bg-plum-muted disabled:cursor-not-allowed
+          flex items-center justify-center gap-2
+        `}
         data-testid={dataTestId}
-        loading={submitting}
       >
-        <CreditCard className="mr-2" /> 
-        {!termsAccepted ? 'Zaakceptuj regulamin' : 'Pay with Manual Test'}
-      </Button>
+        {submitting ? (
+          <span className="flex items-center gap-2">
+            <span className="w-4 h-4 border-2 border-cream-50 border-t-transparent rounded-full animate-spin" />
+            Przetwarzanie...
+          </span>
+        ) : !termsAccepted ? (
+          'Zaakceptuj regulamin'
+        ) : (
+          'Złóż zamówienie (Test)'
+        )}
+      </button>
+      
       {errorMessage && (
-        <ErrorMessage error={errorMessage} data-testid="manual-payment-error-message" />
+        <div className="p-3 bg-red-50 border border-red-200 text-red-700 text-sm">
+          {errorMessage}
+        </div>
       )}
     </div>
   );
@@ -506,32 +537,39 @@ const PayUPaymentButton: React.FC<PayUPaymentButtonProps> = ({
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="border rounded-lg p-4">
-        <div className="font-medium mb-3">Metoda płatności:</div>
-        <div className="flex items-center p-3 border rounded-md bg-blue-50 border-blue-500">
-          <div className="flex-grow">
-            {getPaymentMethodLabel(selectedProvider || '')}
-          </div>
-        </div>
-        <div className="mt-2 text-sm text-gray-500">
-          Metoda płatności została wybrana w poprzednim kroku.
-        </div>
-      </div>
-      
-      <Button
+      <button
         disabled={!isPaymentReady || !selectedProvider || submitting || hasRedirected || paymentInitiated}
         onClick={handlePayment}
-        loading={submitting}
-        className="w-full"
+        className={`
+          w-full py-4 px-6
+          bg-plum text-cream-50 text-sm font-medium tracking-wide uppercase
+          border-none cursor-pointer
+          transition-all duration-200
+          hover:bg-plum-dark
+          disabled:bg-plum-muted disabled:cursor-not-allowed
+          flex items-center justify-center gap-2
+        `}
         data-testid={dataTestId}
       >
-        {hasRedirected ? 'Przekierowywanie...' : !termsAccepted ? 'Zaakceptuj regulamin' : 'Złóż zamówienie'}
-      </Button>
+        {submitting ? (
+          <span className="flex items-center gap-2">
+            <span className="w-4 h-4 border-2 border-cream-50 border-t-transparent rounded-full animate-spin" />
+            Przetwarzanie...
+          </span>
+        ) : hasRedirected ? (
+          'Przekierowywanie...'
+        ) : !termsAccepted ? (
+          'Zaakceptuj regulamin'
+        ) : (
+          'Złóż zamówienie'
+        )}
+      </button>
       
-      <ErrorMessage
-        error={errorMessage}
-        data-testid="payu-payment-error-message"
-      />
+      {errorMessage && (
+        <div className="p-3 bg-red-50 border border-red-200 text-red-700 text-sm">
+          {errorMessage}
+        </div>
+      )}
     </div>
   )
 }

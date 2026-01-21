@@ -9,7 +9,7 @@ import { unifiedCache, CACHE_TTL } from "@/lib/utils/unified-cache"
 import { fetchWithRetry } from "@/lib/utils/fetch-with-timeout"
 
 // Type for allowed sort keys in server-side product listing
-type SortOptions = "created_at" | "title" | "price" | "updated_at"
+type SortOptions = "created_at" | "created_at_desc" | "created_at_asc" | "title" | "price" | "price_asc" | "price_desc" | "updated_at"
 
 /**
  * Performs client-side ordering of product arrays when server sorting isn't applied.
@@ -23,17 +23,30 @@ const sortProducts = (products: HttpTypes.StoreProduct[], sortBy: SortOptions): 
       case "title":
         return a.title.localeCompare(b.title)
       case "price":
-        // Sort by lowest variant price
+      case "price_asc":
+        // Sort by lowest variant price (ascending)
         const aPrice = Math.min(...(a.variants?.map(v => v.calculated_price?.calculated_amount || 0) || [0]))
         const bPrice = Math.min(...(b.variants?.map(v => v.calculated_price?.calculated_amount || 0) || [0]))
         return aPrice - bPrice
+      case "price_desc":
+        // Sort by lowest variant price (descending)
+        const aPriceDesc = Math.min(...(a.variants?.map(v => v.calculated_price?.calculated_amount || 0) || [0]))
+        const bPriceDesc = Math.min(...(b.variants?.map(v => v.calculated_price?.calculated_amount || 0) || [0]))
+        return bPriceDesc - aPriceDesc
       case "updated_at":
         // Use updated_at if available, fallback to created_at
         const aUpdated = (a as any).updated_at || a.created_at || new Date().toISOString()
         const bUpdated = (b as any).updated_at || b.created_at || new Date().toISOString()
         return new Date(bUpdated).getTime() - new Date(aUpdated).getTime()
+      case "created_at_asc":
+        // Oldest first
+        const aCreatedAsc = a.created_at || new Date().toISOString()
+        const bCreatedAsc = b.created_at || new Date().toISOString()
+        return new Date(aCreatedAsc).getTime() - new Date(bCreatedAsc).getTime()
       case "created_at":
+      case "created_at_desc":
       default:
+        // Newest first (default)
         const aCreated = a.created_at || new Date().toISOString()
         const bCreated = b.created_at || new Date().toISOString()
         return new Date(bCreated).getTime() - new Date(aCreated).getTime()
@@ -355,21 +368,50 @@ export const listProductsWithSort = async ({
   // Previous approach fetched ALL 200 products causing 3s+ delays
   // New approach: Direct API call with seller filter for instant results
   if (seller_id) {
-    const cacheKey = `seller:products:${seller_id}:${countryCode}:${sortBy}:${offset}:${limit}`
+    const cacheKey = `seller:products:${seller_id}:${countryCode}:${sortBy || ''}:${category_id || ''}:${offset}:${limit}`
     
-    // ✅ Fetch only the requested page with seller filter
+    // ✅ Fetch only the requested page with seller filter and sorting
     const result = await unifiedCache.get(cacheKey, async () => {
-      return await listProducts({
-        pageParam: page,
-        queryParams: {
-          ...queryParams,
-          limit,
-          offset,
-          order: sortBy === 'created_at' ? '-created_at' : sortBy,
-        },
-        seller_id,
-        countryCode,
+      const region = await getRegion(countryCode)
+      if (!region) {
+        return {
+          response: { products: [], count: 0 },
+          nextPage: null,
+          queryParams,
+        }
+      }
+
+      const headers = { ...(await getAuthHeaders()) }
+      
+      // Build query parameters for seller products endpoint
+      const query: any = {
+        limit,
+        offset,
+        region_id: region.id,
+        sortBy: sortBy || 'created_at_desc',
+      }
+      
+      if (category_id) {
+        query.category_id = category_id
+      }
+
+      // Call custom seller products endpoint that supports sorting and filtering
+      const { products, count } = await sdk.client.fetch<{
+        products: HttpTypes.StoreProduct[]
+        count: number
+      }>(`/store/seller/${seller_id}/products`, {
+        method: "GET",
+        query,
+        headers,
+        next: { revalidate: 300 },
       })
+
+      const nextPage = count > offset + limit ? page + 1 : null
+      return {
+        response: { products, count },
+        nextPage,
+        queryParams,
+      }
     }, CACHE_TTL.PRODUCT)
 
     if (!result || !result.response) {
@@ -383,20 +425,7 @@ export const listProductsWithSort = async ({
       }
     }
 
-    // ✅ Backend now filters by seller_id, so no client-side filtering needed
-    // Apply sorting if needed
-    const sortedProducts = sortBy && sortBy !== 'created_at'
-      ? sortProducts(result.response.products, sortBy)
-      : result.response.products
-
-    return {
-      response: {
-        products: sortedProducts,
-        count: result.response.count,
-      },
-      nextPage: result.nextPage,
-      queryParams,
-    }
+    return result
   }
 
   // For non-seller queries, use standard product listing

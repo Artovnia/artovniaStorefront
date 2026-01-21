@@ -17,7 +17,7 @@ export default async function CheckoutPage() {
     <Suspense
       fallback={
         <div className="container flex items-center justify-center">
-          Loading...
+          Ładowanie...
         </div>
       }
     >

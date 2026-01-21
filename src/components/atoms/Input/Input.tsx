@@ -1,109 +1,105 @@
 "use client"
+
 import { cn } from "@/lib/utils"
-import { CloseIcon } from "@/icons"
+import { X, Eye, EyeOff } from "lucide-react"
 import { forwardRef, useEffect, useState } from "react"
-import { EyeMini, EyeSlashMini } from "@medusajs/icons"
 
 interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   label?: string
   icon?: React.ReactNode
   clearable?: boolean
-  error?: boolean
+  error?: string | boolean
+  hint?: string
   changeValue?: (value: string) => void
   onClear?: () => void
 }
 
 export const Input = forwardRef<HTMLInputElement, InputProps>(
   (
-    { label, icon, clearable, className, error, changeValue, onClear, ...props },
+    {
+      label,
+      icon,
+      clearable,
+      className,
+      error,
+      hint,
+      changeValue,
+      onClear,
+      ...props
+    },
     ref
   ) => {
     const [showPassword, setShowPassword] = useState(false)
     const [inputType, setInputType] = useState(props.type)
-    let paddingY = ""
-    if (icon) paddingY += "pl-[46px] "
-    if (clearable) paddingY += "pr-[38px]"
+    const [isFocused, setIsFocused] = useState(false)
 
     useEffect(() => {
-      if (props.type === "password" && showPassword) {
-        setInputType("text")
-      }
-
-      if (props.type === "password" && !showPassword) {
-        setInputType("password")
+      if (props.type === "password") {
+        setInputType(showPassword ? "text" : "password")
       }
     }, [props.type, showPassword])
 
     const changeHandler = (e: React.ChangeEvent<HTMLInputElement>) => {
-      const value = e.target.value
-      if (changeValue) changeValue(value)
-      if (props.onChange) props.onChange(e)
+      changeValue?.(e.target.value)
+      props.onChange?.(e)
     }
 
     const inputHandler = (e: React.FormEvent<HTMLInputElement>) => {
       const target = e.target as HTMLInputElement
-      if (changeValue) changeValue(target.value)
-      if (props.onInput) props.onInput(e)
+      changeValue?.(target.value)
+      props.onInput?.(e)
     }
 
     const pasteHandler = (e: React.ClipboardEvent<HTMLInputElement>) => {
-      // Let paste complete, then read the actual value
       setTimeout(() => {
         const target = e.target as HTMLInputElement
-        if (changeValue) changeValue(target.value)
+        changeValue?.(target.value)
       }, 0)
-      if (props.onPaste) props.onPaste(e)
+      props.onPaste?.(e)
     }
 
     const focusHandler = (e: React.FocusEvent<HTMLInputElement>) => {
-      // Check for autofilled value on focus
+      setIsFocused(true)
       setTimeout(() => {
         const target = e.target as HTMLInputElement
-        if (target.value && changeValue) {
-          changeValue(target.value)
-        }
+        if (target.value) changeValue?.(target.value)
       }, 50)
-      if (props.onFocus) props.onFocus(e)
+      props.onFocus?.(e)
     }
 
-    const animationStartHandler = (
-      e: React.AnimationEvent<HTMLInputElement>
-    ) => {
-      // Detect autofill animation
-      if (
-        e.animationName === "onAutoFillStart" ||
-        e.animationName.includes("autofill")
-      ) {
-        setTimeout(() => {
-          const target = e.target as HTMLInputElement
-          if (target.value && changeValue) {
-            changeValue(target.value)
-          }
-        }, 10)
-      }
-      if (props.onAnimationStart) props.onAnimationStart(e)
+    const blurHandler = (e: React.FocusEvent<HTMLInputElement>) => {
+      setIsFocused(false)
+      props.onBlur?.(e)
     }
 
-    const clearHandler = () => {
-      if (changeValue) changeValue("")
-      if (onClear) onClear()
-    }
+    const { onChange, onInput, onFocus, onBlur, onPaste, placeholder, ...restProps } = props
 
-    const {
-      onChange,
-      onInput,
-      onFocus,
-      onAnimationStart,
-      onPaste,
-      ...restProps
-    } = props
+    // Only show placeholder when label is floated (focused or has value)
+    const isLabelFloated = isFocused || !!props.value
+    const effectivePlaceholder = label && !isLabelFloated ? "" : placeholder
 
     return (
-      <label className="label-md">
-        {label}
+      <div className="relative">
+        {/* Floating Label */}
+        {label && (
+          <label
+            className={cn(
+              "absolute left-4 transition-all duration-200 pointer-events-none z-10",
+              isLabelFloated
+                ? "-top-2.5 text-xs bg-cream-50 px-1 text-plum"
+                : "top-3.5 text-sm text-plum-muted",
+              error && "text-red-600"
+            )}
+          >
+            {label}
+            {props.required && <span className="text-accent-copper ml-0.5">*</span>}
+          </label>
+        )}
+
         <div className="relative">
+          {/* Leading Icon */}
           {icon && (
-            <span className="absolute top-0 left-[16px] h-full flex items-center">
+            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-plum-muted">
               {icon}
             </span>
           )}
@@ -111,39 +107,76 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
           <input
             ref={ref}
             className={cn(
-              "w-full px-[16px] py-[10px] border rounded-sm bg-white focus:border-primary focus:outline-none focus:ring-0",
-              error && "border-negative focus:border-negative",
-              restProps.disabled && "bg-disabled cursor-not-allowed",
-              paddingY,
+              // Base styles
+              "w-full px-4 py-3.5 bg-cream-50 text-plum",
+              "border border-cream-300 rounded-none",
+              "text-sm tracking-wide",
+              "transition-all duration-200 ease-out",
+              // Focus styles
+              "focus:outline-none focus:border-plum focus:ring-1 focus:ring-plum/20",
+              // Placeholder
+              "placeholder:text-plum-muted/50",
+              // Hover
+              "hover:border-plum-muted",
+              // Error state
+              error && "border-red-400 focus:border-red-500 focus:ring-red-500/20",
+              // Disabled state
+              restProps.disabled &&
+                "bg-cream-200 cursor-not-allowed opacity-60",
+              // Icon padding
+              icon && "pl-12",
+              clearable && props.value && "pr-10",
+              props.type === "password" && "pr-12",
               className
             )}
             {...restProps}
             type={inputType}
+            placeholder={effectivePlaceholder}
             onChange={changeHandler}
             onInput={inputHandler}
             onPaste={pasteHandler}
             onFocus={focusHandler}
-            onAnimationStart={animationStartHandler}
+            onBlur={blurHandler}
           />
+
+          {/* Clear button */}
           {clearable && props.value && (
-            <span
-              className="absolute h-full flex items-center top-0 right-[16px] cursor-pointer"
-              onClick={clearHandler}
+            <button
+              type="button"
+              onClick={() => {
+                changeValue?.("")
+                onClear?.()
+              }}
+              className="absolute right-4 top-1/2 -translate-y-1/2 text-plum-muted hover:text-plum transition-colors"
             >
-              <CloseIcon />
-            </span>
+              <X size={16} />
+            </button>
           )}
+
+          {/* Password toggle */}
           {props.type === "password" && (
             <button
               type="button"
               onClick={() => setShowPassword(!showPassword)}
-              className="text-ui-fg-subtle px-4 focus:outline-none transition-all duration-150 outline-none focus:text-ui-fg-base absolute right-0 top-4"
+              className="absolute right-4 top-1/2 -translate-y-1/2 text-plum-muted hover:text-plum transition-colors"
             >
-              {showPassword ? <EyeMini /> : <EyeSlashMini />}
+              {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
             </button>
           )}
         </div>
-      </label>
+
+        {/* Error/Hint text */}
+        {(error || hint) && (
+          <p
+            className={cn(
+              "mt-1.5 text-xs",
+              error ? "text-red-600" : "text-plum-muted"
+            )}
+          >
+            {typeof error === "string" ? error : hint}
+          </p>
+        )}
+      </div>
     )
   }
 )

@@ -2,12 +2,28 @@
 
 import React, { useState } from "react"
 import { Link } from "@/i18n/routing"
-import { Checkbox } from "@/components/atoms"
+import { FileText, Check } from "lucide-react"
 
 interface TermsAcceptanceProps {
   onAcceptanceChange: (accepted: boolean) => void
   className?: string
 }
+
+// Custom Checkbox Component - visual only, no onClick handler
+const CustomCheckbox = ({ checked }: { checked: boolean }) => (
+  <div
+    className={`
+      w-5 h-5 border-2 flex items-center justify-center shrink-0
+      transition-all duration-200
+      ${checked 
+        ? "bg-plum border-plum" 
+        : "bg-cream-50 border-cream-300 group-hover:border-plum-muted"
+      }
+    `}
+  >
+    {checked && <Check size={14} className="text-cream-50" />}
+  </div>
+)
 
 const TermsAcceptance: React.FC<TermsAcceptanceProps> = ({
   onAcceptanceChange,
@@ -22,41 +38,51 @@ const TermsAcceptance: React.FC<TermsAcceptanceProps> = ({
   }
 
   return (
-    <div className={`border rounded-lg border-[#3B3634] p-4 bg-primary ${className}`}>
-      <div className="flex items-start space-x-3">
-        <div onClick={handleAcceptanceChange} className="cursor-pointer">
-          <Checkbox
-            id="terms-acceptance"
-            checked={isAccepted}
-            onChange={handleAcceptanceChange}
-            className="mt-1"
-          />
-        </div>
-        <div className="flex-1">
-          <label 
-            htmlFor="terms-acceptance" 
-            onClick={handleAcceptanceChange}
-            className="text-sm text-gray-700 cursor-pointer leading-relaxed"
-          >
+    <div className={`bg-cream-100 border border-cream-300 overflow-hidden ${className}`}>
+      {/* Header */}
+      <div className="px-6 py-4 border-b border-cream-200 flex items-center gap-2">
+        <FileText size={18} className="text-plum-muted" />
+        <h3 className="text-sm font-medium text-plum uppercase tracking-wider">
+          Regulamin
+        </h3>
+      </div>
+      
+      {/* Content */}
+      <div className="p-6">
+        <div 
+          className="flex items-start gap-4 cursor-pointer group"
+          onClick={handleAcceptanceChange}
+          role="checkbox"
+          aria-checked={isAccepted}
+          tabIndex={0}
+          onKeyDown={(e) => {
+            if (e.key === ' ' || e.key === 'Enter') {
+              e.preventDefault()
+              handleAcceptanceChange()
+            }
+          }}
+        >
+          <CustomCheckbox checked={isAccepted} />
+          <span className="text-sm text-plum leading-relaxed select-none">
             Akceptuję{" "}
             <Link 
               href="/regulamin" 
               target="_blank"
               onClick={(e) => e.stopPropagation()}
-              className="text-blue-600 hover:text-blue-800 underline font-medium"
+              className="text-plum font-medium underline underline-offset-2 hover:text-plum-light transition-colors"
             >
               Regulamin sklepu
             </Link>
-            {" "}oraz potwierdzam, że zapoznałem się z jego treścią. Akceptacja regulaminu jest wymagana do złożenia zamówienia.
-          </label>
+            {" "}oraz potwierdzam, że zapoznałem się z jego treścią.
+          </span>
         </div>
+        
+        {!isAccepted && (
+          <p className="mt-3 ml-9 text-xs text-amber-700 bg-amber-50 border border-amber-200 px-3 py-2">
+            Akceptacja regulaminu jest wymagana do złożenia zamówienia.
+          </p>
+        )}
       </div>
-      
-      {!isAccepted && (
-        <div className="mt-2 text-xs text-red-600 ml-7">
-          Aby kontynuować, musisz zaakceptować regulamin sklepu.
-        </div>
-      )}
     </div>
   )
 }

@@ -1,19 +1,12 @@
+'use client'
 import { SellerReviewList, SellerScore } from "@/components/molecules"
-import { getSellerByHandle } from "@/lib/data/seller"
-import { getSellerReviews, Review } from "@/lib/data/reviews"
-import { SellerProps } from "@/types/seller"
+import { Review } from "@/lib/data/reviews"
 
-export const SellerReviewTab = async ({
-  seller_handle,
+export const SellerReviewTab = ({
+  reviews,
 }: {
-  seller_handle: string
+  reviews: Review[]
 }) => {
-  // Get seller info (without reviews)
-  const seller = (await getSellerByHandle(seller_handle)) as SellerProps
-  
-  // Fetch seller reviews separately
-  const { reviews, count } = await getSellerReviews(seller_handle)
-  
   // Filter out any null reviews
   const filteredReviews = reviews?.filter((r: Review | null): r is Review => r !== null) || []
 

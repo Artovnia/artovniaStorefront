@@ -45,7 +45,6 @@ const CheckoutWrapper: React.FC<CheckoutWrapperProps> = ({
     const isNewCart = cart?.id && cart.id !== lastCartId
     
     if (isNewCart) {
-      
       setTermsAccepted(false)
       setLastCartId(cart.id)
     }
@@ -57,27 +56,33 @@ const CheckoutWrapper: React.FC<CheckoutWrapperProps> = ({
 
   return (
     <TermsContext.Provider value={{ termsAccepted, setTermsAccepted }}>
-      <div className="grid lg:grid-cols-11 gap-8">
-        <div className="flex flex-col gap-4 lg:col-span-6">
-          <CartAddressSection cart={cart as any} customer={customer || null} />
-          <CartShippingMethodsSection
-            cart={cart as any}
-            availableShippingMethods={availableShippingMethods || null}
-          />
-          <CartPaymentSection
-            cart={cart as any}
-            availablePaymentMethods={availablePaymentMethods || null}
-          />
-          <TermsAcceptance
-            onAcceptanceChange={handleTermsAcceptanceChange}
-          />
-        </div>
-        <div className="lg:col-span-1"></div>
-        <div className="lg:col-span-4">
-          <CartReview
-            cart={cart as any} 
-            key={`review-${cart.id}-${cart.updated_at}`}
-          />
+      <div className="py-8">
+        <div className="grid lg:grid-cols-12 gap-8">
+          {/* Left Column - Checkout Steps */}
+          <div className="flex flex-col gap-4 lg:col-span-7">
+            <CartAddressSection cart={cart as any} customer={customer || null} />
+            <CartShippingMethodsSection
+              cart={cart as any}
+              availableShippingMethods={availableShippingMethods || null}
+            />
+            <CartPaymentSection
+              cart={cart as any}
+              availablePaymentMethods={availablePaymentMethods || null}
+            />
+          </div>
+          
+          {/* Right Column - Order Summary */}
+          <div className="lg:col-span-5">
+            <div className="lg:sticky lg:top-8 space-y-4">
+              <CartReview
+                cart={cart as any} 
+                key={`review-${cart.id}-${cart.updated_at}`}
+              />
+              <TermsAcceptance
+                onAcceptanceChange={handleTermsAcceptanceChange}
+              />
+            </div>
+          </div>
         </div>
       </div>
     </TermsContext.Provider>

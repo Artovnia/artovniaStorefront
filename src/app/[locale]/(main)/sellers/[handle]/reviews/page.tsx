@@ -7,6 +7,7 @@ import { getVendorAvailability, getVendorHolidayMode, getVendorSuspension } from
 import { SellerProps } from "@/types/seller"
 import { PromotionDataProvider } from "@/components/context/PromotionDataProvider"
 import { BatchPriceProvider } from "@/components/context/BatchPriceProvider"
+import { Breadcrumbs } from "@/components/atoms/Breadcrumbs/Breadcrumbs"
 
 export default async function SellerReviewsPage({
   params,
@@ -75,10 +76,22 @@ export default async function SellerReviewsPage({
     console.error(`General error in vendor availability section: ${error instanceof Error ? error.message : 'Unknown error'}`)
   }
 
+  // Breadcrumb items
+  const breadcrumbItems = [
+    { label: "Strona główna", path: "/" },
+    { label: "Sprzedawcy", path: "/sellers" },
+    { label: seller.name, path: `/sellers/${seller.handle}` },
+  ]
+
   return (
     <PromotionDataProvider countryCode="PL">
       <BatchPriceProvider currencyCode="PLN">
         <main className="container">
+          {/* Breadcrumbs */}
+          <div className="mt-6 mb-4">
+            <Breadcrumbs items={breadcrumbItems} />
+          </div>
+          
           <VendorAvailabilityProvider
             vendorId={seller.id}
             vendorName={seller.name}

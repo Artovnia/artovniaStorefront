@@ -32,7 +32,7 @@ const CountrySelect = forwardRef<
 
   return (
     <label className="label-md">
-      <p className="mb-2">Kraj</p>
+      
       <NativeSelect
         ref={innerRef}
         placeholder={placeholder}

@@ -1,8 +1,8 @@
 "use client"
 
 import React from "react"
-import { Text } from "@medusajs/ui"
 import { InpostParcelData } from "@/lib/services/inpost-api"
+import { MapPin } from "lucide-react"
 
 type InpostParcelInfoProps = {
   parcelData: InpostParcelData
@@ -12,17 +12,24 @@ export const InpostParcelInfo: React.FC<InpostParcelInfoProps> = ({ parcelData }
   if (!parcelData) return null
   
   return (
-    <div className="mt-2 p-3 bg-ui-bg-base rounded-md">
-      <Text className="txt-small-plus text-ui-fg-base font-medium">Paczkomat InPost:</Text>
-      <Text className="txt-small text-ui-fg-subtle">
-        {parcelData.machineName}
-      </Text>
-      <Text className="txt-small text-ui-fg-subtle">
-        {parcelData.machineAddress}
-      </Text>
-      <Text className="txt-small text-ui-fg-subtle">
-        {parcelData.machinePostCode} {parcelData.machineCity}
-      </Text>
+    <div className="mt-3 p-3 bg-amber-50 border border-amber-200">
+      <div className="flex items-start gap-2">
+        <MapPin size={16} className="text-amber-600 mt-0.5 shrink-0" />
+        <div>
+          <p className="text-xs font-medium text-amber-800 uppercase tracking-wider mb-1">
+            Paczkomat InPost
+          </p>
+          <p className="text-sm text-amber-900 font-medium">
+            {parcelData.machineName}
+          </p>
+          <p className="text-xs text-amber-700">
+            {parcelData.machineAddress}
+          </p>
+          <p className="text-xs text-amber-700">
+            {parcelData.machinePostCode} {parcelData.machineCity}
+          </p>
+        </div>
+      </div>
     </div>
   )
 }

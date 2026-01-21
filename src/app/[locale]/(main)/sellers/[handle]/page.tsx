@@ -20,6 +20,8 @@ import type { Metadata } from "next"
 import { listProductsWithSort } from "../../../../../lib/data/products"
 import { getUserWishlists } from "../../../../../lib/data/wishlist"
 import { PRODUCT_LIMIT } from "../../../../../const"
+import { Breadcrumbs } from "../../../../../components/atoms/Breadcrumbs/Breadcrumbs"
+import { sdk } from "../../../../../lib/config"
 
 export const revalidate = 300
 
@@ -64,11 +66,15 @@ export async function generateMetadata({
 
 export default async function SellerPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ handle: string; locale: string }>
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>
 }) {
   try {
     const { handle, locale } = await params
+    const resolvedSearchParams = await searchParams
+    const tab = (resolvedSearchParams.tab as string) || "produkty"
 
     if (!handle || handle === "undefined") {
       console.error(`Invalid seller handle: ${handle} for seller page`)
@@ -107,8 +113,8 @@ export default async function SellerPage({
       )
     }
 
-    // ✅ OPTIMIZATION: Fetch products, availability, and wishlists in parallel
-    const [availabilityResult, holidayModeResult, suspensionResult, productsResult, wishlistsResult] =
+    // ✅ OPTIMIZATION: Fetch products, availability, wishlists, and categories in parallel
+    const [availabilityResult, holidayModeResult, suspensionResult, productsResult, wishlistsResult, categoriesResult] =
       await Promise.allSettled([
         getVendorAvailability(seller.id),
         getVendorHolidayMode(seller.id),
@@ -117,11 +123,38 @@ export default async function SellerPage({
         listProductsWithSort({
           seller_id: seller.id,
           countryCode: "pl",
-          sortBy: "created_at",
+          sortBy: "created_at_desc",
           queryParams: { limit: PRODUCT_LIMIT, offset: 0 },
         }),
         // ✅ Pre-fetch wishlists if user is logged in
         user ? getUserWishlists().catch(() => ({ wishlists: [] })) : Promise.resolve({ wishlists: [] }),
+        // ✅ Fetch categories used by this seller's products
+        (async () => {
+          try {
+            // First get all product IDs for this seller
+            const sellerProductsResponse = await sdk.client.fetch<{
+              products: Array<{ id: string; categories?: Array<{ id: string; name: string; handle: string }> }>
+            }>(`/store/seller/${seller.id}/products`, {
+              method: 'GET',
+              query: { limit: 1000, fields: 'id,categories.id,categories.name,categories.handle' },
+            })
+            
+            // Extract unique categories from all products
+            const categoriesMap = new Map<string, { id: string; name: string; handle: string }>()
+            sellerProductsResponse.products?.forEach(product => {
+              product.categories?.forEach(cat => {
+                if (!categoriesMap.has(cat.id)) {
+                  categoriesMap.set(cat.id, cat)
+                }
+              })
+            })
+            
+            return { product_categories: Array.from(categoriesMap.values()) }
+          } catch (error) {
+            console.error('Error fetching seller categories:', error)
+            return { product_categories: [] }
+          }
+        })(),
       ])
 
     // Extract products data from settled promise
@@ -134,13 +167,14 @@ export default async function SellerPage({
     const initialWishlists = wishlistsResult.status === "fulfilled"
       ? wishlistsResult.value?.wishlists
       : undefined
+    const categories = categoriesResult.status === "fulfilled"
+      ? categoriesResult.value?.product_categories
+      : undefined
 
     const sellerWithReviews = {
       ...seller,
       reviews: reviews || [],
     }
-
-    const tab = "produkty"
 
     const availability =
       availabilityResult.status === "fulfilled"
@@ -178,6 +212,13 @@ export default async function SellerPage({
       reviews
     )
 
+    // Breadcrumb items
+    const breadcrumbItems = [
+      { label: "Strona główna", path: "/" },
+      { label: "Sprzedawcy", path: "/sellers" },
+      { label: seller.name, path: `/sellers/${seller.handle}` },
+    ]
+
     return (
       <BatchPriceProvider currencyCode="PLN">
         {/* ✅ NEW: Structured Data for SEO */}
@@ -187,6 +228,11 @@ export default async function SellerPage({
         />
 
         <main className="container">
+          {/* Breadcrumbs */}
+          <div className="mt-6 mb-4">
+            <Breadcrumbs items={breadcrumbItems} />
+          </div>
+          
           <VendorAvailabilityProvider
             vendorId={seller.id}
             vendorName={seller.name}
@@ -214,6 +260,8 @@ export default async function SellerPage({
                   initialProducts={initialProducts}
                   initialTotalCount={initialTotalCount}
                   initialWishlists={initialWishlists}
+                  categories={categories}
+                  reviews={reviews}
                 />
               </div>
             </div>

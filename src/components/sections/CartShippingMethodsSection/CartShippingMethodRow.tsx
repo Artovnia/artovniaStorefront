@@ -1,15 +1,13 @@
 "use client"
 
-import { Button } from "@/components/atoms"
-import { BinIcon } from "@/icons"
 import { removeShippingMethod } from "@/lib/data/cart"
 import { convertToLocale } from "@/lib/helpers/money"
 import { HttpTypes } from "@medusajs/types"
-import { Text } from "@medusajs/ui"
 import { InpostParcelInfo } from "@/components/molecules"
 import { InpostParcelData } from "@/lib/services/inpost-api"
-import { unifiedCache } from "@/lib/utils/unified-cache" // ✅ Updated import
+import { unifiedCache } from "@/lib/utils/unified-cache"
 import { useState } from "react"
+import { Trash2, Loader2, Package } from "lucide-react"
 
 export const CartShippingMethodRow = ({
   method,
@@ -78,71 +76,70 @@ export const CartShippingMethodRow = ({
   const hasOverage = overageCharge > 0
   
   return (
-    <div className="mb-4 border rounded-md p-4">
-      <div className="flex items-center justify-between">
-        <div className="flex-1">
-          <Text className="txt-medium-plus text-ui-fg-base mb-1">Metoda dostawy</Text>
-          <Text className="txt-medium text-ui-fg-subtle">
-            {method?.name}
-          </Text>
-          
-          {/* Show pricing breakdown if there's capacity overage */}
-          {hasOverage ? (
-            <div className="mt-2 space-y-1">
-              <div className="flex justify-between text-sm">
-                <span className="text-ui-fg-subtle">Cena bazowa:</span>
-                <span className="text-ui-fg-subtle">
-                  {convertToLocale({
-                    amount: baseAmount,
-                    currency_code: currency_code,
-                  })}
-                </span>
+    <div className="bg-cream-50 border border-cream-300 p-4">
+      <div className="flex items-start justify-between gap-4">
+        <div className="flex items-start gap-3 flex-1">
+          <Package size={18} className="text-plum-muted mt-0.5 shrink-0" />
+          <div className="flex-1">
+            <p className="text-sm font-medium text-plum">{method?.name}</p>
+            
+            {/* Show pricing breakdown if there's capacity overage */}
+            {hasOverage ? (
+              <div className="mt-2 space-y-1 text-xs">
+                <div className="flex justify-between">
+                  <span className="text-plum-muted">Cena bazowa:</span>
+                  <span className="text-plum-muted">
+                    {convertToLocale({
+                      amount: baseAmount,
+                      currency_code: currency_code,
+                    })}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-amber-600">Dopłata za pojemność:</span>
+                  <span className="text-amber-600">
+                    +{convertToLocale({
+                      amount: overageCharge,
+                      currency_code: currency_code,
+                    })}
+                  </span>
+                </div>
+                <div className="flex justify-between font-medium border-t border-cream-200 pt-1">
+                  <span className="text-plum">Razem:</span>
+                  <span className="text-plum">
+                    {convertToLocale({
+                      amount: totalAmount,
+                      currency_code: currency_code,
+                    })}
+                  </span>
+                </div>
               </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-ui-fg-subtle">Przekroczono pojemność paczki</span>
-                <span className="text-amber-600">Dopłata za pojemność:</span>
-                <span className="text-amber-600">
-                  +{convertToLocale({
-                    amount: overageCharge,
-                    currency_code: currency_code,
-                  })}
-                </span>
-              </div>
-              <div className="flex justify-between text-sm font-medium border-t pt-1">
-                <span>Razem:</span>
-                <span>
-                  {convertToLocale({
-                    amount: totalAmount,
-                    currency_code: currency_code,
-                  })}
-                </span>
-              </div>
-         
-            </div>
-          ) : (
-            <Text className="txt-medium text-ui-fg-subtle mt-1">
-              {convertToLocale({
-                amount: totalAmount,
-                currency_code: currency_code,
-              })}
-            </Text>
-          )}
-          
-          {deleteError && (
-            <Text className="txt-small text-ui-fg-error mt-1">{deleteError}</Text>
-          )}
+            ) : (
+              <p className="text-sm text-plum-muted mt-0.5">
+                {convertToLocale({
+                  amount: totalAmount,
+                  currency_code: currency_code,
+                })}
+              </p>
+            )}
+            
+            {deleteError && (
+              <p className="text-xs text-red-600 mt-1">{deleteError}</p>
+            )}
+          </div>
         </div>
 
-        <Button
-          variant="tonal"
-          size="small"
-          className="p-2"
+        <button
           onClick={handleRemoveShippingMethod}
-          loading={isDeleting}
           disabled={isDeleting}
+          className="p-2 text-plum-muted hover:text-red-600 hover:bg-red-50 transition-colors disabled:opacity-50"
         >
-          {!isDeleting && <BinIcon size={16} />}
-        </Button>
+          {isDeleting ? (
+            <Loader2 size={16} className="animate-spin" />
+          ) : (
+            <Trash2 size={16} />
+          )}
+        </button>
       </div>
 
       {/* Show InPost parcel info if available */}

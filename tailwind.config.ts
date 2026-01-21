@@ -78,6 +78,22 @@ export default {
         secondary: "rgba(var(--content-secondary))",
         tertiary: "rgba(var(--content-tertiary))",
         disabled: "rgba(var(--content-disabled))",
+        cream: {
+          50: '#FDFCFA',
+          100: '#F4F0EB',
+          200: '#EBE5DC',
+          300: '#DDD4C7',
+        },
+        plum: {
+          DEFAULT: '#3B3634',
+          light: '#5C5856',
+          dark: '#2A2827',
+          muted: '#6B6664',
+        },
+        accent: {
+          warm: '#C4A77D',
+          copper: '#B87333',
+        },
         action: {
           DEFAULT: "rgba(var(--content-action-primary))",
           hover: "rgba(var(--content-action-primary-hover))",

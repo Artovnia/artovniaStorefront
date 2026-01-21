@@ -1,8 +1,6 @@
 import { Radio, Radio as RadioGroupOption } from "@headlessui/react"
-import { Text, clx } from "@medusajs/ui"
 import React, { useContext, useMemo, type JSX } from "react"
-import { CreditCardWrapper } from "@/components/atoms/icons/IconWrappers"
-
+import { CreditCard } from "lucide-react"
 import { isManual, isStripe as isStripeFunc } from "../../../lib/constants"
 import SkeletonCardDetails from "./SkeletonCardDetails"
 import { CardElement } from "@stripe/react-stripe-js"
@@ -18,6 +16,19 @@ type PaymentContainerProps = {
   children?: React.ReactNode
 }
 
+// Custom Radio Button
+const CustomRadio = ({ checked }: { checked: boolean }) => (
+  <div
+    className={`
+      w-5 h-5 border-2 flex items-center justify-center
+      transition-all duration-200
+      ${checked ? "border-plum" : "border-cream-300"}
+    `}
+  >
+    {checked && <div className="w-2.5 h-2.5 bg-plum" />}
+  </div>
+)
+
 const PaymentContainer: React.FC<PaymentContainerProps> = ({
   paymentProviderId,
   selectedPaymentOptionId,
@@ -26,35 +37,41 @@ const PaymentContainer: React.FC<PaymentContainerProps> = ({
   children,
 }) => {
   const isDevelopment = process.env.NODE_ENV === "development"
+  const isSelected = selectedPaymentOptionId === paymentProviderId
 
   return (
     <RadioGroupOption
       key={paymentProviderId}
       value={paymentProviderId}
       disabled={disabled}
-      className={clx(
-        "rounded-sm flex flex-col gap-y-2 text-small-regular cursor-pointer py-4 border rounded-rounded px-8 mb-2 hover:shadow-borders-interactive-with-active",
-        {
-          "border-primary/20": selectedPaymentOptionId === paymentProviderId,
+      className={`
+        cursor-pointer transition-all duration-200
+        bg-cream-50
+        ${
+          isSelected
+            ? "bg-cream-100"
+            : "hover:bg-cream-100/50"
         }
-      )}
+      `}
     >
-      <div className="flex items-center justify-between ">
-        <div className="flex items-center gap-x-4">
-          <Radio value={selectedPaymentOptionId === paymentProviderId} />
-          <Text className="text-base-regular">
+      <div className="flex items-center justify-between p-4">
+        <div className="flex items-center gap-4">
+          <CustomRadio checked={isSelected} />
+          <span className="text-sm text-plum font-medium">
             {paymentInfoMap[paymentProviderId]?.title || paymentProviderId}
-          </Text>
+          </span>
           {isManual(paymentProviderId) && isDevelopment && (
-            <PaymentTest className="hidden small:block" />
+            <PaymentTest className="hidden sm:block" />
           )}
         </div>
-        <span className="justify-self-end text-ui-fg-base">
-          {paymentInfoMap[paymentProviderId]?.icon}
+        <span className="text-plum-muted">
+          {paymentInfoMap[paymentProviderId]?.icon || <CreditCard size={20} />}
         </span>
       </div>
       {isManual(paymentProviderId) && isDevelopment && (
-        <PaymentTest className="small:hidden text-[10px]" />
+        <div className="px-4 pb-4">
+          <PaymentTest className="sm:hidden text-[10px]" />
+        </div>
       )}
       {children}
     </RadioGroupOption>
@@ -77,23 +94,26 @@ export const StripeCardContainer = ({
   setCardComplete: (complete: boolean) => void
 }) => {
   const stripeReady = useContext(StripeContext)
+  const isSelected = selectedPaymentOptionId === paymentProviderId
 
-  const useOptions: StripeCardElementOptions = useMemo(() => {
-    return {
+  const useOptions: StripeCardElementOptions = useMemo(
+    () => ({
       style: {
         base: {
-          fontFamily: "Inter, sans-serif",
-          color: "#424270",
+          fontFamily: "Inter, system-ui, sans-serif",
+          fontSize: "14px",
+          color: "#3B3663",
           "::placeholder": {
-            color: "rgb(107 114 128)",
+            color: "#6B6494",
           },
         },
       },
       classes: {
-        base: "pt-3 pb-1 block w-full h-11 px-4 mt-0 bg-ui-bg-field border rounded-md appearance-none focus:outline-none focus:ring-0 focus:shadow-borders-interactive-with-active border-ui-border-base hover:bg-ui-bg-field-hover transition-all duration-300 ease-in-out",
+        base: "w-full px-4 py-3.5 bg-cream-50 border border-cream-300 focus:border-plum focus:outline-none transition-colors",
       },
-    }
-  }, [])
+    }),
+    []
+  )
 
   return (
     <PaymentContainer
@@ -102,14 +122,14 @@ export const StripeCardContainer = ({
       paymentInfoMap={paymentInfoMap}
       disabled={disabled}
     >
-      {selectedPaymentOptionId === paymentProviderId &&
+      {isSelected &&
         (stripeReady ? (
-          <div className="my-4 transition-all duration-150 ease-in-out">
-            <Text className="txt-medium-plus text-ui-fg-base mb-1">
-              Enter your card details:
-            </Text>
+          <div className="px-4 pb-4 pt-2 border-t border-cream-200 mt-2">
+            <p className="text-xs text-plum-muted mb-3">
+              Wprowadź dane karty:
+            </p>
             <CardElement
-              options={useOptions as StripeCardElementOptions}
+              options={useOptions}
               onChange={(e) => {
                 setCardBrand(
                   e.brand && e.brand.charAt(0).toUpperCase() + e.brand.slice(1)
@@ -120,14 +140,16 @@ export const StripeCardContainer = ({
             />
           </div>
         ) : (
-          <SkeletonCardDetails />
+          <div className="px-4 pb-4 pt-2 border-t border-cream-200 mt-2">
+            <p className="text-sm text-plum-muted">
+              Po złożeniu zamówienia zostaniesz przekierowany do bezpiecznej strony płatności.
+            </p>
+          </div>
         ))}
     </PaymentContainer>
   )
 }
 
-// PayU payment container that immediately marks the payment as complete
-// since PayU handles payment collection on its own page after redirection
 export const PayUCardContainer = ({
   paymentProviderId,
   selectedPaymentOptionId,
@@ -141,41 +163,41 @@ export const PayUCardContainer = ({
   setError: (error: string | null) => void
   setCardComplete: (complete: boolean) => void
 }) => {
-  // Get payment method info from the map or create a default one using useMemo to prevent re-rendering
-  const paymentInfo = useMemo(() => {
-    return paymentInfoMap[paymentProviderId] || { 
-      title: "PayU", 
-      icon: <CreditCardWrapper /> 
-    };
-  }, [paymentProviderId, paymentInfoMap])
+  const paymentInfo = useMemo(
+    () =>
+      paymentInfoMap[paymentProviderId] || {
+        title: "PayU",
+        icon: <CreditCard size={20} />,
+      },
+    [paymentProviderId, paymentInfoMap]
+  )
 
-
-  // Extract payment method type from the provider ID (card, blik, transfer)
   const getPaymentMethodType = () => {
-    if (paymentProviderId.includes('-card')) {
-      return 'card'
-    } else if (paymentProviderId.includes('-blik')) {
-      return 'blik'
-    } else if (paymentProviderId.includes('-transfer')) {
-      return 'transfer'
-    }
-    return 'card' // Default to card
+    if (paymentProviderId.includes("-card")) return "card"
+    if (paymentProviderId.includes("-blik")) return "blik"
+    if (paymentProviderId.includes("-transfer")) return "transfer"
+    return "card"
   }
-  
+
   const paymentMethodType = getPaymentMethodType()
- 
-  // When a PayU payment method is selected, we can immediately mark it as complete
-  // as there's no card input needed on our side
+  const isSelected = selectedPaymentOptionId === paymentProviderId
+
   React.useEffect(() => {
-    if (selectedPaymentOptionId === paymentProviderId) {
-      // Set card brand to the specific PayU payment method for display purposes
+    if (isSelected) {
       setCardBrand(paymentInfo.title || `PayU - ${paymentMethodType}`)
-      // No errors at this stage
       setError(null)
-      // Mark as complete so the continue button is enabled
       setCardComplete(true)
     }
-  }, [paymentProviderId, selectedPaymentOptionId, setCardBrand, setCardComplete, setError, paymentInfo, paymentMethodType])
+  }, [
+    paymentProviderId,
+    selectedPaymentOptionId,
+    setCardBrand,
+    setCardComplete,
+    setError,
+    paymentInfo,
+    paymentMethodType,
+    isSelected,
+  ])
 
   return (
     <PaymentContainer
@@ -184,14 +206,11 @@ export const PayUCardContainer = ({
       paymentInfoMap={paymentInfoMap}
       disabled={disabled}
     >
-      {selectedPaymentOptionId === paymentProviderId && (
-        <div className="my-4 transition-all duration-150 ease-in-out">
-          <Text className="txt-medium-plus text-ui-fg-base mb-1">
-            Secure payment via {paymentInfo.title}
-          </Text>
-          <Text className="text-ui-fg-subtle">
-            You will be redirected to PayU&apos;s secure payment page to complete your {paymentMethodType} payment after reviewing your order.
-          </Text>
+      {isSelected && (
+        <div className="px-4 pb-4 pt-2 border-t border-cream-200 mt-2">
+          <p className="text-sm text-plum-muted">
+            Po złożeniu zamówienia zostaniesz przekierowany do bezpiecznej strony PayU.
+          </p>
         </div>
       )}
     </PaymentContainer>
