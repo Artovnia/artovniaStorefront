@@ -9,6 +9,7 @@ import { HttpTypes } from "@medusajs/types"
 import { Button } from "@/components/atoms"
 import { CreditCard } from "@medusajs/icons"
 import { useTerms } from "../CheckoutWrapper/CheckoutWrapper"
+import { useCart } from "@/components/context/CartContext"
 
 type PaymentButtonProps = {
   cart: HttpTypes.StoreCart
@@ -17,9 +18,14 @@ type PaymentButtonProps = {
 
 // Main PaymentButton component that determines which payment method to use
 const PaymentButton: React.FC<PaymentButtonProps> = ({
-  cart,
+  cart: propCart,
   "data-testid": dataTestId,
 }): React.ReactElement => {
+  // CRITICAL FIX: Use cart from CartContext to get fresh data with updated shipping_total
+  // The prop cart may be stale (from initial page load before shipping was selected)
+  const { cart: contextCart, refreshCart } = useCart()
+  const cart = contextCart || propCart
+  
   // Use Terms Context directly to avoid prop drilling and caching issues
   const { termsAccepted } = useTerms()
   // Check if cart is ready for checkout
@@ -110,11 +116,15 @@ interface StripePaymentButtonProps {
 }
 
 const StripePaymentButton: React.FC<StripePaymentButtonProps> = ({
-  cart,
+  cart: propCart,
   isPaymentReady,
   "data-testid": dataTestId,
   paymentProviderId
 }): React.ReactElement => {
+  // CRITICAL FIX: Use cart from CartContext to get fresh data with updated shipping_total
+  const { cart: contextCart, refreshCart } = useCart()
+  const cart = contextCart || propCart
+  
   // Use Terms Context directly
   const { termsAccepted } = useTerms()
   const [submitting, setSubmitting] = useState(false)
@@ -128,13 +138,16 @@ const StripePaymentButton: React.FC<StripePaymentButtonProps> = ({
     setErrorMessage(null);
 
     try {
-     
+      // CRITICAL FIX: Refresh cart before initiating payment to ensure we have latest totals
+      await refreshCart('payment')
       
       // CRITICAL: This function should NEVER call placeOrder directly
       // It should ALWAYS create a Stripe Checkout session and redirect
 
       // CRITICAL FIX: Ensure payment session exists before placing order
-      const paymentSessions = cart?.payment_collection?.payment_sessions || []
+      // Use fresh cart from context after refresh
+      const freshCart = contextCart || propCart
+      const paymentSessions = freshCart?.payment_collection?.payment_sessions || []
       const hasValidSession = paymentSessions.some((session: any) => 
         session.provider_id === paymentProviderId && session.status === 'pending'
       )
@@ -146,21 +159,21 @@ const StripePaymentButton: React.FC<StripePaymentButtonProps> = ({
         const { selectPaymentSession, initiatePaymentSession, retrieveCartForPayment } = await import('@/lib/data/cart')
         
         try {
-          // Try to initiate payment session first
-          await initiatePaymentSession(cart, { provider_id: paymentProviderId })
+          // Try to initiate payment session first - use fresh cart with updated totals
+          await initiatePaymentSession(freshCart, { provider_id: paymentProviderId })
         } catch (initError: any) {
           
           // Continue if session already exists
         }
         
         // Select the payment session
-        await selectPaymentSession(cart.id, paymentProviderId)
+        await selectPaymentSession(freshCart.id, paymentProviderId)
         
         // CRITICAL FIX: Refresh cart data to get updated payment sessions
         // Wait a bit for backend to process the session creation
         await new Promise(resolve => setTimeout(resolve, 500))
         
-        const refreshedCart = await retrieveCartForPayment(cart.id)
+        const refreshedCart = await retrieveCartForPayment(freshCart.id)
         
         
         // Verify the session now exists in refreshed cart
@@ -285,8 +298,12 @@ interface ManualTestPaymentButtonProps {
 const ManualTestPaymentButton: React.FC<ManualTestPaymentButtonProps> = ({ 
   isPaymentReady, 
   "data-testid": dataTestId,
-  cart
+  cart: propCart
 }): React.ReactElement => {
+  // CRITICAL FIX: Use cart from CartContext to get fresh data with updated shipping_total
+  const { cart: contextCart, refreshCart } = useCart()
+  const cart = contextCart || propCart
+  
   // Use Terms Context directly
   const { termsAccepted } = useTerms()
   const [submitting, setSubmitting] = useState(false)
@@ -300,10 +317,14 @@ const ManualTestPaymentButton: React.FC<ManualTestPaymentButtonProps> = ({
     setErrorMessage(null);
 
     try {
-      await selectPaymentSession(cart.id, 'pp_system_default');
+      // CRITICAL FIX: Refresh cart before payment to ensure we have latest totals
+      await refreshCart('payment')
+      const freshCart = contextCart || propCart
+      
+      await selectPaymentSession(freshCart.id, 'pp_system_default');
       
       const { placeOrder } = await import('@/lib/data/cart');
-      const result = await placeOrder(cart.id);
+      const result = await placeOrder(freshCart.id);
       
       
       if (result.redirectUrl) {

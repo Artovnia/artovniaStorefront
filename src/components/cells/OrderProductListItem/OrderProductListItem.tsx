@@ -26,7 +26,6 @@ export const OrderProductListItem = ({
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-5 w-full px-4 sm:gap-4">
         <div className="sm:col-span-2">
-          <p className="label-md text-secondary">{item.product_title || 'Produkt'}</p>
           {item.variant?.product?.handle ? (
             <Link
               href={`/products/${item.variant.product.handle}`}
@@ -39,6 +38,22 @@ export const OrderProductListItem = ({
             <span className="heading-xs text-primary">
               {item.variant?.product?.title || item.title || 'Produkt'}
             </span>
+          )}
+          {/* Display variant title if available (excluding 'Default variant') */}
+          {item.variant_title && item.variant_title !== 'Default variant' && (
+            <p className="text-xs text-secondary mt-0.5">{item.variant_title}</p>
+          )}
+          {/* Display variant options with their titles (e.g., "Klosz: Czarny") */}
+          {item.variant?.options && item.variant.options.length > 0 && (
+            <div className="flex flex-wrap items-center gap-1 mt-1">
+              {item.variant.options.map((opt: any, idx: number) => (
+                <span key={idx} className="text-xs">
+                  <span className="text-secondary">{opt.option?.title || 'Opcja'}:</span>{' '}
+                  <span className="text-primary font-medium">{opt.value}</span>
+                  {idx < (item.variant.options?.length || 0) - 1 && <span className="text-secondary mx-1">·</span>}
+                </span>
+              ))}
+            </div>
           )}
         </div>
         <div className="sm:col-span-1 flex flex-col justify-center">

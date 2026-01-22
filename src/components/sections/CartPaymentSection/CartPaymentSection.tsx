@@ -16,6 +16,7 @@ import PaymentContainer, {
 import { usePathname, useRouter } from "@/i18n/routing"
 import { useSearchParams } from "next/navigation"
 import { useCallback, useEffect, useState } from "react"
+import { useCart } from "@/components/context/CartContext"
 
 // Step indicator component
 const StepIndicator = ({
@@ -45,12 +46,17 @@ const StepIndicator = ({
 )
 
 const CartPaymentSection = ({
-  cart,
+  cart: propCart,
   availablePaymentMethods,
 }: {
   cart: any
   availablePaymentMethods: any[] | null
 }) => {
+  // CRITICAL FIX: Use cart from CartContext to get fresh data with updated shipping_total
+  // The prop cart may be stale (from initial page load before shipping was selected)
+  const { cart: contextCart, refreshCart } = useCart()
+  const cart = contextCart || propCart
+  
   const activeSession = cart?.payment_collection?.payment_sessions?.find(
     (paymentSession: any) => paymentSession.status === "pending"
   )
@@ -87,7 +93,13 @@ const CartPaymentSection = ({
 
     if (isStripeFunc(method)) {
       try {
-        await initiatePaymentSession(cart, { provider_id: method })
+        // CRITICAL FIX: Refresh cart before initiating payment session
+        // This ensures we have the latest cart data with shipping_total included
+        await refreshCart('payment')
+        
+        // Use the fresh cart from context (will be updated after refreshCart)
+        const freshCart = contextCart || propCart
+        await initiatePaymentSession(freshCart, { provider_id: method })
       } catch (error: any) {
         console.error("❌ Error setting payment method:", error)
       }
@@ -107,7 +119,13 @@ const CartPaymentSection = ({
         activeSession?.provider_id === selectedPaymentMethod
 
       if (!checkActiveSession) {
-        await initiatePaymentSession(cart, {
+        // CRITICAL FIX: Refresh cart before initiating payment session
+        // This ensures we have the latest cart data with shipping_total included
+        await refreshCart('payment')
+        
+        // Use the fresh cart from context (will be updated after refreshCart)
+        const freshCart = contextCart || propCart
+        await initiatePaymentSession(freshCart, {
           provider_id: selectedPaymentMethod,
         })
       }
