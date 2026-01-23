@@ -195,9 +195,9 @@ export const UserSettingsModal = ({
                   <Image
                     src="/A.svg"
                     alt="Artovnia"
-                    width={200}
-                    height={200}
-                    className="w-full h-full object-contain scale-[1.2]"
+                    width={190}
+                    height={190}
+                    className="w-full h-full object-contain scale-[0.85]" 
                   />
                 </div>
               </div>
@@ -271,7 +271,7 @@ export const UserSettingsModal = ({
                     alt="Artovnia"
                     width={210}
                     height={210}
-                    className="w-full h-full object-fill scale-[1.1] "
+                    className="w-full h-full object-fill scale-[0.85] "
                   />
                 </div>
               </div>
@@ -369,9 +369,9 @@ export const UserSettingsModal = ({
               <button
                 onClick={handleLogout}
                 className="flex items-center justify-center gap-2 w-full py-3.5 
-                         text-[#3B3634]/70 hover:text-red-600 
-                         border border-[#3B3634]/10 hover:border-red-200 
-                         hover:bg-red-50/50 transition-all duration-200
+                         text-red-600  bg-red-50/50
+                         border border-red-200 
+                         hover:bg-red-100/90 transition-all duration-200
                          font-medium"
               >
                 <LogoutIcon className="w-5 h-5" />
