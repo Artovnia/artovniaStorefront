@@ -105,56 +105,56 @@ export const CookieConsent: React.FC<CookieConsentProps> = ({
   if (!isVisible) return null
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center p-4 pointer-events-none">
+    <div className="fixed inset-0 z-50 flex items-end justify-center p-4 pointer-events-none animate-in fade-in duration-300">
       {/* Backdrop */}
-      <div className="absolute inset-0 bg-black/20 backdrop-blur-sm pointer-events-auto" />
+      <div className="absolute inset-0 bg-[#3B3634]/20 backdrop-blur-sm pointer-events-auto" />
       
       {/* Cookie Consent Modal */}
-      <div className="relative w-full max-w-2xl bg-primary  shadow-2xl border border-[#3B3634]/10 pointer-events-auto transform transition-all duration-300 ease-out">
+      <div className="relative w-full max-w-2xl bg-[#F4F0EB] shadow-2xl border border-[#3B3634]/10 pointer-events-auto transform transition-all duration-300 ease-out animate-in slide-in-from-bottom-4">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-[#3B3634]/10">
           <div className="flex items-center space-x-3">
-            <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
-              <span className="text-[#3B3634] font-bold text-sm">A</span>
+            <div className="w-10 h-10 bg-white/50 rounded-full border-2 border-[#3B3634]/20 flex items-center justify-center">
+              <span className="text-[#3B3634] font-bold font-instrument-serif text-lg">A</span>
             </div>
-            <h2 className="text-xl font-semibold text-[#3B3634]">
+            <h2 className="text-xl font-instrument-serif text-[#3B3634] tracking-tight">
               {t('title')}
             </h2>
           </div>
           <button
             onClick={handleRejectAll}
-            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+            className="w-10 h-10 flex items-center justify-center rounded-full bg-[#3B3634]/5 hover:bg-[#3B3634]/10 transition-all duration-200 active:scale-95"
             aria-label="Zamknij i odrzuć wszystkie opcjonalne pliki cookie"
           >
-            <CloseIcon size={20} color="#6B7280" />
+            <CloseIcon size={20} color="#3B3634" />
           </button>
         </div>
 
         {/* Content */}
         <div className="p-6">
-          <p className="text-gray-600 mb-6 leading-relaxed">
+          <p className="text-[#3B3634]/70 mb-6 leading-relaxed font-instrument-sans">
             {t('description')}
           </p>
 
           {/* Cookie Categories - Always Visible */}
-          <div className="space-y-4 mb-6">
-            <h3 className="text-md font-semibold text-[#3B3634] mb-4">Zarządzaj swoimi preferencjami:</h3>
+          <div className="space-y-3 mb-6">
+            <h3 className="text-md font-medium font-instrument-sans text-[#3B3634] mb-4">Zarządzaj swoimi preferencjami:</h3>
             {Object.entries(categories).map(([categoryId, category]) => (
               <div
                 key={categoryId}
-                className="flex items-start space-x-4 p-4 bg-gray-50 rounded-xl border border-gray-100"
+                className="flex items-start space-x-4 p-4 bg-white/60 border border-[#3B3634]/10 hover:bg-white/80 transition-all duration-200"
               >
                 <div className="flex-shrink-0 mt-1">
                   {getCategoryIcon(categoryId)}
                 </div>
                 <div className="flex-grow">
                   <div className="flex items-center justify-between mb-2">
-                    <h3 className="font-medium text-[#3B3634]">
+                    <h3 className="font-medium font-instrument-sans text-[#3B3634]">
                       {t(`categories.${categoryId}.title`)}
                     </h3>
                     <div className="flex items-center">
                       {category.required && (
-                        <span className="text-xs text-gray-500 mr-3">
+                        <span className="text-xs text-[#3B3634]/60 mr-3 font-instrument-sans">
                           Wymagane
                         </span>
                       )}
@@ -169,25 +169,25 @@ export const CookieConsent: React.FC<CookieConsentProps> = ({
                           id={`cookie-${categoryId}`}
                         />
                         <div className={`
-                          relative w-11 h-6 rounded-full transition-colors duration-200 ease-in-out
+                          relative w-11 h-6 rounded-full transition-all duration-200 ease-in-out
                           ${category.enabled 
                             ? 'bg-[#3B3634]' 
-                            : 'bg-gray-300'
+                            : 'bg-[#3B3634]/20'
                           }
                           ${category.required 
                             ? 'opacity-50 cursor-not-allowed' 
-                            : 'cursor-pointer'
+                            : 'cursor-pointer hover:shadow-sm'
                           }
                         `}>
                           <div className={`
-                            absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-transform duration-200 ease-in-out
+                            absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow-sm transition-transform duration-200 ease-in-out
                             ${category.enabled ? 'translate-x-5' : 'translate-x-0'}
                           `} />
                         </div>
                       </label>
                     </div>
                   </div>
-                  <p className="text-sm text-gray-600">
+                  <p className="text-sm text-[#3B3634]/70 font-instrument-sans leading-relaxed">
                     {t(`categories.${categoryId}.description`)}
                   </p>
                 </div>
@@ -199,7 +199,7 @@ export const CookieConsent: React.FC<CookieConsentProps> = ({
           <div className="flex flex-col sm:flex-row gap-3">
             <button
               onClick={handleAcceptAll}
-              className="flex-1 bg-[#3B3634] text-white px-6 py-3 rounded-xl font-medium hover:bg-[#3B3634]/90 transition-colors focus:outline-none focus:ring-2 focus:ring-[#3B3634]/50"
+              className="flex-1 bg-[#3B3634] text-[#F4F0EB] px-6 py-3.5 font-medium font-instrument-sans hover:bg-[#2d2a28] transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-[#3B3634]/50 active:scale-[0.99]"
               aria-label="Zaakceptuj wszystkie pliki cookie"
             >
               {t('acceptAll')}
@@ -207,7 +207,7 @@ export const CookieConsent: React.FC<CookieConsentProps> = ({
             
             <button
               onClick={handleSavePreferences}
-              className="flex-1 bg-primary text-[#3B3634] px-6 py-3 rounded-xl font-medium hover:bg-primary/90 transition-colors focus:outline-none focus:ring-2 focus:ring-primary/50"
+              className="flex-1 bg-white/60 text-[#3B3634] px-6 py-3.5 font-medium font-instrument-sans border border-[#3B3634]/20 hover:bg-white/80 hover:border-[#3B3634]/30 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-[#3B3634]/50 active:scale-[0.99]"
               aria-label="Zapisz wybrane preferencje dotyczące plików cookie"
             >
               {t('savePreferences')}
@@ -215,7 +215,7 @@ export const CookieConsent: React.FC<CookieConsentProps> = ({
             
             <button
               onClick={handleRejectAll}
-              className="flex-1 border-2 border-[#3B3634] text-[#3B3634] px-6 py-3 rounded-xl font-medium hover:bg-[#3B3634]/5 transition-colors focus:outline-none focus:ring-2 focus:ring-[#3B3634]/50"
+              className="flex-1 border-2 border-[#3B3634]/30 text-[#3B3634] px-6 py-3.5 font-medium font-instrument-sans hover:border-[#3B3634]/50 hover:bg-[#3B3634]/5 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-[#3B3634]/50 active:scale-[0.99]"
               aria-label="Odrzuć wszystkie opcjonalne pliki cookie"
             >
               {t('rejectAll')}
@@ -226,7 +226,7 @@ export const CookieConsent: React.FC<CookieConsentProps> = ({
           <div className="mt-4 text-center">
             <Link
               href="/polityka-prywatnosci"
-              className="text-sm text-[#3B3634] hover:text-black transition-colors underline"
+              className="text-sm text-[#3B3634]/70 hover:text-[#3B3634] font-instrument-sans transition-colors underline underline-offset-2"
               aria-label="Przejdź do polityki prywatności"
             >
               {t('privacyPolicy')}

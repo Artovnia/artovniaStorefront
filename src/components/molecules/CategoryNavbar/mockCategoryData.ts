@@ -194,7 +194,6 @@ export const mockCategoriesFlat = processMockCategoryData();
 
 // Function to retrieve only top-level categories with their hierarchy intact
 export const getTopLevelCategories = (): HttpTypes.StoreProductCategory[] => {
-  console.log('Mock data called. Returning', mockCategoryData.length, 'parent categories');
-  console.log('First category:', mockCategoryData[0]?.name, 'with', mockCategoryData[0]?.category_children?.length, 'children');
+
   return mockCategoryData;
 };

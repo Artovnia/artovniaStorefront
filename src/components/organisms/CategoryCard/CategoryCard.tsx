@@ -10,7 +10,7 @@ export function CategoryCard({
   category,
   size = "small"
 }: {
-  category: { id: number; name: string; handle: string }
+  category: { id: string | number; name: string; handle: string }
   size?: "large" | "small"
 }) {
   const [isHovered, setIsHovered] = useState(false)

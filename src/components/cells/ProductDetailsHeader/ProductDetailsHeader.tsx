@@ -221,7 +221,7 @@ export const ProductDetailsHeader = ({
   const canAddToCart = hasStock && variantHasPrice && isAvailable
 
   return (
-    <div className=" p-5">
+    <div className="pl-5 pr-5 pb-5">
       <div className="flex justify-between">
         <div>
           <h2 className="label-md text-secondary">

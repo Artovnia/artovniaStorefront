@@ -473,7 +473,10 @@ const ProductsListing = ({
         {/* Right Column: Filter Bar + Products */}
         <div className="lg:col-span-5">
           {/* Mobile Category Breadcrumbs - Only visible on mobile */}
-          <MobileCategoryBreadcrumbs currentCategory={currentCategory} />
+          <MobileCategoryBreadcrumbs 
+            currentCategory={currentCategory} 
+            resultsCount={results?.nbHits || 0}
+          />
           
           {/* Filter Bar - Above products */}
           <div className="mb-6">

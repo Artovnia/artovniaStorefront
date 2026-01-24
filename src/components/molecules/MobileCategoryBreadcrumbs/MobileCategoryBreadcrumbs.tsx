@@ -17,7 +17,21 @@ interface MobileCategoryBreadcrumbsProps {
 }
 
 export const MobileCategoryBreadcrumbs = ({ currentCategory, className, resultsCount }: MobileCategoryBreadcrumbsProps) => {
-  if (!currentCategory) return null
+  // Show "All Products" header when no category is selected
+  if (!currentCategory) {
+    return (
+      <div className={cn("md:hidden w-full", className)}>
+        <div className="px-4 py-4 border-b border-[#3B3634]/10">
+          <h1 className="text-2xl font-instrument-serif text-[#3B3634] tracking-tight uppercase mb-2">
+            Wszystkie produkty
+          </h1>
+          {resultsCount !== undefined && (
+            <div className="text-sm text-[#3B3634]/70">{`${resultsCount} wyników`}</div>
+          )}
+        </div>
+      </div>
+    )
+  }
 
   // Build breadcrumb trail from current category up to root
   const buildBreadcrumbs = (category: HttpTypes.StoreProductCategory): Array<{ label: string; path: string }> => {
@@ -49,23 +63,23 @@ export const MobileCategoryBreadcrumbs = ({ currentCategory, className, resultsC
   return (
     <div className={cn("md:hidden w-full", className)}>
       <nav className="w-full px-4 py-2 backdrop-blur-sm border-b border-[#3B3634]/10" aria-label="Category breadcrumb">
-        <div className="flex items-center gap-1 overflow-x-auto scrollbar-none">
+        <div className="flex items-center gap-1 flex-wrap">
           {breadcrumbs.map((item, index) => {
             const isLast = index === breadcrumbs.length - 1
             
             return (
-              <div key={item.path} className="flex items-center gap-1 flex-shrink-0">
+              <div key={item.path} className="flex items-center gap-1">
                 {index > 0 && (
                   <ChevronRightIcon className="text-[#3B3634]/40 flex-shrink-0" />
                 )}
                 {isLast ? (
-                  <span className="text-sm font-semibold text-[#3B3634] whitespace-nowrap">
+                  <span className="text-sm font-semibold text-[#3B3634] break-words">
                     {item.label}
                   </span>
                 ) : (
                   <Link
                     href={item.path}
-                    className="text-sm text-[#3B3634]/70 hover:text-[#3B3634] transition-colors whitespace-nowrap"
+                    className="text-sm text-[#3B3634]/70 hover:text-[#3B3634] transition-colors break-words"
                   >
                     {item.label}
                   </Link>

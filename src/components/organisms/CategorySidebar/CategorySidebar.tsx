@@ -63,6 +63,7 @@ export const CategorySidebar = ({
   // Find the current parent category and its tree
   const currentParentCategoryTree = useMemo(() => {
     if (!categories || categories.length === 0) {
+      console.log('🔍 CategorySidebar: No categories provided')
       return null
     }
     
@@ -79,6 +80,18 @@ export const CategorySidebar = ({
                            (typeof cat.parent_category === 'object' && !cat.parent_category.id)
       
       return hasNoParentId && hasNoParentObj
+    })
+    
+    console.log('🔍 CategorySidebar Debug:', {
+      currentCategoryHandle,
+      totalCategories: categories.length,
+      topLevelCount: topLevel.length,
+      topLevelNames: topLevel.map(c => c.name),
+      topLevelWithChildren: topLevel.map(c => ({ 
+        name: c.name, 
+        handle: c.handle,
+        childrenCount: c.category_children?.length || 0 
+      }))
     })
     
     // If no current category, return null (show "All Products" only)
@@ -111,6 +124,14 @@ export const CategorySidebar = ({
     
     // Find the parent category for the current category
     const parentCategory = findTopLevelParent(currentCategoryHandle)
+    
+    console.log('🔍 CategorySidebar: Found parent category:', {
+      currentHandle: currentCategoryHandle,
+      parentFound: !!parentCategory,
+      parentName: parentCategory?.name,
+      parentHandle: parentCategory?.handle,
+      parentChildrenCount: parentCategory?.category_children?.length || 0
+    })
     
     return parentCategory
   }, [categories, currentCategoryHandle])
@@ -158,8 +179,8 @@ export const CategorySidebar = ({
             <span className="flex-1">Wszystkie produkty</span>
           </Link>
 
-          {/* Category Tree */}
-          {currentParentCategoryTree && (
+          {/* Category Tree - Show specific tree when category selected, or all parent categories when viewing all products */}
+          {currentParentCategoryTree ? (
             <CategorySidebarItem
               key={currentParentCategoryTree.id}
               category={currentParentCategoryTree}
@@ -167,6 +188,30 @@ export const CategorySidebar = ({
               buildCategoryUrl={buildCategoryUrl}
               currentParentCategoryTree={currentParentCategoryTree}
             />
+          ) : (
+            // When viewing "Wszystkie produkty", show all parent categories
+            !currentCategoryHandle && categories && categories.length > 0 && (
+              <>
+                {categories
+                  .filter(cat => {
+                    const hasNoParentId = !cat.parent_category_id || cat.parent_category_id === null
+                    const hasNoParentObj = !cat.parent_category || 
+                                         cat.parent_category === null || 
+                                         (typeof cat.parent_category === 'object' && !cat.parent_category.id)
+                    return hasNoParentId && hasNoParentObj
+                  })
+                  .map((category) => (
+                    <CategorySidebarItem
+                      key={category.id}
+                      category={category}
+                      currentCategoryHandle={currentCategoryHandle as string}
+                      buildCategoryUrl={buildCategoryUrl}
+                      currentParentCategoryTree={null}
+                      showChildrenByDefault={false}
+                    />
+                  ))}
+              </>
+            )
           )}
         </nav>
 
@@ -188,6 +233,8 @@ interface CategorySidebarItemProps {
   currentCategoryHandle: string
   level?: number
   buildCategoryUrl: (categoryHandle: string) => string
+  currentParentCategoryTree?: HttpTypes.StoreProductCategory | null
+  showChildrenByDefault?: boolean
 }
 
 const CategorySidebarItem = ({ 
@@ -195,8 +242,9 @@ const CategorySidebarItem = ({
   currentCategoryHandle,
   level = 0,
   buildCategoryUrl,
-  currentParentCategoryTree
-}: CategorySidebarItemProps & { currentParentCategoryTree?: HttpTypes.StoreProductCategory | null }) => {
+  currentParentCategoryTree,
+  showChildrenByDefault = true
+}: CategorySidebarItemProps) => {
   const hasChildren = category.category_children && category.category_children.length > 0
   const isActive = category.handle === currentCategoryHandle
   const isParentOfActive = category.category_children?.some((child: HttpTypes.StoreProductCategory) => 
@@ -233,10 +281,10 @@ const CategorySidebarItem = ({
   const isViewingTopLevelCategory = currentParentCategoryTree?.handle === currentCategoryHandle
   
   // Expansion logic:
-  // - Level 0 (top-level): Always expanded
+  // - Level 0 (top-level): Expanded if showChildrenByDefault OR if in current path
   // - If viewing top-level category: Show complete tree (expand all levels)
   // - Otherwise: Only expand if in current path, active, or parent of active
-  const isExpanded = level === 0 || 
+  const isExpanded = (level === 0 && showChildrenByDefault) || 
                     isViewingTopLevelCategory || 
                     isInCurrentPath || 
                     isActive || 
@@ -271,6 +319,7 @@ const CategorySidebarItem = ({
               level={level + 1}
               buildCategoryUrl={buildCategoryUrl}
               currentParentCategoryTree={currentParentCategoryTree}
+              showChildrenByDefault={showChildrenByDefault}
             />
           ))}
         </div>

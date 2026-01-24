@@ -33,7 +33,7 @@ export const ProductDetailsSellerReviews = async ({ seller }: { seller: SellerPr
 
   return (
     <ProductPageAccordion heading="Sprzedawca" defaultOpen={true}>
-      <div className='flex flex-col md:flex-row justify-between gap-4 md:items-start items-center mb-5'>
+      <div className='flex flex-col lg:flex-row justify-between gap-4 lg:items-start items-center mb-5'>
         <Link href={`/sellers/${handle}`} className="flex gap-4">
           <div className="relative h-12 w-12 overflow-hidden rounded-sm">
             <SellerAvatar photo={photo} size={56} alt={name} />
@@ -46,19 +46,19 @@ export const ProductDetailsSellerReviews = async ({ seller }: { seller: SellerPr
             </div>
           </div>
         </Link>
-        <div className="flex md:flex-col gap-4">
-          <Link href={`${process.env.NEXT_PUBLIC_BASE_URL}/sellers/${handle}?tab=message`}>
+        <div className="flex flex-col lg:flex-col gap-3 w-full lg:w-auto">
+          <Link href={`${process.env.NEXT_PUBLIC_BASE_URL}/sellers/${handle}?tab=message`} className="w-full lg:w-auto">
             <Button
               variant='filled'
-              className='uppercase label-md font-400 md:min-w-[10rem] min-w-[10rem]'
+              className='uppercase label-md font-400 w-full lg:min-w-[11rem]'
             >
               Kontakt
             </Button>
           </Link>
-          <Link href={`/sellers/${handle}?tab=reviews`}>
+          <Link href={`/sellers/${handle}?tab=reviews`} className="w-full lg:w-auto">
             <Button
               variant='tonal'
-              className='uppercase label-md font-400 max-w-[11rem] '
+              className='uppercase label-md font-400 w-full lg:min-w-[11rem]'
             >
               Zobacz więcej ({reviewCount})
             </Button>

@@ -127,7 +127,7 @@ export const FullWidthDropdown = ({
                 href={`/categories/${grandchild.handle}`}
                 onClick={handleCategoryClick}
                 className={cn(
-                  "block text-sm text-gray-700 hover:text-primary hover:underline transition-colors capitalize",
+                  "block text-sm text-gray-700 hover:text-primary hover:underline transition-colors ",
                   grandchild.handle === currentCategoryHandle && "text-primary font-normal"
                 )}
               >

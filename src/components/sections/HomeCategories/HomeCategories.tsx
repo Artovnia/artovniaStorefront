@@ -1,31 +1,33 @@
 import { CategoryCard } from "@/components/organisms"
 
-export const categories: { id: number; name: string; handle: string; featured?: boolean }[] = [
+// Hardcoded featured categories for homepage
+// These handles should match production database categories
+export const categories: { id: string; name: string; handle: string; featured?: boolean }[] = [
   {
-    id: 1,
+    id: "1",
     name: "Zwierzęta",
-    handle: "Zwierzeta",
+    handle: "zwierzeta", // Lowercase to match database
     featured: true, // Large featured category
   },
   {
-    id: 2,
+    id: "2",
     name: "Torebki i plecaki",
-    handle: "Torebki-i-plecaki",
+    handle: "torebki-i-plecaki",
   },
   {
-    id: 3,
+    id: "3",
     name: "Figury i rzeźby",
-    handle: "Figury-i-rzezby",
+    handle: "figury-i-rzezby",
   },
   {
-    id: 4,
+    id: "4",
     name: "Obrazy",
-    handle: "Obrazy",
+    handle: "obrazy",
   },
   {
-    id: 5,
+    id: "5",
     name: "Prezent dla niego",
-    handle: "Prezent-dla-niego",
+    handle: "prezent-dla-niego",
   },
 ]
 

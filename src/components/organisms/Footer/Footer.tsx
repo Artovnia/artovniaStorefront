@@ -16,7 +16,16 @@ interface FooterProps {
  * @param categories - Product categories to display in footer navigation
  */
 export function Footer({ categories = [] }: FooterProps) {
-  // Categories now passed as props - no need to fetch here
+  // Filter to show only top-level parent categories (no parent_category_id)
+  const topLevelCategories = categories.filter(cat => {
+    const hasNoParentId = !cat.parent_category_id || cat.parent_category_id === null
+    const hasNoParentObj = !cat.parent_category || 
+                         cat.parent_category === null || 
+                         (typeof cat.parent_category === 'object' && !cat.parent_category.id)
+    
+    return hasNoParentId && hasNoParentObj
+  })
+  
   const getIcon = (label: string) => {
     switch(label) {
       case 'Facebook':
@@ -52,18 +61,18 @@ export function Footer({ categories = [] }: FooterProps) {
             <nav className="space-y-3 font-instrument-sans uppercase" aria-labelledby="footer-shop">
                <Link 
                 href="/tags" 
-                className="block text-white hover:text-primary transition-colors duration-200 text-sm"
+                className="block text-white hover:underline transition-colors duration-200 text-sm"
               >
                 Tagi
               </Link>
-              <Link href="/categories" className="block text-white hover:text-primary transition-colors duration-200 text-sm">
+              <Link href="/categories" className="block text-white hover:underline transition-colors duration-200 text-sm">
                 Wszystkie produkty
               </Link>
-              {categories.slice(0, 6).map((category) => (
+              {topLevelCategories.slice(0, 6).map((category) => (
                 <Link 
                   key={category.id} 
                   href={`/categories/${category.handle}`} 
-                  className="block text-white hover:text-primary transition-colors duration-200 text-sm"
+                  className="block text-white hover:underline transition-colors duration-200 text-sm"
                 >
                   {category.name}
                 </Link>
@@ -81,14 +90,14 @@ export function Footer({ categories = [] }: FooterProps) {
                 <Link 
                   key={name} 
                   href={href} 
-                  className="block text-white hover:text-primary transition-colors duration-200 text-sm"
+                  className="block text-white hover:underline transition-colors duration-200 text-sm"
                 >
                   {name}
                 </Link>
               ))}
               <Link 
                 href="/support" 
-                className="block text-white hover:text-primary transition-colors duration-200 text-sm"
+                className="block text-white hover:underline transition-colors duration-200 text-sm"
               >
                 Kontakt
               </Link>
@@ -106,7 +115,7 @@ export function Footer({ categories = [] }: FooterProps) {
                 <Link 
                   key={name} 
                   href={href} 
-                  className="block text-white hover:text-primary transition-colors duration-200 text-sm"
+                  className="block text-white hover:underline transition-colors duration-200 text-sm"
                 >
                   {name}
                 </Link>
@@ -120,13 +129,13 @@ export function Footer({ categories = [] }: FooterProps) {
               Dla sprzedających
             </h2>
             <nav className="space-y-3 font-instrument-sans uppercase" aria-labelledby="footer-sellers">
-              <Link href="/przewodnik-sprzedawcy" className="block text-white hover:text-primary transition-colors duration-200 text-sm">
+              <Link href="/przewodnik-sprzedawcy" className="block text-white hover:underline transition-colors duration-200 text-sm">
                 Zacznij z nami sprzedawać
               </Link>
              
               <Link 
                 href="https://annawawrzyniak.my.canva.site/przewodnik-artovnia" 
-                className="block text-white hover:text-primary transition-colors duration-200 text-sm"
+                className="block text-white hover:underline transition-colors duration-200 text-sm "
                 target="_blank"
                 rel="noopener noreferrer"
                 aria-label="Poradnik (otwiera się w nowej karcie)"
@@ -134,7 +143,7 @@ export function Footer({ categories = [] }: FooterProps) {
                 Poradnik
                 <span className="sr-only"> (otwiera się w nowej karcie)</span>
               </Link>
-              <Link href="/faq-sprzedawcy" className="block text-white hover:text-primary transition-colors duration-200 text-sm">
+              <Link href="/faq-sprzedawcy" className="block text-white hover:underline transition-colors duration-200 text-sm ">
                 FAQ
               </Link>
             </nav>
@@ -165,7 +174,7 @@ export function Footer({ categories = [] }: FooterProps) {
             </Link> */}
             <Link
               href="https://www.instagram.com/artovnia__com/?igsh=N3hlN2g4aXdjMWs4#"
-              className="text-white hover:text-primary focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-tertiary transition-all duration-200 p-2 rounded-full hover:bg-white/10"
+              className="text-white hover:text-underline focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-tertiary transition-all duration-200 p-2 rounded-full hover:bg-white/10"
               target="_blank"
               rel="noopener noreferrer"
               aria-label="Odwiedź nasz profil na Instagram (otwiera się w nowej karcie)"
@@ -175,7 +184,7 @@ export function Footer({ categories = [] }: FooterProps) {
             </Link>
             <Link
               href="https://pl.pinterest.com/artovnia/"
-              className="text-white hover:text-primary focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-tertiary transition-all duration-200 p-2 rounded-full hover:bg-white/10"
+              className="text-white hover:text-underline focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-tertiary transition-all duration-200 p-2 rounded-full hover:bg-white/10"
               target="_blank"
               rel="noopener noreferrer"
               aria-label="Odwiedź nasz profil na Pinterest (otwiera się w nowej karcie)"
@@ -213,7 +222,7 @@ export function Footer({ categories = [] }: FooterProps) {
             <span aria-label="Copyright">&copy;</span> ARTOVNIA <time dateTime="2025">2025</time>
           </p>
           <p className="font-instrument-sans text-black text-xs">
-            Korzystanie z serwisu oznacza akceptację <Link href="/regulamin" className="text-black hover:text-primary focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-1 transition-colors underline">Regulaminu</Link>.
+            Korzystanie z serwisu oznacza akceptację <Link href="/regulamin" className="text-black hover:text-underline  focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-1 transition-colors underline">Regulaminu</Link>.
           </p>
         </div>
       </div>

@@ -1,5 +1,5 @@
 'use client';
-import { MinusThinIcon } from '@/icons';
+import { PlusIcon } from '@/icons';
 import { cn } from '@/lib/utils';
 import { useEffect, useRef, useState } from 'react';
 
@@ -30,31 +30,43 @@ export const ProductPageAccordion = ({
   const openHandler = () => {
     setOpen(!open);
   };
+  
   return (
-    <div className='border-t border-gray-200'>
+    <div className="border-t border-[#3B3634]/10">
       <div
         onClick={openHandler}
-        className='flex justify-between items-center cursor-pointer px-4 py-8 hover:bg-gray-50 transition-colors duration-200'       
+        className="flex justify-between items-center cursor-pointer px-4 py-4 
+                   hover:bg-[#3B3634]/5 transition-all duration-200
+                   active:scale-[0.99]"
       >
-        <h4 className='text-2xl font-instrument-serif text-gray-900'>{heading}</h4>
-        <div className='relative'>
-          <MinusThinIcon
+        <h4 className="text-2xl font-instrument-serif text-[#3B3634] tracking-tight">
+          {heading}
+        </h4>
+        <div className="relative w-6 h-6 flex items-center justify-center">
+          <PlusIcon
+            size={24}
             className={cn(
-              'absolute top-0 left-0 transition-all duration-300 text-gray-600',
-              !open && 'rotate-90'
+              'transition-all duration-300 text-[#3B3634]',
+              open && 'rotate-45'
             )}
           />
-          <MinusThinIcon className='text-gray-600' />
         </div>
       </div>
       <div
         ref={accordionRef}
         className={cn(
-          'transition-all duration-300 h-full overflow-hidden px-4'
+          'transition-all duration-300 overflow-hidden px-4'
         )}
         style={{ maxHeight: open ? 'none' : 0 }}
       >
-        <div className='pb-4'>{children}</div>
+        <div 
+          className={cn(
+            "pb-6 text-[#3B3634] leading-relaxed transition-all duration-300",
+            open ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-2"
+          )}
+        >
+          {children}
+        </div>
       </div>
     </div>
   );
