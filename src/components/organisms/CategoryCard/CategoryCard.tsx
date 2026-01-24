@@ -10,7 +10,7 @@ export function CategoryCard({
   category,
   size = "small"
 }: {
-  category: { id: string | number; name: string; handle: string }
+  category: { id: string | number; name: string; handle: string; image?: string }
   size?: "large" | "small"
 }) {
   const [isHovered, setIsHovered] = useState(false)
@@ -42,7 +42,7 @@ export function CategoryCard({
       {/* Category Image */}
       <div className="relative w-full h-full" style={{ backfaceVisibility: 'hidden' }}>
         <Image
-          src={`/images/categories/${category.handle}.webp`}
+          src={category.image || `/images/categories/${category.handle}.webp`}
           alt={category.name}
           fill
           className="object-cover transition-transform duration-500 group-hover:scale-110"

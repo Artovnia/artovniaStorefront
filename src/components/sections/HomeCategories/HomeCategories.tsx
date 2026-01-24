@@ -2,32 +2,43 @@ import { CategoryCard } from "@/components/organisms"
 
 // Hardcoded featured categories for homepage
 // These handles should match production database categories
-export const categories: { id: string; name: string; handle: string; featured?: boolean }[] = [
+export const categories: { 
+  id: string; 
+  name: string; 
+  handle: string; 
+  image: string;
+  featured?: boolean 
+}[] = [
   {
     id: "1",
     name: "Zwierzęta",
     handle: "zwierzeta", // Lowercase to match database
+    image: "/images/categories/Zwierzeta.webp",
     featured: true, // Large featured category
   },
   {
     id: "2",
     name: "Torebki i plecaki",
     handle: "torebki-i-plecaki",
+    image: "/images/categories/Torebki-i-plecaki.webp",
   },
   {
     id: "3",
     name: "Figury i rzeźby",
     handle: "figury-i-rzezby",
+    image: "/images/categories/Figury-i-rzezby.webp",
   },
   {
     id: "4",
     name: "Obrazy",
     handle: "obrazy",
+    image: "/images/categories/Obrazy.webp",
   },
   {
     id: "5",
     name: "Prezent dla niego",
     handle: "prezent-dla-niego",
+    image: "/images/categories/Prezent-dla-niego.webp",
   },
 ]
 

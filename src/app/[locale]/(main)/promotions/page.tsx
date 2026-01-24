@@ -25,8 +25,7 @@ export const metadata: Metadata = {
   alternates: {
     canonical: `${process.env.NEXT_PUBLIC_BASE_URL}/promotions`,
     languages: {
-      'pl': `${process.env.NEXT_PUBLIC_BASE_URL}/pl/promotions`,
-      'en': `${process.env.NEXT_PUBLIC_BASE_URL}/en/promotions`,
+      'pl': `${process.env.NEXT_PUBLIC_BASE_URL}/promotions`,
       'x-default': `${process.env.NEXT_PUBLIC_BASE_URL}/promotions`,
     },
   },

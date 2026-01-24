@@ -3,43 +3,47 @@ import React, { Suspense } from "react"
 import AboutUsContent from "@/components/pages/about/AboutUsContent"
 import { Link } from "@/i18n/routing"
 import { ArrowLeftIcon } from "@/icons"
-import { generateBreadcrumbJsonLd, generateOrganizationJsonLd } from "@/lib/helpers/seo"
+import {
+  generateBreadcrumbJsonLd,
+  generateOrganizationJsonLd,
+} from "@/lib/helpers/seo"
 import { JsonLd } from "@/components/JsonLd"
 
 export async function generateMetadata(): Promise<Metadata> {
   return {
     title: "O Nas - Artovnia | Poznaj Naszą Historię i Misję",
-    description: "Poznaj historię Artovni - rodzinnej inicjatywy stworzonej z pasji do sztuki, designu i rękodzieła. Łączymy artystów z miłośnikami sztuki od 2024 roku.",
+    description:
+      "Poznaj historię Artovni - rodzinnej inicjatywy stworzonej z pasji do sztuki, designu i rękodzieła. Łączymy artystów z miłośnikami sztuki od 2024 roku.",
     keywords: [
-      'o nas',
-      'historia Artovnia',
-      'misja',
-      'marketplace sztuki',
-      'polscy artyści',
-      'o firmie',
-    ].join(', '),
+      "o nas",
+      "historia Artovnia",
+      "misja",
+      "marketplace sztuki",
+      "polscy artyści",
+      "o firmie",
+    ].join(", "),
     alternates: {
       canonical: `${process.env.NEXT_PUBLIC_BASE_URL}/about`,
       languages: {
-        'pl': `${process.env.NEXT_PUBLIC_BASE_URL}/pl/about`,
-        'en': `${process.env.NEXT_PUBLIC_BASE_URL}/en/about`,
-        'x-default': `${process.env.NEXT_PUBLIC_BASE_URL}/about`,
+        pl: `${process.env.NEXT_PUBLIC_BASE_URL}/about`,
+        "x-default": `${process.env.NEXT_PUBLIC_BASE_URL}/about`,
       },
     },
     openGraph: {
       title: "O Nas - Artovnia | Poznaj Naszą Historię",
-      description: "Poznaj historię Artovni - rodzinnej inicjatywy stworzonej z pasji do sztuki, designu i rękodzieła.",
+      description:
+        "Poznaj historię Artovni - rodzinnej inicjatywy stworzonej z pasji do sztuki, designu i rękodzieła.",
       url: `${process.env.NEXT_PUBLIC_BASE_URL}/about`,
       siteName: "Artovnia",
       type: "website",
       locale: "pl_PL",
     },
     twitter: {
-      card: 'summary',
-      site: '@artovnia',
-      creator: '@artovnia',
-      title: 'O Nas - Artovnia',
-      description: 'Poznaj naszą historię i misję',
+      card: "summary",
+      site: "@artovnia",
+      creator: "@artovnia",
+      title: "O Nas - Artovnia",
+      description: "Poznaj naszą historię i misję",
     },
     robots: {
       index: true,
@@ -48,10 +52,9 @@ export async function generateMetadata(): Promise<Metadata> {
   }
 }
 
-export const revalidate = 86400 // Revalidate once per day
+export const revalidate = 86400
 
 export default async function AboutPage() {
-  // Generate structured data
   const breadcrumbJsonLd = generateBreadcrumbJsonLd([
     { label: "Strona główna", path: "/" },
     { label: "O nas", path: "/about" },
@@ -60,32 +63,34 @@ export default async function AboutPage() {
 
   return (
     <>
-      {/* Structured Data (JSON-LD) for SEO */}
       <JsonLd data={breadcrumbJsonLd} />
       <JsonLd data={organizationJsonLd} />
-      
-      <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <Suspense fallback={
-        <div className="flex items-center justify-center min-h-[400px]">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#3B3634]"></div>
-        </div>
-      }>
-        <div className="w-full py-6 md:py-12">
-          <div className="content-container mx-auto px-6 md:px-8 max-w-4xl">
-            <div className="mb-8">
-              <Link 
-                href="/" 
-                className="inline-flex items-center text-gray-600 hover:text-gray-900 font-instrument-sans"
-              >
-                <ArrowLeftIcon size={16} className="mr-2" />
-                Powrót do strony głównej
-              </Link>
+
+      <main className="min-h-screen">
+        <Suspense
+          fallback={
+            <div className="flex items-center justify-center min-h-[400px]">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#3B3634]" />
             </div>
-            <AboutUsContent />
+          }
+        >
+          {/* Back Navigation */}
+          <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 md:pt-10">
+            <Link
+              href="/"
+              className="inline-flex items-center text-gray-500 hover:text-gray-900 transition-colors font-instrument-sans text-sm group"
+            >
+              <ArrowLeftIcon
+                size={14}
+                className="mr-2 group-hover:-translate-x-1 transition-transform"
+              />
+              Powrót do strony głównej
+            </Link>
           </div>
-        </div>
-      </Suspense>
-    </main>
+
+          <AboutUsContent />
+        </Suspense>
+      </main>
     </>
   )
 }

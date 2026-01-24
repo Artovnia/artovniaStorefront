@@ -20,8 +20,7 @@ export async function generateMetadata(): Promise<Metadata> {
     alternates: {
       canonical: `${process.env.NEXT_PUBLIC_BASE_URL}/sellers-faq`,
       languages: {
-        'pl': `${process.env.NEXT_PUBLIC_BASE_URL}/pl/sellers-faq`,
-        'en': `${process.env.NEXT_PUBLIC_BASE_URL}/en/sellers-faq`,
+        'pl': `${process.env.NEXT_PUBLIC_BASE_URL}/sellers-faq`,
         'x-default': `${process.env.NEXT_PUBLIC_BASE_URL}/sellers-faq`,
       },
     },
