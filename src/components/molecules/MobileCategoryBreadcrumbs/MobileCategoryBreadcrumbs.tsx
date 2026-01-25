@@ -62,6 +62,17 @@ export const MobileCategoryBreadcrumbs = ({ currentCategory, className, resultsC
 
   return (
     <div className={cn("md:hidden w-full", className)}>
+      {/* Category Header - Consistent with "Wszystkie produkty" styling */}
+      <div className="px-4 py-4 border-b border-[#3B3634]/10">
+        <h1 className="text-2xl font-instrument-serif text-[#3B3634] tracking-tight uppercase mb-2">
+          {currentCategory.name}
+        </h1>
+        {resultsCount !== undefined && (
+          <div className="text-sm text-[#3B3634]/70">{`${resultsCount} wyników`}</div>
+        )}
+      </div>
+
+      {/* Breadcrumb Navigation */}
       <nav className="w-full px-4 py-2 backdrop-blur-sm border-b border-[#3B3634]/10" aria-label="Category breadcrumb">
         <div className="flex items-center gap-1 flex-wrap">
           {breadcrumbs.map((item, index) => {
@@ -89,12 +100,6 @@ export const MobileCategoryBreadcrumbs = ({ currentCategory, className, resultsC
           })}
         </div>
       </nav>
-      
-      {resultsCount !== undefined && (
-        <div className="px-4 py-2">
-          <div className="text-sm text-[#3B3634]/70">{`${resultsCount} wyników`}</div>
-        </div>
-      )}
     </div>
   )
 }

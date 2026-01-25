@@ -198,21 +198,15 @@ export const ProductListing = ({
 
       {/* Main Layout: (Results Count + Category Sidebar) + (Filter Bar + Products) */}
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
-        {/* Left Column: Results Count + Category Sidebar - Hidden below 768px (md breakpoint) */}
+        {/* Left Column: Category Sidebar - Hidden below 768px (md breakpoint) */}
         <div className="hidden lg:block lg:col-span-1">
-          {/* Results Count - Above category sidebar */}
-          <div className="mb-4">
-            <div className="label-md">{`${count} wyników`}</div>
-          </div>
-          
-          {/* Category Sidebar */}
-          <div className="sticky top-24">
-            <CategorySidebar 
-              parentCategoryHandle={category_id ? undefined : undefined} 
-              className="bg-primary p-4"
-              categories={categories || []}
-            />
-          </div>
+          {/* Category Sidebar - includes results count internally */}
+          <CategorySidebar 
+            parentCategoryHandle={category_id ? undefined : undefined} 
+            className="bg-primary p-4"
+            categories={categories || []}
+            resultsCount={count}
+          />
         </div>
 
         {/* Right Column: Filter Bar + Products */}

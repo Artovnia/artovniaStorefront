@@ -7,6 +7,7 @@ export const categories: {
   name: string; 
   handle: string; 
   image: string;
+  imagePosition?: string;
   featured?: boolean 
 }[] = [
   {
@@ -14,6 +15,7 @@ export const categories: {
     name: "Zwierzęta",
     handle: "zwierzeta", // Lowercase to match database
     image: "/images/categories/Zwierzeta.webp",
+    imagePosition: "center 50%", // Adjust per image: 'center 40%' (top), 'center 50%' (center), 'center 90%' (bottom)
     featured: true, // Large featured category
   },
   {
@@ -21,24 +23,28 @@ export const categories: {
     name: "Torebki i plecaki",
     handle: "torebki-i-plecaki",
     image: "/images/categories/Torebki-i-plecaki.webp",
+    imagePosition: "center 90%",
   },
   {
     id: "3",
     name: "Figury i rzeźby",
     handle: "figury-i-rzezby",
     image: "/images/categories/Figury-i-rzezby.webp",
+    imagePosition: "center 80%",
   },
   {
     id: "4",
     name: "Obrazy",
     handle: "obrazy",
     image: "/images/categories/Obrazy.webp",
+    imagePosition: "center 50%",
   },
   {
     id: "5",
     name: "Prezent dla niego",
     handle: "prezent-dla-niego",
     image: "/images/categories/Prezent-dla-niego.webp",
+    imagePosition: "center 60%", // Shows more of the bottom of this image
   },
 ]
 

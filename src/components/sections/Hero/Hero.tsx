@@ -10,6 +10,7 @@ export interface HeroBanner {
   url?: string
   objectPosition?: string
   content?: {
+    useLogo?: boolean
     heading?: string
     subheading?: string
     paragraph?: string

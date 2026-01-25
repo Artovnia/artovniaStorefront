@@ -209,8 +209,8 @@ async function Category({ params }: Props) {
       >
         <BatchPriceProvider currencyCode="PLN">
           <main className="container">
-            {/* Category header with description for SEO */}
-            <header className="mb-8">
+            {/* Category header with description for SEO - Hidden on mobile to prevent duplication with MobileCategoryBreadcrumbs */}
+            <header className="mb-8 hidden ">
               <h1 className="text-3xl font-bold mb-2">{category.name}</h1>
               {category.description && (
                 <p className="text-ui-fg-subtle">{category.description}</p>

@@ -12,7 +12,7 @@ export const HERO_BANNERS: HeroBanner[] = [
     alt: "Odkrywaj nowe produkty w Artovnia",
     url: "/categories",
     content: {
-      heading: "ARTOVNIA",
+      useLogo: true,
       paragraph: "Bliżej rękodzieła. Bliżej Twórców",
       cta: "Zobacz produkty",
       alignment: 'center',
@@ -26,7 +26,7 @@ export const HERO_BANNERS: HeroBanner[] = [
     alt: "Promocje",
     url: "/promotions",
     content: {
-      heading: "Aktualne Promocje",
+      heading: "Aktualne promocje",
       paragraph: "Zobacz aktualne promocje naszych projektantów",
       cta: "Zobacz Oferty",
       alignment: 'center',
@@ -41,7 +41,7 @@ export const HERO_BANNERS: HeroBanner[] = [
     url: "https://artovniapanel.netlify.app/login",
     content: {
       heading: "Dołącz do nas",
-      paragraph: "Otwórz swój sklep i zacznij sprzedawać swoje rękodzieło",
+      paragraph: "Otwórz  sklep i zacznij sprzedawać swoje rękodzieło",
       cta: "Załóż sklep",
       alignment: 'center',
       verticalAlignment: 'center'

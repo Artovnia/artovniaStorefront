@@ -157,13 +157,24 @@ export const HeroClient = ({
               {banner.content && (
                 <div className={`absolute inset-0 z-10 flex items-${banner.content.verticalAlignment || 'center'} justify-${banner.content.alignment || 'center'} px-4 sm:px-6 lg:px-8`}>
                   <div className={`w-full text-${banner.content.alignment || 'center'}`}>
-                    {banner.content.heading && (
+                    {banner.content.useLogo ? (
+                      <div className="flex justify-center mb-4 sm:mb-6">
+                        <Image
+                          src="/Logo.svg"
+                          alt="Artovnia Logo"
+                          width={400}
+                          height={120}
+                          className="h-8 sm:h-10 lg:h-16 w-auto brightness-0 invert"
+                          priority
+                        />
+                      </div>
+                    ) : banner.content.heading ? (
                       <h1 className={`text-4xl sm:text-5xl lg:text-7xl text-white mb-4 sm:mb-6 ${
                         banner.id === 'nowy-rok' ? 'font-instrument-serif italic' : 'font-instrument-serif'
                       }`}>
                         {banner.content.heading}
                       </h1>
-                    )}
+                    ) : null}
                     
                     {banner.content.subheading && (
                       <h2 className="text-4xl sm:text-5xl lg:text-7xl font-instrument-serif uppercase text-white mb-4 sm:mb-6">

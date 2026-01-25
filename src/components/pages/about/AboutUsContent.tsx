@@ -4,30 +4,99 @@ import React, { useState } from "react"
 import Image from "next/image"
 import { format } from "date-fns"
 import { pl } from "date-fns/locale"
+import { motion, useInView } from "framer-motion"
+import { useRef } from "react"
 
-const AboutUsContent = () => {
-  const [lastUpdated] = useState(new Date(2025, 8, 26))
+// Animation variants
+const fadeInUp = {
+  hidden: { opacity: 0, y: 40 },
+  visible: { opacity: 1, y: 0 },
+}
+
+const fadeInLeft = {
+  hidden: { opacity: 0, x: -40 },
+  visible: { opacity: 1, x: 0 },
+}
+
+const fadeInRight = {
+  hidden: { opacity: 0, x: 40 },
+  visible: { opacity: 1, x: 0 },
+}
+
+const scaleIn = {
+  hidden: { opacity: 0, scale: 0.9 },
+  visible: { opacity: 1, scale: 1 },
+}
+
+const staggerContainer = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.15,
+    },
+  },
+}
+
+// Animated section wrapper
+const AnimatedSection = ({
+  children,
+  className = "",
+}: {
+  children: React.ReactNode
+  className?: string
+}) => {
+  const ref = useRef(null)
+  const isInView = useInView(ref, { once: false, margin: "-100px" })
 
   return (
-    <div className="about-us-content">
+    <motion.div
+      ref={ref}
+      initial="hidden"
+      animate={isInView ? "visible" : "hidden"}
+      variants={staggerContainer}
+      className={className}
+    >
+      {children}
+    </motion.div>
+  )
+}
+
+const AboutUsContent = () => {
+  const [lastUpdated] = useState(new Date(2026, 0, 24))
+
+  return (
+    <div className="about-us-content overflow-hidden">
       {/* Hero Section */}
       <section className="relative py-16 md:py-24 overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-primary/10" />
+        <div className="absolute inset-0" />
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 relative">
-          <div className="max-w-3xl">
-            <p className="text-sm uppercase tracking-widest text-gray-500 mb-4 font-instrument-sans">
+          <AnimatedSection className="max-w-3xl">
+            <motion.p
+              variants={fadeInUp}
+              transition={{ duration: 0.6 }}
+              className="text-sm uppercase tracking-widest text-gray-500 mb-4 font-instrument-sans"
+            >
               Nasza historia
-            </p>
-            <h1 className="font-instrument-serif text-4xl sm:text-5xl md:text-6xl font-medium text-gray-900 mb-6 leading-tight">
+            </motion.p>
+            <motion.h1
+              variants={fadeInUp}
+              transition={{ duration: 0.6, delay: 0.1 }}
+              className="font-instrument-serif text-4xl sm:text-5xl md:text-6xl font-medium text-gray-900 mb-6 leading-tight"
+            >
               Tworzymy przestrzeń
               <br />
               <span className="text-primary">dla sztuki</span>
-            </h1>
-            <p className="text-lg md:text-xl text-gray-600 leading-relaxed max-w-2xl">
+            </motion.h1>
+            <motion.p
+              variants={fadeInUp}
+              transition={{ duration: 0.6, delay: 0.2 }}
+              className="text-lg md:text-xl text-gray-600 leading-relaxed max-w-2xl"
+            >
               Artovnia to rodzinna inicjatywa, która powstała z pasji do sztuki,
               designu i rękodzieła. Łączymy artystów z miłośnikami piękna.
-            </p>
-          </div>
+            </motion.p>
+          </AnimatedSection>
         </div>
       </section>
 
@@ -35,11 +104,19 @@ const AboutUsContent = () => {
       <section className="py-12 md:py-20">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
-            <div>
-              <h2 className="font-instrument-serif text-2xl md:text-3xl font-medium text-gray-900 mb-6">
+            <AnimatedSection>
+              <motion.h2
+                variants={fadeInLeft}
+                transition={{ duration: 0.6 }}
+                className="font-instrument-serif text-2xl md:text-3xl font-medium text-gray-900 mb-6"
+              >
                 Jak to się zaczęło?
-              </h2>
-              <div className="space-y-4 text-gray-600 leading-relaxed">
+              </motion.h2>
+              <motion.div
+                variants={fadeInLeft}
+                transition={{ duration: 0.6, delay: 0.1 }}
+                className="space-y-4 text-gray-600 leading-relaxed"
+              >
                 <p>
                   Tworzymy ją my – Ania, artystka malarka, oraz Arek,
                   programista. Połączyliśmy nasze talenty, by stworzyć miejsce,
@@ -51,34 +128,51 @@ const AboutUsContent = () => {
                   twórców. Artovnia to nie tylko marketplace – to społeczność
                   ludzi, którzy cenią piękno i unikalność.
                 </p>
-              </div>
-            </div>
-            <div className="relative">
-              <div className="aspect-[4/3] rounded-2xl bg-gradient-to-br from-primary/10 to-primary/5 flex items-center justify-center overflow-hidden">
-                <div className="text-center p-8">
-                  <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-primary/20 flex items-center justify-center">
-                    <svg
-                      className="w-10 h-10 text-primary"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
+              </motion.div>
+            </AnimatedSection>
+            <AnimatedSection>
+              <motion.div
+                variants={scaleIn}
+                transition={{ duration: 0.7, ease: "easeOut" }}
+                className="relative"
+              >
+                <div className="aspect-[4/3] rounded-2xl bg-gradient-to-br from-primary/10 to-primary/5 flex items-center justify-center overflow-hidden">
+                  <div className="text-center p-8">
+                    <motion.div
+                      initial={{ scale: 0, rotate: -180 }}
+                      whileInView={{ scale: 1, rotate: 0 }}
+                      viewport={{ once: false }}
+                      transition={{
+                        duration: 0.8,
+                        delay: 0.3,
+                        type: "spring",
+                        stiffness: 100,
+                      }}
+                      className="w-20 h-20 mx-auto mb-4 rounded-full bg-primary/20 flex items-center justify-center"
                     >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={1.5}
-                        d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
-                      />
-                    </svg>
+                      <svg
+                        className="w-10 h-10 text-primary"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={1.5}
+                          d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
+                        />
+                      </svg>
+                    </motion.div>
+                    <p className="text-gray-500 font-instrument-sans text-sm">
+                      Tworzone z pasji
+                      <br />
+                      od 2025 roku
+                    </p>
                   </div>
-                  <p className="text-gray-500 font-instrument-sans text-sm">
-                    Tworzone z pasji
-                    <br />
-                    od 2025 roku
-                  </p>
                 </div>
-              </div>
-            </div>
+              </motion.div>
+            </AnimatedSection>
           </div>
         </div>
       </section>
@@ -86,71 +180,356 @@ const AboutUsContent = () => {
       {/* Founders Section */}
       <section className="py-12 md:py-20 bg-[#3B3634]">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-12 md:mb-16">
-            <p className="text-sm uppercase tracking-widest text-gray-400 mb-3 font-instrument-sans">
+          <AnimatedSection className="text-center mb-12 md:mb-16">
+            <motion.p
+              variants={fadeInUp}
+              transition={{ duration: 0.6 }}
+              className="text-sm uppercase tracking-widest text-gray-400 mb-3 font-instrument-sans"
+            >
               Poznaj nas
-            </p>
-            <h2 className="font-instrument-serif text-3xl md:text-4xl font-medium text-white">
+            </motion.p>
+            <motion.h2
+              variants={fadeInUp}
+              transition={{ duration: 0.6, delay: 0.1 }}
+              className="font-instrument-serif text-3xl md:text-4xl font-medium text-white"
+            >
               Ludzie stojący za Artovnią
-            </h2>
-          </div>
+            </motion.h2>
+          </AnimatedSection>
 
           <div className="grid md:grid-cols-2 gap-8 lg:gap-12 max-w-4xl mx-auto">
             {/* Ania */}
-            <div className="group">
-              <div className="relative aspect-[3/4] rounded-2xl overflow-hidden mb-6 bg-gray-700">
-                <Image
-                  src="/placeholder.webp"
-                  alt="Ania - Artystka malarka"
-                  fill
-                  className="object-cover transition-transform duration-500 group-hover:scale-105"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-                <div className="absolute bottom-0 left-0 right-0 p-6">
-                  <span className="inline-block px-3 py-1 bg-white/20 backdrop-blur-sm rounded-full text-xs text-white font-instrument-sans mb-2">
-                    Współzałożycielka
-                  </span>
-                </div>
-              </div>
-              <h3 className="font-instrument-serif text-2xl font-medium text-white mb-2">
-                Ania
-              </h3>
-              <p className="text-sm uppercase tracking-wider text-white mb-3 font-instrument-sans">
-                Artystka malarka
-              </p>
-              <p className="text-gray-300 leading-relaxed">
-                Wnosi do projektu swoją pasję do sztuki i kreatywne podejście do
-                designu. Jej wizja artystyczna nadaje Artovnii unikalny
-                charakter.
-              </p>
-            </div>
+            <AnimatedSection>
+              <motion.div
+                variants={fadeInUp}
+                transition={{ duration: 0.7 }}
+                className="group h-full flex flex-col"
+              >
+                <motion.div
+                  whileHover={{ y: -10 }}
+                  transition={{ duration: 0.3 }}
+                  className="relative aspect-[3/4] rounded-2xl overflow-hidden mb-6 bg-gray-700"
+                >
+                  <Image
+                    src="/images/oNas/Ania.webp"
+                    alt="Ania - Artystka malarka"
+                    fill
+                    className="object-cover transition-transform duration-700 group-hover:scale-110"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: false }}
+                    transition={{ delay: 0.4, duration: 0.5 }}
+                    className="absolute bottom-0 left-0 right-0 p-6"
+                  >
+                    <span className="inline-block px-3 py-1 bg-white/20 backdrop-blur-sm rounded-full text-xs text-white font-instrument-sans mb-2">
+                      Współzałożycielka
+                    </span>
+                  </motion.div>
+                </motion.div>
+                <motion.h3
+                  variants={fadeInUp}
+                  className="font-instrument-serif text-2xl font-medium text-white mb-2"
+                >
+                  Ania
+                </motion.h3>
+                <motion.p
+                  variants={fadeInUp}
+                  className="text-sm uppercase tracking-wider text-white mb-3 font-instrument-sans"
+                >
+                  Art Director / Content & Community
+                </motion.p>
+                <motion.p
+                  variants={fadeInUp}
+                  className="text-gray-300 leading-relaxed mb-4"
+                >
+                  Artystka malarka i pomysłodawczyni Artovni. Od lat tworzy i
+                  sprzedaje własną sztukę, dzięki czemu doskonale zna realia
+                  pracy twórczej oraz wyzwania, z jakimi mierzą się artyści i
+                  rękodzielnicy — od procesu tworzenia, przez promocję, aż po
+                  sprzedaż i budowanie własnej marki.
+                </motion.p>
+                <motion.p
+                  variants={fadeInUp}
+                  className="text-gray-300 leading-relaxed mb-auto"
+                >
+                  W Artovni odpowiada za content, social media oraz kontakt ze
+                  sprzedawcami i klientami. Jest pierwszym punktem styku dla
+                  Twórców i dba o to, aby platforma była miejscem przyjaznym,
+                  transparentnym i realnie wspierającym rozwój kreatywnych marek.
+                </motion.p>
+                
+                {/* Ania's interests */}
+                <motion.div
+                  variants={fadeInUp}
+                  transition={{ delay: 0.3 }}
+                  className="mt-6 pt-6 border-t border-gray-600"
+                >
+                  <p className="text-xs uppercase tracking-wider text-gray-400 mb-3 font-instrument-sans">
+                    Po godzinach
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {[
+                      "🎨 Malarstwo",
+                      "📚 Czytanie",
+                      "🌿 Natura",
+                      "☕ Kawa",
+                    ].map((interest, index) => (
+                      <motion.span
+                        key={interest}
+                        initial={{ opacity: 0, scale: 0.8 }}
+                        whileInView={{ opacity: 1, scale: 1 }}
+                        viewport={{ once: false }}
+                        transition={{ delay: 0.4 + index * 0.1, duration: 0.3 }}
+                        whileHover={{ scale: 1.05, y: -2 }}
+                        className="px-3 py-1.5 ring-1 ring-white/60 hover:bg-primary/20 rounded-full text-sm text-gray-300 transition-colors cursor-default hover:text-white hover:bg-[#3b3634]"
+                      >
+                        {interest}
+                      </motion.span>
+                    ))}
+                  </div>
+                </motion.div>
+              </motion.div>
+            </AnimatedSection>
 
             {/* Arek */}
-            <div className="group">
-              <div className="relative aspect-[3/4] rounded-2xl overflow-hidden mb-6 bg-gray-700">
-                <Image
-                  src="/placeholder.webp"
-                  alt="Arek - Programista"
-                  fill
-                  className="object-cover transition-transform duration-500 group-hover:scale-105"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-                <div className="absolute bottom-0 left-0 right-0 p-6">
-                  <span className="inline-block px-3 py-1 bg-white/20 backdrop-blur-sm rounded-full text-xs text-white font-instrument-sans mb-2">
-                    Współzałożyciel
-                  </span>
-                </div>
-              </div>
-              <h3 className="font-instrument-serif text-2xl font-medium text-white mb-2">
-                Arek
-              </h3>
-              <p className="text-sm uppercase tracking-wider text-white mb-3 font-instrument-sans">
-                Programista
-              </p>
-              <p className="text-gray-300 leading-relaxed">
-                Odpowiedzialny za techniczne aspekty platformy i zapewnienie
-                najlepszego doświadczenia użytkowników na każdym kroku.
-              </p>
+            <AnimatedSection>
+              <motion.div
+                variants={fadeInUp}
+                transition={{ duration: 0.7, delay: 0.2 }}
+                className="group h-full flex flex-col"
+              >
+                <motion.div
+                  whileHover={{ y: -10 }}
+                  transition={{ duration: 0.3 }}
+                  className="relative aspect-[3/4] rounded-2xl overflow-hidden mb-6 bg-gray-700"
+                >
+                  <Image
+                    src="/placeholder.webp"
+                    alt="Arek - Programista"
+                    fill
+                    className="object-cover transition-transform duration-700 group-hover:scale-110"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ delay: 0.5, duration: 0.5 }}
+                    className="absolute bottom-0 left-0 right-0 p-6"
+                  >
+                    <span className="inline-block px-3 py-1 bg-white/20 backdrop-blur-sm rounded-full text-xs text-white font-instrument-sans mb-2">
+                      Współzałożyciel
+                    </span>
+                  </motion.div>
+                </motion.div>
+                <motion.h3
+                  variants={fadeInUp}
+                  className="font-instrument-serif text-2xl font-medium text-white mb-2"
+                >
+                  Arek
+                </motion.h3>
+                <motion.p
+                  variants={fadeInUp}
+                  className="text-sm uppercase tracking-wider text-white mb-3 font-instrument-sans"
+                >
+                  Developer
+                </motion.p>
+                <motion.p
+                  variants={fadeInUp}
+                  className="text-gray-300 leading-relaxed mb-4"
+                >
+                  Odpowiedzialny za techniczne aspekty platformy oraz projektowanie i rozwój rozwiązań, 
+                  które zapewniają użytkownikom płynne, intuicyjne i niezawodne doświadczenie na każdym etapie korzystania z Artovni. 
+                  Dba o stabilność, bezpieczeństwo i skalowalność systemu, tak aby platforma mogła rozwijać się razem z potrzebami Twórców i klientów.
+                </motion.p>
+                <motion.p
+                  variants={fadeInUp}
+                  className="text-gray-300 leading-relaxed mb-auto"
+                >
+                  Uwielbia tworzyć nowe rzeczy i rozwiązywać problemy w sposób techniczny. 
+                  Człowiek od procesów, który dba o to, by każdy element działał 
+                  perfekcyjnie.
+                </motion.p>
+                
+                {/* Arek's interests */}
+                <motion.div
+                  variants={fadeInUp}
+                  transition={{ delay: 0.3 }}
+                  className="mt-6 pt-6 border-t border-gray-600"
+                >
+                  <p className="text-xs uppercase tracking-wider text-gray-400 mb-3 font-instrument-sans">
+                    Po godzinach
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {[
+                      "⛰️ Góry",
+                      "🏃 Sport",
+                      "🧠 Psychologia",
+                      "🏎️ Simracing",
+                    ].map((interest, index) => (
+                      <motion.span
+                        key={interest}
+                        initial={{ opacity: 0, scale: 0.8 }}
+                        whileInView={{ opacity: 1, scale: 1 }}
+                        viewport={{ once: false }}
+                        transition={{ delay: 0.4 + index * 0.1, duration: 0.3 }}
+                        whileHover={{ scale: 1.05, y: -2 }}
+                        className="px-3 py-1.5 ring-1 ring-white/60 hover:bg-primary/20 rounded-full text-sm text-gray-300 transition-colors cursor-default hover:text-white hover:bg-[#3b3634]"
+                      >
+                        {interest}
+                      </motion.span>
+                    ))}
+                  </div>
+                </motion.div>
+              </motion.div>
+            </AnimatedSection>
+          </div>
+        </div>
+      </section>
+
+      {/* Honorable Mention Section - Weronika */}
+      <section className="py-16 md:py-24 bg-gradient-to-b from-gray-50 to-white">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+          <AnimatedSection className="text-center mb-12 md:mb-16">
+          
+            <motion.h2
+              variants={fadeInUp}
+              transition={{ duration: 0.6, delay: 0.1 }}
+              className="font-instrument-serif text-3xl md:text-4xl font-medium text-gray-900 mb-4"
+            >
+              Kreacja wizualna
+            </motion.h2>
+            <motion.p
+              variants={fadeInUp}
+              transition={{ duration: 0.6, delay: 0.2 }}
+              className="text-gray-600 max-w-2xl mx-auto"
+            >
+              Za piękny wygląd Artovnii odpowiada wyjątkowa projektantka, której
+              talent nadał naszej platformie niepowtarzalny charakter.
+            </motion.p>
+          </AnimatedSection>
+
+          <div className="max-w-4xl mx-auto">
+            <div className="grid md:grid-cols-5 gap-8 lg:gap-12 items-center">
+              {/* Image */}
+              <AnimatedSection className="md:col-span-2">
+                <motion.div
+                  variants={scaleIn}
+                  transition={{ duration: 0.7 }}
+                  whileHover={{ rotate: 2 }}
+                  className="relative"
+                >
+                  <div className="absolute -inset-4 bg-gradient-to-br from-primary/20 via-primary/10 to-transparent rounded-3xl blur-2xl" />
+                  <motion.div
+                    whileHover={{ y: -8 }}
+                    transition={{ duration: 0.3 }}
+                    className="relative aspect-[3/4] rounded-2xl overflow-hidden shadow-2xl"
+                  >
+                    <Image
+                      src="/images/oNas/Weronika.webp"
+                      alt="Weronika Grzesiowska - Graphic Designer"
+                      fill
+                      className="object-cover transition-transform duration-700 hover:scale-105"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
+                    <motion.div
+                      initial={{ opacity: 0, scale: 0.8 }}
+                      whileInView={{ opacity: 1, scale: 1 }}
+                      viewport={{ once: false }}
+                      transition={{ delay: 0.5, duration: 0.5, type: "spring" }}
+                      className="absolute top-4 right-4"
+                    >
+                      <div className="w-12 h-12 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-lg">
+                        <svg
+                          className="w-6 h-6 text-primary"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={1.5}
+                            d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01"
+                          />
+                        </svg>
+                      </div>
+                    </motion.div>
+                  </motion.div>
+                </motion.div>
+              </AnimatedSection>
+
+              {/* Content */}
+              <AnimatedSection className="md:col-span-3">
+                <motion.div variants={fadeInRight} transition={{ duration: 0.7 }}>
+                  <div className="flex items-center gap-3 mb-4">
+                    <motion.h3
+                      variants={fadeInUp}
+                      className="font-instrument-serif text-2xl md:text-3xl font-medium text-gray-900"
+                    >
+                      Weronika
+                    </motion.h3>
+                  </div>
+                  <motion.p
+                    variants={fadeInUp}
+                    className="text-sm uppercase tracking-wider text-primary mb-6 font-instrument-sans font-medium"
+                  >
+                    Graphic Designer
+                  </motion.p>
+                  <motion.div
+                    variants={fadeInUp}
+                    className="space-y-4 text-gray-600 leading-relaxed"
+                  >
+                    <p>
+                      Absolwentka komunikacji wizerunkowej Uniwersytetu
+                      Wrocławskiego i projektantka z Wrocławia. Od kilku lat
+                      podejmuje twórcze wyzwania w różnych zakątkach branży
+                      kreatywnej, dzięki czemu zyskała szeroką perspektywę na
+                      projektowanie komunikacji.
+                    </p>
+                    <p>
+                      W pracy dąży do odkrywania nowych kierunków, eksperymentów
+                      z formą i nieustannie doskonali warsztat. Ważny jest dla
+                      niej balans skuteczności i estetyki w kreacjach.
+                    </p>
+                  </motion.div>
+
+                  {/* Fun facts */}
+                  <motion.div
+                    variants={fadeInUp}
+                    transition={{ delay: 0.3 }}
+                    className="mt-8 pt-6 border-t border-gray-200"
+                  >
+                    <p className="text-xs uppercase tracking-wider text-gray-400 mb-3 font-instrument-sans">
+                      Po godzinach
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      {[
+                        "📷 Fotografia",
+                        "🎤 Śpiew",
+                        "🧠 Psychologia",
+                        "📖 Ziny",
+                        "🐦 Gołębie",
+                      ].map((interest, index) => (
+                        <motion.span
+                          key={interest}
+                          initial={{ opacity: 0, scale: 0.8 }}
+                          whileInView={{ opacity: 1, scale: 1 }}
+                          viewport={{ once: false }}
+                          transition={{ delay: 0.4 + index * 0.1, duration: 0.3 }}
+                          whileHover={{ scale: 1.05, y: -2 }}
+                          className="px-3 py-1.5 ring-1 ring-gray-900/60 hover:bg-[#3b3634] rounded-full text-sm text-gray-700 transition-colors cursor-default hover:text-white "
+                        >
+                          {interest}
+                        </motion.span>
+                      ))}
+                    </div>
+                  </motion.div>
+                </motion.div>
+              </AnimatedSection>
             </div>
           </div>
         </div>
@@ -159,17 +538,25 @@ const AboutUsContent = () => {
       {/* Mission Section */}
       <section className="py-16 md:py-24">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-12">
-            <h2 className="font-instrument-serif text-3xl md:text-4xl font-medium text-gray-900 mb-4">
+          <AnimatedSection className="text-center mb-12">
+            <motion.h2
+              variants={fadeInUp}
+              transition={{ duration: 0.6 }}
+              className="font-instrument-serif text-3xl md:text-4xl font-medium text-gray-900 mb-4"
+            >
               Nasza misja
-            </h2>
-            <p className="text-gray-600 max-w-2xl mx-auto">
+            </motion.h2>
+            <motion.p
+              variants={fadeInUp}
+              transition={{ duration: 0.6, delay: 0.1 }}
+              className="text-gray-600 max-w-2xl mx-auto"
+            >
               Każdego dnia pracujemy nad tym, by Artovnia była najlepszym
               miejscem dla twórców i miłośników sztuki.
-            </p>
-          </div>
+            </motion.p>
+          </AnimatedSection>
 
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          <AnimatedSection className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {[
               {
                 icon: (
@@ -188,7 +575,8 @@ const AboutUsContent = () => {
                   </svg>
                 ),
                 title: "Wspieranie twórców",
-                description: "Pomagamy lokalnym artystom dotrzeć do szerszego grona odbiorców",
+                description:
+                  "Pomagamy lokalnym artystom dotrzeć do szerszego grona odbiorców",
               },
               {
                 icon: (
@@ -207,7 +595,8 @@ const AboutUsContent = () => {
                   </svg>
                 ),
                 title: "Unikalne projekty",
-                description: "Promujemy ręczną pracę i niepowtarzalne dzieła sztuki",
+                description:
+                  "Promujemy ręczną pracę i niepowtarzalne dzieła sztuki",
               },
               {
                 icon: (
@@ -226,7 +615,8 @@ const AboutUsContent = () => {
                   </svg>
                 ),
                 title: "Społeczność",
-                description: "Budujemy przestrzeń dla miłośników sztuki i rękodzieła",
+                description:
+                  "Budujemy przestrzeń dla miłośników sztuki i rękodzieła",
               },
               {
                 icon: (
@@ -245,35 +635,49 @@ const AboutUsContent = () => {
                   </svg>
                 ),
                 title: "Bezpieczeństwo",
-                description: "Zapewniamy bezpieczną i przyjazną platformę handlową",
+                description:
+                  "Zapewniamy bezpieczną i przyjazną platformę handlową",
               },
             ].map((item, index) => (
-              <div
+              <motion.div
                 key={index}
-                className="group p-6 rounded-2xl border border-gray-200 hover:border-primary/30 hover:bg-primary/5 transition-all duration-300"
+                variants={fadeInUp}
+                transition={{ duration: 0.5, delay: index * 0.1 }}
+                whileHover={{ y: -8, transition: { duration: 0.2 } }}
+                className="group p-6 rounded-2xl border border-gray-200 hover:border-primary/30 hover:bg-primary/5 transition-all duration-300 hover:shadow-lg"
               >
-                <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center text-primary mb-4 group-hover:bg-[#3b3634] group-hover:text-white transition-colors">
+                <motion.div
+                  whileHover={{ rotate: 360 }}
+                  transition={{ duration: 0.5 }}
+                  className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center text-primary mb-4 group-hover:bg-[#3b3634] group-hover:text-white transition-colors"
+                >
                   {item.icon}
-                </div>
+                </motion.div>
                 <h3 className="font-instrument-serif text-lg font-medium text-gray-900 mb-2">
                   {item.title}
                 </h3>
                 <p className="text-gray-800 text-sm leading-relaxed">
                   {item.description}
                 </p>
-              </div>
+              </motion.div>
             ))}
-          </div>
+          </AnimatedSection>
         </div>
       </section>
 
       {/* Footer Note */}
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pb-12">
+      <motion.div
+        initial={{ opacity: 0 }}
+        whileInView={{ opacity: 1 }}
+        viewport={{ once: false }}
+        transition={{ duration: 0.6 }}
+        className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pb-12"
+      >
         <div className="text-center text-sm text-gray-400 font-instrument-sans">
           Ostatnia aktualizacja:{" "}
           {format(lastUpdated, "d MMMM yyyy", { locale: pl })}
         </div>
-      </div>
+      </motion.div>
     </div>
   )
 }

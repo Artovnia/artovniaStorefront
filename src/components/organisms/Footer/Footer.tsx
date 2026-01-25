@@ -2,6 +2,7 @@ import { Link } from "@/i18n/routing"
 import { footerLinks } from "@/data/footerLinks"
 import { FacebookIcon, InstagramIcon, LinkedInIcon, YouTubeIcon, PinterestIcon } from "@/icons/social"
 import { HttpTypes } from "@medusajs/types"
+import Image from "next/image"
 
 interface FooterProps {
   categories?: HttpTypes.StoreProductCategory[]
@@ -155,10 +156,15 @@ export function Footer({ categories = [] }: FooterProps) {
       {/* Social Media Icons - Centered below columns */}
       <div className="w-full border-t border-white/20">
         <div className="max-w-[1920px] mx-auto px-6 py-8">
-          <div className="flex justify-center items-center">
-            <p className="text-2xl font-instrument-serif font-normal tracking-wider mb-6" aria-hidden="true">
-              ARTOVNIA
-            </p>
+          <div className="flex justify-center items-center mb-6">
+            <Image
+              src="/Logo.svg"
+              alt="Artovnia Logo"
+              width={200}
+              height={60}
+              className="h-8 w-auto brightness-0 invert"
+              priority
+            />
           </div>
           <nav className="flex justify-center space-x-6" aria-label="Media społecznościowe">
             {/* Social media icons - hardcoded for now */}

@@ -139,16 +139,16 @@ export const CategorySidebar = ({
   return (
     <div className="w-full sticky top-24 py-12">
       <div className={cn("w-full", className)}>
-        {/* Results Count - Placed at the top of sidebar for stickiness */}
+        {/* Results Count - Placed at the top of sidebar for stickiness - Hidden on mobile */}
         {resultsCount !== undefined && (
-          <div className="mb-4">
+          <div className="mb-4 hidden md:block">
             <div className="label-md">{`${resultsCount} wyników`}</div>
           </div>
         )}
 
-        {/* Current Category Header */}
+        {/* Current Category Header - Hidden on mobile */}
         {resolvedCurrentCategory ? (
-          <div className="mb-6">
+          <div className="mb-6 hidden md:block">
             <h1 className="heading-xl uppercase">{resolvedCurrentCategory.name}</h1>
             {resolvedCurrentCategory.description && (
               <p className="text-base-regular text-ui-fg-subtle mb-6">
@@ -158,7 +158,7 @@ export const CategorySidebar = ({
           </div>
         ) : (
           !currentCategoryHandle && (
-            <div className="mb-6">
+            <div className="mb-6 hidden md:block">
               <h1 className="heading-xl uppercase">Wszystkie produkty</h1>
             </div>
           )
