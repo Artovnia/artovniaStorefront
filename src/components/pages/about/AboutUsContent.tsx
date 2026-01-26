@@ -131,47 +131,43 @@ const AboutUsContent = () => {
               </motion.div>
             </AnimatedSection>
             <AnimatedSection>
-              <motion.div
-                variants={scaleIn}
-                transition={{ duration: 0.7, ease: "easeOut" }}
-                className="relative"
-              >
-                <div className="aspect-[4/3] rounded-2xl bg-gradient-to-br from-primary/10 to-primary/5 flex items-center justify-center overflow-hidden">
-                  <div className="text-center p-8">
-                    <motion.div
-                      initial={{ scale: 0, rotate: -180 }}
-                      whileInView={{ scale: 1, rotate: 0 }}
-                      viewport={{ once: false }}
-                      transition={{
-                        duration: 0.8,
-                        delay: 0.3,
-                        type: "spring",
-                        stiffness: 100,
-                      }}
-                      className="w-20 h-20 mx-auto mb-4 rounded-full bg-primary/20 flex items-center justify-center"
-                    >
-                      <svg
-                        className="w-10 h-10 text-primary"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={1.5}
-                          d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
-                        />
-                      </svg>
-                    </motion.div>
-                    <p className="text-gray-500 font-instrument-sans text-sm">
-                      Tworzone z pasji
-                      <br />
-                      od 2025 roku
-                    </p>
-                  </div>
-                </div>
-              </motion.div>
+       <motion.div
+  variants={scaleIn}
+  transition={{ duration: 0.7, ease: "easeOut" }}
+  className="relative"
+>
+  <svg className="absolute" width="0" height="0">
+    <defs>
+      <clipPath id="blobMask" clipPathUnits="objectBoundingBox">
+        <path d="M 0.25 0.02
+                 C 0.95 -0.02, 0.65 0.05, 0.78 0.04
+                 C 0.88 0.03, 0.95 0.1, 0.98 0.22
+                 C 1.02 0.35, 0.96 0.45, 0.97 0.55
+                 C 0.98 0.65, 0.92 0.72, 0.82 0.8
+                 C 0.72 0.88, 0.62 0.92, 0.5 0.95
+                 C 0.38 0.98, 0.25 1.02, 0.15 0.95
+                 C 0.05 0.88, 0.02 0.78, 0.01 0.65
+                 C 0 0.52, 0.04 0.4, 0.02 0.28
+                 C 0 0.16, -0.02 0.08, 0.08 0.03
+                 C 0.15 -0.01, 0.18 0.04, 0.25 0.02
+                 Z" />
+      </clipPath>
+    </defs>
+  </svg>
+  <div
+    className="aspect-[4/3] overflow-hidden p-4"
+    style={{
+      clipPath: "url(#blobMask)",
+    }}
+  >
+    <Image
+      src="/images/oNas/oNas.webp"
+      alt="Artovnia - przestrzeń dla sztuki"
+      fill
+      className="object-cover"
+    />
+  </div>
+</motion.div>
             </AnimatedSection>
           </div>
         </div>

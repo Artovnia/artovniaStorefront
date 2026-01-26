@@ -103,6 +103,9 @@ export const metadata: Metadata = {
     ],
   },
   manifest: '/manifest.webmanifest',
+  verification: {
+    google: '5gtEHPGbUGzbdwDywE6OOu9C8K6ilXCykQO_kSfQqDM',
+  },
   other: {
     'preconnect': [
       process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || 'http://localhost:9000',
