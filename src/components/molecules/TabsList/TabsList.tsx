@@ -42,7 +42,7 @@ export const TabsList = ({
               {/* Background shape */}
               <span 
                 className={`
-                  absolute inset-x-2 top-2 bottom-0 -z-10
+                  absolute inset-x-2  bottom-0 -z-10
                    transition-all duration-300 ease-out
                   ${isActive 
                     ? 'bg-[#3b3634]' 
@@ -54,11 +54,11 @@ export const TabsList = ({
               {/* Tab content */}
               <span 
                 className={`
-                  relative block px-8 py-4
+                  relative block px-8 py-2
                   text-xs tracking-[0.25em] uppercase font-light
                   transition-all duration-300 ease-out
                   ${isActive 
-                    ? 'text-white' 
+                    ? 'text-white bg-[#3b3634]' 
                     : 'text-gray-600 group-hover:text-gray-900'
                   }
                 `}
@@ -66,49 +66,7 @@ export const TabsList = ({
                 {label}
               </span>
               
-              
-              
-              {/* Subtle corner accents on hover/active */}
-              <span 
-                className={`
-                  absolute top-3 left-3 w-2 h-[0.5px]
-                  bg-white transition-all duration-300
-                  ${isActive 
-                    ? 'opacity-100' 
-                    : 'opacity-0 group-hover:opacity-60'
-                  }
-                `}
-              />
-              <span 
-                className={`
-                  absolute top-3 left-3 w-[0.5px] h-2
-                  bg-stone-300 transition-all duration-300
-                  ${isActive 
-                    ? 'opacity-100' 
-                    : 'opacity-0 group-hover:opacity-60'
-                  }
-                `}
-              />
-              <span 
-                className={`
-                  absolute top-3 right-3 w-2 h-[0.5px]
-                  bg-stone-300 transition-all duration-300
-                  ${isActive 
-                    ? 'opacity-100' 
-                    : 'opacity-0 group-hover:opacity-60'
-                  }
-                `}
-              />
-              <span 
-                className={`
-                  absolute top-3 right-3 w-[0.5px] h-2
-                  bg-stone-300 transition-all duration-300
-                  ${isActive 
-                    ? 'opacity-100' 
-                    : 'opacity-0 group-hover:opacity-60'
-                  }
-                `}
-              />
+
             </button>
           );
         })}

@@ -10,6 +10,7 @@ import {
   getVendorSuspension,
 } from "../../../../../lib/data/vendor-availability"
 import { getSellerReviews } from "../../../../../lib/data/reviews"
+import { getSellerPage } from "../../../../../lib/data/vendor-page"
 import { SellerProps } from "../../../../../types/seller"
 import { BatchPriceProvider } from "../../../../../components/context/BatchPriceProvider"
 import {
@@ -113,8 +114,8 @@ export default async function SellerPage({
       )
     }
 
-    // ✅ OPTIMIZATION: Fetch products, availability, wishlists, and categories in parallel
-    const [availabilityResult, holidayModeResult, suspensionResult, productsResult, wishlistsResult, categoriesResult] =
+    // ✅ OPTIMIZATION: Fetch products, availability, wishlists, categories, and vendor page in parallel
+    const [availabilityResult, holidayModeResult, suspensionResult, productsResult, wishlistsResult, categoriesResult, vendorPageResult] =
       await Promise.allSettled([
         getVendorAvailability(seller.id),
         getVendorHolidayMode(seller.id),
@@ -155,6 +156,8 @@ export default async function SellerPage({
             return { product_categories: [] }
           }
         })(),
+        // ✅ Fetch vendor's custom page (if exists)
+        getSellerPage(handle),
       ])
 
     // Extract products data from settled promise
@@ -170,6 +173,11 @@ export default async function SellerPage({
     const categories = categoriesResult.status === "fulfilled"
       ? categoriesResult.value?.product_categories
       : undefined
+    
+    // Extract vendor page data - null if not exists or not published
+    const vendorPage = vendorPageResult.status === "fulfilled"
+      ? vendorPageResult.value?.page
+      : null
 
     const sellerWithReviews = {
       ...seller,
@@ -262,6 +270,7 @@ export default async function SellerPage({
                   initialWishlists={initialWishlists}
                   categories={categories}
                   reviews={reviews}
+                  vendorPage={vendorPage}
                 />
               </div>
             </div>

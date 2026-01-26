@@ -74,15 +74,70 @@ const generateDescription = (
     : `${truncated}...`
 }
 
+/**
+ * Get product availability for Google Merchant
+ * Handles both managed inventory and made-to-order products
+ * Always returns a valid schema.org availability URL
+ */
 const getProductAvailability = (product: HttpTypes.StoreProduct): string => {
-  const totalInventory =
-    product.variants?.reduce((sum, variant) => {
-      return sum + (variant.inventory_quantity || 0)
-    }, 0) || 0
+  // Safety check: ensure we have variants
+  if (!product.variants || product.variants.length === 0) {
+    // No variants means we can't determine availability - default to InStock
+    return "https://schema.org/InStock"
+  }
+  
+  // Check if any variant has manage_inventory = false (made to order / unlimited)
+  const hasUnmanagedInventory = product.variants.some((variant: any) => 
+    variant.manage_inventory === false
+  )
+  
+  // If inventory is not managed, product is always in stock (made to order)
+  if (hasUnmanagedInventory) {
+    return "https://schema.org/InStock"
+  }
+  
+  // For managed inventory, check actual quantities
+  // Use allow_backorder as a fallback indicator
+  const hasBackorderAllowed = product.variants.some((variant: any) => 
+    variant.allow_backorder === true
+  )
+  
+  if (hasBackorderAllowed) {
+    // If backorder is allowed, product is available even without stock
+    return "https://schema.org/InStock"
+  }
+  
+  // Calculate total inventory across all variants
+  const totalInventory = product.variants.reduce((sum, variant) => {
+    const qty = variant.inventory_quantity || 0
+    return sum + qty
+  }, 0)
 
+  // Return appropriate availability based on stock levels
   if (totalInventory === 0) return "https://schema.org/OutOfStock"
   if (totalInventory < 5) return "https://schema.org/LimitedAvailability"
   return "https://schema.org/InStock"
+}
+
+/**
+ * Get product weight for Google Merchant shipping calculations
+ * Returns weight in grams. Uses variant weight or default.
+ */
+const getProductWeight = (product: HttpTypes.StoreProduct): number => {
+  // Try to get weight from first variant
+  const variant = product.variants?.[0] as any
+  if (variant?.weight) {
+    return variant.weight // Assume weight is stored in grams
+  }
+  
+  // Try product-level weight
+  if ((product as any).weight) {
+    return (product as any).weight
+  }
+  
+  // Default weight for handmade/art products: 500g (reasonable for most items)
+  // This allows Google to calculate shipping costs
+  return 500
 }
 
 /**
@@ -598,6 +653,12 @@ export const generateProductJsonLd = (
   const category = (product as any).categories?.[0]?.name
   const sellerName = (product as any).seller?.name || "Artovnia"
 
+  // Get product weight for shipping calculations
+  const productWeight = getProductWeight(product)
+  
+  // Get availability status
+  const availabilityStatus = getProductAvailability(product)
+  
   // Build offers object with shipping and return policy
   const offers: Record<string, any> = {
     "@type": "Offer",
@@ -606,7 +667,7 @@ export const generateProductJsonLd = (
     priceValidUntil: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
       .toISOString()
       .split("T")[0],
-    availability: getProductAvailability(product),
+    availability: availabilityStatus,
     itemCondition: "https://schema.org/NewCondition",
     seller: {
       "@type": "Organization",
@@ -619,8 +680,13 @@ export const generateProductJsonLd = (
   }
 
   // Add price if available (prices are NOT in cents)
+  // IMPORTANT: Google Merchant requires price for products, but we still set availability
   if (effectivePrice && effectivePrice > 0) {
     offers.price = effectivePrice.toFixed(2)
+  } else {
+    // If no price, set a placeholder to prevent Google Merchant errors
+    // This shouldn't happen in production, but prevents validation errors
+    offers.price = "0.00"
   }
 
   // Get all product images (highest quality first)
@@ -629,7 +695,7 @@ export const generateProductJsonLd = (
   // Log warning if no price (may affect Google rich results)
   if (!effectivePrice || effectivePrice <= 0) {
     console.warn(
-      `[SEO] Product "${product.handle}" has no valid price - rich results may be limited`
+      `[SEO] Product "${product.handle}" has no valid price - using placeholder price 0.00 for Google Merchant`
     )
   }
 
@@ -641,6 +707,12 @@ export const generateProductJsonLd = (
     image: images,
     sku: product.variants?.[0]?.sku || product.id,
     mpn: product.variants?.[0]?.sku || product.id,
+    // Weight for Google Merchant shipping calculations (in grams)
+    weight: {
+      "@type": "QuantitativeValue",
+      value: productWeight,
+      unitCode: "GRM", // Grams
+    },
     brand: {
       "@type": "Brand",
       name: sellerName,
@@ -890,4 +962,5 @@ export {
   getProductImages,
   extractProductPrice,
   generateDescription,
+  getProductWeight,
 }

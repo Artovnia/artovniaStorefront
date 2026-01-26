@@ -1,12 +1,12 @@
 'use client'
-import { Suspense } from "react"
-import { ProductListingSkeleton } from "../ProductListingSkeleton/ProductListingSkeleton"
 import { TabsContent, TabsList } from "@/components/molecules"
 import { SellerProductListingClient } from "@/components/molecules/SellerProductListing/SellerProductListingClient"
 import { SellerReviewTab } from "@/components/cells"
 import { HttpTypes } from "@medusajs/types"
 import { useSearchParams } from "next/navigation"
 import { Review } from "@/lib/data/reviews"
+import { VendorPage } from "@/lib/data/vendor-page"
+import { VendorPageRenderer } from "../VendorPageBlocks"
 
 export const SellerTabs = ({
   tab: initialTab,
@@ -20,6 +20,7 @@ export const SellerTabs = ({
   initialWishlists,
   categories,
   reviews,
+  vendorPage,
 }: {
   tab: string
   seller_handle: string
@@ -32,14 +33,23 @@ export const SellerTabs = ({
   initialWishlists?: any[]
   categories?: Array<{ id: string; name: string; handle: string }>
   reviews?: Review[]
+  vendorPage?: VendorPage | null
 }) => {
   const searchParams = useSearchParams()
-  // Read tab from URL, fallback to initialTab prop, ensure it's always valid
+  
+  // Check if vendor has a custom page with show_story_tab enabled
+  const hasCustomPage = vendorPage && vendorPage.settings?.show_story_tab
+  
+  // Valid tabs depend on whether vendor has custom page
+  const validTabs = hasCustomPage 
+    ? ['historia', 'produkty', 'recenzje'] 
+    : ['produkty', 'recenzje']
+  
+  // Read tab from URL, fallback to initialTab prop
   let tab = (searchParams.get('tab') as string) || initialTab || 'produkty'
   
-  // Validate tab value
-  if (!tab || typeof tab !== 'string' || (tab !== 'produkty' && tab !== 'recenzje')) {
-    console.warn('SellerTabs received invalid tab:', tab, '- defaulting to produkty')
+  // Validate tab value - default to 'produkty' if invalid
+  if (!tab || typeof tab !== 'string' || !validTabs.includes(tab)) {
     tab = "produkty"
   }
   
@@ -72,14 +82,30 @@ export const SellerTabs = ({
     )
   }
 
-  const tabsList = [
-    { label: "produkty", link: `/sellers/${seller_handle}/` },
-    { label: "recenzje", link: `/sellers/${seller_handle}/reviews` },
-  ]
+  // Build tabs list - add "historia" tab only if vendor has custom page
+  const tabsList = hasCustomPage
+    ? [
+        { label: "historia", link: `/sellers/${seller_handle}?tab=historia` },
+        { label: "produkty", link: `/sellers/${seller_handle}?tab=produkty` },
+        { label: "recenzje", link: `/sellers/${seller_handle}?tab=recenzje` },
+      ]
+    : [
+        { label: "produkty", link: `/sellers/${seller_handle}/` },
+        { label: "recenzje", link: `/sellers/${seller_handle}?tab=recenzje` },
+      ]
 
   return (
     <div className="w-full">
       <TabsList list={tabsList} activeTab={tab} />
+      
+      {/* Historia (Story) tab - only shown if vendor has custom page */}
+      {hasCustomPage && (
+        <TabsContent value="historia" activeTab={tab}>
+          <div className="mt-8">
+            <VendorPageRenderer page={vendorPage!} sellerId={seller_id} sellerHandle={seller_handle} />
+          </div>
+        </TabsContent>
+      )}
       
       <TabsContent value="produkty" activeTab={tab}>
         <SellerProductListingClient 

@@ -63,7 +63,7 @@ export const SellerSidebar = ({ seller, user }: SellerSidebarProps) => {
       
       {/* Contact Form Card - Show for all users */}
       <div className="border border-[#3B3634] rounded-sm p-4 bg-primary ">
-        <h3 className="heading-sm uppercase mb-4 text-xs tracking-wider">
+        <h3 className="heading-md uppercase mb-4 text-xs tracking-wider text-center">
           Napisz wiadomość do {name}
         </h3>
         <MessageForm 
