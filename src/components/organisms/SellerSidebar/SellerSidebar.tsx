@@ -3,6 +3,7 @@
 import { StarRating, Button } from "@/components/atoms"
 import { Modal, ReportSellerForm } from "@/components/molecules"
 import { MessageForm } from "@/components/cells/SellerMessageTab/MessageForm"
+import { SellerShareButton } from "@/components/cells/SellerShareButton/SellerShareButton"
 import { SellerProps } from "@/types/seller"
 import { HttpTypes } from "@medusajs/types"
 import { format } from "date-fns"
@@ -40,11 +41,16 @@ export const SellerSidebar = ({ seller, user }: SellerSidebarProps) => {
         </div>
       )}
       
-      {/* Name - Centered */}
-      <h1 className="heading-lg text-center text-[#3B3634]">
-        {name}
-      </h1>
-      
+      {/* Name with Share Button - Centered */}
+      <div className="flex items-center justify-center gap-2">
+        <h1 className="heading-lg text-center text-[#3B3634]">
+          {name}
+        </h1>
+  
+      </div>
+      <div className="flex items-center justify-center gap-2">
+        <SellerShareButton sellerName={name} />
+      </div>
       {/* Rating - Centered */}
       <div className="flex flex-col items-center gap-2">
         <StarRating starSize={20} rate={rating || 0} />
@@ -52,7 +58,7 @@ export const SellerSidebar = ({ seller, user }: SellerSidebarProps) => {
           ({reviewCount} recenzji)
         </span>
       </div>
-      
+         
       {/* Description - Left aligned, condensed */}
       {description && (
         <div 

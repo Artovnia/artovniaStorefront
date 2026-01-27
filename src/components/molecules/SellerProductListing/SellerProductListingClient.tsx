@@ -30,17 +30,14 @@ export function SellerProductListingClient({
 }) {
   const searchParams = useSearchParams()
   
-  // ✅ Track if we have server-side data (only check once on mount)
-  const hasInitialData = Boolean(initialProducts && initialProducts.length > 0)
-  
   const [products, setProducts] = useState<HttpTypes.StoreProduct[]>(initialProducts || [])
   const [totalCount, setTotalCount] = useState(initialTotalCount || 0)
   const [currentPage, setCurrentPage] = useState(1)
   const [wishlist, setWishlist] = useState<SerializableWishlist[]>(initialWishlists || [])
-  // ✅ No loading state if we have initial data from server
-  const [isLoading, setIsLoading] = useState(!hasInitialData)
-  // Track if we've ever applied filters to know when to skip initial data
-  const [hasAppliedFilters, setHasAppliedFilters] = useState(false)
+  // ✅ Start with no loading if we have initial data
+  const [isLoading, setIsLoading] = useState(!(initialProducts && initialProducts.length > 0))
+  // ✅ Track if this is the first render to use initial data
+  const [isFirstRender, setIsFirstRender] = useState(true)
   
   // ✅ OPTIMIZATION: Memoize user ID to prevent unnecessary re-fetches
   const userId = user?.id
@@ -49,22 +46,19 @@ export function SellerProductListingClient({
   const sortBy = searchParams.get('sortBy') || ''
   const categoryId = searchParams.get('category') || ''
   
-  
-  
-  // ✅ PERFORMANCE: Fetch on page change, filter change, or if no initial data
+  // ✅ CRITICAL FIX: Fetch on page change, filter change
   useEffect(() => {
     const fetchData = async () => {
-      // ✅ Skip fetch for page 1 with default filters if we have initial data from server
-      // Only skip if NO filters are applied AND we haven't applied filters before
-      if (currentPage === 1 && hasInitialData && !sortBy && !categoryId && !hasAppliedFilters) {
+      // ✅ FIXED: Only skip fetch on first render if we have initial data AND on page 1 with no filters
+      if (isFirstRender && currentPage === 1 && !sortBy && !categoryId && initialProducts && initialProducts.length > 0) {
+        setIsFirstRender(false)
         return
       }
       
-      // Mark that we're applying filters
-      if (sortBy || categoryId) {
-        setHasAppliedFilters(true)
+      // Mark that we're no longer on first render
+      if (isFirstRender) {
+        setIsFirstRender(false)
       }
-      
 
       setIsLoading(true)
       try {
@@ -97,7 +91,7 @@ export function SellerProductListingClient({
     fetchData()
     // ✅ Re-fetch when page, filters, or seller changes
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [seller_id, currentPage, sortBy, categoryId, hasInitialData])
+  }, [seller_id, currentPage, sortBy, categoryId])
   
   // ✅ Reset to page 1 when filters change
   useEffect(() => {
@@ -109,13 +103,13 @@ export function SellerProductListingClient({
   const handlePageChange = (page: number) => {
     if (page < 1 || page > totalPages || page === currentPage) return
     
-    // ✅ CRITICAL: Scroll BEFORE state update to prevent loading skeleton from resetting position
-    window.scrollTo({ top: 0, behavior: 'smooth' })
+    // ✅ Update page immediately - useEffect will handle the fetch
+    setCurrentPage(page)
     
-    // Small delay to ensure scroll starts before state update triggers re-render
+    // ✅ Scroll to top after state update
     setTimeout(() => {
-      setCurrentPage(page)
-    }, 0)
+      window.scrollTo({ top: 0, behavior: 'smooth' })
+    }, 50)
   }
 
   const refreshWishlist = async () => {

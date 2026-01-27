@@ -1,5 +1,6 @@
 // src/app/[locale]/(main)/sellers/[handle]/page.tsx
 
+import { Suspense } from "react"
 import { SellerTabs, SellerSidebar } from "../../../../../components/organisms"
 import { VendorAvailabilityProvider } from "../../../../../components/organisms/VendorAvailabilityProvider/vendor-availability-provider"
 import { retrieveCustomer } from "../../../../../lib/data/customer"
@@ -23,8 +24,134 @@ import { getUserWishlists } from "../../../../../lib/data/wishlist"
 import { PRODUCT_LIMIT } from "../../../../../const"
 import { Breadcrumbs } from "../../../../../components/atoms/Breadcrumbs/Breadcrumbs"
 import { sdk } from "../../../../../lib/config"
+import { getRegion } from "../../../../../lib/data/regions"
+import { HttpTypes } from "@medusajs/types"
 
 export const revalidate = 300
+
+// ✅ NEW: Async component for seller tabs with product data
+async function SellerTabsWithData({
+  tab,
+  seller_id,
+  seller_handle,
+  seller_name,
+  user,
+  locale,
+  reviews,
+  vendorPage,
+}: {
+  tab: string
+  seller_id: string
+  seller_handle: string
+  seller_name: string
+  user: HttpTypes.StoreCustomer | null
+  locale: string
+  reviews: any[]
+  vendorPage: any
+}) {
+  // ✅ Fetch products, wishlists, and categories in parallel
+  const [productsResult, wishlistsResult, categoriesResult] = await Promise.allSettled([
+    listProductsWithSort({
+      seller_id,
+      countryCode: "pl",
+      sortBy: "created_at_desc",
+      queryParams: { limit: PRODUCT_LIMIT, offset: 0 },
+    }),
+    user ? getUserWishlists().catch(() => ({ wishlists: [] })) : Promise.resolve({ wishlists: [] }),
+    (async () => {
+      try {
+        const region = await getRegion("pl")
+        if (!region) return { product_categories: [] }
+
+        const sellerProductsResponse = await sdk.client.fetch<{
+          products: Array<{ 
+            id: string
+            categories?: Array<{ id: string; name: string; handle: string }> 
+          }>
+          count: number
+        }>(`/store/seller/${seller_id}/products`, {
+          method: 'GET',
+          query: { 
+            limit: 1000,
+            offset: 0,
+            region_id: region.id,
+          },
+        })
+        
+        const categoriesMap = new Map<string, { id: string; name: string; handle: string }>()
+        sellerProductsResponse.products?.forEach(product => {
+          product.categories?.forEach(cat => {
+            if (!categoriesMap.has(cat.id)) {
+              categoriesMap.set(cat.id, cat)
+            }
+          })
+        })
+        
+        return { product_categories: Array.from(categoriesMap.values()) }
+      } catch (error) {
+        console.error('Error fetching seller categories:', error)
+        return { product_categories: [] }
+      }
+    })(),
+  ])
+
+  const initialProducts = productsResult.status === "fulfilled" 
+    ? productsResult.value?.response?.products 
+    : undefined
+  const initialTotalCount = productsResult.status === "fulfilled" 
+    ? productsResult.value?.response?.count 
+    : undefined
+  const initialWishlists = wishlistsResult.status === "fulfilled"
+    ? wishlistsResult.value?.wishlists
+    : undefined
+  const categories = categoriesResult.status === "fulfilled"
+    ? categoriesResult.value?.product_categories
+    : undefined
+
+  return (
+    <SellerTabs
+      tab={tab}
+      seller_id={seller_id}
+      seller_handle={seller_handle}
+      seller_name={seller_name}
+      user={user}
+      locale={locale}
+      initialProducts={initialProducts}
+      initialTotalCount={initialTotalCount}
+      initialWishlists={initialWishlists}
+      categories={categories}
+      reviews={reviews}
+      vendorPage={vendorPage}
+    />
+  )
+}
+
+// ✅ NEW: Skeleton for seller tabs while data loads
+function SellerTabsFallback() {
+  return (
+    <div className="w-full">
+      {/* Tabs Skeleton */}
+      <div className="border-b mb-6">
+        <div className="flex gap-6 animate-pulse">
+          <div className="h-10 bg-gray-200 rounded w-24" />
+          <div className="h-10 bg-gray-200 rounded w-24" />
+          <div className="h-10 bg-gray-200 rounded w-24" />
+        </div>
+      </div>
+      
+      {/* Product Grid Skeleton */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+        {[...Array(6)].map((_, i) => (
+          <div key={i} className="animate-pulse">
+            <div className="aspect-square bg-gray-200 rounded mb-4" />
+            <div className="h-4 bg-gray-200 rounded mb-2 w-3/4" />
+            <div className="h-4 bg-gray-200 rounded w-1/2" />
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
 
 // ✅ IMPROVED: Fetch seller for proper metadata
 export async function generateMetadata({
@@ -92,15 +219,24 @@ export default async function SellerPage({
       )
     }
 
-    const [seller, user, reviewsResult] = await Promise.all([
-      getSellerByHandle(handle),
-      retrieveCustomer().catch(() => null),
-      getSellerReviews(handle).catch(() => ({ reviews: [] })),
-    ])
+    // ✅ OPTIMIZED: Fetch only essential data for sidebar/tabs rendering
+    const [seller, user, reviewsResult, availabilityResult, holidayModeResult, suspensionResult, vendorPageResult] =
+      await Promise.allSettled([
+        getSellerByHandle(handle),
+        retrieveCustomer().catch(() => null),
+        getSellerReviews(handle).catch(() => ({ reviews: [] })),
+        getSellerByHandle(handle).then(s => s ? getVendorAvailability(s.id) : null),
+        getSellerByHandle(handle).then(s => s ? getVendorHolidayMode(s.id) : null),
+        getSellerByHandle(handle).then(s => s ? getVendorSuspension(s.id) : null),
+        getSellerPage(handle),
+      ])
 
-    const reviews = reviewsResult?.reviews || []
+    const sellerData = seller.status === "fulfilled" ? seller.value : null
+    const userData = user.status === "fulfilled" ? user.value : null
+    const reviews = reviewsResult.status === "fulfilled" ? reviewsResult.value?.reviews || [] : []
+    const vendorPage = vendorPageResult.status === "fulfilled" ? vendorPageResult.value?.page : null
 
-    if (!seller) {
+    if (!sellerData) {
       console.error(`Seller not found for handle: ${handle}`)
       return (
         <main className="container">
@@ -114,78 +250,13 @@ export default async function SellerPage({
       )
     }
 
-    // ✅ OPTIMIZATION: Fetch products, availability, wishlists, categories, and vendor page in parallel
-    const [availabilityResult, holidayModeResult, suspensionResult, productsResult, wishlistsResult, categoriesResult, vendorPageResult] =
-      await Promise.allSettled([
-        getVendorAvailability(seller.id),
-        getVendorHolidayMode(seller.id),
-        getVendorSuspension(seller.id),
-        // ✅ Pre-fetch first page of products on server to avoid skeleton
-        listProductsWithSort({
-          seller_id: seller.id,
-          countryCode: "pl",
-          sortBy: "created_at_desc",
-          queryParams: { limit: PRODUCT_LIMIT, offset: 0 },
-        }),
-        // ✅ Pre-fetch wishlists if user is logged in
-        user ? getUserWishlists().catch(() => ({ wishlists: [] })) : Promise.resolve({ wishlists: [] }),
-        // ✅ Fetch categories used by this seller's products
-        (async () => {
-          try {
-            // First get all product IDs for this seller
-            const sellerProductsResponse = await sdk.client.fetch<{
-              products: Array<{ id: string; categories?: Array<{ id: string; name: string; handle: string }> }>
-            }>(`/store/seller/${seller.id}/products`, {
-              method: 'GET',
-              query: { limit: 1000, fields: 'id,categories.id,categories.name,categories.handle' },
-            })
-            
-            // Extract unique categories from all products
-            const categoriesMap = new Map<string, { id: string; name: string; handle: string }>()
-            sellerProductsResponse.products?.forEach(product => {
-              product.categories?.forEach(cat => {
-                if (!categoriesMap.has(cat.id)) {
-                  categoriesMap.set(cat.id, cat)
-                }
-              })
-            })
-            
-            return { product_categories: Array.from(categoriesMap.values()) }
-          } catch (error) {
-            console.error('Error fetching seller categories:', error)
-            return { product_categories: [] }
-          }
-        })(),
-        // ✅ Fetch vendor's custom page (if exists)
-        getSellerPage(handle),
-      ])
-
-    // Extract products data from settled promise
-    const initialProducts = productsResult.status === "fulfilled" 
-      ? productsResult.value?.response?.products 
-      : undefined
-    const initialTotalCount = productsResult.status === "fulfilled" 
-      ? productsResult.value?.response?.count 
-      : undefined
-    const initialWishlists = wishlistsResult.status === "fulfilled"
-      ? wishlistsResult.value?.wishlists
-      : undefined
-    const categories = categoriesResult.status === "fulfilled"
-      ? categoriesResult.value?.product_categories
-      : undefined
-    
-    // Extract vendor page data - null if not exists or not published
-    const vendorPage = vendorPageResult.status === "fulfilled"
-      ? vendorPageResult.value?.page
-      : null
-
     const sellerWithReviews = {
-      ...seller,
+      ...sellerData,
       reviews: reviews || [],
     }
 
     const availability =
-      availabilityResult.status === "fulfilled"
+      availabilityResult.status === "fulfilled" && availabilityResult.value
         ? availabilityResult.value
         : {
             available: true,
@@ -197,25 +268,25 @@ export default async function SellerPage({
           }
 
     const holidayMode =
-      holidayModeResult.status === "fulfilled"
+      holidayModeResult.status === "fulfilled" && holidayModeResult.value
         ? holidayModeResult.value
         : undefined
 
     const suspension =
-      suspensionResult.status === "fulfilled"
+      suspensionResult.status === "fulfilled" && suspensionResult.value
         ? suspensionResult.value
         : undefined
 
-    // ✅ NEW: Generate JSON-LD for seller page
+    // ✅ Generate JSON-LD for seller page
     const sellerJsonLd = generateSellerJsonLd(
       {
-        id: seller.id,
-        name: seller.name,
-        handle: seller.handle,
-        description: seller.description,
-        photo: seller.photo,         // ✅ Changed from banner
-        logo_url: seller.logo_url,   // ✅ Changed from logo
-        created_at: seller.created_at,
+        id: sellerData.id,
+        name: sellerData.name,
+        handle: sellerData.handle,
+        description: sellerData.description,
+        photo: sellerData.photo,
+        logo_url: sellerData.logo_url,
+        created_at: sellerData.created_at,
       },
       reviews
     )
@@ -224,7 +295,7 @@ export default async function SellerPage({
     const breadcrumbItems = [
       { label: "Strona główna", path: "/" },
       { label: "Sprzedawcy", path: "/sellers" },
-      { label: seller.name, path: `/sellers/${seller.handle}` },
+      { label: sellerData.name, path: `/sellers/${sellerData.handle}` },
     ]
 
     return (
@@ -242,36 +313,36 @@ export default async function SellerPage({
           </div>
           
           <VendorAvailabilityProvider
-            vendorId={seller.id}
-            vendorName={seller.name}
+            vendorId={sellerData.id}
+            vendorName={sellerData.name}
             availability={availability}
             holidayMode={holidayMode}
             suspension={suspension}
             showModalOnLoad={!!availability?.onHoliday}
           >
             <div className="grid grid-cols-1 lg:grid-cols-[30%_70%] gap-6 mt-8 ">
+              {/* ✅ Sidebar renders immediately - no async dependencies */}
               <aside className="lg:sticky lg:top-40 lg:self-start">
                 <SellerSidebar
                   seller={sellerWithReviews as SellerProps}
-                  user={user}
+                  user={userData}
                 />
               </aside>
 
+              {/* ✅ PERFORMANCE: Tabs stream in with product data */}
               <div className="w-full mx-auto">
-                <SellerTabs
-                  tab={tab}
-                  seller_id={seller.id}
-                  seller_handle={seller.handle}
-                  seller_name={seller.name}
-                  user={user}
-                  locale={locale}
-                  initialProducts={initialProducts}
-                  initialTotalCount={initialTotalCount}
-                  initialWishlists={initialWishlists}
-                  categories={categories}
-                  reviews={reviews}
-                  vendorPage={vendorPage}
-                />
+                <Suspense fallback={<SellerTabsFallback />}>
+                  <SellerTabsWithData
+                    tab={tab}
+                    seller_id={sellerData.id}
+                    seller_handle={sellerData.handle}
+                    seller_name={sellerData.name}
+                    user={userData}
+                    locale={locale}
+                    reviews={reviews}
+                    vendorPage={vendorPage}
+                  />
+                </Suspense>
               </div>
             </div>
           </VendorAvailabilityProvider>

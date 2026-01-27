@@ -365,13 +365,9 @@ export const listProductsWithSort = async ({
   const offset = queryParams?.offset !== undefined ? queryParams.offset : (page - 1) * limit
 
   // ✅ PERFORMANCE FIX: For seller products, fetch ONLY the requested page
-  // Previous approach fetched ALL 200 products causing 3s+ delays
-  // New approach: Direct API call with seller filter for instant results
+  // Direct API call without client-side caching for instant page switches
   if (seller_id) {
-    const cacheKey = `seller:products:${seller_id}:${countryCode}:${sortBy || ''}:${category_id || ''}:${offset}:${limit}`
-    
-    // ✅ Fetch only the requested page with seller filter and sorting
-    const result = await unifiedCache.get(cacheKey, async () => {
+    try {
       const region = await getRegion(countryCode)
       if (!region) {
         return {
@@ -395,7 +391,7 @@ export const listProductsWithSort = async ({
         query.category_id = category_id
       }
 
-      // Call custom seller products endpoint that supports sorting and filtering
+      // ✅ OPTIMIZED: Direct fetch with shorter cache for faster updates
       const { products, count } = await sdk.client.fetch<{
         products: HttpTypes.StoreProduct[]
         count: number
@@ -403,7 +399,10 @@ export const listProductsWithSort = async ({
         method: "GET",
         query,
         headers,
-        next: { revalidate: 300 },
+        next: { 
+          revalidate: 60, // ✅ Reduced from 300s to 60s for faster page switches
+          tags: ['seller-products', `seller-${seller_id}`] 
+        },
       })
 
       const nextPage = count > offset + limit ? page + 1 : null
@@ -412,20 +411,14 @@ export const listProductsWithSort = async ({
         nextPage,
         queryParams,
       }
-    }, CACHE_TTL.PRODUCT)
-
-    if (!result || !result.response) {
+    } catch (error) {
+      console.error('❌ listProductsWithSort: Seller products fetch failed', error)
       return {
-        response: {
-          products: [],
-          count: 0,
-        },
+        response: { products: [], count: 0 },
         nextPage: null,
         queryParams,
       }
     }
-
-    return result
   }
 
   // For non-seller queries, use standard product listing

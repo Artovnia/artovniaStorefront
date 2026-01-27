@@ -7,8 +7,8 @@ export const HERO_BANNERS: HeroBanner[] = [
   
   {
     id: "main-odkrywaj",
-    image: "/images/hero/Hero01.webp",
-    mobileImage: "/images/hero/Hero01-mobile.webp",
+    image: "/images/hero/Hero21.webp",
+    mobileImage: "/images/hero/Hero21-mobile.webp",
     alt: "Odkrywaj nowe produkty w Artovnia",
     url: "/categories",
     content: {
@@ -21,8 +21,8 @@ export const HERO_BANNERS: HeroBanner[] = [
   },
   {
     id: "odkrywaj-promocje",
-    image: "/images/hero/Hero03.webp",
-    mobileImage: "/images/hero/Hero03-mobile.webp",
+    image: "/images/hero/Hero22.webp",
+    mobileImage: "/images/hero/Hero22-mobile.webp",
     alt: "Promocje",
     url: "/promotions",
     content: {
@@ -35,8 +35,8 @@ export const HERO_BANNERS: HeroBanner[] = [
   },
   {
     id: "sprzedawaj-w-artovnia",
-    image: "/images/hero/Hero04.webp",
-    mobileImage: "/images/hero/Hero04-mobile.webp",
+    image: "/images/hero/Hero23.webp",
+    mobileImage: "/images/hero/Hero23-mobile.webp",
     alt: "Sprzedawaj w Artovnia",
     url: "https://artovniapanel.netlify.app/login",
     content: {
@@ -49,8 +49,8 @@ export const HERO_BANNERS: HeroBanner[] = [
   },
   {
     id: "obrazy",
-    image: "/images/hero/Hero05.webp",
-    mobileImage: "/images/hero/Hero05-mobile.webp",
+    image: "/images/hero/Hero24.webp",
+    mobileImage: "/images/hero/Hero24-mobile.webp",
     alt: "Obrazy",
     url: "/categories/obrazy",
     content: {
