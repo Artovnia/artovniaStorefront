@@ -416,6 +416,14 @@ export const ProductFilterBar = ({
         filter.onRemove()
       }
     })
+    
+    // CRITICAL FIX: Also reset sort filter to default
+    const currentSort = searchParams.get("sortBy")
+    if (currentSort) {
+      const params = new URLSearchParams(searchParams.toString())
+      params.delete("sortBy")
+      router.push(`${pathname}?${params.toString()}`, { scroll: false })
+    }
   }
 
   return (

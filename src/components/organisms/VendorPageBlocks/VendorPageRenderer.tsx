@@ -16,6 +16,7 @@ import { TimelineBlock } from './blocks/TimelineBlock'
 import { TeamBlock } from './blocks/TeamBlock'
 import { CategoriesBlock } from './blocks/CategoriesBlock'
 import { BehindScenesBlock } from './blocks/BehindScenesBlock'
+import { SpacerBlock } from './blocks/SpacerBlock'
 
 interface VendorPageRendererProps {
   page: VendorPage
@@ -56,6 +57,8 @@ export const VendorPageRenderer = ({ page, sellerId, sellerHandle }: VendorPageR
         return <CategoriesBlock data={block.data} sellerHandle={sellerHandle} />
       case 'behind_scenes':
         return <BehindScenesBlock data={block.data} />
+      case 'spacer':
+        return <SpacerBlock data={block.data} />
       default:
         console.warn(`Unknown block type: ${block.type}`)
         return null

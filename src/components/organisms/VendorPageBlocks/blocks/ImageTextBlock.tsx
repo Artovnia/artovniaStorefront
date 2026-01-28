@@ -7,8 +7,11 @@ interface ImageTextBlockData {
   image_url?: string
   image_position: 'left' | 'right'
   title?: string
+  title_alignment?: 'left' | 'center' | 'right'
+  title_italic?: boolean
   content: string
   image_ratio: '1:1' | '4:3' | '16:9'
+  rounded_edges?: boolean
 }
 
 interface ImageTextBlockProps {
@@ -16,7 +19,24 @@ interface ImageTextBlockProps {
 }
 
 export const ImageTextBlock = ({ data }: ImageTextBlockProps) => {
-  const { image_url, image_position = 'left', title, content, image_ratio = '1:1' } = data
+  const {
+    image_url,
+    image_position = 'left',
+    title,
+    title_alignment = 'left',
+    title_italic = false,
+    content,
+    image_ratio = '16:9',
+    rounded_edges = true,
+  } = data
+
+  const titleAlignmentClasses = {
+    left: 'text-left',
+    center: 'text-center',
+    right: 'text-right'
+  }
+
+  const titleClasses = `text-2xl md:text-3xl font-instrument-serif mb-4 ${titleAlignmentClasses[title_alignment]} ${title_italic ? 'italic' : ''}`
 
   // Don't render empty image-text blocks
   const hasContent = image_url || title || (content && content.trim() !== '')
@@ -31,7 +51,7 @@ export const ImageTextBlock = ({ data }: ImageTextBlockProps) => {
   }
 
   const imageElement = (
-    <div className={`relative ${ratioClasses[image_ratio]} overflow-hidden rounded-lg`}>
+    <div className={`relative ${ratioClasses[image_ratio]} overflow-hidden ${rounded_edges ? 'rounded-lg' : ''}`}>
       {image_url && (
         <Image
           src={image_url}
@@ -47,7 +67,9 @@ export const ImageTextBlock = ({ data }: ImageTextBlockProps) => {
   const textElement = (
     <div className="flex flex-col justify-center">
       {title && (
-        <h2 className="text-2xl md:text-3xl font-instrument-serif mb-4">{title}</h2>
+        <h2 className={titleClasses}>
+          {title}
+        </h2>
       )}
       <div className="prose prose-lg" dangerouslySetInnerHTML={{ __html: content }} />
     </div>

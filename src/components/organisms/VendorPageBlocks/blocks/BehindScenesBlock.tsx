@@ -12,9 +12,12 @@ interface MediaItem {
 
 interface BehindScenesBlockData {
   title?: string
+  title_alignment?: 'left' | 'center' | 'right'
+  title_italic?: boolean
   description?: string
   layout?: 'masonry' | 'grid' | 'carousel'
   media: MediaItem[]
+  rounded_edges?: boolean
 }
 
 interface BehindScenesBlockProps {
@@ -22,7 +25,23 @@ interface BehindScenesBlockProps {
 }
 
 export const BehindScenesBlock = ({ data }: BehindScenesBlockProps) => {
-  const { title, description, layout = 'masonry', media = [] } = data
+  const { 
+    title, 
+    title_alignment = 'center',
+    title_italic = false,
+    description, 
+    media = [], 
+    layout = 'masonry', 
+    rounded_edges = true 
+  } = data
+
+  const titleAlignmentClasses = {
+    left: 'text-left',
+    center: 'text-center',
+    right: 'text-right'
+  }
+
+  const titleClasses = `text-xl md:text-2xl font-instrument-serif ${titleAlignmentClasses[title_alignment]} ${title_italic ? 'italic' : ''}`
   const [selectedMedia, setSelectedMedia] = useState<MediaItem | null>(null)
 
   if (!media.length) {
@@ -123,7 +142,7 @@ export const BehindScenesBlock = ({ data }: BehindScenesBlockProps) => {
       {(title || description) && (
         <div className="text-center max-w-2xl mx-auto">
           {title && (
-            <h2 className="text-2xl md:text-3xl font-instrument-serif italic mb-4">{title}</h2>
+            <h2 className={titleClasses}>{title}</h2>
           )}
           {description && (
             <p className="text-[#3B3634]/70">{description}</p>

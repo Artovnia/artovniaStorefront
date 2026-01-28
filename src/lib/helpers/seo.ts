@@ -120,24 +120,195 @@ const getProductAvailability = (product: HttpTypes.StoreProduct): string => {
 }
 
 /**
+ * Shipping profile to weight mapping (in grams)
+ * Based on your marketplace's shipping profile capacity system
+ * These are reasonable weight estimates for Google Merchant Center
+ */
+const SHIPPING_PROFILE_WEIGHTS: Record<string, number> = {
+  // Letters and postal items (lightest)
+  'regular_letter': 50,
+  'registered_letter': 50,
+  'priority_letter': 50,
+  'tracked_letter': 50,
+  
+  // Mini parcels (small items)
+  'mini_parcel': 500,
+  'mała_paczka': 500,
+  
+  // Small parcels (standard small items)
+  'small_parcel': 1000,
+  'small_package': 1000,
+  
+  // Medium parcels (standard items)
+  'medium_parcel': 2000,
+  'medium_package': 2000,
+  'standard_parcel': 2000,
+  
+  // Large parcels (larger items)
+  'large_parcel': 5000,
+  'large_package': 5000,
+  
+  // Extra large items
+  'extra_large_parcel': 10000,
+  'xl_parcel': 10000,
+  
+  // Special categories
+  'euro_pallet': 25000,
+  'machinery_vehicles': 50000,
+  'furniture': 15000,
+  'oversized': 20000,
+}
+
+/**
+ * Extract clean profile name from seller-prefixed format
+ * Handles format: "sel_01K4680TQ646K0V2ST2N3BXWZ3:Mała paczka" → "mała_paczka"
+ */
+const extractShippingProfileName = (profileName: string): string => {
+  // Remove seller prefix if present
+  let cleanName = profileName
+  if (profileName.includes(':')) {
+    cleanName = profileName.split(':')[1].trim()
+  }
+  
+  // Normalize to lowercase and replace spaces with underscores
+  return cleanName.toLowerCase().replace(/\s+/g, '_')
+}
+
+/**
+ * Get weight from shipping profile name
+ * Returns weight in grams or undefined if profile not recognized
+ */
+const getWeightFromShippingProfile = (profileName: string | undefined): number | undefined => {
+  if (!profileName) return undefined
+  
+  const cleanName = extractShippingProfileName(profileName)
+  
+  // Direct match
+  if (SHIPPING_PROFILE_WEIGHTS[cleanName]) {
+    return SHIPPING_PROFILE_WEIGHTS[cleanName]
+  }
+  
+  // Partial match for common patterns
+  for (const [key, weight] of Object.entries(SHIPPING_PROFILE_WEIGHTS)) {
+    if (cleanName.includes(key) || key.includes(cleanName)) {
+      return weight
+    }
+  }
+  
+  return undefined
+}
+
+/**
  * Get product weight for Google Merchant shipping calculations
- * Returns weight in grams. Uses variant weight or default.
+ * Returns weight in grams. Priority:
+ * 1. Variant weight (if set)
+ * 2. Product weight (if set)
+ * 3. Shipping profile weight mapping
+ * 4. Default based on product type
  */
 const getProductWeight = (product: HttpTypes.StoreProduct): number => {
-  // Try to get weight from first variant
+  // Priority 1: Try to get weight from first variant
   const variant = product.variants?.[0] as any
-  if (variant?.weight) {
+  if (variant?.weight && variant.weight > 0) {
     return variant.weight // Assume weight is stored in grams
   }
   
-  // Try product-level weight
-  if ((product as any).weight) {
+  // Priority 2: Try product-level weight
+  if ((product as any).weight && (product as any).weight > 0) {
     return (product as any).weight
   }
   
-  // Default weight for handmade/art products: 500g (reasonable for most items)
+  // Priority 3: Try to get weight from shipping profile
+  // Check product metadata for shipping profile information
+  const productMetadata = (product as any).metadata
+  if (productMetadata?.shipping_profile_name) {
+    const profileWeight = getWeightFromShippingProfile(productMetadata.shipping_profile_name)
+    if (profileWeight) {
+      return profileWeight
+    }
+  }
+  
+  // Check variant metadata for shipping profile
+  if (variant?.metadata?.shipping_profile_name) {
+    const profileWeight = getWeightFromShippingProfile(variant.metadata.shipping_profile_name)
+    if (profileWeight) {
+      return profileWeight
+    }
+  }
+  
+  // Priority 4: Default weights based on product categories/type
+  // For marketplace with handmade/art products
+  const categories = (product as any).categories || []
+  const categoryNames = categories.map((cat: any) => cat.name?.toLowerCase() || '')
+  
+  // Category-based defaults
+  if (categoryNames.some((name: string) => name.includes('biżuteria') || name.includes('jewelry'))) {
+    return 100 // Jewelry is typically light
+  }
+  if (categoryNames.some((name: string) => name.includes('obraz') || name.includes('painting'))) {
+    return 1500 // Paintings vary but this is reasonable
+  }
+  if (categoryNames.some((name: string) => name.includes('mebel') || name.includes('furniture'))) {
+    return 15000 // Furniture is heavy
+  }
+  if (categoryNames.some((name: string) => name.includes('ceramika') || name.includes('ceramic'))) {
+    return 800 // Ceramics are moderately heavy
+  }
+  if (categoryNames.some((name: string) => name.includes('tekstylia') || name.includes('textile'))) {
+    return 300 // Textiles are light
+  }
+  
+  // Final fallback: 500g (reasonable for most handmade/art products)
   // This allows Google to calculate shipping costs
   return 500
+}
+
+/**
+ * Get product dimensions for Google Merchant Center
+ * Returns estimated dimensions in centimeters based on weight and category
+ * Format: { width, height, depth } in cm
+ */
+const getDimensionsFromWeight = (product: HttpTypes.StoreProduct, weight: number): { width: number; height: number; depth: number } => {
+  const categories = (product as any).categories || []
+  const categoryNames = categories.map((cat: any) => cat.name?.toLowerCase() || '')
+  
+  // Category-specific dimension estimates (in cm)
+  // These are reasonable estimates for Google Merchant Center
+  
+  if (categoryNames.some((name: string) => name.includes('biżuteria') || name.includes('jewelry'))) {
+    return { width: 5, height: 5, depth: 2 } // Small jewelry box
+  }
+  
+  if (categoryNames.some((name: string) => name.includes('obraz') || name.includes('painting'))) {
+    // Paintings vary widely, estimate based on weight
+    if (weight < 500) return { width: 20, height: 30, depth: 3 }
+    if (weight < 1500) return { width: 40, height: 50, depth: 5 }
+    return { width: 60, height: 80, depth: 7 }
+  }
+  
+  if (categoryNames.some((name: string) => name.includes('mebel') || name.includes('furniture'))) {
+    return { width: 80, height: 100, depth: 50 } // Average furniture piece
+  }
+  
+  if (categoryNames.some((name: string) => name.includes('ceramika') || name.includes('ceramic'))) {
+    return { width: 15, height: 20, depth: 15 } // Average ceramic piece
+  }
+  
+  if (categoryNames.some((name: string) => name.includes('tekstylia') || name.includes('textile'))) {
+    return { width: 30, height: 40, depth: 5 } // Folded textile
+  }
+  
+  // Default dimensions based on weight (general estimation)
+  // Lighter items = smaller dimensions
+  if (weight < 100) return { width: 10, height: 10, depth: 5 }
+  if (weight < 500) return { width: 15, height: 20, depth: 10 }
+  if (weight < 1000) return { width: 20, height: 25, depth: 15 }
+  if (weight < 2000) return { width: 30, height: 35, depth: 20 }
+  if (weight < 5000) return { width: 40, height: 45, depth: 30 }
+  if (weight < 10000) return { width: 50, height: 60, depth: 40 }
+  
+  // Heavy items
+  return { width: 70, height: 80, depth: 50 }
 }
 
 /**
@@ -653,8 +824,11 @@ export const generateProductJsonLd = (
   const category = (product as any).categories?.[0]?.name
   const sellerName = (product as any).seller?.name || "Artovnia"
 
-  // Get product weight for shipping calculations
+  // Get product weight for Google Merchant shipping calculations (in grams)
   const productWeight = getProductWeight(product)
+  
+  // Get product dimensions for Google Merchant (in cm)
+  const productDimensions = getDimensionsFromWeight(product, productWeight)
   
   // Get availability status
   const availabilityStatus = getProductAvailability(product)
@@ -712,6 +886,22 @@ export const generateProductJsonLd = (
       "@type": "QuantitativeValue",
       value: productWeight,
       unitCode: "GRM", // Grams
+    },
+    // Dimensions for Google Merchant (in centimeters)
+    width: {
+      "@type": "QuantitativeValue",
+      value: productDimensions.width,
+      unitCode: "CMT", // Centimeters
+    },
+    height: {
+      "@type": "QuantitativeValue",
+      value: productDimensions.height,
+      unitCode: "CMT",
+    },
+    depth: {
+      "@type": "QuantitativeValue",
+      value: productDimensions.depth,
+      unitCode: "CMT",
     },
     brand: {
       "@type": "Brand",
