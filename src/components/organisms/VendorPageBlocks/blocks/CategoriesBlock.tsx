@@ -2,7 +2,6 @@
 
 import Image from 'next/image'
 import Link from 'next/link'
-import { useState } from 'react'
 
 interface CategoryMetadata {
   title: string
@@ -170,62 +169,52 @@ const MinimalLayout = ({ categories, columns, gridCols, roundedEdges }: any) => 
 const BoldLayout = ({ categories, columns, gridCols, roundedEdges }: any) => {
   return (
     <div className={`grid ${gridCols[columns as keyof typeof gridCols] || gridCols[3]} gap-4`}>
-      {categories.map((category: CategoryMetadata, index: number) => {
-        const [isHovered, setIsHovered] = useState(false)
-        
-        return (
-          <Link
-            key={index}
-            href={category.url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className={`group block relative aspect-square overflow-hidden ${roundedEdges ? 'rounded-lg' : ''}`}
-            onMouseEnter={() => setIsHovered(true)}
-            onMouseLeave={() => setIsHovered(false)}
-          >
-            <Image
-              src={category.image_url}
-              alt={category.title}
-              fill
-              className="object-cover group-hover:scale-110 transition-transform duration-700"
-              sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
-            />
-            
-            {/* Always visible gradient */}
-            <div className="absolute inset-0 bg-gradient-to-t from-[#3B3634]/80 via-[#3B3634]/40 to-transparent" />
-            
-            {/* Title - always visible */}
-            <div className="absolute bottom-0 left-0 right-0 p-4 transform transition-transform duration-300 group-hover:-translate-y-2">
-              <h3 className="text-white font-instrument-serif text-lg mb-1">
-                {category.title}
-              </h3>
+      {categories.map((category: CategoryMetadata, index: number) => (
+        <Link
+          key={index}
+          href={category.url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className={`group block relative aspect-square overflow-hidden ${roundedEdges ? 'rounded-lg' : ''}`}
+        >
+          <Image
+            src={category.image_url}
+            alt={category.title}
+            fill
+            className="object-cover group-hover:scale-110 transition-transform duration-700"
+            sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
+          />
+          
+          {/* Always visible gradient */}
+          <div className="absolute inset-0 bg-gradient-to-t from-[#3B3634]/80 via-[#3B3634]/40 to-transparent" />
+          
+          {/* Title - always visible */}
+          <div className="absolute bottom-0 left-0 right-0 p-4 transform transition-transform duration-300 group-hover:-translate-y-2">
+            <h3 className="text-white font-instrument-serif text-lg mb-1">
+              {category.title}
+            </h3>
+            {category.description && (
+              <p className="text-white/80 text-xs line-clamp-2">{category.description}</p>
+            )}
+          </div>
+          
+          {/* Hover overlay */}
+          <div className="absolute inset-0 bg-[#3B3634]/90 flex items-center justify-center transition-opacity duration-300 opacity-0 group-hover:opacity-100">
+            <div className="text-center text-white space-y-2">
+              <h3 className="font-instrument-serif text-xl">{category.title}</h3>
               {category.description && (
-                <p className="text-white/80 text-xs line-clamp-2">{category.description}</p>
+                <p className="text-xs px-4 line-clamp-3">{category.description}</p>
               )}
-            </div>
-            
-            {/* Hover overlay */}
-            <div
-              className={`absolute inset-0 bg-[#3B3634]/90 flex items-center justify-center transition-opacity duration-300 ${
-                isHovered ? 'opacity-100' : 'opacity-0'
-              }`}
-            >
-              <div className="text-center text-white space-y-2">
-                <h3 className="font-instrument-serif text-xl">{category.title}</h3>
-                {category.description && (
-                  <p className="text-xs px-4 line-clamp-3">{category.description}</p>
-                )}
-                <div className="flex items-center justify-center gap-2 text-xs font-medium pt-2">
-                  <span>Przeglądaj</span>
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                  </svg>
-                </div>
+              <div className="flex items-center justify-center gap-2 text-xs font-medium pt-2">
+                <span>Przeglądaj</span>
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
               </div>
             </div>
-          </Link>
-        )
-      })}
+          </div>
+        </Link>
+      ))}
     </div>
   )
 }

@@ -2,7 +2,6 @@
 
 import Image from 'next/image'
 import Link from 'next/link'
-import { useState } from 'react'
 
 interface Product {
   title: string
@@ -173,133 +172,99 @@ const MinimalLayout = ({ products, columns, columnClasses, roundedEdges }: any) 
 const EditorialLayout = ({ products, columns, columnClasses, roundedEdges }: any) => {
   return (
     <div className={`grid ${columnClasses[columns]} gap-4`}>
-      {products.map((product: Product, index: number) => {
-        const [isHovered, setIsHovered] = useState(false)
-        
-        return (
-          <Link
-            key={index}
-            href={product.url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="group block border border-[#3B3634] p-1 relative"
-            onMouseEnter={() => setIsHovered(true)}
-            onMouseLeave={() => setIsHovered(false)}
-          >
-            <div className="relative aspect-[4/5] overflow-hidden">
-              <Image
-                src={product.image_url}
-                alt={product.title}
-                fill
-                className="object-cover"
-                sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-              />
-              
-              {/* Hover Overlay */}
-              <div
-                className={`absolute inset-0 bg-gradient-to-t from-[#3B3634]/95 via-[#3B3634]/70 to-transparent transition-opacity duration-500 flex items-center justify-center ${isHovered ? 'opacity-100' : 'opacity-0'}`}
-              >
-                <div
-                  className="text-center px-4 flex flex-col items-center gap-3 transform transition-transform duration-500"
-                  style={{ transform: isHovered ? 'translateY(0)' : 'translateY(20px)' }}
-                >
-                  {product.description && (
-                    <p className="text-white text-sm line-clamp-3">{product.description}</p>
-                  )}
-                  {product.price && (
-                    <p className="text-white font-medium text-lg">{product.price}</p>
-                  )}
-                  <span className="text-white font-instrument-serif text-xl flex items-center gap-2">
-                    Zobacz więcej
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                    </svg>
-                  </span>
-                </div>
-              </div>
-              
-              {/* Permanent title section */}
-              <div className="py-2 px-4 bg-primary absolute bottom-0 w-full min-h-[3.5rem] overflow-hidden">
-                <h3 className="font-instrument-serif text-base line-clamp-2 text-[#3B3634]">
-                  {product.title}
-                </h3>
+      {products.map((product: Product, index: number) => (
+        <Link
+          key={index}
+          href={product.url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="group block border border-[#3B3634] p-1 relative"
+        >
+          <div className="relative aspect-[4/5] overflow-hidden">
+            <Image
+              src={product.image_url}
+              alt={product.title}
+              fill
+              className="object-cover"
+              sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+            />
+            
+            {/* Hover Overlay */}
+            <div className="absolute inset-0 bg-gradient-to-t from-[#3B3634]/95 via-[#3B3634]/70 to-transparent transition-opacity duration-500 flex items-center justify-center opacity-0 group-hover:opacity-100">
+              <div className="text-center px-4 flex flex-col items-center gap-3 transform transition-transform duration-500 translate-y-5 group-hover:translate-y-0">
+                {product.description && (
+                  <p className="text-white text-sm line-clamp-3">{product.description}</p>
+                )}
+                {product.price && (
+                  <p className="text-white font-medium text-lg">{product.price}</p>
+                )}
+                <span className="text-white font-instrument-serif text-xl flex items-center gap-2">
+                  Zobacz więcej
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </span>
               </div>
             </div>
-          </Link>
-        )
-      })}
+            
+            {/* Permanent title section */}
+            <div className="py-2 px-4 bg-primary absolute bottom-0 w-full min-h-[3.5rem] overflow-hidden">
+              <h3 className="font-instrument-serif text-base line-clamp-2 text-[#3B3634]">
+                {product.title}
+              </h3>
+            </div>
+          </div>
+        </Link>
+      ))}
     </div>
   )
 }
 
 // Overlay Layout - Full hover reveal with dramatic effect
-const OverlayLayout = ({ products, columns, columnClasses, roundedEdges }: any) => {
-  return (
-    <div className={`grid ${columnClasses[columns]} gap-4`}>
-      {products.map((product: Product, index: number) => {
-        const [isHovered, setIsHovered] = useState(false)
+const OverlayLayout = ({ products, columns, columnClasses, roundedEdges }: any) => (
+  <div className={`grid ${columnClasses[columns]} gap-4`}>
+    {products.map((product: Product, index: number) => (
+      <Link
+        key={index}
+        href={product.url}
+        target="_blank"
+        rel="noopener noreferrer"
+        className={`group block relative aspect-square overflow-hidden ${roundedEdges ? 'rounded-lg' : ''}`}
+      >
+        <Image
+          src={product.image_url}
+          alt={product.title}
+          fill
+          className="object-cover group-hover:scale-110 transition-transform duration-700"
+          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+        />
         
-        return (
-          <Link
-            key={index}
-            href={product.url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className={`group block relative aspect-square overflow-hidden ${roundedEdges ? 'rounded-lg' : ''}`}
-            onMouseEnter={() => setIsHovered(true)}
-            onMouseLeave={() => setIsHovered(false)}
-          >
-            <Image
-              src={product.image_url}
-              alt={product.title}
-              fill
-              className="object-cover group-hover:scale-110 transition-transform duration-700"
-              sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-            />
-            
-            {/* Always visible gradient */}
-            <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-            
-            {/* Title and price - always visible */}
-            <div className="absolute bottom-0 left-0 right-0 p-4 transform transition-transform duration-300 group-hover:-translate-y-2">
-              <h3 className="text-white font-instrument-serif text-base mb-1 line-clamp-2">
-                {product.title}
-              </h3>
-              {product.price && (
-                <p className="text-white/90 text-sm font-medium">{product.price}</p>
-              )}
+        {/* Hover overlay with full info */}
+        <div className="absolute inset-0 bg-[#3B3634]/95 flex items-center justify-center transition-opacity duration-500 opacity-0 group-hover:opacity-100">
+          <div className="text-center text-white space-y-3 px-6">
+            <h3 className="font-instrument-serif text-2xl">{product.title}</h3>
+            {product.description && (
+              <p className="text-sm line-clamp-4">{product.description}</p>
+            )}
+            {product.price && (
+              <p className="font-medium text-xl">{product.price}</p>
+            )}
+            <div className="pt-2">
+              <span className="inline-flex items-center gap-2 text-sm font-medium border border-white px-4 py-2 rounded-full">
+                Zobacz produkt
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </span>
             </div>
-            
-            {/* Full overlay on hover */}
-            <div
-              className={`absolute inset-0 bg-[#3B3634]/90 flex items-center justify-center transition-opacity duration-300 ${
-                isHovered ? 'opacity-100' : 'opacity-0'
-              }`}
-            >
-              <div className="text-center text-white px-4">
-                <h3 className="font-instrument-serif text-lg mb-2 line-clamp-2">{product.title}</h3>
-                {product.price && (
-                  <p className="text-base font-medium mb-3">{product.price}</p>
-                )}
-                {product.description && (
-                  <p className="text-xs mb-3 line-clamp-3">{product.description}</p>
-                )}
-                <div className="flex items-center justify-center gap-2 text-xs font-medium pt-2">
-                  <span>Zobacz produkt</span>
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                  </svg>
-                </div>
-              </div>
-            </div>
-          </Link>
-        )
-      })}
-    </div>
-  )
-}
+          </div>
+        </div>
+      </Link>
+    ))}
+  </div>
+)
 
-// Polaroid Layout - Artistic photo-style with handwritten feel
+// Polaroid Layout - Vintage photo-style cards
 const PolaroidLayout = ({ products, columns, columnClasses, roundedEdges }: any) => (
   <div className={`grid ${columnClasses[columns]} gap-6`}>
     {products.map((product: Product, index: number) => (
