@@ -1,12 +1,19 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import { ProductCard } from '@/components/organisms'
+import Image from 'next/image'
+import Link from 'next/link'
+
+interface Product {
+  title: string
+  image_url: string
+  url: string
+}
 
 interface FeaturedProductsBlockData {
   title?: string
   product_ids?: string[] // Legacy support
-  product_handles?: string[] // New: use handles from URLs
+  product_handles?: string[] // Legacy support
+  products?: Product[] // New: metadata-based cards
   columns: 2 | 3 | 4
 }
 
@@ -15,58 +22,8 @@ interface FeaturedProductsBlockProps {
   sellerId: string
 }
 
-export const FeaturedProductsBlock = ({ data, sellerId }: FeaturedProductsBlockProps) => {
-  const { title, product_ids = [], product_handles = [], columns = 3 } = data
-  const [products, setProducts] = useState<any[]>([])
-  const [loading, setLoading] = useState(true)
-
-  // Use handles if available, otherwise fall back to IDs
-  const hasHandles = product_handles.length > 0
-  const hasIds = product_ids.length > 0
-
-  useEffect(() => {
-    if (!hasHandles && !hasIds) {
-      setLoading(false)
-      return
-    }
-
-    const fetchProducts = async () => {
-      try {
-        let fetchedProducts: any[] = []
-        
-        if (hasHandles) {
-          // Fetch products by handles (one by one since API may not support batch)
-          const productPromises = product_handles.map(async (handle) => {
-            try {
-              const response = await fetch(`/api/products/${handle}`)
-              if (response.ok) {
-                const data = await response.json()
-                return data.product
-              }
-              return null
-            } catch {
-              return null
-            }
-          })
-          const results = await Promise.all(productPromises)
-          fetchedProducts = results.filter(Boolean)
-        } else if (hasIds) {
-          // Legacy: Fetch products by IDs
-          const response = await fetch(`/api/products?ids=${product_ids.join(',')}`)
-          const data = await response.json()
-          fetchedProducts = data.products || []
-        }
-        
-        setProducts(fetchedProducts)
-      } catch (error) {
-        console.error('Error fetching featured products:', error)
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    fetchProducts()
-  }, [product_handles, product_ids, hasHandles, hasIds])
+export const FeaturedProductsBlock = ({ data }: FeaturedProductsBlockProps) => {
+  const { title, products = [], columns = 3 } = data
 
   const columnClasses = {
     2: 'grid-cols-1 sm:grid-cols-2',
@@ -74,36 +31,58 @@ export const FeaturedProductsBlock = ({ data, sellerId }: FeaturedProductsBlockP
     4: 'grid-cols-2 sm:grid-cols-3 lg:grid-cols-4'
   }
 
-  const itemCount = hasHandles ? product_handles.length : product_ids.length
-  if (itemCount === 0) {
+  if (products.length === 0) {
     return null
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       {title && (
-        <h2 className="text-2xl md:text-3xl font-instrument-serif italic">{title}</h2>
+        <h2 className="text-2xl md:text-3xl font-instrument-serif italic text-[#3B3634]">{title}</h2>
       )}
-      {loading ? (
-        <div className={`grid ${columnClasses[columns]} gap-4`}>
-          {Array.from({ length: itemCount }).map((_, index) => (
-            <div key={index} className="aspect-square bg-gray-100 rounded-lg animate-pulse" />
-          ))}
-        </div>
-      ) : products.length > 0 ? (
-        <div className={`grid ${columnClasses[columns]} gap-4`}>
-          {products.map((product) => (
-            <ProductCard
-              key={product.id}
-              product={product}
-              user={null}
-              wishlist={[]}
-            />
-          ))}
-        </div>
-      ) : (
-        <p className="text-gray-500 text-center py-8">Brak produktów do wyświetlenia</p>
-      )}
+      <div className={`grid ${columnClasses[columns]} gap-6`}>
+        {products.map((product, index) => (
+          <Link
+            key={index}
+            href={product.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="group block bg-white rounded-xl overflow-hidden border border-[#3B3634]/10 hover:border-[#3B3634]/30 transition-all duration-300 hover:shadow-xl hover:-translate-y-1"
+          >
+            <div className="relative aspect-square overflow-hidden bg-[#F4F0EB]">
+              <Image
+                src={product.image_url}
+                alt={product.title}
+                fill
+                className="object-cover group-hover:scale-110 transition-transform duration-500 ease-out"
+                sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+              
+              {/* External link icon */}
+              <div className="absolute top-3 right-3 bg-white/90 backdrop-blur-sm rounded-full p-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 shadow-lg">
+                <svg className="w-4 h-4 text-[#3B3634]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                </svg>
+              </div>
+            </div>
+            
+            <div className="p-5">
+              <h3 className="font-instrument-serif text-lg text-[#3B3634] group-hover:text-[#8B7355] transition-colors duration-300 line-clamp-2">
+                {product.title}
+              </h3>
+              
+              {/* View product link */}
+              <div className="mt-3 flex items-center text-sm text-[#8B7355] font-medium opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                <span>Zobacz produkt</span>
+                <svg className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </div>
+            </div>
+          </Link>
+        ))}
+      </div>
     </div>
   )
 }

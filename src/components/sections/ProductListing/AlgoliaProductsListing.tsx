@@ -103,7 +103,10 @@ const AlgoliaProductsListingWithConfig = (props: AlgoliaProductsListingProps) =>
   const searchParams = useSearchParams()
 
   // Get URL parameters for filtering and pagination
-  const facetFilters: string = getFacedFilters(searchParams)
+  // CRITICAL FIX: getFacedFilters now returns object with filters and numericFilters
+  const filterResult = getFacedFilters(searchParams)
+  const facetFilters: string = filterResult.filters
+  const numericFilters: string[] = filterResult.numericFilters
   const page: number = +(searchParams.get("page") || 1)
   const query: string = searchParams.get("query") || ""
   const sortBy: string | null = searchParams.get("sortBy") || null
@@ -240,6 +243,13 @@ const AlgoliaProductsListingWithConfig = (props: AlgoliaProductsListingProps) =>
   // Add filters if any (for non-array fields)
   if (filters) {
     algoliaParams.filters = filters;
+  }
+  
+  // CRITICAL FIX: Add numeric filters for price and dimensions
+  // This prevents "attribute not specified in numericAttributesForFiltering" errors
+  // numericFilters work correctly with replica indices and sorting
+  if (numericFilters.length > 0) {
+    algoliaParams.numericFilters = numericFilters;
   }
   
   // Add facet filters if any (for array fields like categories)

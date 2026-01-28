@@ -169,7 +169,7 @@ export const HeroClient = ({
                         />
                       </div>
                     ) : banner.content.heading ? (
-                      <h1 className={`text-4xl sm:text-5xl lg:text-7xl text-white mb-4 sm:mb-6 ${
+                      <h1 className={`text-4xl sm:text-5xl lg:text-6xl text-white mb-4 sm:mb-8 ${
                         banner.id === 'nowy-rok' ? 'font-instrument-serif italic' : 'font-instrument-serif'
                       }`}>
                         {banner.content.heading}
@@ -177,7 +177,7 @@ export const HeroClient = ({
                     ) : null}
                     
                     {banner.content.subheading && (
-                      <h2 className="text-4xl sm:text-5xl lg:text-7xl font-instrument-serif uppercase text-white mb-4 sm:mb-6">
+                      <h2 className="text-4xl sm:text-5xl lg:text-6xl font-instrument-serif uppercase text-white mb-4 sm:mb-8">
                         {banner.content.subheading}
                       </h2>
                     )}
@@ -196,7 +196,7 @@ export const HeroClient = ({
                             window.location.href = banner.url
                           }
                         }}
-                        className="px-6 sm:px-8 py-3 sm:py-4 font-instrument-sans font-semibold text-sm sm:text-base lg:text-lg transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl bg-transparent border-2 border-white text-white hover:bg-white hover:text-[#3B3634] uppercase"
+                        className="px-6 sm:px-8 py-3 sm:py-4 font-instrument-sans font-medium text-sm sm:text-sm lg:text-base transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl bg-transparent border border-white text-white hover:bg-white hover:text-[#3B3634] uppercase"
                       >
                         {banner.content.cta}
                       </button>

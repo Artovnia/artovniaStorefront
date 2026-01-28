@@ -1,5 +1,6 @@
 import { useCallback } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useSearchParams } from 'next/navigation'
+import { useRouter, usePathname } from '@/i18n/routing'
 import { useFilterStore } from '@/stores/filterStore'
 
 /**
@@ -8,6 +9,7 @@ import { useFilterStore } from '@/stores/filterStore'
  */
 export const useApplyFilters = () => {
   const router = useRouter()
+  const pathname = usePathname()
   const searchParams = useSearchParams()
   const { applyPendingFilters, setIsEditingPrice } = useFilterStore()
 
@@ -85,8 +87,9 @@ export const useApplyFilters = () => {
     params.set('page', '1')
     
     // Update URL - this triggers a single Algolia search
-    router.push(`?${params.toString()}`, { scroll: false })
-  }, [applyPendingFilters, setIsEditingPrice, router, searchParams])
+    // CRITICAL FIX: Use absolute path with pathname for proper routing
+    router.push(`${pathname}?${params.toString()}`, { scroll: false })
+  }, [applyPendingFilters, setIsEditingPrice, router, pathname, searchParams])
 
   return applyFilters
 }

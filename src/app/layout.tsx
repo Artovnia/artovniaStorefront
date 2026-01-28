@@ -134,48 +134,6 @@ export default async function RootLayout({
         <body
           className={`${instrumentSans.className} antialiased bg-primary text-primary`}
         >
-          {/* Google Analytics - Client-side only to prevent hydration mismatch */}
-          <Script
-            src="https://www.googletagmanager.com/gtag/js?id=G-0T68CBFP9J"
-            strategy="afterInteractive"
-          />
-          <Script id="google-analytics" strategy="afterInteractive">
-            {`
-              if (typeof window !== 'undefined') {
-                window.dataLayer = window.dataLayer || [];
-                function gtag(){dataLayer.push(arguments);}
-                gtag('js', new Date());
-                gtag('config', 'G-0T68CBFP9J');
-              }
-            `}
-          </Script>
-
-          {/* SiteBehaviour */}
-       
-            <Script id="site-behaviour" strategy="lazyOnload">
-            {`
-              (function() {
-                try {
-                  // Check for heatmap capture query parameter
-                  if (window.location && window.location.search && window.location.search.indexOf('capture-sitebehaviour-heatmap') !== -1) {
-                    sessionStorage.setItem('capture-sitebehaviour-heatmap', '_');
-                  }
-
-                  var sbSiteSecret = 'aa0eb720-53da-4894-be51-d1cc9ff15968';
-                  window.sitebehaviourTrackingSecret = sbSiteSecret;
-                  var scriptElement = document.createElement('script');
-                  scriptElement.defer = true;
-                  scriptElement.id = 'site-behaviour-script-v2';
-                  scriptElement.src = 'https://sitebehaviour-cdn.fra1.cdn.digitaloceanspaces.com/index.min.js?sitebehaviour-secret=' + sbSiteSecret;
-                  document.head.appendChild(scriptElement);
-                }
-                catch (e) {
-                  console.error('SiteBehaviour initialization error:', e);
-                }
-              })();
-            `}
-          </Script>
-          
           <ToastProvider />
           {children}
         </body>

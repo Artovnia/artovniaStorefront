@@ -59,6 +59,7 @@ export const CookieConsent: React.FC<CookieConsentProps> = ({
     }, {} as Record<string, boolean>)
     
     localStorage.setItem('artovnia-cookie-preferences', JSON.stringify(allEnabled))
+    window.dispatchEvent(new Event('cookie-consent-updated'))
     onAccept?.(allEnabled)
     setIsVisible(false)
   }
@@ -70,6 +71,7 @@ export const CookieConsent: React.FC<CookieConsentProps> = ({
     }, {} as Record<string, boolean>)
     
     localStorage.setItem('artovnia-cookie-preferences', JSON.stringify(onlyRequired))
+    window.dispatchEvent(new Event('cookie-consent-updated'))
     onReject?.()
     setIsVisible(false)
   }
@@ -81,6 +83,7 @@ export const CookieConsent: React.FC<CookieConsentProps> = ({
     }, {} as Record<string, boolean>)
     
     localStorage.setItem('artovnia-cookie-preferences', JSON.stringify(preferences))
+    window.dispatchEvent(new Event('cookie-consent-updated'))
     onAccept?.(preferences)
     setIsVisible(false)
   }

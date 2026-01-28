@@ -5,7 +5,7 @@ import { CartProvider } from '@/components/context/CartContext';
 import { GuestWishlistProvider } from '@/components/context/GuestWishlistContext';
 import { Suspense } from 'react';
 // ✅ OPTIMIZED: Lazy-loaded client components (Next.js 15 requires client wrapper for ssr: false)
-import { CookieConsent, MobileUserNavigation } from '@/components/providers/ClientOnlyProviders';
+import { CookieConsent, ConsentAwareAnalytics, MobileUserNavigation } from '@/components/providers/ClientOnlyProviders';
 import { listCategoriesWithProducts } from '@/lib/data/categories';
 import { getEssentialCategories } from '@/lib/data/categories-static';
 import { listRegions } from '@/lib/data/regions';
@@ -69,6 +69,7 @@ export default async function RootLayout({
         </div>
         <MobileUserNavigation />
         <CookieConsent />
+        <ConsentAwareAnalytics />
       </CartProvider>
     </GuestWishlistProvider>
   );

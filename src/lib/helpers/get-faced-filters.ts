@@ -59,8 +59,15 @@ const buildSizeFilter = (values: string[]): string => {
   return ""
 }
 
-export const getFacedFilters = (filters: ReadonlyURLSearchParams): string => {
+// Return type for filter results
+export interface FilterResult {
+  filters: string // Regular filter string for non-numeric attributes
+  numericFilters: string[] // Numeric filters for price, dimensions, etc.
+}
+
+export const getFacedFilters = (filters: ReadonlyURLSearchParams): FilterResult => {
   const filterParts: string[] = []
+  const numericFilterParts: string[] = []
   let minPrice = null
   let maxPrice = null
 
@@ -183,19 +190,24 @@ export const getFacedFilters = (filters: ReadonlyURLSearchParams): string => {
     }
   }
 
-  // Add price filter if min or max price is set
-  // Use only the numericAttributes that are definitely configured in Algolia
+  // CRITICAL FIX: Add price filter to numericFilters (not filters string)
+  // This prevents "attribute not specified in numericAttributesForFiltering" errors
+  // numericFilters work correctly with replica indices and sorting
+  // Using min_price which is simpler and definitely configured in all indices
   if (minPrice || maxPrice) {
-    // Use variants.prices.amount (plural) which matches the backend Algolia configuration
-    // This must match exactly what's configured in numericAttributesForFiltering
     if (minPrice && maxPrice) {
-      filterParts.push(`variants.prices.amount:${minPrice} TO ${maxPrice}`)
+      // Filter by min_price range - products where min_price is within range
+      numericFilterParts.push(`min_price >= ${minPrice}`)
+      numericFilterParts.push(`min_price <= ${maxPrice}`)
     } else if (minPrice) {
-      filterParts.push(`variants.prices.amount >= ${minPrice}`)
+      numericFilterParts.push(`min_price >= ${minPrice}`)
     } else if (maxPrice) {
-      filterParts.push(`variants.prices.amount <= ${maxPrice}`)
+      numericFilterParts.push(`min_price <= ${maxPrice}`)
     }
   }
 
-  return filterParts.length > 0 ? filterParts.join(' AND ') : ''
+  return {
+    filters: filterParts.length > 0 ? filterParts.join(' AND ') : '',
+    numericFilters: numericFilterParts
+  }
 }

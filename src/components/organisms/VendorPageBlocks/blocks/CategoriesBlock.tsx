@@ -2,19 +2,18 @@
 
 import Image from 'next/image'
 import Link from 'next/link'
-import { useEffect, useState } from 'react'
 
-interface Category {
-  id: string
-  name: string
-  handle: string
-  thumbnail?: string
+interface CategoryMetadata {
+  title: string
+  image_url: string
+  url: string
 }
 
 interface CategoriesBlockData {
   title?: string
   category_ids?: string[] // Legacy support
-  category_handles?: string[] // New: use handles from URLs
+  category_handles?: string[] // Legacy support
+  categories?: CategoryMetadata[] // New: metadata-based cards
   columns?: number
 }
 
@@ -23,65 +22,8 @@ interface CategoriesBlockProps {
   sellerHandle?: string
 }
 
-export const CategoriesBlock = ({ data, sellerHandle }: CategoriesBlockProps) => {
-  const { title, category_ids = [], category_handles = [], columns = 3 } = data
-  const [categories, setCategories] = useState<Category[]>([])
-  const [loading, setLoading] = useState(true)
-
-  // Use handles if available, otherwise fall back to IDs
-  const hasHandles = category_handles.length > 0
-  const hasIds = category_ids.length > 0
-
-  useEffect(() => {
-    const fetchCategories = async () => {
-      if (!hasHandles && !hasIds) {
-        setLoading(false)
-        return
-      }
-
-      try {
-        let fetchedCategories: Category[] = []
-        
-        if (hasHandles) {
-          // Fetch categories by handles (one by one)
-          const categoryPromises = category_handles.map(async (handle) => {
-            try {
-              const response = await fetch(`/api/store/product-categories?handle=${handle}`)
-              if (response.ok) {
-                const data = await response.json()
-                return data.product_categories?.[0] || null
-              }
-              return null
-            } catch {
-              return null
-            }
-          })
-          const results = await Promise.all(categoryPromises)
-          fetchedCategories = results.filter(Boolean)
-        } else if (hasIds) {
-          // Legacy: Fetch categories by IDs
-          const response = await fetch(`/api/store/product-categories?id[]=${category_ids.join('&id[]=')}`)
-          if (response.ok) {
-            const data = await response.json()
-            fetchedCategories = data.product_categories || []
-          }
-        }
-        
-        setCategories(fetchedCategories)
-      } catch (error) {
-        console.error('Error fetching categories:', error)
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    fetchCategories()
-  }, [category_handles, category_ids, hasHandles, hasIds])
-
-  const itemCount = hasHandles ? category_handles.length : category_ids.length
-  if (itemCount === 0) {
-    return null
-  }
+export const CategoriesBlock = ({ data }: CategoriesBlockProps) => {
+  const { title, categories = [], columns = 3 } = data
 
   const gridCols = {
     2: 'grid-cols-1 md:grid-cols-2',
@@ -89,54 +31,60 @@ export const CategoriesBlock = ({ data, sellerHandle }: CategoriesBlockProps) =>
     4: 'grid-cols-2 md:grid-cols-3 lg:grid-cols-4',
   }
 
+  if (categories.length === 0) {
+    return null
+  }
+
   return (
     <div className="space-y-8">
       {title && (
-        <h2 className="text-2xl md:text-3xl font-instrument-serif italic text-center">{title}</h2>
+        <h2 className="text-2xl md:text-3xl font-instrument-serif italic text-center text-[#3B3634]">{title}</h2>
       )}
       
-      {loading ? (
-        <div className={`grid ${gridCols[columns as keyof typeof gridCols] || gridCols[3]} gap-6`}>
-          {Array.from({ length: Math.min(itemCount, 6) }).map((_, index) => (
-            <div key={index} className="animate-pulse">
-              <div className="aspect-[4/3] bg-[#F4F0EB] rounded-lg mb-3" />
-              <div className="h-4 bg-[#F4F0EB] rounded w-2/3 mx-auto" />
-            </div>
-          ))}
-        </div>
-      ) : (
-        <div className={`grid ${gridCols[columns as keyof typeof gridCols] || gridCols[3]} gap-6`}>
-          {categories.map((category) => (
-            <Link
-              key={category.id}
-              href={sellerHandle ? `/sellers/${sellerHandle}?category=${category.handle}` : `/categories/${category.handle}`}
-              className="group"
-            >
-              <div className="relative aspect-[4/3] rounded-lg overflow-hidden bg-[#F4F0EB] mb-3">
-                {category.thumbnail ? (
-                  <Image
-                    src={category.thumbnail}
-                    alt={category.name}
-                    fill
-                    className="object-cover transition-transform duration-300 group-hover:scale-105"
-                    sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
-                  />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center">
-                    <svg className="w-12 h-12 text-[#3B3634]/30" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
-                    </svg>
-                  </div>
-                )}
-                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
+      <div className={`grid ${gridCols[columns as keyof typeof gridCols] || gridCols[3]} gap-6`}>
+        {categories.map((category, index) => (
+          <Link
+            key={index}
+            href={category.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="group block bg-white rounded-xl overflow-hidden border border-[#3B3634]/10 hover:border-[#3B3634]/30 transition-all duration-300 hover:shadow-xl hover:-translate-y-1"
+          >
+            <div className="relative aspect-[4/3] overflow-hidden bg-[#F4F0EB]">
+              <Image
+                src={category.image_url}
+                alt={category.title}
+                fill
+                className="object-cover group-hover:scale-110 transition-transform duration-500 ease-out"
+                sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+              
+              {/* External link icon */}
+              <div className="absolute top-3 right-3 bg-white/90 backdrop-blur-sm rounded-full p-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 shadow-lg">
+                <svg className="w-4 h-4 text-[#3B3634]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                </svg>
               </div>
-              <h3 className="text-center font-instrument-sans text-lg group-hover:text-[#3B3634]/70 transition-colors">
-                {category.name}
-              </h3>
-            </Link>
-          ))}
-        </div>
-      )}
+              
+              {/* Category title overlay */}
+              <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/60 to-transparent">
+                <h3 className="text-white font-instrument-serif text-lg text-center group-hover:scale-105 transition-transform duration-300">
+                  {category.title}
+                </h3>
+              </div>
+            </div>
+            
+            {/* Browse category link */}
+            <div className="p-4 flex items-center justify-center text-sm text-[#8B7355] font-medium opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+              <span>Przeglądaj kategorię</span>
+              <svg className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            </div>
+          </Link>
+        ))}
+      </div>
     </div>
   )
 }

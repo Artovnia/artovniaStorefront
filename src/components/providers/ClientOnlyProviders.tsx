@@ -12,6 +12,16 @@ export const CookieConsent = dynamic(
   }
 );
 
+// ✅ LAZY LOAD: ConsentAwareAnalytics - Loads analytics scripts only after user consent
+// Must be client-only to access localStorage for consent preferences
+export const ConsentAwareAnalytics = dynamic(
+  () => import('@/components/providers/ConsentAwareAnalytics').then(mod => ({ default: mod.ConsentAwareAnalytics })),
+  { 
+    ssr: false,  // Don't render on server - needs localStorage access
+    loading: () => null  // No loading spinner needed
+  }
+);
+
 // ✅ CLIENT-ONLY: MobileUserNavigation - Only renders in browser to prevent hydration issues
 // Uses ssr: false to ensure server doesn't try to render this component
 export const MobileUserNavigation = dynamic(

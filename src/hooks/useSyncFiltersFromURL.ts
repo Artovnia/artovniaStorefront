@@ -65,10 +65,9 @@ if (!isEditingPrice) {
       setPendingDimensionFilter(key, value)
     })
     
-    // IMPORTANT: Clear colors when no color params in URL
-    // Colors are managed via Algolia refinements, but we need to clear store when URL has no colors
-    // This prevents ghost selections from persisted localStorage
-    setSelectedColors([])
-    setPendingColors([])
+    // CRITICAL FIX: DO NOT clear colors automatically
+    // Colors are managed via Algolia refinements and should persist across pagination
+    // They will be cleared explicitly when user clicks "Clear All" or removes individual colors
+    // Automatic clearing was causing colors to disappear when changing pages
   }, [searchParams, setMinPrice, setMaxPrice, setSelectedSizes, setSelectedRating, setDimensionFilter, setPendingMinPrice, setPendingMaxPrice, setPendingSizes, setPendingRating, setPendingDimensionFilter, setSelectedColors, setPendingColors, isEditingPrice])
 }

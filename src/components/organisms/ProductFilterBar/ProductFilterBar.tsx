@@ -228,21 +228,29 @@ export const ProductFilterBar = ({
     []
   )
 
-  // Sync Zustand color selections with Algolia refinements using debounced approach
+  // CRITICAL FIX: Sync Zustand color selections with Algolia refinements
+  // This runs AFTER applyPendingFilters moves pending -> active state
+  // The URL update triggers re-render, then this effect syncs Algolia
   useEffect(() => {
+    if (!refineColor || colorFacetItems.length === 0) return;
+    
+    // Use selectedColors (active state) not pendingColors
+    // This effect runs after Apply button updates the active state
     debouncedSyncColors(selectedColors, colorFacetItems, refineColor)
   }, [selectedColors, colorFacetItems, refineColor, debouncedSyncColors])
   
-  // Sync Zustand rating selection with Algolia refinements
+  // CRITICAL FIX: Sync Zustand rating selection with Algolia refinements
+  // This runs AFTER applyPendingFilters moves pending -> active state
   useEffect(() => {
-    if (ratingFacetItems.length === 0) return; // Wait for Algolia to be ready
+    if (!refineRating || ratingFacetItems.length === 0) return; // Wait for Algolia to be ready
     
     const algoliaRefinedRating = ratingFacetItems.find(item => item.isRefined)?.label || null;
     
+    // Use selectedRating (active state) not pendingRating
     // Check if synchronization is needed
     const needsSync = selectedRating !== algoliaRefinedRating;
     
-    if (needsSync && refineRating) {
+    if (needsSync) {
       // Use requestAnimationFrame to defer refinements until after current render cycle
       requestAnimationFrame(() => {
         // Clear current refinement if there is one
