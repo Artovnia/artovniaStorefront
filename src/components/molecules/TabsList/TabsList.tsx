@@ -12,26 +12,23 @@ export const TabsList = ({
   const searchParams = useSearchParams();
   
   const handleTabClick = (label: string, link: string) => {
-    const tabValue = link.endsWith('/reviews') ? 'recenzje' : 'produkty';
-    
-    const params = new URLSearchParams(searchParams.toString());
-    if (tabValue === 'produkty') {
-      params.delete('tab');
-    } else {
-      params.set('tab', tabValue);
-    }
-    
-    const basePath = link.replace('/reviews', '');
-    const newUrl = params.toString() ? `${basePath}?${params.toString()}` : basePath;
-    
-    router.push(newUrl, { scroll: false });
+    router.push(link, { scroll: false });
+  };
+  
+  // Extract tab value from link for comparison
+  const getTabValueFromLink = (link: string): string => {
+    const url = new URL(link, 'http://dummy.com');
+    const tabParam = url.searchParams.get('tab');
+    // If no tab param, it's the default 'produkty' tab
+    return tabParam || 'produkty';
   };
   
   return (
     <div className="relative w-full border-b border-[#3b3634]/80">
       <div className="flex">
         {list.map(({ label, link }) => {
-          const isActive = activeTab.trim() === label.toLowerCase().trim();
+          const tabValue = getTabValueFromLink(link);
+          const isActive = activeTab === tabValue;
           
           return (
             <button
@@ -54,8 +51,8 @@ export const TabsList = ({
               {/* Tab content */}
               <span 
                 className={`
-                  relative block px-8 py-2
-                  text-xs tracking-[0.25em] uppercase font-light
+                  relative block px-2 lg:tracking-[0.25em] md:px-4 py-2
+                  text-xs  uppercase font-light
                   transition-all duration-300 ease-out
                   ${isActive 
                     ? 'text-white bg-[#3b3634]' 

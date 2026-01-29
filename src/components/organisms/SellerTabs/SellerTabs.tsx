@@ -7,6 +7,7 @@ import { useSearchParams } from "next/navigation"
 import { Review } from "@/lib/data/reviews"
 import { VendorPage } from "@/lib/data/vendor-page"
 import { VendorPageRenderer } from "../VendorPageBlocks"
+import { LowestPriceData } from "@/types/price-history"
 
 export const SellerTabs = ({
   tab: initialTab,
@@ -18,6 +19,7 @@ export const SellerTabs = ({
   initialProducts,
   initialTotalCount,
   initialWishlists,
+  initialPriceData,
   categories,
   reviews,
   vendorPage,
@@ -31,6 +33,7 @@ export const SellerTabs = ({
   initialProducts?: HttpTypes.StoreProduct[]
   initialTotalCount?: number
   initialWishlists?: any[]
+  initialPriceData?: Record<string, LowestPriceData | null>
   categories?: Array<{ id: string; name: string; handle: string }>
   reviews?: Review[]
   vendorPage?: VendorPage | null
@@ -42,7 +45,7 @@ export const SellerTabs = ({
   
   // Valid tabs depend on whether vendor has custom page
   const validTabs = hasCustomPage 
-    ? ['historia', 'produkty', 'recenzje'] 
+    ? ['poznajtworce', 'produkty', 'recenzje'] 
     : ['produkty', 'recenzje']
   
   // Read tab from URL, fallback to initialTab prop
@@ -85,7 +88,7 @@ export const SellerTabs = ({
   // Build tabs list - add "historia" tab only if vendor has custom page
   const tabsList = hasCustomPage
     ? [
-        { label: "historia", link: `/sellers/${seller_handle}?tab=historia` },
+        { label: "poznaj twórcę", link: `/sellers/${seller_handle}?tab=poznajtworce` },
         { label: "produkty", link: `/sellers/${seller_handle}?tab=produkty` },
         { label: "recenzje", link: `/sellers/${seller_handle}?tab=recenzje` },
       ]
@@ -95,12 +98,12 @@ export const SellerTabs = ({
       ]
 
   return (
-    <div className="w-full">
+    <div className="w-full mx-auto">
       <TabsList list={tabsList} activeTab={tab} />
       
-      {/* Historia (Story) tab - only shown if vendor has custom page */}
+      {/* Poznaj Twórcę tab - only shown if vendor has custom page */}
       {hasCustomPage && (
-        <TabsContent value="historia" activeTab={tab}>
+        <TabsContent value="poznajtworce" activeTab={tab}>
           <div className="mt-8">
             <VendorPageRenderer page={vendorPage!} sellerId={seller_id} sellerHandle={seller_handle} />
           </div>
@@ -114,6 +117,7 @@ export const SellerTabs = ({
           initialProducts={initialProducts}
           initialTotalCount={initialTotalCount}
           initialWishlists={initialWishlists}
+          initialPriceData={initialPriceData}
           categories={categories}
         />
       </TabsContent>

@@ -13,7 +13,6 @@ import {
 import { getSellerReviews } from "../../../../../lib/data/reviews"
 import { getSellerPage } from "../../../../../lib/data/vendor-page"
 import { SellerProps } from "../../../../../types/seller"
-import { BatchPriceProvider } from "../../../../../components/context/BatchPriceProvider"
 import {
   generateSellerMetadata,
   generateSellerJsonLd,
@@ -21,13 +20,16 @@ import {
 import type { Metadata } from "next"
 import { listProductsWithSort } from "../../../../../lib/data/products"
 import { getUserWishlists } from "../../../../../lib/data/wishlist"
+import { getBatchLowestPrices } from "../../../../../lib/data/price-history"
 import { PRODUCT_LIMIT } from "../../../../../const"
 import { Breadcrumbs } from "../../../../../components/atoms/Breadcrumbs/Breadcrumbs"
 import { sdk } from "../../../../../lib/config"
 import { getRegion } from "../../../../../lib/data/regions"
 import { HttpTypes } from "@medusajs/types"
 
-export const revalidate = 300
+// ✅ PERFORMANCE: Enable ISR - cache page for 60 seconds
+// This makes subsequent visits instant while keeping data fresh
+export const revalidate = 60
 
 // ✅ NEW: Async component for seller tabs with product data
 async function SellerTabsWithData({
@@ -49,64 +51,43 @@ async function SellerTabsWithData({
   reviews: any[]
   vendorPage: any
 }) {
-  // ✅ Fetch products, wishlists, and categories in parallel
-  const [productsResult, wishlistsResult, categoriesResult] = await Promise.allSettled([
-    listProductsWithSort({
-      seller_id,
-      countryCode: "pl",
-      sortBy: "created_at_desc",
-      queryParams: { limit: PRODUCT_LIMIT, offset: 0 },
-    }),
-    user ? getUserWishlists().catch(() => ({ wishlists: [] })) : Promise.resolve({ wishlists: [] }),
-    (async () => {
-      try {
-        const region = await getRegion("pl")
-        if (!region) return { product_categories: [] }
+  // ✅ OPTIMIZATION: Fetch products, wishlists, and price history in parallel
+  const productsPromise = listProductsWithSort({
+    seller_id,
+    countryCode: "pl",
+    sortBy: "created_at_desc",
+    queryParams: { limit: PRODUCT_LIMIT, offset: 0 },
+  })
+  
+  const wishlistsPromise = user 
+    ? getUserWishlists().catch(() => ({ wishlists: [] })) 
+    : Promise.resolve({ wishlists: [] })
 
-        const sellerProductsResponse = await sdk.client.fetch<{
-          products: Array<{ 
-            id: string
-            categories?: Array<{ id: string; name: string; handle: string }> 
-          }>
-          count: number
-        }>(`/store/seller/${seller_id}/products`, {
-          method: 'GET',
-          query: { 
-            limit: 1000,
-            offset: 0,
-            region_id: region.id,
-          },
-        })
-        
-        const categoriesMap = new Map<string, { id: string; name: string; handle: string }>()
-        sellerProductsResponse.products?.forEach(product => {
-          product.categories?.forEach(cat => {
-            if (!categoriesMap.has(cat.id)) {
-              categoriesMap.set(cat.id, cat)
-            }
-          })
-        })
-        
-        return { product_categories: Array.from(categoriesMap.values()) }
-      } catch (error) {
-        console.error('Error fetching seller categories:', error)
-        return { product_categories: [] }
-      }
-    })(),
+  // First get products, then fetch prices in parallel with wishlists
+  const productsResult = await productsPromise
+  const initialProducts = productsResult?.response?.products
+  const initialTotalCount = productsResult?.response?.count
+
+  // Extract variant IDs for price fetch
+  const variantIds = initialProducts
+    ?.map((p: any) => p.variants?.[0]?.id)
+    .filter(Boolean) as string[] || []
+
+  // Fetch wishlists and prices in parallel (prices depend on products)
+  const [wishlistsResult, priceResult] = await Promise.allSettled([
+    wishlistsPromise,
+    variantIds.length > 0 ? getBatchLowestPrices(variantIds, 'PLN') : Promise.resolve(undefined)
   ])
 
-  const initialProducts = productsResult.status === "fulfilled" 
-    ? productsResult.value?.response?.products 
-    : undefined
-  const initialTotalCount = productsResult.status === "fulfilled" 
-    ? productsResult.value?.response?.count 
-    : undefined
   const initialWishlists = wishlistsResult.status === "fulfilled"
     ? wishlistsResult.value?.wishlists
     : undefined
-  const categories = categoriesResult.status === "fulfilled"
-    ? categoriesResult.value?.product_categories
+  const initialPriceData = priceResult.status === "fulfilled"
+    ? priceResult.value
     : undefined
+  
+  // ✅ OPTIMIZATION: Extract categories from initial products (no duplicate fetch needed)
+  const categories = initialProducts ? extractCategoriesFromProducts(initialProducts) : undefined
 
   return (
     <SellerTabs
@@ -119,11 +100,33 @@ async function SellerTabsWithData({
       initialProducts={initialProducts}
       initialTotalCount={initialTotalCount}
       initialWishlists={initialWishlists}
+      initialPriceData={initialPriceData}
       categories={categories}
       reviews={reviews}
       vendorPage={vendorPage}
     />
   )
+}
+
+// ✅ Helper function to extract unique categories from products
+function extractCategoriesFromProducts(products: HttpTypes.StoreProduct[]): Array<{ id: string; name: string; handle: string }> {
+  const categoriesMap = new Map<string, { id: string; name: string; handle: string }>()
+  
+  products.forEach(product => {
+    // Cast to any because categories exist at runtime but not in StoreProduct type
+    const productWithCategories = product as any
+    productWithCategories.categories?.forEach((cat: any) => {
+      if (cat && cat.id && !categoriesMap.has(cat.id)) {
+        categoriesMap.set(cat.id, {
+          id: cat.id,
+          name: cat.name || '',
+          handle: cat.handle || ''
+        })
+      }
+    })
+  })
+  
+  return Array.from(categoriesMap.values())
 }
 
 // ✅ NEW: Skeleton for seller tabs while data loads
@@ -219,24 +222,10 @@ export default async function SellerPage({
       )
     }
 
-    // ✅ OPTIMIZED: Fetch only essential data for sidebar/tabs rendering
-    const [seller, user, reviewsResult, availabilityResult, holidayModeResult, suspensionResult, vendorPageResult] =
-      await Promise.allSettled([
-        getSellerByHandle(handle),
-        retrieveCustomer().catch(() => null),
-        getSellerReviews(handle).catch(() => ({ reviews: [] })),
-        getSellerByHandle(handle).then(s => s ? getVendorAvailability(s.id) : null),
-        getSellerByHandle(handle).then(s => s ? getVendorHolidayMode(s.id) : null),
-        getSellerByHandle(handle).then(s => s ? getVendorSuspension(s.id) : null),
-        getSellerPage(handle),
-      ])
-
-    const sellerData = seller.status === "fulfilled" ? seller.value : null
-    const userData = user.status === "fulfilled" ? user.value : null
-    const reviews = reviewsResult.status === "fulfilled" ? reviewsResult.value?.reviews || [] : []
-    const vendorPage = vendorPageResult.status === "fulfilled" ? vendorPageResult.value?.page : null
-
-    if (!sellerData) {
+    // ✅ OPTIMIZED: Fetch seller first, then parallel fetch all dependent data
+    const seller = await getSellerByHandle(handle)
+    
+    if (!seller) {
       console.error(`Seller not found for handle: ${handle}`)
       return (
         <main className="container">
@@ -250,10 +239,21 @@ export default async function SellerPage({
       )
     }
 
-    const sellerWithReviews = {
-      ...sellerData,
-      reviews: reviews || [],
-    }
+    // ✅ OPTIMIZATION: Fetch all data in parallel
+    // No page-level revalidate allows static generation with on-demand revalidation
+    const [user, reviewsResult, availabilityResult, holidayModeResult, suspensionResult, vendorPageResult] =
+      await Promise.allSettled([
+        retrieveCustomer().catch(() => null),
+        getSellerReviews(handle).catch(() => ({ reviews: [] })),
+        getVendorAvailability(seller.id),
+        getVendorHolidayMode(seller.id),
+        getVendorSuspension(seller.id),
+        getSellerPage(handle),
+      ])
+
+    const userData = user.status === "fulfilled" ? user.value : null
+    const reviews = reviewsResult.status === "fulfilled" ? reviewsResult.value?.reviews || [] : []
+    const vendorPage = vendorPageResult.status === "fulfilled" ? vendorPageResult.value?.page : null
 
     const availability =
       availabilityResult.status === "fulfilled" && availabilityResult.value
@@ -277,16 +277,21 @@ export default async function SellerPage({
         ? suspensionResult.value
         : undefined
 
+    const sellerWithReviews = {
+      ...seller,
+      reviews: reviews || [],
+    }
+
     // ✅ Generate JSON-LD for seller page
     const sellerJsonLd = generateSellerJsonLd(
       {
-        id: sellerData.id,
-        name: sellerData.name,
-        handle: sellerData.handle,
-        description: sellerData.description,
-        photo: sellerData.photo,
-        logo_url: sellerData.logo_url,
-        created_at: sellerData.created_at,
+        id: seller.id,
+        name: seller.name,
+        handle: seller.handle,
+        description: seller.description,
+        photo: seller.photo,
+        logo_url: seller.logo_url,
+        created_at: seller.created_at,
       },
       reviews
     )
@@ -295,11 +300,11 @@ export default async function SellerPage({
     const breadcrumbItems = [
       { label: "Strona główna", path: "/" },
       { label: "Sprzedawcy", path: "/sellers" },
-      { label: sellerData.name, path: `/sellers/${sellerData.handle}` },
+      { label: seller.name, path: `/sellers/${seller.handle}` },
     ]
 
     return (
-      <BatchPriceProvider currencyCode="PLN">
+      <>
         {/* ✅ NEW: Structured Data for SEO */}
         <script
           type="application/ld+json"
@@ -313,14 +318,14 @@ export default async function SellerPage({
           </div>
           
           <VendorAvailabilityProvider
-            vendorId={sellerData.id}
-            vendorName={sellerData.name}
+            vendorId={seller.id}
+            vendorName={seller.name}
             availability={availability}
             holidayMode={holidayMode}
             suspension={suspension}
             showModalOnLoad={!!availability?.onHoliday}
           >
-            <div className="grid grid-cols-1 lg:grid-cols-[30%_70%] gap-6 mt-8 ">
+            <div className="grid grid-cols-1 lg:grid-cols-[30%_70%] gap-6 mt-0 md:mt-8 ">
               {/* ✅ Sidebar renders immediately - no async dependencies */}
               <aside className="lg:sticky lg:top-40 lg:self-start">
                 <SellerSidebar
@@ -334,9 +339,9 @@ export default async function SellerPage({
                 <Suspense fallback={<SellerTabsFallback />}>
                   <SellerTabsWithData
                     tab={tab}
-                    seller_id={sellerData.id}
-                    seller_handle={sellerData.handle}
-                    seller_name={sellerData.name}
+                    seller_id={seller.id}
+                    seller_handle={seller.handle}
+                    seller_name={seller.name}
                     user={userData}
                     locale={locale}
                     reviews={reviews}
@@ -347,7 +352,7 @@ export default async function SellerPage({
             </div>
           </VendorAvailabilityProvider>
         </main>
-      </BatchPriceProvider>
+      </>
     )
   } catch (error) {
     console.error(

@@ -20,15 +20,24 @@ interface BatchPriceProviderProps {
   currencyCode: string
   regionId?: string
   days?: number
+  // ✅ OPTIMIZATION: Pass variant IDs directly to enable instant cache lookup
+  preloadVariantIds?: string[]
+  // ✅ OPTIMIZATION: Pass server-fetched price data to eliminate client-side fetch
+  initialPriceData?: Record<string, LowestPriceData | null>
 }
 
 export const BatchPriceProvider: React.FC<BatchPriceProviderProps> = ({
   children,
   currencyCode,
   regionId,
-  days = 30
+  days = 30,
+  preloadVariantIds = [],
+  initialPriceData
 }) => {
-  const [registeredVariants, setRegisteredVariants] = useState<Set<string>>(new Set())
+  // ✅ OPTIMIZATION: Initialize with preloaded variant IDs for instant cache lookup
+  const [registeredVariants, setRegisteredVariants] = useState<Set<string>>(
+    () => new Set(preloadVariantIds.filter(Boolean))
+  )
   
   // Cleanup mechanism to prevent memory leaks
   useEffect(() => {
@@ -44,15 +53,20 @@ export const BatchPriceProvider: React.FC<BatchPriceProviderProps> = ({
     }
   }, [])
   
-  // Memoize variant IDs array to prevent unnecessary re-renders
-  const variantIds = useMemo(() => Array.from(registeredVariants), [registeredVariants])
+  // ✅ OPTIMIZATION: Merge preloaded and registered variants
+  const variantIds = useMemo(() => {
+    const merged = new Set([...preloadVariantIds.filter(Boolean), ...registeredVariants])
+    return Array.from(merged)
+  }, [registeredVariants, preloadVariantIds])
 
+  // ✅ OPTIMIZATION: Skip client-side fetch if we have server-provided price data
   const { data, loading, error } = useBatchLowestPrices({
     variantIds,
     currencyCode,
     regionId,
     days,
-    enabled: variantIds.length > 0
+    enabled: variantIds.length > 0 && !initialPriceData,
+    initialData: initialPriceData
   })
 
 

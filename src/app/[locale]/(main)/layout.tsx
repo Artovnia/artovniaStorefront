@@ -10,6 +10,9 @@ import { listCategoriesWithProducts } from '@/lib/data/categories';
 import { getEssentialCategories } from '@/lib/data/categories-static';
 import { listRegions } from '@/lib/data/regions';
 
+// ✅ CRITICAL: Cache layout data to prevent blocking on every request
+export const revalidate = 3600 // Cache for 1 hour
+
 export default async function RootLayout({
   children,
 }: Readonly<{

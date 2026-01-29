@@ -11,6 +11,8 @@ interface BatchLowestPricesOptions {
   regionId?: string
   days?: number
   enabled?: boolean
+  // ✅ OPTIMIZATION: Server-provided price data to skip client-side fetch
+  initialData?: Record<string, LowestPriceData | null>
 }
 
 interface BatchLowestPricesReturn {
@@ -22,18 +24,38 @@ interface BatchLowestPricesReturn {
 
 // Legacy cache removed - now using persistent cache system
 
+// ✅ OPTIMIZATION: Check cache synchronously to get initial data without loading state
+function getInitialCachedData(
+  variantIds: string[],
+  currencyCode: string,
+  regionId: string | undefined,
+  days: number
+): Record<string, LowestPriceData | null> | null {
+  if (variantIds.length === 0) return null
+  
+  const cacheKey = `promotional:price:batch:${variantIds.sort().join(',')}:${currencyCode}:${regionId || 'default'}:${days}`
+  const cached = unifiedCache.getSync<Record<string, LowestPriceData | null>>(cacheKey)
+  return cached
+}
+
 export function useBatchLowestPrices({
   variantIds,
   currencyCode,
   regionId,
   days = 30,
-  enabled = true
+  enabled = true,
+  initialData: serverProvidedData
 }: BatchLowestPricesOptions): BatchLowestPricesReturn {
-  const [data, setData] = useState<Record<string, LowestPriceData | null>>({})
-  const [loading, setLoading] = useState(false)
+  // ✅ OPTIMIZATION: Use server-provided data first, then check cache
+  const cachedData = getInitialCachedData(variantIds, currencyCode, regionId, days)
+  const initialData = serverProvidedData || cachedData
+  const [data, setData] = useState<Record<string, LowestPriceData | null>>(initialData || {})
+  // ✅ OPTIMIZATION: Don't show loading if we have server or cached data
+  const [loading, setLoading] = useState(initialData === null && variantIds.length > 0 && enabled)
   const [error, setError] = useState<string | null>(null)
   const debounceRef = useRef<NodeJS.Timeout | null>(null)
   const lastFetchRef = useRef<string>('')
+  const hasCachedDataRef = useRef<boolean>(initialData !== null)
 
   const fetchBatchLowestPrices = useCallback(async (): Promise<Record<string, LowestPriceData | null>> => {
     if (variantIds.length === 0) {
@@ -120,20 +142,30 @@ export function useBatchLowestPrices({
       return
     }
 
+    // ✅ OPTIMIZATION: Skip fetch if we already have cached data (from initial load)
+    if (hasCachedDataRef.current && Object.keys(data).length > 0) {
+      lastFetchRef.current = cacheKey
+      return
+    }
+
     // Clear existing debounce
     if (debounceRef.current) {
       clearTimeout(debounceRef.current)
     }
 
-    // Debounce API calls by 150ms to batch rapid registrations
+    // Debounce API calls by 50ms to batch rapid registrations (reduced from 150ms for faster loading)
     debounceRef.current = setTimeout(async () => {
       lastFetchRef.current = cacheKey
-      setLoading(true)
+      // ✅ OPTIMIZATION: Don't show loading if we have any data already
+      if (Object.keys(data).length === 0) {
+        setLoading(true)
+      }
       setError(null)
 
       try {
         const results = await fetchBatchLowestPrices()
         setData(results)
+        hasCachedDataRef.current = true
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : 'Unknown error occurred'
         setError(errorMessage)
@@ -143,7 +175,7 @@ export function useBatchLowestPrices({
       } finally {
         setLoading(false)
       }
-    }, 150)
+    }, 50)
 
     // Cleanup debounce on unmount
     return () => {

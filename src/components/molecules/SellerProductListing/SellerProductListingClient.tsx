@@ -1,17 +1,19 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import { HttpTypes } from "@medusajs/types"
-import { ProductCard } from "@/components/organisms"
-import { ProductListingSkeleton } from "@/components/organisms/ProductListingSkeleton/ProductListingSkeleton"
+import { useState, useEffect, useMemo } from 'react'
+import { HttpTypes } from '@medusajs/types'
+import { ProductCard } from '@/components/organisms'
 import { Pagination } from '@/components/cells/Pagination/Pagination'
-import { PRODUCT_LIMIT } from "@/const"
 import { listProductsWithSort } from '@/lib/data/products'
 import { getUserWishlists } from '@/lib/data/wishlist'
-import { SerializableWishlist } from '@/types/wishlist'
-import { PromotionDataProvider } from "@/components/context/PromotionDataProvider"
+import { ProductListingSkeleton } from '@/components/organisms/ProductListingSkeleton/ProductListingSkeleton'
+import { PromotionDataProvider } from '@/components/context/PromotionDataProvider'
+import { BatchPriceProvider } from '@/components/context/BatchPriceProvider'
 import { SellerProductFilterBar } from "@/components/organisms/SellerProductFilterBar/SellerProductFilterBar"
 import { useSearchParams } from 'next/navigation'
+import { SerializableWishlist } from '@/types/wishlist'
+import { LowestPriceData } from '@/types/price-history'
+import { PRODUCT_LIMIT } from '@/const'
 
 export function SellerProductListingClient({
   seller_id,
@@ -19,6 +21,7 @@ export function SellerProductListingClient({
   initialProducts,
   initialTotalCount,
   initialWishlists,
+  initialPriceData,
   categories,
 }: {
   seller_id: string
@@ -26,6 +29,7 @@ export function SellerProductListingClient({
   initialProducts?: HttpTypes.StoreProduct[]
   initialTotalCount?: number
   initialWishlists?: SerializableWishlist[]
+  initialPriceData?: Record<string, LowestPriceData | null>
   categories?: Array<{ id: string; name: string; handle: string }>
 }) {
   const searchParams = useSearchParams()
@@ -147,35 +151,41 @@ export function SellerProductListingClient({
             </p>
           </div>
         ) : (
-          <>
-            <div className="mb-6">
-              <div className="label-md text-gray-600">
-                {totalCount} produkt{totalCount === 1 ? '' : totalCount < 5 ? 'y' : 'ów'}
+          <BatchPriceProvider 
+            currencyCode="PLN"
+            preloadVariantIds={products.map(p => p.variants?.[0]?.id).filter(Boolean) as string[]}
+            initialPriceData={initialPriceData}
+          >
+            <div className="w-full">
+              <div className="mb-6">
+                <div className="label-md text-gray-600">
+                  {totalCount} produkt{totalCount === 1 ? '' : totalCount < 5 ? 'y' : 'ów'}
+                </div>
               </div>
-            </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-y-4 mx-auto">
-            {products.map((product) => (
-              <ProductCard
-                key={product.id}
-                product={product}
-                user={user}
-                wishlist={wishlist}
-                onWishlistChange={refreshWishlist}
-              />
-            ))}
-          </div>
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-y-4 mx-auto">
+                {products.map((product) => (
+                  <ProductCard
+                    key={product.id}
+                    product={product}
+                    user={user}
+                    wishlist={wishlist}
+                    onWishlistChange={refreshWishlist}
+                  />
+                ))}
+              </div>
 
-          {totalPages > 1 && (
-            <div className="flex justify-center mt-8">
-              <Pagination
-                pages={totalPages}
-                setPage={handlePageChange}
-                currentPage={currentPage}
-              />
+              {totalPages > 1 && (
+                <div className="flex justify-center mt-8">
+                  <Pagination
+                    pages={totalPages}
+                    setPage={handlePageChange}
+                    currentPage={currentPage}
+                  />
+                </div>
+              )}
             </div>
-            )}
-          </>
+          </BatchPriceProvider>
         )}
         </div>
       </div>

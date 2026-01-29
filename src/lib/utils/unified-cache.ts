@@ -117,6 +117,21 @@ class UnifiedCache {
       userSpecificPrefixes: USER_SPECIFIC_PREFIXES
     }
   }
+
+  // ✅ OPTIMIZATION: Synchronous cache access for initial render (no fetch triggered)
+  // Returns cached data if valid, null otherwise
+  getSync<T>(key: string): T | null {
+    // Block user-specific data
+    if (isUserSpecificKey(key)) {
+      return null
+    }
+
+    const cached = memoryCache.get(key)
+    if (cached && Date.now() < cached.expires) {
+      return cached.data as T
+    }
+    return null
+  }
 }
 
 export const unifiedCache = new UnifiedCache()

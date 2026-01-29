@@ -9,21 +9,55 @@ import { cn } from '@/lib/utils';
 const reasonOptions = [
   { label: '', value: '', hidden: true },
   {
-    label: 'Trademark, Copyright or DMCA Violation',
-    value: 'Trademark, Copyright or DMCA Violation',
+    label: 'Naruszenie znaku towarowego, praw autorskich lub DMCA',
+    value: 'trademark_copyright_violation',
+  },
+  {
+    label: 'Podrobione lub nieautentyczne produkty',
+    value: 'counterfeit_products',
+  },
+  {
+    label: 'Oszustwo lub wprowadzające w błąd informacje',
+    value: 'fraud_misleading',
+  },
+  {
+    label: 'Nieodpowiednie lub obraźliwe treści',
+    value: 'inappropriate_content',
+  },
+  {
+    label: 'Naruszenie regulaminu platformy',
+    value: 'platform_policy_violation',
+  },
+  {
+    label: 'Sprzedaż zabronionych przedmiotów',
+    value: 'prohibited_items',
+  },
+  {
+    label: 'Podejrzana lub nielegalna działalność',
+    value: 'suspicious_illegal_activity',
+  },
+  {
+    label: 'Molestowanie lub niewłaściwe zachowanie',
+    value: 'harassment_misconduct',
+  },
+  {
+    label: 'Inne',
+    value: 'other',
   },
 ];
 
 const formSchema = z.object({
-  reason: z.string().nonempty('Please select reason'),
-  comment: z.string().nonempty('Please add comment'),
+  reason: z.string().nonempty('Proszę wybrać powód'),
+  comment: z.string().nonempty('Proszę dodać komentarz'),
 });
 
 type FormData = z.infer<typeof formSchema>;
 
 export const ReportSellerForm = ({
+  seller_id,
   onClose,
 }: {
+  seller_id: string;
   onClose: () => void;
 }) => {
   const {
@@ -40,22 +74,45 @@ export const ReportSellerForm = ({
     },
   });
 
-  const onSubmit = (data: FormData) => {
-    console.log('Form Data:', data);
+  const onSubmit = async (data: FormData) => {
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL}/store/reports/seller`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-publishable-api-key': process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || '',
+        },
+        body: JSON.stringify({
+          seller_id,
+          reason: data.reason,
+          comment: data.comment,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to submit report');
+      }
+
+      const result = await response.json();
+      console.log('✅ Report submitted successfully:', result);
+    } catch (error) {
+      console.error('❌ Error submitting report:', error);
+      alert('Nie udało się wysłać zgłoszenia. Spróbuj ponownie.');
+    }
   };
 
   return (
     <div>
       {!isSubmitted ? (
         <form onSubmit={handleSubmit(onSubmit)}>
-          <div className='px-4 pb-5'>
+          <div className='px-4 pb-5 z-999'>
             <label className='label-sm'>
               <p
                 className={cn(
                   errors?.reason && 'text-negative'
                 )}
               >
-                Reason
+                Powód
               </p>
               <SelectField
                 options={reasonOptions}
@@ -82,7 +139,7 @@ export const ReportSellerForm = ({
                   errors?.comment && 'text-negative'
                 )}
               >
-                Comment
+                Komentarz
               </p>
               <Textarea
                 rows={5}
@@ -104,7 +161,7 @@ export const ReportSellerForm = ({
               type='submit'
               className='w-full py-3 uppercase'
             >
-              Report Seller
+              Zgłoś sprzedawcę
             </Button>
           </div>
         </form>
@@ -112,14 +169,15 @@ export const ReportSellerForm = ({
         <div className='text-center'>
           <div className='px-4 pb-5'>
             <h4 className='heading-lg uppercase'>
-              Thank you!
+              Dziękujemy!
             </h4>
             <p className='max-w-[466px] mx-auto mt-4 text-lg text-secondary'>
-              We&apos;ll check the listing to see if it
-              violates our guidelines and take the necessary
-              action to ensure a safe shopping experience
-              for everyone. Thank you for helping us
-              maintain a trusted community.
+              Sprawdzimy ofertę, aby upewnić się, że
+              przestrzega naszych wytycznych i podjęliśmy
+              niezbędne działania, aby zapewnić bezpieczne
+              doświadczenie zakupowe
+              dla wszystkich. Dziękujemy za pomoc w utrzymaniu
+              zaufanej społeczności.
             </p>
           </div>
 
@@ -128,7 +186,7 @@ export const ReportSellerForm = ({
               className='w-full py-3 uppercase'
               onClick={onClose}
             >
-              Got it
+              Rozumiem
             </Button>
           </div>
         </div>

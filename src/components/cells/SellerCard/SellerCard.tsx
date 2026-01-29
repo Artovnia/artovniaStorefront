@@ -3,9 +3,11 @@
 import React, { useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { cn } from '@/lib/utils'
 import { ArrowRightIcon } from '@/icons'
 import { SellerProps } from '@/types/seller'
+import { prefetchSellerData } from '@/lib/utils/prefetch-seller'
 
 interface SellerCardProps {
   seller: SellerProps
@@ -14,6 +16,7 @@ interface SellerCardProps {
 
 export const SellerCard = ({ seller, className }: SellerCardProps) => {
   const [isHovered, setIsHovered] = useState(false)
+  const router = useRouter()
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('pl-PL', {
@@ -25,7 +28,17 @@ export const SellerCard = ({ seller, className }: SellerCardProps) => {
   // Use seller photo or logo_url, fallback to placeholder
   const sellerImage = seller.photo || seller.logo_url || '/placeholder.webp'
   
- 
+  // ✅ PERFORMANCE: Prefetch seller page data on hover for instant navigation
+  const handleMouseEnter = () => {
+    setIsHovered(true)
+    // Prefetch both the route (RSC payload) and the actual API data
+    router.prefetch(`/sellers/${seller.handle}`)
+    prefetchSellerData(seller.handle)
+  }
+
+  const handleMouseLeave = () => {
+    setIsHovered(false)
+  }
 
   // ✅ PERFORMANCE: Use native Link navigation instead of useTransition
   // This allows loading.tsx to show immediately without waiting for full page render
@@ -33,6 +46,8 @@ export const SellerCard = ({ seller, className }: SellerCardProps) => {
   return (
     <Link 
       href={`/sellers/${seller.handle}`}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
       className={cn(
         "group block relative w-[270px] h-[380px]",
         "transition-all duration-300 ease-out",
@@ -40,8 +55,6 @@ export const SellerCard = ({ seller, className }: SellerCardProps) => {
         "focus:outline-none focus:ring-2 focus:ring-[#3B3634] focus:ring-offset-2",
         className
       )}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
       aria-label={`View seller: ${seller.name}`}
     >
       <article className="relative overflow-hidden h-full bg-primary shadow-md">

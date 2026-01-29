@@ -39,7 +39,7 @@ export const MessageForm = ({
     
     // Check if user is authenticated first
     if (!isAuthenticated) {
-      toast.error('Musisz być zalogowany, aby wysłać wiadomość')
+      toast.error('Chcesz napisać do sprzedawcy? Zaloguj się, aby wysłać wiadomość.')
       return
     }
     
@@ -79,7 +79,7 @@ export const MessageForm = ({
         toast.dismiss(loadingToast)
         
         if (result.error?.includes('User not authenticated')) {
-          toast.error('Musisz być zalogowany, aby wysłać wiadomość')
+          toast.error('Chcesz napisać do sprzedawcy? Zaloguj się, aby wysłać wiadomość.')
         } else {
           toast.error(result.error || 'Nie udało się wysłać wiadomości. Spróbuj ponownie.')
         }
@@ -90,7 +90,7 @@ export const MessageForm = ({
       // Show more specific error message
       const errorMessage = error?.toString() || ''
       if (errorMessage.includes('User not authenticated')) {
-        toast.error('Musisz być zalogowany, aby wysłać wiadomość')
+        toast.error('Chcesz napisać do sprzedawcy? Zaloguj się, aby wysłać wiadomość.')
       } else if (errorMessage.includes('Bad Request')) {
         toast.error('Nieprawidłowe dane. Sprawdź formularz i spróbuj ponownie.')
       } else {
