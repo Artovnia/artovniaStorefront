@@ -12,6 +12,7 @@ interface HeroBlockData {
   overlay_opacity?: number
   text_position: 'center' | 'left' | 'right'
   rounded_edges?: boolean
+  focal_point?: { x: number; y: number }
 }
 
 interface HeroBlockProps {
@@ -27,8 +28,15 @@ export const HeroBlock = ({ data }: HeroBlockProps) => {
     subtitle,
     overlay_opacity = 40,
     text_position = 'center',
-    rounded_edges = true
+    rounded_edges = true,
+    focal_point
   } = data
+
+  // Helper to get focal point style
+  const getFocalPointStyle = () => {
+    if (!focal_point) return {}
+    return { objectPosition: `${focal_point.x}% ${focal_point.y}%` }
+  }
 
   const positionClasses = {
     left: 'items-start',
@@ -61,6 +69,7 @@ export const HeroBlock = ({ data }: HeroBlockProps) => {
           className="object-cover"
           sizes="100vw"
           priority
+          style={getFocalPointStyle()}
         />
       ) : (
         <div className="absolute inset-0 bg-gradient-to-br from-gray-700 to-gray-900" />

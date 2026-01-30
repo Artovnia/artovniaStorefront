@@ -12,6 +12,7 @@ interface ImageTextBlockData {
   content: string
   image_ratio: '1:1' | '4:3' | '16:9'
   rounded_edges?: boolean
+  focal_point?: { x: number; y: number }
 }
 
 interface ImageTextBlockProps {
@@ -28,7 +29,14 @@ export const ImageTextBlock = ({ data }: ImageTextBlockProps) => {
     content,
     image_ratio = '16:9',
     rounded_edges = true,
+    focal_point
   } = data
+
+  // Helper to get focal point style
+  const getFocalPointStyle = () => {
+    if (!focal_point) return {}
+    return { objectPosition: `${focal_point.x}% ${focal_point.y}%` }
+  }
 
   const titleAlignmentClasses = {
     left: 'text-left',
@@ -59,6 +67,7 @@ export const ImageTextBlock = ({ data }: ImageTextBlockProps) => {
           fill
           className="object-cover"
           sizes="(max-width: 768px) 100vw, 50vw"
+          style={getFocalPointStyle()}
         />
       )}
     </div>
