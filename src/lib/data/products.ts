@@ -134,7 +134,8 @@ export const listProductsLean = async ({
               "seller.id,seller.handle,seller.store_name,seller.name," + // ✅ Added seller.name for ProductCard
               "categories.id,categories.name,categories.handle," +
               "collection.id,collection.handle,collection.title," +
-              "metadata.featured,metadata.seller_id",
+              "metadata.featured,metadata.seller_id,metadata.shipping_profile_name," + // ✅ Added for Google Merchant weight
+              "shipping_profile.name", // ✅ Added for Google Merchant weight calculation
       ...queryParams,
     }
     
@@ -295,7 +296,7 @@ export const listProducts = async ({
       limit,
       offset,
       region_id: region?.id,
-      fields: "*variants.calculated_price,*seller,*variants,*variants.inventory_quantity,*variants.manage_inventory,*variants.allow_backorder,*metadata,*categories,*collection",
+      fields: "*variants.calculated_price,*seller,*variants,*variants.inventory_quantity,*variants.manage_inventory,*variants.allow_backorder,*variants.metadata,*metadata,*categories,*collection,*shipping_profile,*shipping_profile.name",
       ...queryParams,
     }
     

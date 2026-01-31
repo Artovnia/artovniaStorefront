@@ -9,6 +9,10 @@ export interface HeroBanner {
   alt: string
   url?: string
   objectPosition?: string
+  focalPoint?: {
+    desktop?: string // CSS object-position value for desktop (e.g., '50% 30%', 'center top')
+    mobile?: string  // CSS object-position value for mobile (e.g., '70% 50%', 'right center')
+  }
   content?: {
     useLogo?: boolean
     heading?: string
@@ -43,13 +47,26 @@ export const Hero = ({
             src={firstBanner.image}
             alt={firstBanner.alt}
             fill
-            className="object-cover"
-            style={{ objectPosition: firstBanner.objectPosition || 'center' }}
+            className="object-cover hidden sm:block"
+            style={{ objectPosition: firstBanner.focalPoint?.desktop || firstBanner.objectPosition || 'center' }}
             priority
             fetchPriority="high"
             quality={HERO_CONFIG.imageQuality}
             sizes="100vw"
           />
+          {firstBanner.mobileImage && (
+            <Image
+              src={firstBanner.mobileImage}
+              alt={firstBanner.alt}
+              fill
+              style={{ objectPosition: firstBanner.focalPoint?.mobile || firstBanner.objectPosition || 'center' }}
+              className="object-cover sm:hidden"
+              priority
+              fetchPriority="high"
+              quality={HERO_CONFIG.imageQuality}
+              sizes="100vw"
+            />
+          )}
           
           <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
           

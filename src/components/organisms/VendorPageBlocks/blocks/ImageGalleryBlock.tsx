@@ -14,7 +14,7 @@ interface GalleryImage {
 
 interface ImageGalleryBlockData {
   images: GalleryImage[]
-  layout?: 'grid' | 'masonry' | 'featured' | 'mosaic' | 'magazine'
+  layout?: 'grid' | 'masonry' | 'featured' | 'mosaic' | 'magazine' | 'sidebar' | 'pinterest'
   columns: 2 | 3 | 4
   gap: 'small' | 'medium' | 'large'
   rounded_edges?: boolean
@@ -63,6 +63,10 @@ export const ImageGalleryBlock = ({ data }: ImageGalleryBlockProps) => {
         return <MosaicLayout images={images} gap={gap} gapClasses={gapClasses} roundedEdges={rounded_edges} getFocalPointStyle={getFocalPointStyle} />
       case 'magazine':
         return <MagazineLayout images={images} gap={gap} gapClasses={gapClasses} roundedEdges={rounded_edges} getFocalPointStyle={getFocalPointStyle} />
+      case 'sidebar':
+        return <SidebarLayout images={images} gap={gap} gapClasses={gapClasses} roundedEdges={rounded_edges} getFocalPointStyle={getFocalPointStyle} />
+      case 'pinterest':
+        return <PinterestLayout images={images} columns={columns} gap={gap} gapClasses={gapClasses} roundedEdges={rounded_edges} getFocalPointStyle={getFocalPointStyle} />
       case 'grid':
       default:
         return <GridLayout images={images} columns={columns} columnClasses={columnClasses} gapClasses={gapClasses} gap={gap} roundedEdges={rounded_edges} getFocalPointStyle={getFocalPointStyle} />
@@ -270,6 +274,120 @@ const MagazineLayout = ({ images, gap, gapClasses, roundedEdges, getFocalPointSt
                 <p className="text-white/80 text-sm">Zdjęcie {index + 1} z {images.length}</p>
               </div>
             </div>
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
+// Sidebar Layout - Big image on left + smaller images on right in 2x2 grid
+const SidebarLayout = ({ images, gap, gapClasses, roundedEdges, getFocalPointStyle }: any) => {
+  if (images.length === 0) return null
+  
+  const [mainImage, ...sideImages] = images
+  
+  return (
+    <div className={`grid grid-cols-1 md:grid-cols-2 ${gapClasses[gap]}`}>
+      {/* Large image on left - matches height of right side */}
+      <div className={`relative w-full overflow-hidden group cursor-pointer ${roundedEdges ? 'rounded-lg' : ''}`} style={{ aspectRatio: '1/1' }}>
+        <Image
+          src={mainImage.url}
+          alt={mainImage.alt || 'Main gallery image'}
+          fill
+          className="object-cover group-hover:scale-105 transition-transform duration-500"
+          sizes="(max-width: 768px) 100vw, 50vw"
+          priority
+          style={getFocalPointStyle(mainImage.focal_point)}
+        />
+        {mainImage.caption && (
+          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-6 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+            <p className="text-white text-lg font-instrument-serif">{mainImage.caption}</p>
+          </div>
+        )}
+      </div>
+      
+      {/* Smaller images on right - 2x2 grid that can extend */}
+      {sideImages.length > 0 && (
+        <div className={`grid grid-cols-2 auto-rows-fr ${gapClasses[gap]}`}>
+          {sideImages.map((image: GalleryImage, index: number) => (
+            <div 
+              key={image.id || index} 
+              className={`relative aspect-square overflow-hidden group cursor-pointer ${roundedEdges ? 'rounded-lg' : ''}`}
+            >
+              <Image
+                src={image.url}
+                alt={image.alt || `Gallery image ${index + 2}`}
+                fill
+                className="object-cover group-hover:scale-105 transition-transform duration-500"
+                sizes="(max-width: 768px) 50vw, 25vw"
+                style={getFocalPointStyle(image.focal_point)}
+              />
+              {image.caption && (
+                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                  <p className="text-white text-xs font-instrument-serif">{image.caption}</p>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+// Pinterest Layout - Masonry with aligned top AND bottom edges using percentage heights
+const PinterestLayout = ({ images, columns, gap, gapClasses, roundedEdges, getFocalPointStyle }: any) => {
+  const columnCount = columns
+  
+  // Distribute images evenly across columns (max 2 per column for percentage layout)
+  const imageColumns: GalleryImage[][] = Array.from({ length: columnCount }, () => [])
+  images.forEach((image: GalleryImage, index: number) => {
+    imageColumns[index % columnCount].push(image)
+  })
+  
+  // Define percentage splits for each column (repeating pattern)
+  // Pattern: [top%, bottom%]
+const heightPatterns = [
+      [35, 65],  // Column 0: top 35%, bottom 65%
+        [60, 40],  // Column 2: top 60%, bottom 40%
+        [40, 60],  // Column 1: top 40%, bottom 60%
+         [55, 45],  // Column 3: top 55%, bottom 45%
+]
+  
+  return (
+    <div className={`grid ${columnCount === 2 ? 'grid-cols-2' : columnCount === 3 ? 'grid-cols-3' : 'grid-cols-4'} ${gapClasses[gap]} h-[600px]`}>
+      {imageColumns.map((columnImages, colIndex) => {
+        const pattern = heightPatterns[colIndex % heightPatterns.length]
+        
+        return (
+          <div key={colIndex} className={`flex flex-col h-full ${gapClasses[gap]}`}>
+            {columnImages.map((image, imgIndex) => {
+              // Use percentage from pattern for this position
+              const heightPercent = imgIndex < pattern.length ? pattern[imgIndex] : 50
+              
+              return (
+                <div 
+                  key={image.id || imgIndex} 
+                  className={`relative w-full overflow-hidden group cursor-pointer ${roundedEdges ? 'rounded-lg' : ''}`}
+                  style={{ flex: `0 0 ${heightPercent}%` }}
+                >
+                  <Image
+                    src={image.url}
+                    alt={image.alt || `Gallery image ${imgIndex + 1}`}
+                    fill
+                    className="object-cover group-hover:scale-105 transition-transform duration-500"
+                    sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                    style={getFocalPointStyle(image.focal_point)}
+                  />
+                  {image.caption && (
+                    <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                      <p className="text-white text-sm font-instrument-serif">{image.caption}</p>
+                    </div>
+                  )}
+                </div>
+              )
+            })}
           </div>
         )
       })}

@@ -20,41 +20,68 @@ export const HeroClient = ({
   className = "",
   pauseOnHover = HERO_CONFIG.pauseOnHover
 }: HeroClientProps) => {
-  const [currentIndex, setCurrentIndex] = useState(0)
+  // Create infinite scroll by duplicating first and last slides
+  const extendedBanners = [
+    banners[banners.length - 1], // Clone of last slide at beginning
+    ...banners,
+    banners[0] // Clone of first slide at end
+  ]
+  
+  const [currentIndex, setCurrentIndex] = useState(1) // Start at first real slide (index 1)
   const [isAutoPlaying, setIsAutoPlaying] = useState(true)
   const [touchStart, setTouchStart] = useState<number | null>(null)
   const [touchEnd, setTouchEnd] = useState<number | null>(null)
   const [isHovered, setIsHovered] = useState(false)
+  const [isTransitioning, setIsTransitioning] = useState(true)
 
   const minSwipeDistance = 50
+
+  // Handle infinite scroll transitions
+  useEffect(() => {
+    if (currentIndex === 0) {
+      // At cloned last slide, jump to real last slide
+      setTimeout(() => {
+        setIsTransitioning(false)
+        setCurrentIndex(banners.length)
+        setTimeout(() => setIsTransitioning(true), 50)
+      }, HERO_CONFIG.transitionDuration)
+    } else if (currentIndex === extendedBanners.length - 1) {
+      // At cloned first slide, jump to real first slide
+      setTimeout(() => {
+        setIsTransitioning(false)
+        setCurrentIndex(1)
+        setTimeout(() => setIsTransitioning(true), 50)
+      }, HERO_CONFIG.transitionDuration)
+    }
+  }, [currentIndex, banners.length, extendedBanners.length])
 
   useEffect(() => {
     if (!isAutoPlaying || banners.length <= 1) return
 
     const interval = setInterval(() => {
-      setCurrentIndex((prev) => (prev + 1) % banners.length)
+      setCurrentIndex((prev) => prev + 1)
     }, HERO_CONFIG.autoSwitchInterval)
 
     return () => clearInterval(interval)
   }, [isAutoPlaying, banners.length])
 
   const handleDotClick = useCallback((index: number) => {
-    setCurrentIndex(index)
+    setCurrentIndex(index + 1) // Offset by 1 for cloned slide
     setIsAutoPlaying(false)
     setTimeout(() => setIsAutoPlaying(true), HERO_CONFIG.resumeAfterManualNavigation)
   }, [])
 
   const handlePrevious = useCallback(() => {
-    setCurrentIndex((prev) => (prev - 1 + banners.length) % banners.length)
+    setCurrentIndex((prev) => prev - 1)
     setIsAutoPlaying(false)
     setTimeout(() => setIsAutoPlaying(true), HERO_CONFIG.resumeAfterManualNavigation)
-  }, [banners.length])
+  }, [])
 
   const handleNext = useCallback(() => {
-    setCurrentIndex((prev) => (prev + 1) % banners.length)
+    setCurrentIndex((prev) => prev + 1)
     setIsAutoPlaying(false)
     setTimeout(() => setIsAutoPlaying(true), HERO_CONFIG.resumeAfterManualNavigation)
-  }, [banners.length])
+  }, [])
 
   const onTouchStart = useCallback((e: React.TouchEvent) => {
     setTouchEnd(null)
@@ -102,20 +129,19 @@ export const HeroClient = ({
       onTouchMove={onTouchMove}
       onTouchEnd={onTouchEnd}
     >
-      {banners.map((banner, index) => {
+      {extendedBanners.map((banner, index) => {
         const isActive = index === currentIndex
+        const offset = (index - currentIndex) * 100
         
         return (
           <div
-            key={banner.id}
-            className={`absolute inset-0 transition-all duration-700 ease-in-out ${
-              isActive 
-                ? 'opacity-100 scale-100 z-10' 
-                : 'opacity-0 scale-105 z-0'
+            key={`${banner.id}-${index}`}
+            className={`absolute inset-0 ${
+              isActive ? 'z-10' : 'z-0'
             }`}
             style={{
-              transform: isActive ? 'translateX(0)' : 
-                        index > currentIndex ? 'translateX(100%)' : 'translateX(-100%)'
+              transform: `translateX(${offset}%)`,
+              transition: isTransitioning ? `transform ${HERO_CONFIG.transitionDuration}ms ease-in-out` : 'none'
             }}
           >
             <div 
@@ -124,12 +150,13 @@ export const HeroClient = ({
               }`}
               onClick={() => banner.url && (window.location.href = banner.url)}
             >
+              {/* Desktop Image */}
               <Image
                 src={banner.image}
                 alt={banner.alt}
                 fill
-                className="object-cover transition-transform duration-700 group-hover:scale-105"
-                style={{ objectPosition: banner.objectPosition || 'center' }}
+                className="object-cover transition-transform duration-700 group-hover:scale-105 hidden sm:block"
+                style={{ objectPosition: banner.focalPoint?.desktop || banner.objectPosition || 'center' }}
                 priority={index < HERO_CONFIG.priorityLoadCount}
                 loading="eager"
                 fetchPriority={index < HERO_CONFIG.priorityLoadCount ? "high" : "auto"}
@@ -151,6 +178,23 @@ export const HeroClient = ({
                   console.log(`[Hero] ✅ Image loaded successfully: ${banner.id} (index: ${index})`, banner.image)
                 }}
               />
+              
+              {/* Mobile Image */}
+              {banner.mobileImage && (
+                <Image
+                  src={banner.mobileImage}
+                  alt={banner.alt}
+                  fill
+                  className="object-cover transition-transform duration-700 group-hover:scale-105 sm:hidden"
+                  style={{ objectPosition: banner.focalPoint?.mobile || banner.objectPosition || 'center' }}
+                  priority={index < HERO_CONFIG.priorityLoadCount}
+                  loading="eager"
+                  fetchPriority={index < HERO_CONFIG.priorityLoadCount ? "high" : "auto"}
+                  quality={HERO_CONFIG.imageQuality}
+                  sizes="100vw"
+                  unoptimized={banner.id === 'obrazy'}
+                />
+              )}
               
               <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
               
@@ -208,53 +252,60 @@ export const HeroClient = ({
               {banner.url && (
                 <div className="absolute inset-0 bg-black/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
               )}
-            </div>
           </div>
-        )
-      })}
+        </div>
+      )
+    })}
 
-      {banners.length > 1 && (
-        <>
-          <button
-            onClick={handlePrevious}
-            className={`hidden md:flex absolute left-4 top-1/2 -translate-y-1/2 z-20 items-center justify-center w-12 h-12 rounded-full bg-white/20 backdrop-blur-sm hover:bg-white/30 transition-all duration-300 ${
-              isHovered ? 'opacity-100' : 'opacity-0'
-            }`}
-            aria-label="Previous slide"
-          >
-            <ArrowLeftIcon color="white" size={25} />
-          </button>
+    {banners.length > 1 && (
+      <>
+        <button
+          onClick={handlePrevious}
+          className={`hidden md:flex absolute left-4 top-1/2 -translate-y-1/2 z-20 items-center justify-center w-12 h-12 rounded-full bg-white/20 backdrop-blur-sm hover:bg-white/30 transition-all duration-300 ${
+            isHovered ? 'opacity-100' : 'opacity-0'
+          }`}
+          aria-label="Previous slide"
+        >
+          <ArrowLeftIcon color="white" size={25} />
+        </button>
 
-          <button
-            onClick={handleNext}
-            className={`hidden md:flex absolute right-4 top-1/2 -translate-y-1/2 z-20 items-center justify-center w-12 h-12 rounded-full bg-white/20 backdrop-blur-sm hover:bg-white/30 transition-all duration-300 ${
-              isHovered ? 'opacity-100' : 'opacity-0'
-            }`}
-            aria-label="Next slide"
-          >
-            <ArrowRightIcon color="white" size={25} />
-          </button>
-        </>
-      )}
+        <button
+          onClick={handleNext}
+          className={`hidden md:flex absolute right-4 top-1/2 -translate-y-1/2 z-20 items-center justify-center w-12 h-12 rounded-full bg-white/20 backdrop-blur-sm hover:bg-white/30 transition-all duration-300 ${
+            isHovered ? 'opacity-100' : 'opacity-0'
+          }`}
+          aria-label="Next slide"
+        >
+          <ArrowRightIcon color="white" size={25} />
+        </button>
+      </>
+    )}
 
-      {banners.length > 1 && (
-        <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 z-20">
-          <div className="flex space-x-3">
-            {banners.map((_, index) => (
+    {banners.length > 1 && (
+      <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 z-20">
+        <div className="flex space-x-3">
+          {banners.map((_, index) => {
+            // Calculate actual current slide (accounting for cloned slides)
+            const actualIndex = currentIndex === 0 ? banners.length - 1 : 
+                                currentIndex === extendedBanners.length - 1 ? 0 : 
+                                currentIndex - 1
+            
+            return (
               <button
                 key={index}
                 onClick={() => handleDotClick(index)}
                 className={`w-3 h-3 rounded-full transition-all duration-300 hover:scale-110 ${
-                  index === currentIndex
+                  index === actualIndex
                     ? 'bg-white shadow-lg'
                     : 'bg-white/50 hover:bg-white/75'
                 }`}
                 aria-label={`Go to slide ${index + 1}`}
               />
-            ))}
-          </div>
+            )
+          })}
         </div>
-      )}
-    </div>
+      </div>
+    )}
+  </div>
   )
 }
