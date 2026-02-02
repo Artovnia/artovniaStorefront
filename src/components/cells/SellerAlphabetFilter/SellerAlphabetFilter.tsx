@@ -32,20 +32,20 @@ export const SellerAlphabetFilter = ({ className, onClose }: SellerAlphabetFilte
   }
 
   return (
-    <div className={cn("space-y-4", className)}>
-      <div className="flex items-center justify-between">
-        <h4 className="font-medium text-black font-instrument-sans">Filtruj według pierwszej litery</h4>
+    <div className={cn("p-4", className)}>
+      <div className="flex items-center justify-between mb-3">
+        <h4 className="font-medium text-black font-instrument-sans text-sm">Filtruj według pierwszej litery</h4>
         {currentLetter && (
           <button
             onClick={handleClearFilter}
-            className="text-sm text-gray-600 hover:text-red-600 transition-colors font-instrument-sans"
+            className="text-xs text-[#3B3634]/70 hover:text-red-600 transition-colors font-instrument-sans"
           >
             Wyczyść
           </button>
         )}
       </div>
 
-      <div className="grid grid-cols-6 sm:grid-cols-8 gap-2">
+      <div className="grid grid-cols-6 sm:grid-cols-8 gap-2 mb-3">
         {alphabet.map((letter) => (
           <button
             key={letter}
@@ -55,7 +55,7 @@ export const SellerAlphabetFilter = ({ className, onClose }: SellerAlphabetFilte
               "hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-1",
               currentLetter === letter
                 ? "bg-[#3B3634] text-white border-[#3B3634] shadow-md"
-                : "bg-white text-black border-[#3B3634] hover:border-[#3B3634] hover:bg-gray-50"
+                : "bg-primary text-black border-[#3B3634]/20 hover:border-[#3B3634] hover:bg-[#3B3634]/5"
             )}
           >
             {letter}
@@ -63,7 +63,7 @@ export const SellerAlphabetFilter = ({ className, onClose }: SellerAlphabetFilte
         ))}
       </div>
 
-      <div className="text-xs text-gray-600 font-instrument-sans">
+      <div className="text-xs text-[#3B3634]/60 font-instrument-sans">
         {currentLetter 
           ? `Pokazywane są sprzedawcy zaczynający się na "${currentLetter}"`
           : "Wybierz literę, aby filtrować sprzedawców"

@@ -4,18 +4,20 @@ import React, { useState, useRef, useEffect, useCallback } from 'react'
 import { createPortal } from 'react-dom'
 import { cn } from '@/lib/utils'
 import { SellerAlphabetFilter } from '@/components/cells/SellerAlphabetFilter/SellerAlphabetFilter'
-import { useSearchParams } from 'next/navigation'
+import { useSearchParams, useRouter, usePathname } from 'next/navigation'
 import useUpdateSearchParams from '@/hooks/useUpdateSearchParams'
 import { MobileSellerFilterModal } from '@/components/organisms/MobileSellerFilterModal/MobileSellerFilterModal'
+import { Check } from 'lucide-react'
 
 interface FilterDropdownProps {
   label: string
   children: React.ReactNode
   isActive?: boolean
   className?: string
+  onApply?: () => void
 }
 
-const FilterDropdown = ({ label, children, isActive, className }: FilterDropdownProps) => {
+const FilterDropdown = ({ label, children, isActive, className, onApply }: FilterDropdownProps) => {
   const [isOpen, setIsOpen] = useState(false)
   const [mounted, setMounted] = useState(false)
   const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0, right: 0 })
@@ -78,25 +80,26 @@ const FilterDropdown = ({ label, children, isActive, className }: FilterDropdown
   const dropdownContent = isOpen && (
     <div 
       ref={dropdownRef}
-      className="fixed bg-primary border border-[#3B3634] rounded-lg shadow-lg z-[9999] min-w-[250px] max-w-[400px] flex flex-col"
+      className="fixed bg-primary border border-[#3B3634]/15 shadow-xl z-[9999] min-w-[260px] max-w-[320px] flex flex-col overflow-hidden"
       style={{
         top: `${dropdownPosition.top}px`,
         left: `${dropdownPosition.left}px`,
-        maxHeight: `calc(100vh - ${dropdownPosition.top}px - 20px)`, // Dynamic max height to prevent overflow
+        maxHeight: `calc(100vh - ${dropdownPosition.top}px - 20px)`,
       }}
     >
-      {/* Scrollable content area */}
-      <div className="p-4 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-gray-100 flex-1">
+      <div className="overflow-y-auto flex-1">
         {React.cloneElement(children as React.ReactElement, { onClose: () => setIsOpen(false) } as any)}
       </div>
       
-      {/* Fixed button area */}
-      <div className="border-t border-[#3B3634] bg-primary rounded-b-lg">
+      <div className="border-t border-[#3B3634]/10 p-3 bg-primary">
         <button
-          onClick={() => setIsOpen(false)}
-          className="w-full bg-[#3B3634] rounded-b-lg text-white py-2 px-4 font-instrument-sans text-sm hover:bg-opacity-90 transition-colors"
+          onClick={() => {
+            onApply?.()
+            setIsOpen(false)
+          }}
+          className="w-full bg-[#3B3634] text-white py-2.5 px-4 font-instrument-sans text-sm font-medium hover:bg-[#2a2523] active:scale-[0.98] transition-all duration-200"
         >
-          Zapisz
+          Zastosuj
         </button>
       </div>
     </div>
@@ -143,7 +146,10 @@ interface SellerFilterBarProps {
 
 export const SellerFilterBar = ({ className }: SellerFilterBarProps) => {
   const searchParams = useSearchParams()
+  const router = useRouter()
+  const pathname = usePathname()
   const updateSearchParams = useUpdateSearchParams()
+  const [, forceUpdate] = useState({})
   
   // Check if any filters are active
   const hasActiveFilters = Boolean(searchParams.get("letter"))
@@ -165,12 +171,9 @@ export const SellerFilterBar = ({ className }: SellerFilterBarProps) => {
   }
 
   const handleClearAll = () => {
-    const activeFilters = getActiveFilters()
-    activeFilters.forEach(filter => {
-      if (filter.onRemove) {
-        filter.onRemove()
-      }
-    })
+    console.log('🧹 Clear All clicked - clearing all filters')
+    router.replace(pathname, { scroll: false })
+    console.log('✅ Router.replace called with clean pathname:', pathname)
   }
 
   const activeFilters = getActiveFilters()
@@ -206,47 +209,29 @@ export const SellerFilterBar = ({ className }: SellerFilterBarProps) => {
         {hasActiveFilters && (
           <button
             onClick={handleClearAll}
-            style={{
-              marginLeft: 'auto',
-              padding: '4px 12px',
-              fontSize: '16px',
-              fontWeight: 'medium',
-              fontFamily: 'var(--font-instrument-sans)',
-              color: '#000000',
-              textDecoration: 'underline',
-              background: 'transparent',
-              border: 'none',
-              cursor: 'pointer',
-              transition: 'color 0.2s ease'
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.color = '#dc2626'
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.color = '#000000'
-            }}
+            className="ml-auto px-3 py-1 text-sm font-medium font-instrument-sans text-black underline hover:text-red-600 transition-colors"
           >
             Wyczyść filtry
           </button>
         )}
       </div>
 
-      {/* Active Filters Row */}
+      {/* Active Filters */}
       {activeFilters.length > 0 && (
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2 mt-3 pb-4">
           <span className="text-sm text-black font-medium font-instrument-sans mr-2">Aktywne filtry:</span>
           {activeFilters.map((filter) => (
             <div
               key={filter.key}
-              className="flex items-center gap-2 px-3 py-1 bg-[#3B3634] text-white text-sm rounded-full border border-[#3B3634]"
+              className="flex items-center gap-2 px-3 py-1.5 bg-[#3B3634] text-white text-sm rounded-full"
             >
-              <span>{filter.label}</span>
+              <span className="font-instrument-sans">{filter.label}</span>
               <button
                 onClick={filter.onRemove}
-                className="ml-1 text-gray-500 hover:text-red-600 transition-colors"
+                className="text-white/60 hover:text-white transition-colors"
                 aria-label={`Remove ${filter.label} filter`}
               >
-                <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
                   <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
                 </svg>
               </button>
@@ -276,21 +261,36 @@ const SortFilter = () => {
 
   return (
     <FilterDropdown label={`Sortuj: ${currentSortLabel}`} isActive={Boolean(currentSort)}>
-      <div className="space-y-2">
-        <h4 className="font-medium text-black mb-3 font-instrument-sans">Sortuj według</h4>
-        {sortOptions.map((option) => (
-          <label key={option.value} className="flex items-center gap-2 cursor-pointer">
-            <input
-              type="radio"
-              name="sort"
-              value={option.value}
-              checked={currentSort === option.value}
-              onChange={() => updateSearchParams("sortBy", option.value)}
-              className="font-instrument-sans focus:ring-primary"
-            />
-            <span className="text-sm text-black font-instrument-sans">{option.label}</span>
-          </label>
-        ))}
+      <div className="p-4">
+        <h4 className="font-medium text-black mb-3 font-instrument-sans text-sm">Sortuj według</h4>
+        <div className="space-y-1">
+          {sortOptions.map((option) => (
+            <div key={option.value} className="relative">
+              <button
+                type="button"
+                onClick={() => updateSearchParams("sortBy", option.value)}
+                className="w-full flex items-center justify-between py-2.5 text-left transition-colors cursor-pointer hover:bg-[#3B3634]/5"
+              >
+                <span className={cn(
+                  "text-sm font-instrument-sans select-none",
+                  currentSort === option.value ? "text-[#3B3634] font-medium" : "text-[#3B3634]/90"
+                )}>
+                  {option.label}
+                </span>
+                <Check 
+                  className={cn(
+                    "w-4 h-4 text-[#3B3634] transition-opacity duration-150",
+                    currentSort === option.value ? "opacity-100" : "opacity-0"
+                  )}
+                  strokeWidth={2.5} 
+                />
+              </button>
+              <div className="flex justify-center">
+                <div className="w-[99%] h-px bg-[#3B3634]/10" />
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
     </FilterDropdown>
   )

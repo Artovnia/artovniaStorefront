@@ -54,31 +54,32 @@ export const ProductRatingFilter = ({ algoliaRatingItems = [], onClose, showButt
   });
 
   return (
-    <Accordion heading='Ocena produktu'>
-      <ul className='px-4'>
+    <div className="p-4">
+      <h4 className="font-medium text-black mb-3 font-instrument-sans text-sm">Ocena produktu</h4>
+      <ul className="space-y-1">
         {allRatings.map(({ label, count, isRefined }) => (
-          <li
-            key={label}
-            className='mb-4 flex items-center gap-2'
-          >
-            <FilterCheckboxOption
-              checked={isRefined}
-              disabled={count === 0}
-              label={label}
-              onCheck={handleRatingSelect}
-            />
-            <StarRating
-              rate={+label}
-            />
-            <span className='label-sm !font-light'>
-              ({count})
-            </span>
+          <li key={label}>
+            <div className="flex items-center gap-2 py-2.5">
+              <FilterCheckboxOption
+                checked={isRefined}
+                disabled={count === 0}
+                label={label}
+                onCheck={handleRatingSelect}
+              />
+              <StarRating
+                rate={+label}
+              />
+              <span className="text-sm font-light text-[#3B3634]/70 font-instrument-sans">
+                ({count})
+              </span>
+            </div>
+            <div className="flex justify-center">
+              <div className="w-[99%] h-px bg-[#3B3634]/10" />
+            </div>
           </li>
         ))}
       </ul>
-      
-      
-    </Accordion>
+    </div>
   );
 };
 

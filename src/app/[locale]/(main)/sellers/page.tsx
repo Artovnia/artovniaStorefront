@@ -164,27 +164,25 @@ export default async function SellersPage({
     <div className="min-h-screen bg-primary">
       {/* Hero Section with Image and Overlay */}
       <section
-        className="relative w-full h-[300px] sm:h-[350px] md:h-[350px] lg:h-[400px] xl:h-[400px] overflow-hidden"
+        className="relative w-full max-w-[1920px] mx-auto h-[250px] sm:h-[250px] md:h-[300px] lg:h-[300px] xl:h-[400px] overflow-hidden"
         aria-labelledby="sellers-heading"
       >
         {/* Background Image */}
-        <div className="absolute inset-0 max-w-[1920px] mx-auto">
-          <Image
-            src="/images/sprzedawcy/sellers.webp"
-            alt="Ceramiczne naczynia i dekoracje - sprzedawcy Artovnia"
-            fill
-            priority
-            fetchPriority="high"
-            className="object-cover object-center 2xl:object-contain"
-            sizes="(max-width: 640px) 640px, (max-width: 1024px) 1024px, 1920px"
-            quality={75}
-            placeholder="blur"
-            blurDataURL="data:image/webp;base64,UklGRiQAAABXRUJQVlA4IBgAAAAwAQCdASoBAAEAAwA0JaQAA3AA/vuUAAA="
-          />
-        </div>
+        <Image
+          src="/images/promotions/promotions.webp"
+          alt="Ceramiczne naczynia i dekoracje - sprzedawcy Artovnia"
+          fill
+          priority
+          loading="eager"
+          fetchPriority="high"
+          className="object-cover object-center"
+          sizes="100vw"
+          quality={85}
+          unoptimized={false}
+        />
 
         {/* Content Overlay */}
-        <div className="relative h-full max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="relative h-full w-full px-4 sm:px-6 lg:px-8 z-10">
           <div className="flex flex-col items-center justify-center h-full text-center">
             {/* Main Heading with high contrast for accessibility */}
             <h1

@@ -200,13 +200,16 @@ const getWeightFromShippingProfile = (profileName: string | undefined): number |
 
 /**
  * Get product weight for Google Merchant shipping calculations
- * Returns weight in grams. Priority:
+ * Returns weight in grams or undefined if no actual data exists.
+ * Priority:
  * 1. Variant weight (if set)
  * 2. Product weight (if set)
- * 3. Shipping profile weight mapping
- * 4. Default based on product type
+ * 3. Conservative category-based estimates (higher end to avoid misleading customers)
+ * 
+ * Note: Google recommends using highest possible shipping cost if exact weight unknown.
+ * Conservative estimates ensure shipping costs aren't underestimated.
  */
-const getProductWeight = (product: HttpTypes.StoreProduct): number => {
+const getProductWeight = (product: HttpTypes.StoreProduct): number | undefined => {
   // Priority 1: Try to get weight from first variant
   const variant = product.variants?.[0] as any
   if (variant?.weight && variant.weight > 0) {
@@ -219,7 +222,6 @@ const getProductWeight = (product: HttpTypes.StoreProduct): number => {
   }
   
   // Priority 3: Try to get weight from shipping profile
-  // Check product metadata for shipping profile information
   const productMetadata = (product as any).metadata
   if (productMetadata?.shipping_profile_name) {
     const profileWeight = getWeightFromShippingProfile(productMetadata.shipping_profile_name)
@@ -236,79 +238,52 @@ const getProductWeight = (product: HttpTypes.StoreProduct): number => {
     }
   }
   
-  // Priority 4: Default weights based on product categories/type
-  // For marketplace with handmade/art products
+  // Priority 4: Conservative category-based estimates
+  // These are HIGHER than typical to avoid underestimating shipping costs
   const categories = (product as any).categories || []
   const categoryNames = categories.map((cat: any) => cat.name?.toLowerCase() || '')
   
-  // Category-based defaults
   if (categoryNames.some((name: string) => name.includes('biżuteria') || name.includes('jewelry'))) {
-    return 100 // Jewelry is typically light
+    return 200 // Conservative for jewelry (actual often 50-150g)
   }
   if (categoryNames.some((name: string) => name.includes('obraz') || name.includes('painting'))) {
-    return 1500 // Paintings vary but this is reasonable
+    return 2000 // Conservative for paintings (actual varies 500-3000g)
   }
   if (categoryNames.some((name: string) => name.includes('mebel') || name.includes('furniture'))) {
-    return 15000 // Furniture is heavy
+    return 20000 // Conservative for furniture (actual varies widely)
   }
   if (categoryNames.some((name: string) => name.includes('ceramika') || name.includes('ceramic'))) {
-    return 800 // Ceramics are moderately heavy
+    return 1500 // Conservative for ceramics (actual 500-2000g)
   }
   if (categoryNames.some((name: string) => name.includes('tekstylia') || name.includes('textile'))) {
-    return 300 // Textiles are light
+    return 500 // Conservative for textiles (actual 200-800g)
   }
   
-  // Final fallback: 500g (reasonable for most handmade/art products)
-  // This allows Google to calculate shipping costs
-  return 500
+  // Final fallback: 1kg (conservative for most handmade/art products)
+  // This ensures shipping costs aren't underestimated
+  return 1000
 }
 
 /**
- * Get product dimensions for Google Merchant Center
- * Returns estimated dimensions in centimeters based on weight and category
- * Format: { width, height, depth } in cm
+ * Get actual product dimensions from variant data
+ * Returns dimensions only if they exist in variant data
+ * Google Merchant: Dimensions are OPTIONAL for flat-rate shipping
+ * Only include if you have actual measurements to avoid errors
  */
-const getDimensionsFromWeight = (product: HttpTypes.StoreProduct, weight: number): { width: number; height: number; depth: number } => {
-  const categories = (product as any).categories || []
-  const categoryNames = categories.map((cat: any) => cat.name?.toLowerCase() || '')
+const getActualDimensions = (product: HttpTypes.StoreProduct): { width?: number; height?: number; length?: number } | undefined => {
+  const variant = product.variants?.[0] as any
   
-  // Category-specific dimension estimates (in cm)
-  // These are reasonable estimates for Google Merchant Center
+  // Only return dimensions if at least one dimension exists
+  const width = variant?.width && variant.width > 0 ? variant.width : undefined
+  const height = variant?.height && variant.height > 0 ? variant.height : undefined
+  const length = variant?.length && variant.length > 0 ? variant.length : undefined
   
-  if (categoryNames.some((name: string) => name.includes('biżuteria') || name.includes('jewelry'))) {
-    return { width: 5, height: 5, depth: 2 } // Small jewelry box
+  // If no dimensions exist, return undefined (dimensions are optional)
+  if (!width && !height && !length) {
+    return undefined
   }
   
-  if (categoryNames.some((name: string) => name.includes('obraz') || name.includes('painting'))) {
-    // Paintings vary widely, estimate based on weight
-    if (weight < 500) return { width: 20, height: 30, depth: 3 }
-    if (weight < 1500) return { width: 40, height: 50, depth: 5 }
-    return { width: 60, height: 80, depth: 7 }
-  }
-  
-  if (categoryNames.some((name: string) => name.includes('mebel') || name.includes('furniture'))) {
-    return { width: 80, height: 100, depth: 50 } // Average furniture piece
-  }
-  
-  if (categoryNames.some((name: string) => name.includes('ceramika') || name.includes('ceramic'))) {
-    return { width: 15, height: 20, depth: 15 } // Average ceramic piece
-  }
-  
-  if (categoryNames.some((name: string) => name.includes('tekstylia') || name.includes('textile'))) {
-    return { width: 30, height: 40, depth: 5 } // Folded textile
-  }
-  
-  // Default dimensions based on weight (general estimation)
-  // Lighter items = smaller dimensions
-  if (weight < 100) return { width: 10, height: 10, depth: 5 }
-  if (weight < 500) return { width: 15, height: 20, depth: 10 }
-  if (weight < 1000) return { width: 20, height: 25, depth: 15 }
-  if (weight < 2000) return { width: 30, height: 35, depth: 20 }
-  if (weight < 5000) return { width: 40, height: 45, depth: 30 }
-  if (weight < 10000) return { width: 50, height: 60, depth: 40 }
-  
-  // Heavy items
-  return { width: 70, height: 80, depth: 50 }
+  return { width, height, length }
 }
 
 /**
@@ -822,18 +797,25 @@ export const generateProductJsonLd = (
 
   const productTags = product.tags?.map((t) => t.value).filter(Boolean) || []
   const category = (product as any).categories?.[0]?.name
-  const sellerName = (product as any).seller?.name || "Artovnia"
+  const seller = (product as any).seller
+  const sellerName = seller?.name || "Artovnia"
 
-  // Get product weight for Google Merchant shipping calculations (in grams)
+  // Get product weight for Google Merchant (optional, only if exists)
   const productWeight = getProductWeight(product)
   
-  // Get product dimensions for Google Merchant (in cm)
-  const productDimensions = getDimensionsFromWeight(product, productWeight)
+  // Get actual product dimensions (optional, only if variant has them)
+  const productDimensions = getActualDimensions(product)
   
   // Get availability status
   const availabilityStatus = getProductAvailability(product)
   
-  // Build offers object with shipping and return policy
+  // Get vendor-specific shipping cost (default to 15 PLN if not set)
+  // This can be pulled from seller metadata or shipping profile
+  const vendorShippingCost = seller?.metadata?.default_shipping_cost || 
+                            seller?.default_shipping_cost || 
+                            15 // Platform default
+  
+  // Build offers object with vendor-specific shipping and return policy
   const offers: Record<string, any> = {
     "@type": "Offer",
     url: `${baseUrl}/products/${product.handle}`,
@@ -847,8 +829,35 @@ export const generateProductJsonLd = (
       "@type": "Organization",
       name: sellerName,
     },
-    // Add shipping details (required by Google for merchant listings)
-    shippingDetails: generateShippingDetailsSchema(shippingConfig, currency),
+    // Add vendor-specific shipping details
+    // This overrides the flat rate set in Google Merchant Console
+    shippingDetails: {
+      "@type": "OfferShippingDetails",
+      shippingRate: {
+        "@type": "MonetaryAmount",
+        value: vendorShippingCost.toFixed(2),
+        currency: currency,
+      },
+      shippingDestination: {
+        "@type": "DefinedRegion",
+        addressCountry: "PL",
+      },
+      deliveryTime: {
+        "@type": "ShippingDeliveryTime",
+        handlingTime: {
+          "@type": "QuantitativeValue",
+          minValue: shippingConfig?.handlingDays?.min ?? DEFAULT_SHIPPING.handlingDays!.min,
+          maxValue: shippingConfig?.handlingDays?.max ?? DEFAULT_SHIPPING.handlingDays!.max,
+          unitCode: "DAY",
+        },
+        transitTime: {
+          "@type": "QuantitativeValue",
+          minValue: shippingConfig?.transitDays?.min ?? DEFAULT_SHIPPING.transitDays!.min,
+          maxValue: shippingConfig?.transitDays?.max ?? DEFAULT_SHIPPING.transitDays!.max,
+          unitCode: "DAY",
+        },
+      },
+    },
     // Add platform-wide return policy
     hasMerchantReturnPolicy: generateReturnPolicySchema(),
   }
@@ -881,28 +890,36 @@ export const generateProductJsonLd = (
     image: images,
     sku: product.variants?.[0]?.sku || product.id,
     mpn: product.variants?.[0]?.sku || product.id,
-    // Weight for Google Merchant shipping calculations (in grams)
-    weight: {
-      "@type": "QuantitativeValue",
-      value: productWeight,
-      unitCode: "GRM", // Grams
-    },
-    // Dimensions for Google Merchant (in centimeters)
-    width: {
-      "@type": "QuantitativeValue",
-      value: productDimensions.width,
-      unitCode: "CMT", // Centimeters
-    },
-    height: {
-      "@type": "QuantitativeValue",
-      value: productDimensions.height,
-      unitCode: "CMT",
-    },
-    depth: {
-      "@type": "QuantitativeValue",
-      value: productDimensions.depth,
-      unitCode: "CMT",
-    },
+    // Only include weight if it exists (optional for flat-rate shipping)
+    ...(productWeight && {
+      weight: {
+        "@type": "QuantitativeValue",
+        value: productWeight,
+        unitCode: "GRM", // Grams
+      },
+    }),
+    // Only include dimensions if they exist (optional for flat-rate shipping)
+    ...(productDimensions?.width && {
+      width: {
+        "@type": "QuantitativeValue",
+        value: productDimensions.width,
+        unitCode: "CMT", // Centimeters
+      },
+    }),
+    ...(productDimensions?.height && {
+      height: {
+        "@type": "QuantitativeValue",
+        value: productDimensions.height,
+        unitCode: "CMT",
+      },
+    }),
+    ...(productDimensions?.length && {
+      depth: {
+        "@type": "QuantitativeValue",
+        value: productDimensions.length,
+        unitCode: "CMT",
+      },
+    }),
     brand: {
       "@type": "Brand",
       name: sellerName,

@@ -482,6 +482,7 @@ export const listProductsWithPromotions = async ({
   promotion,
   seller,
   campaign,
+  category,
 }: {
   page?: number
   limit?: number
@@ -490,6 +491,7 @@ export const listProductsWithPromotions = async ({
   promotion?: string
   seller?: string
   campaign?: string
+  category?: string
 }): Promise<{
   response: {
     products: (HttpTypes.StoreProduct & { seller?: SellerProps, promotions?: any[], has_promotions?: boolean })[]
@@ -497,7 +499,7 @@ export const listProductsWithPromotions = async ({
   }
   nextPage: number | null
 }> => {
-  const cacheKey = `products:promotions:${countryCode}:${page}:${limit}:${sortBy}:${promotion}:${seller}:${campaign}`
+  const cacheKey = `products:promotions:${countryCode}:${page}:${limit}:${sortBy}:${promotion}:${seller}:${campaign}:${category}`
   
   return unifiedCache.get(cacheKey, async () => {
     try {
@@ -530,6 +532,9 @@ export const listProductsWithPromotions = async ({
       }
       if (campaign) {
         queryParams.campaign = campaign
+      }
+      if (category) {
+        queryParams.category = category
       }
 
       // Use custom backend endpoint that returns products WITH promotions

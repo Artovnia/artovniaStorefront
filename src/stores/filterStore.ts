@@ -34,6 +34,13 @@ interface FilterState {
   setSelectedCondition: (condition: string | null) => void
   clearCondition: () => void
   
+  // Category filters
+  selectedCategories: string[]
+  setSelectedCategories: (categories: string[]) => void
+  addCategory: (category: string) => void
+  removeCategory: (category: string) => void
+  clearCategories: () => void
+  
   // Dimension filters
   dimensionFilters: {
     min_length: string
@@ -69,6 +76,11 @@ interface FilterState {
   
   pendingCondition: string | null
   setPendingCondition: (condition: string | null) => void
+  
+  pendingCategories: string[]
+  setPendingCategories: (categories: string[]) => void
+  addPendingCategory: (category: string) => void
+  removePendingCategory: (category: string) => void
   
   pendingDimensionFilters: {
     min_length: string
@@ -142,6 +154,19 @@ export const useFilterStore = create<FilterState>()(
       setSelectedCondition: (condition) => set({ selectedCondition: condition }),
       clearCondition: () => set({ selectedCondition: '' }),
       
+      // Category filters
+      selectedCategories: [],
+      setSelectedCategories: (categories) => set({ selectedCategories: categories }),
+      addCategory: (category) => set((state) => ({
+        selectedCategories: state.selectedCategories.includes(category)
+          ? state.selectedCategories
+          : [...state.selectedCategories, category]
+      })),
+      removeCategory: (category) => set((state) => ({
+        selectedCategories: state.selectedCategories.filter(c => c !== category)
+      })),
+      clearCategories: () => set({ selectedCategories: [] }),
+      
       // Dimension filters
       dimensionFilters: {
         min_length: '',
@@ -206,6 +231,17 @@ export const useFilterStore = create<FilterState>()(
       pendingCondition: null,
       setPendingCondition: (condition) => set({ pendingCondition: condition }),
       
+      pendingCategories: [],
+      setPendingCategories: (categories) => set({ pendingCategories: categories }),
+      addPendingCategory: (category) => set((state) => ({
+        pendingCategories: state.pendingCategories.includes(category)
+          ? state.pendingCategories
+          : [...state.pendingCategories, category]
+      })),
+      removePendingCategory: (category) => set((state) => ({
+        pendingCategories: state.pendingCategories.filter(c => c !== category)
+      })),
+      
       pendingDimensionFilters: {
         min_length: '',
         max_length: '',
@@ -235,6 +271,7 @@ export const useFilterStore = create<FilterState>()(
         selectedSizes: [...state.pendingSizes],
         selectedRating: state.pendingRating,
         selectedCondition: state.pendingCondition,
+        selectedCategories: [...state.pendingCategories],
         dimensionFilters: { ...state.pendingDimensionFilters }
       })),
       
@@ -246,6 +283,7 @@ export const useFilterStore = create<FilterState>()(
         pendingSizes: [...state.selectedSizes],
         pendingRating: state.selectedRating,
         pendingCondition: state.selectedCondition,
+        pendingCategories: [...state.selectedCategories],
         pendingDimensionFilters: { ...state.dimensionFilters }
       })),
       
@@ -257,6 +295,7 @@ export const useFilterStore = create<FilterState>()(
         selectedSizes: [],
         selectedRating: null,
         selectedCondition: '',
+        selectedCategories: [],
         dimensionFilters: {
           min_length: '',
           max_length: '',
@@ -273,6 +312,7 @@ export const useFilterStore = create<FilterState>()(
         pendingSizes: [],
         pendingRating: null,
         pendingCondition: null,
+        pendingCategories: [],
         pendingDimensionFilters: {
           min_length: '',
           max_length: '',

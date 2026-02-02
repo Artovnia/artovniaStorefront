@@ -47,58 +47,56 @@ export const PriceFilter = ({ onClose, showButton = true }: PriceFilterProps = {
   }, [setIsEditingPrice])
 
   return (
-    <Accordion heading="Cena">
-      <div className="space-y-4">
-        <h4 className="font-medium text-black font-instrument-sans">Zakres cen</h4>
-        <div className="flex gap-2 flex-col sm:flex-row">
-          <div className="flex-1">
-            <div className="relative">
-              <input
-                type="text"
-                className="w-full border border-gray-300 rounded py-2 pl-2 pr-10 font-instrument-sans"
-                placeholder="Min"
-                value={pendingMinPrice}
-                name="min_price"
-                onChange={handlePriceChange}
-              />
-              {pendingMinPrice && (
-                <button
-                  type="button"
-                  onClick={handleClearMin}
-                  className="absolute right-8 top-1/2 -translate-y-1/2 p-1 hover:bg-gray-100 rounded-full transition-colors"
-                  aria-label="Wyczyść minimalną cenę"
-                >
-                  <CloseIcon className="w-3 h-3" />
-                </button>
-              )}
-              <span className="absolute right-2 top-2 text-xs font-medium text-gray-500">zł</span>
-            </div>
+    <div className="p-4">
+      <h4 className="font-medium text-black mb-3 font-instrument-sans text-sm">Zakres cen</h4>
+      <div className="flex gap-2 flex-col sm:flex-row">
+        <div className="flex-1">
+          <div className="relative">
+            <input
+              type="text"
+              className="w-full border border-[#3B3634]/20 rounded py-2 pl-2 pr-10 font-instrument-sans text-sm focus:border-[#3B3634] focus:outline-none transition-colors"
+              placeholder="Min"
+              value={pendingMinPrice}
+              name="min_price"
+              onChange={handlePriceChange}
+            />
+            {pendingMinPrice && (
+              <button
+                type="button"
+                onClick={handleClearMin}
+                className="absolute right-8 top-1/2 -translate-y-1/2 p-1 hover:bg-[#3B3634]/5 rounded-full transition-colors"
+                aria-label="Wyczyść minimalną cenę"
+              >
+                <CloseIcon className="w-3 h-3" />
+              </button>
+            )}
+            <span className="absolute right-2 top-2 text-xs font-medium text-[#3B3634]/60">zł</span>
           </div>
-          <div className="flex-1">
-            <div className="relative">
-              <input
-                type="text"
-                className="w-full border border-gray-300 rounded py-2 pl-2 pr-10 font-instrument-sans"
-                placeholder="Max"
-                value={pendingMaxPrice}
-                name="max_price"
-                onChange={handlePriceChange}
-              />
-              {pendingMaxPrice && (
-                <button
-                  type="button"
-                  onClick={handleClearMax}
-                  className="absolute right-8 top-1/2 -translate-y-1/2 p-1 hover:bg-gray-100 rounded-full transition-colors"
-                  aria-label="Wyczyść maksymalną cenę"
-                >
-                  <CloseIcon className="w-3 h-3" />
-                </button>
-              )}
-              <span className="absolute right-2 top-2 text-xs font-medium text-gray-500">zł</span>
-            </div>
+        </div>
+        <div className="flex-1">
+          <div className="relative">
+            <input
+              type="text"
+              className="w-full border border-[#3B3634]/20 rounded py-2 pl-2 pr-10 font-instrument-sans text-sm focus:border-[#3B3634] focus:outline-none transition-colors"
+              placeholder="Max"
+              value={pendingMaxPrice}
+              name="max_price"
+              onChange={handlePriceChange}
+            />
+            {pendingMaxPrice && (
+              <button
+                type="button"
+                onClick={handleClearMax}
+                className="absolute right-8 top-1/2 -translate-y-1/2 p-1 hover:bg-[#3B3634]/5 rounded-full transition-colors"
+                aria-label="Wyczyść maksymalną cenę"
+              >
+                <CloseIcon className="w-3 h-3" />
+              </button>
+            )}
+            <span className="absolute right-2 top-2 text-xs font-medium text-[#3B3634]/60">zł</span>
           </div>
         </div>
       </div>
-    </Accordion>
+    </div>
   )
 }

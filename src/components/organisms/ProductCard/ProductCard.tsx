@@ -171,10 +171,24 @@ const ProductCardComponent = ({
           />
         </div>
         {/* Promotion Badge - Consistent styling to prevent hydration mismatch */}
-        {hasAnyDiscount && (
-  <div className="absolute top-2 left-2 z-10 flex flex-col gap-1" suppressHydrationWarning>
-    <div className="bg-[#F4F0EB]/90 text-[#3B3634] px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider shadow-lg border border-[#3B3634]">
-      PROMOCJA
+{/* Craft Tag with String - Artisanal feel */}
+{hasAnyDiscount && promotionalPricing.discountPercentage > 0 && (product as any).has_promotions && (
+  <div className="absolute top-0 left-4 z-10" suppressHydrationWarning>
+    {/* String */}
+    <div className="w-px h-2 bg-[#3b3634] mx-auto" />
+    {/* Tag */}
+    <div 
+      className="relative bg-[#F5F0E8] px-1   py-2 "
+      style={{
+        clipPath: 'polygon(0 0, 100% 0, 100% 75%, 50% 100%, 0 75%)',
+      }}
+    >
+      {/* Hole punch effect */}
+      <div className="absolute top-1 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-[#3B3634]/45" />
+      <p className="text-[#3B3634] text-xs font-medium font-instrument-sans mt-1 text-center" 
+         style={{ fontFamily: 'cursive' }}>
+        -{promotionalPricing.discountPercentage}%
+      </p>
     </div>
   </div>
 )}
@@ -247,6 +261,7 @@ const ProductCardComponent = ({
                   {promotionalPricing.discountPercentage > 0 ? (
                     <>
                       {/* 💰 PROMOTIONAL PRICE: font-bold (700) + larger size (text-lg sm:text-xl) */}
+                      
                       {/*    👉 To tweak size, edit text-lg sm:text-xl below */}
                       <p className={`font-instrument-sans font-semibold text-md sm:text-md text-[#3B3634] ${themeMode === 'light' ? 'text-white' : ''}`}>
                         {promotionalPricing.promotionalPrice}
@@ -255,12 +270,6 @@ const ProductCardComponent = ({
                       <p className="text-xs text-gray-500 line-through">
                         {promotionalPricing.originalPrice}
                       </p>
-                      {/* Only show percentage badge for actual promotions, not price-list discounts */}
-                      {(product as any).has_promotions && (product as any).promotions?.length > 0 && (
-                        <span className="relative bg-primary text-[#3B3634] text-xs font-semibold px-3 py-1 rounded-lg shadow-2xl border border-[#3B3634]/90 overflow-hidden group">
-                           <span className="relative z-10 tracking-wide">-{promotionalPricing.discountPercentage}%</span>
-                        </span>
-                      )}
                     </>
                   ) : (
                     <>
@@ -299,7 +308,7 @@ const ProductCardComponent = ({
             
             {/* Lowest Price Display - only show if there are active promotions or price list discounts */}
             {product.variants && product.variants.length > 0 && hasAnyDiscount && (
-              <div className="mt-2">
+              <div className="mt-0">
                 <BatchLowestPriceDisplay
                   variantId={product.variants[0].id}
                   currencyCode="PLN"

@@ -138,40 +138,41 @@ export const ColorFilter = ({ algoliaFacetItems = [], onClose, showButton = true
   }
 
   return (
-    <Accordion heading='Kolor'>
-      <ul className='px-4'>
+    <div className="p-4">
+      <h4 className="font-medium text-black mb-3 font-instrument-sans text-sm">Kolor</h4>
+      <ul className="space-y-1">
         {colorFilters.length > 0 ? (
           colorFilters.map(({ label, amount, colorStyle, value, tooltip, isRefined }) => (
-            <li
-              key={value}
-              className='mb-4 flex items-center justify-between'
-            >
-              <FilterCheckboxOption
-                checked={isRefined}
-                disabled={amount === 0}
-                onCheck={handleSelect}
-                label={label}
-                amount={amount}
-                value={value} // Family name for filtering
-              />
-              <div
-                className={cn(
-                  'w-5 h-5 border border-gray-300 rounded-full flex-shrink-0 ml-2',
-                  amount === 0 && 'opacity-30'
-                )}
-                style={colorStyle}
-                title={tooltip}
-              />
+            <li key={value}>
+              <div className="flex items-center justify-between py-2.5">
+                <FilterCheckboxOption
+                  checked={isRefined}
+                  disabled={amount === 0}
+                  onCheck={handleSelect}
+                  label={label}
+                  amount={amount}
+                  value={value}
+                />
+                <div
+                  className={cn(
+                    'w-5 h-5 border border-[#3B3634]/20 rounded-full flex-shrink-0 ml-2',
+                    amount === 0 && 'opacity-30'
+                  )}
+                  style={colorStyle}
+                  title={tooltip}
+                />
+              </div>
+              <div className="flex justify-center">
+                <div className="w-[99%] h-px bg-[#3B3634]/10" />
+              </div>
             </li>
           ))
         ) : (
-          <li className="px-2 py-1 text-sm text-gray-500">
+          <li className="py-2 text-sm text-[#3B3634]/60 font-instrument-sans">
             Brak dostępnych filtrów koloru
           </li>
         )}
       </ul>
-      
-     
-    </Accordion>
+    </div>
   );
 };

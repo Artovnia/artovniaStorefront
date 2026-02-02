@@ -16,6 +16,7 @@ import { MobileFilterModal } from '@/components/organisms/MobileFilterModal/Mobi
 import { useApplyFilters } from '@/hooks/useApplyFilters'
 import { useSyncFiltersFromURL } from '@/hooks/useSyncFiltersFromURL'
 import { useRouter, usePathname } from '@/i18n/routing'
+import { Check } from 'lucide-react'
 
 interface FilterDropdownProps {
   label: string
@@ -83,20 +84,18 @@ const FilterDropdown = ({ label, children, isActive, className, onApply }: Filte
   const dropdownContent = isOpen && (
     <div 
       ref={dropdownRef}
-      className="fixed bg-primary border border-[#3B3634] rounded-lg shadow-lg z-[9999] min-w-[250px] max-w-[400px] flex flex-col"
+      className="fixed bg-primary border border-[#3B3634]/15 shadow-xl z-[9999] min-w-[260px] max-w-[320px] flex flex-col overflow-hidden"
       style={{
         top: `${dropdownPosition.top}px`,
         left: `${dropdownPosition.left}px`,
-        maxHeight: 'calc(100vh - ' + dropdownPosition.top + 'px - 20px)', // Dynamic max height to prevent overflow
+        maxHeight: `calc(100vh - ${dropdownPosition.top}px - 20px)`,
       }}
     >
-      {/* Scrollable content area */}
-      <div className="p-4 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-gray-100 flex-1">
+      <div className="overflow-y-auto flex-1">
         {React.cloneElement(children as React.ReactElement, { onClose: () => setIsOpen(false) } as any)}
       </div>
       
-      {/* Fixed button area - show for all filters including price */}
-      <div className="border-t border-[#3B3634] bg-primary rounded-b-lg">
+      <div className="border-t border-[#3B3634]/10 p-3 bg-primary">
         <button
           onClick={() => {
             if (onApply) {
@@ -104,7 +103,7 @@ const FilterDropdown = ({ label, children, isActive, className, onApply }: Filte
             }
             setIsOpen(false)
           }}
-          className="w-full bg-[#3B3634] rounded-b-lg text-white py-2 px-4 font-instrument-sans text-sm hover:bg-opacity-90 transition-colors"
+          className="w-full bg-[#3B3634] text-white py-2.5 px-4 font-instrument-sans text-sm font-medium hover:bg-[#2a2523] active:scale-[0.98] transition-all duration-200"
         >
           Zastosuj
         </button>
@@ -543,24 +542,33 @@ const SortFilter = ({ onApply }: { onApply?: () => void }) => {
   const currentSortLabel = sortOptions.find(opt => opt.value === currentSort)?.label || "Domyślne"
 
   return (
-    <FilterDropdown label={`Sortuj według: ${currentSortLabel}`} isActive={Boolean(currentSort)} onApply={onApply}>
-      <div className="space-y-2">
-        <h4 className="font-medium text-black mb-3 font-instrument-sans">Sortuj według</h4>
+    <FilterDropdown label={`Sortuj: ${currentSortLabel}`} isActive={Boolean(currentSort)} onApply={onApply}>
+      <div className="p-4">
         {sortOptions.map((option) => (
-          <label key={option.value} className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-2 rounded transition-colors">
-            <input
-              type="radio"
-              name="sort"
-              value={option.value}
-              checked={currentSort === option.value}
-              onChange={() => updateSearchParams("sortBy", option.value)}
-              className="w-4 h-4 text-[#3B3634] border-[#3B3634] focus:ring-[#3B3634] focus:ring-2 cursor-pointer"
-              style={{
-                accentColor: '#3B3634'
-              }}
-            />
-            <span className="text-sm text-black font-instrument-sans select-none">{option.label}</span>
-          </label>
+          <div key={option.value} className="relative">
+            <button
+              type="button"
+              onClick={() => updateSearchParams("sortBy", option.value)}
+              className="w-full flex items-center justify-between py-2.5 text-left transition-colors cursor-pointer hover:bg-[#3B3634]/5"
+            >
+              <span className={cn(
+                "text-sm font-instrument-sans select-none",
+                currentSort === option.value ? "text-[#3B3634] font-medium" : "text-[#3B3634]/90"
+              )}>
+                {option.label}
+              </span>
+              <Check 
+                className={cn(
+                  "w-4 h-4 text-[#3B3634] transition-opacity duration-150",
+                  currentSort === option.value ? "opacity-100" : "opacity-0"
+                )}
+                strokeWidth={2.5} 
+              />
+            </button>
+            <div className="flex justify-center">
+              <div className="w-[99%] h-px bg-[#3B3634]/10" />
+            </div>
+          </div>
         ))}
       </div>
     </FilterDropdown>
@@ -599,7 +607,6 @@ const ColorFilterDropdown = ({ colorFacetItems, onApply }: { colorFacetItems: an
 
 const ColorFilterContent = ({ colorFacetItems, onClose }: { colorFacetItems: any[], onClose?: () => void }) => (
   <div>
-    <h4 className="font-medium text-black mb-3 font-instrument-sans">Wybierz kolor</h4>
     <ColorFilter algoliaFacetItems={colorFacetItems} onClose={onClose} />
   </div>
 )
@@ -618,7 +625,6 @@ const SizeFilterDropdown = ({ onApply }: { onApply?: () => void }) => {
 
 const SizeFilterContent = ({ onClose }: { onClose?: () => void }) => (
   <div>
-    <h4 className="font-medium text-black mb-3 font-instrument-sans">Wybierz rozmiar</h4>
     <SizeFilter onClose={onClose} />
   </div>
 )
@@ -641,7 +647,6 @@ const DimensionsFilterDropdown = ({ onApply }: { onApply?: () => void }) => {
 
 const DimensionsFilterContent = ({ onClose }: { onClose?: () => void }) => (
   <div>
-    <h4 className="font-medium text-black mb-3 font-instrument-sans">Wymiary produktu</h4>
     <CombinedDimensionFilter onClose={onClose} />
   </div>
 )
@@ -660,7 +665,6 @@ const RatingFilterDropdown = ({ ratingFacetItems, onApply }: { ratingFacetItems:
 
 const RatingFilterContent = ({ ratingFacetItems, onClose }: { ratingFacetItems: any[], onClose?: () => void }) => (
   <div>
-    <h4 className="font-medium text-black mb-3 font-instrument-sans">Minimalna ocena</h4>
     <ProductRatingFilter algoliaRatingItems={ratingFacetItems} onClose={onClose} />
   </div>
 )

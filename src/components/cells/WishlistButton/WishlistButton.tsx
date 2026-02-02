@@ -113,11 +113,11 @@ export const WishlistButton = ({
           : () => handleAddToWishlist()
       }
       variant="tonal"
-      className="w-8 h-8 p-0 flex items-center ring-1 ring-[#B7B7AD] justify-center rounded-full bg-[#F4F0EB] bg-opacity-80 hover:bg-[#B7B7AD] hover:fill-[#B7B7AD]"
+      className="w-7 h-7   p-0 flex items-center ring-1 ring-[#B7B7AD] justify-center rounded-full bg-[#F4F0EB] bg-opacity-80 hover:bg-[#B7B7AD] hover:fill-[#B7B7AD]"
       loading={isWishlistAdding}
       disabled={isWishlistAdding}
     >
-      {isWishlisted ? <HeartFilledIcon size={20} /> : <HeartIcon size={20} />}
+      {isWishlisted ? <HeartFilledIcon size={18} /> : <HeartIcon size={18} />}
     </Button>
   )
 }

@@ -25,8 +25,8 @@ interface SellerListingProps {
 }
 
 const SellerListingSkeleton = () => (
-  <div className="w-full">
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-4 gap-6 justify-items-center">
+  <div className="w-full pt-2 xl:pt-24 pb-12 xl:pb-24">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-4 gap-6 justify-items-center  pt-2 xl:pt-24 pb-12 xl:pb-24">
       {Array.from({ length: 12 }).map((_, index) => (
         <div 
           key={index} 
@@ -130,7 +130,7 @@ export const SellerListing = ({
 
   if (error) {
     return (
-      <div className={cn("w-full", className)}>
+      <div className={cn("w-full ", className)}>
         <SellerFilterBar />
         <div className="text-center py-12">
           <h2 className="text-xl font-bold text-red-600 mb-2 font-instrument-sans">
@@ -149,12 +149,13 @@ export const SellerListing = ({
   }
 
   return (
-    <div className={cn("w-full", className)}>
+    <div className={cn("w-full  ", className)}>
       {/* Filter Bar */}
       <SellerFilterBar />
 
       {/* Results Info */}
-      <div className="px-4 sm:px-6 py-4 bg-primary max-w-[1200px] mx-auto">
+      
+      <div className="px-4 sm:px-6 py-4 bg-primary max-w-[1200px] mx-auto ">
         <div className="flex items-center justify-between">
           <p className="text-sm text-gray-600 font-instrument-sans">
             {loading ? (

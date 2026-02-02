@@ -82,17 +82,7 @@ export const CategorySidebar = ({
       return hasNoParentId && hasNoParentObj
     })
     
-    console.log('🔍 CategorySidebar Debug:', {
-      currentCategoryHandle,
-      totalCategories: categories.length,
-      topLevelCount: topLevel.length,
-      topLevelNames: topLevel.map(c => c.name),
-      topLevelWithChildren: topLevel.map(c => ({ 
-        name: c.name, 
-        handle: c.handle,
-        childrenCount: c.category_children?.length || 0 
-      }))
-    })
+  
     
     // If no current category, return null (show "All Products" only)
     if (!currentCategoryHandle) {
@@ -125,13 +115,6 @@ export const CategorySidebar = ({
     // Find the parent category for the current category
     const parentCategory = findTopLevelParent(currentCategoryHandle)
     
-    console.log('🔍 CategorySidebar: Found parent category:', {
-      currentHandle: currentCategoryHandle,
-      parentFound: !!parentCategory,
-      parentName: parentCategory?.name,
-      parentHandle: parentCategory?.handle,
-      parentChildrenCount: parentCategory?.category_children?.length || 0
-    })
     
     return parentCategory
   }, [categories, currentCategoryHandle])

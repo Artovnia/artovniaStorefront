@@ -220,12 +220,14 @@ export function CombinedDimensionFilter({ onClose, showButton = true }: Combined
   }
   
   return (
-    <Accordion heading="WYMIARY">
+    <div className="p-4">
+      <h4 className="font-medium text-black mb-3 font-instrument-sans text-sm">Wymiary</h4>
+      
       {/* Length section */}
-      <div className="mb-6">
-        <div className="font-medium">Długość</div>
+      <div className="mb-4">
+        <div className="font-medium text-sm text-black font-instrument-sans mb-1">Długość</div>
         {dimensionRanges.length && (
-          <div className="text-sm text-gray-600 mb-2">
+          <div className="text-xs text-[#3B3634]/60 mb-2 font-instrument-sans">
             Zakres: {formatDimensionValue(dimensionRanges.length.min, 'length')} - {formatDimensionValue(dimensionRanges.length.max, 'length')}
           </div>
         )}
@@ -234,36 +236,36 @@ export function CombinedDimensionFilter({ onClose, showButton = true }: Combined
             <div className="relative">
               <input
                 type="text"
-                className="w-full border border-gray-300 rounded py-2 pl-2 pr-8"
+                className="w-full border border-[#3B3634]/20 rounded py-2 pl-2 pr-8 font-instrument-sans text-sm focus:border-[#3B3634] focus:outline-none transition-colors"
                 placeholder="Min"
                 value={minLength}
                 name="min_length"
                 onChange={handleDimensionChange}
               />
-              <span className="absolute right-2 top-2 text-xs font-medium text-gray-500">mm</span>
+              <span className="absolute right-2 top-2 text-xs font-medium text-[#3B3634]/60">mm</span>
             </div>
           </div>
           <div className="flex-1">
             <div className="relative">
               <input
                 type="text"
-                className="w-full border border-gray-300 rounded py-2 pl-2 pr-8"
+                className="w-full border border-[#3B3634]/20 rounded py-2 pl-2 pr-8 font-instrument-sans text-sm focus:border-[#3B3634] focus:outline-none transition-colors"
                 placeholder="Max"
                 value={maxLength}
                 name="max_length"
                 onChange={handleDimensionChange}
               />
-              <span className="absolute right-2 top-2 text-xs font-medium text-gray-500">mm</span>
+              <span className="absolute right-2 top-2 text-xs font-medium text-[#3B3634]/60">mm</span>
             </div>
           </div>
         </div>
       </div>
 
       {/* Width section */}
-      <div className="mb-6">
-        <div className="font-medium">Szerokość</div>
+      <div className="mb-4">
+        <div className="font-medium text-sm text-black font-instrument-sans mb-1">Szerokość</div>
         {dimensionRanges.width && (
-          <div className="text-sm text-gray-600 mb-2">
+          <div className="text-xs text-[#3B3634]/60 mb-2 font-instrument-sans">
             Zakres: {formatDimensionValue(dimensionRanges.width.min, 'width')} - {formatDimensionValue(dimensionRanges.width.max, 'width')}
           </div>
         )}
@@ -272,36 +274,36 @@ export function CombinedDimensionFilter({ onClose, showButton = true }: Combined
             <div className="relative">
               <input
                 type="text"
-                className="w-full border border-gray-300 rounded py-2 pl-2 pr-8"
+                className="w-full border border-[#3B3634]/20 rounded py-2 pl-2 pr-8 font-instrument-sans text-sm focus:border-[#3B3634] focus:outline-none transition-colors"
                 placeholder="Min"
                 value={minWidth}
                 name="min_width"
                 onChange={handleDimensionChange}
               />
-              <span className="absolute right-2 top-2 text-xs font-medium text-gray-500">mm</span>
+              <span className="absolute right-2 top-2 text-xs font-medium text-[#3B3634]/60">mm</span>
             </div>
           </div>
           <div className="flex-1">
             <div className="relative">
               <input
                 type="text"
-                className="w-full border border-gray-300 rounded py-2 pl-2 pr-8"
+                className="w-full border border-[#3B3634]/20 rounded py-2 pl-2 pr-8 font-instrument-sans text-sm focus:border-[#3B3634] focus:outline-none transition-colors"
                 placeholder="Max"
                 value={maxWidth}
                 name="max_width"
                 onChange={handleDimensionChange}
               />
-              <span className="absolute right-2 top-2 text-xs font-medium text-gray-500">mm</span>
+              <span className="absolute right-2 top-2 text-xs font-medium text-[#3B3634]/60">mm</span>
             </div>
           </div>
         </div>
       </div>
 
       {/* Height section */}
-      <div className="mb-6">
-        <div className="font-medium">Wysokość</div>
+      <div className="mb-4">
+        <div className="font-medium text-sm text-black font-instrument-sans mb-1">Wysokość</div>
         {dimensionRanges.height && (
-          <div className="text-sm text-gray-600 mb-2">
+          <div className="text-xs text-[#3B3634]/60 mb-2 font-instrument-sans">
             Zakres: {formatDimensionValue(dimensionRanges.height.min, 'height')} - {formatDimensionValue(dimensionRanges.height.max, 'height')}
           </div>
         )}
@@ -310,36 +312,36 @@ export function CombinedDimensionFilter({ onClose, showButton = true }: Combined
             <div className="relative">
               <input
                 type="text"
-                className="w-full border border-gray-300 rounded py-2 pl-2 pr-8"
+                className="w-full border border-[#3B3634]/20 rounded py-2 pl-2 pr-8 font-instrument-sans text-sm focus:border-[#3B3634] focus:outline-none transition-colors"
                 placeholder="Min"
                 value={minHeight}
                 name="min_height"
                 onChange={handleDimensionChange}
               />
-              <span className="absolute right-2 top-2 text-xs font-medium text-gray-500">mm</span>
+              <span className="absolute right-2 top-2 text-xs font-medium text-[#3B3634]/60">mm</span>
             </div>
           </div>
           <div className="flex-1">
             <div className="relative">
               <input
                 type="text"
-                className="w-full border border-gray-300 rounded py-2 pl-2 pr-8"
+                className="w-full border border-[#3B3634]/20 rounded py-2 pl-2 pr-8 font-instrument-sans text-sm focus:border-[#3B3634] focus:outline-none transition-colors"
                 placeholder="Max"
                 value={maxHeight}
                 name="max_height"
                 onChange={handleDimensionChange}
               />
-              <span className="absolute right-2 top-2 text-xs font-medium text-gray-500">mm</span>
+              <span className="absolute right-2 top-2 text-xs font-medium text-[#3B3634]/60">mm</span>
             </div>
           </div>
         </div>
       </div>
 
       {/* Weight section */}
-      <div className="mb-4">
-        <div className="font-medium">Waga</div>
+      <div>
+        <div className="font-medium text-sm text-black font-instrument-sans mb-1">Waga</div>
         {dimensionRanges.weight && (
-          <div className="text-sm text-gray-600 mb-2">
+          <div className="text-xs text-[#3B3634]/60 mb-2 font-instrument-sans">
             Zakres: {formatDimensionValue(dimensionRanges.weight.min, 'weight')} - {formatDimensionValue(dimensionRanges.weight.max, 'weight')}
           </div>
         )}
@@ -348,34 +350,31 @@ export function CombinedDimensionFilter({ onClose, showButton = true }: Combined
             <div className="relative">
               <input
                 type="text"
-                className="w-full border border-gray-300 rounded py-2 pl-2 pr-8"
+                className="w-full border border-[#3B3634]/20 rounded py-2 pl-2 pr-8 font-instrument-sans text-sm focus:border-[#3B3634] focus:outline-none transition-colors"
                 placeholder="Min"
                 value={minWeight}
                 name="min_weight"
                 onChange={handleDimensionChange}
               />
-              <span className="absolute right-2 top-2 text-xs font-medium text-gray-500">g</span>
+              <span className="absolute right-2 top-2 text-xs font-medium text-[#3B3634]/60">g</span>
             </div>
           </div>
           <div className="flex-1">
             <div className="relative">
               <input
                 type="text"
-                className="w-full border border-gray-300 rounded py-2 pl-2 pr-8"
+                className="w-full border border-[#3B3634]/20 rounded py-2 pl-2 pr-8 font-instrument-sans text-sm focus:border-[#3B3634] focus:outline-none transition-colors"
                 placeholder="Max"
                 value={maxWeight}
                 name="max_weight"
                 onChange={handleDimensionChange}
               />
-              <span className="absolute right-2 top-2 text-xs font-medium text-gray-500">g</span>
+              <span className="absolute right-2 top-2 text-xs font-medium text-[#3B3634]/60">g</span>
             </div>
           </div>
         </div>
       </div>
-      
-      
-     
-    </Accordion>
+    </div>
   )
 }
 

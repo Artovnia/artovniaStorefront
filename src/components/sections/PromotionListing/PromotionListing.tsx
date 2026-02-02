@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useMemo } from "react"
+import { useState, useEffect, useMemo, useRef } from "react"
 import { HttpTypes } from "@medusajs/types"
 import { ProductCard } from "@/components/organisms"
 import { BatchPriceProvider } from "@/components/context/BatchPriceProvider"
@@ -62,7 +62,12 @@ export const PromotionListing = ({
   const promotionFilter = searchParams.get("promotion") || ""
   const sellerFilter = searchParams.get("seller") || ""
   const campaignFilter = searchParams.get("campaign") || ""
+  const categoryFilter = searchParams.get("category") || ""
   const sortBy = searchParams.get("sortBy") || ""
+  
+  // Track previous filter values to detect changes
+  const prevFiltersRef = useRef({ promotionFilter, sellerFilter, campaignFilter, categoryFilter, sortBy })
+  const isInitialMount = useRef(true)
 
   // Backend handles filtering and sorting, so we just use products directly
   const filteredProducts = products
@@ -96,6 +101,7 @@ export const PromotionListing = ({
         promotion: promotionFilter || undefined,
         seller: sellerFilter || undefined,
         campaign: campaignFilter || undefined,
+        category: categoryFilter || undefined,
       })
 
       setProducts(response.products || [])
@@ -120,15 +126,30 @@ export const PromotionListing = ({
     setCurrentPage(initialPage)
   }, [initialProducts, initialCount, initialPage])
 
-  // ✅ PERFORMANCE: Refetch only when filters change AND we don't have matching data
+  // ✅ FIXED: Refetch when filters change
   useEffect(() => {
-    // Skip if we have initial data that matches current page
-    const hasMatchingInitialData = initialProducts.length > 0 && currentPage === initialPage
-    if (hasMatchingInitialData) return
+    // Skip on initial mount - use server-rendered data
+    if (isInitialMount.current) {
+      isInitialMount.current = false
+      return
+    }
     
-    fetchProductsForPage(1)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [promotionFilter, sellerFilter, campaignFilter, sortBy])
+    // Check if filters actually changed
+    const filtersChanged = 
+      prevFiltersRef.current.promotionFilter !== promotionFilter ||
+      prevFiltersRef.current.sellerFilter !== sellerFilter ||
+      prevFiltersRef.current.campaignFilter !== campaignFilter ||
+      prevFiltersRef.current.categoryFilter !== categoryFilter ||
+      prevFiltersRef.current.sortBy !== sortBy
+    
+    if (filtersChanged) {
+      // Update ref with new filter values
+      prevFiltersRef.current = { promotionFilter, sellerFilter, campaignFilter, categoryFilter, sortBy }
+      
+      // Reset to page 1 and fetch new data
+      fetchProductsForPage(1)
+    }
+  }, [promotionFilter, sellerFilter, campaignFilter, categoryFilter, sortBy, countryCode, limit])
 
   // Calculate total pages
   const totalPages = Math.ceil(count / limit)
@@ -141,10 +162,10 @@ export const PromotionListing = ({
   }
 
   return (
-    <div className="w-full">
+    <div className="w-full pt-2 xl:pt-24 pb-12 xl:pb-24">
       {/* Results Info */}
       <div className="mb-6">
-        <p className="text-sm text-gray-600 font-instrument-sans max-w-[1450px] mx-auto">
+        <p className="text-sm text-gray-600 font-instrument-sans max-w-[1450px] mx-auto ">
           {isLoading ? (
             "Ładowanie..."
           ) : (

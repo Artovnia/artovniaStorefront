@@ -118,8 +118,9 @@ export const SizeFilter = ({ onClose, showButton = true }: SizeFilterProps = {})
   }
 
   return (
-    <Accordion heading="Rozmiar">
-      <div className="flex flex-wrap gap-2 mb-4">
+    <div className="p-4">
+      <h4 className="font-medium text-black mb-3 font-instrument-sans text-sm">Rozmiar</h4>
+      <div className="flex flex-wrap gap-2">
         {allSizes.map((size) => (
           <Chip
             key={`size-${size}`}
@@ -129,8 +130,7 @@ export const SizeFilter = ({ onClose, showButton = true }: SizeFilterProps = {})
           />
         ))}
       </div>
-
-    </Accordion>
+    </div>
   )
 }
 

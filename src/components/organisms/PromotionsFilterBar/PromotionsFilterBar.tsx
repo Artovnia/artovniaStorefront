@@ -3,18 +3,22 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react'
 import { createPortal } from 'react-dom'
 import { cn } from '@/lib/utils'
-import { useSearchParams } from 'next/navigation'
+import { useSearchParams, useRouter, usePathname } from 'next/navigation'
 import useUpdateSearchParams from '@/hooks/useUpdateSearchParams'
 import { MobilePromotionsFilterModal } from '@/components/organisms/MobilePromotionsFilterModal/MobilePromotionsFilterModal'
+import { CategoryFilter } from '@/components/cells/CategoryFilter'
+import { useFilterStore } from '@/stores/filterStore'
+import { Check, Search } from 'lucide-react'
 
 interface FilterDropdownProps {
   label: string
   children: React.ReactNode
   isActive?: boolean
   className?: string
+  onApply?: () => void
 }
 
-const FilterDropdown = ({ label, children, isActive, className }: FilterDropdownProps) => {
+const FilterDropdown = ({ label, children, isActive, className, onApply }: FilterDropdownProps) => {
   const [isOpen, setIsOpen] = useState(false)
   const [mounted, setMounted] = useState(false)
   const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0, right: 0 })
@@ -25,33 +29,27 @@ const FilterDropdown = ({ label, children, isActive, className }: FilterDropdown
     setMounted(true)
   }, [])
 
-  // Calculate dropdown position - updates on scroll and resize
   const updatePosition = useCallback(() => {
     if (isOpen && buttonRef.current) {
       const rect = buttonRef.current.getBoundingClientRect()
-      const dropdownWidth = 300 // Approximate dropdown width
+      const dropdownWidth = 280
       const screenWidth = window.innerWidth
       const spaceOnRight = screenWidth - rect.right
-      
-      // If dropdown would overflow on the right, align it to the right edge of button
       const shouldAlignRight = spaceOnRight < dropdownWidth && rect.left > dropdownWidth
       
       setDropdownPosition({
-        top: rect.bottom + 8, // 8px margin below button
+        top: rect.bottom + 8,
         left: shouldAlignRight ? rect.right - dropdownWidth : rect.left,
         right: window.innerWidth - rect.right
       })
     }
   }, [isOpen])
 
-  // Update position on open, scroll, and resize
   useEffect(() => {
     if (isOpen) {
       updatePosition()
-      
-      window.addEventListener('scroll', updatePosition, true) // Use capture phase for all scrolls
+      window.addEventListener('scroll', updatePosition, true)
       window.addEventListener('resize', updatePosition)
-      
       return () => {
         window.removeEventListener('scroll', updatePosition, true)
         window.removeEventListener('resize', updatePosition)
@@ -59,7 +57,6 @@ const FilterDropdown = ({ label, children, isActive, className }: FilterDropdown
     }
   }, [isOpen, updatePosition])
 
-  // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node) &&
@@ -101,29 +98,29 @@ const FilterDropdown = ({ label, children, isActive, className }: FilterDropdown
         </svg>
       </button>
 
-      {/* Dropdown - rendered via portal to escape overflow container */}
       {mounted && typeof window !== 'undefined' && isOpen && createPortal(
         <div 
           ref={dropdownRef}
-          className="fixed bg-primary border border-[#3B3634] rounded-lg shadow-lg z-[9999] min-w-[250px] max-w-[400px] flex flex-col"
+          className="fixed bg-primary border border-[#3B3634]/15 shadow-xl z-[9999] min-w-[260px] max-w-[320px] flex flex-col overflow-hidden"
           style={{
             top: `${dropdownPosition.top}px`,
             left: `${dropdownPosition.left}px`,
-            maxHeight: `calc(100vh - ${dropdownPosition.top}px - 20px)`, // Dynamic max height to prevent overflow
+            maxHeight: `calc(100vh - ${dropdownPosition.top}px - 20px)`,
           }}
         >
-          {/* Scrollable content area */}
-          <div className="p-4 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-gray-100 flex-1">
+          <div className="overflow-y-auto flex-1">
             {React.cloneElement(children as React.ReactElement, { onClose: () => setIsOpen(false) } as any)}
           </div>
           
-          {/* Fixed button area */}
-          <div className="border-t border-[#3B3634] bg-primary rounded-b-lg">
+          <div className="border-t border-[#3B3634]/10 p-3 bg-primary">
             <button
-              onClick={() => setIsOpen(false)}
-              className="w-full bg-[#3B3634] rounded-b-lg text-white py-2 px-4 font-instrument-sans text-sm hover:bg-opacity-90 transition-colors"
+              onClick={() => {
+                onApply?.()
+                setIsOpen(false)
+              }}
+              className="w-full bg-[#3B3634] text-white py-2.5 px-4 font-instrument-sans text-sm font-medium hover:bg-[#2a2523] active:scale-[0.98] transition-all duration-200"
             >
-              Zapisz
+              Zastosuj
             </button>
           </div>
         </div>,
@@ -138,40 +135,68 @@ interface PromotionsFilterBarProps {
   promotionNames?: string[]
   sellerNames?: { id: string; name: string }[]
   campaignNames?: string[]
+  categoryNames?: { id: string; name: string }[]
 }
 
 export const PromotionsFilterBar = ({ 
   className,
   promotionNames = [],
   sellerNames = [],
-  campaignNames = []
+  campaignNames = [],
+  categoryNames = []
 }: PromotionsFilterBarProps) => {
   const searchParams = useSearchParams()
+  const router = useRouter()
+  const pathname = usePathname()
   const updateSearchParams = useUpdateSearchParams()
+  const { setPendingCategories } = useFilterStore()
+  const [, forceUpdate] = useState({})
   
-  // Check if any filters are active
+  // Get current filter values from URL
+  const promotionParam = searchParams.get("promotion")
+  const sellerParam = searchParams.get("seller")
+  const campaignParam = searchParams.get("campaign")
+  const categoryParam = searchParams.get("category")
+  
+  // Force re-render when URL params change
+  useEffect(() => {
+    console.log('🔍 PromotionsFilterBar: URL params changed', {
+      promotionParam,
+      sellerParam,
+      campaignParam,
+      categoryParam
+    })
+    forceUpdate({})
+  }, [promotionParam, sellerParam, campaignParam, categoryParam])
+
   const hasActiveFilters = Boolean(
-    searchParams.get("promotion") ||
-    searchParams.get("seller") ||
-    searchParams.get("campaign")
+    promotionParam ||
+    sellerParam ||
+    campaignParam ||
+    categoryParam
   )
 
-  // Get active filters for display
-  const getActiveFilters = () => {
+  // Build active filters array - directly depends on URL params
+  const activeFilters = React.useMemo(() => {
+    console.log('🔄 Computing activeFilters with params:', {
+      promotionParam,
+      sellerParam,
+      campaignParam,
+      categoryParam
+    })
+    
     const filters = []
     
-    const promotion = searchParams.get("promotion")
-    if (promotion) {
+    if (promotionParam) {
       filters.push({
         key: 'promotion',
-        label: `Promocja: ${promotion}`,
+        label: `Promocja: ${promotionParam}`,
         onRemove: () => updateSearchParams("promotion", "")
       })
     }
     
-    const seller = searchParams.get("seller")
-    if (seller) {
-      const sellerName = sellerNames.find(s => s.id === seller)?.name || seller
+    if (sellerParam) {
+      const sellerName = sellerNames.find(s => s.id === sellerParam)?.name || sellerParam
       filters.push({
         key: 'seller',
         label: `Sprzedawca: ${sellerName}`,
@@ -179,32 +204,55 @@ export const PromotionsFilterBar = ({
       })
     }
     
-    const campaign = searchParams.get("campaign")
-    if (campaign) {
+    if (campaignParam) {
       filters.push({
         key: 'campaign',
-        label: `Kampania: ${campaign}`,
+        label: `Kampania: ${campaignParam}`,
         onRemove: () => updateSearchParams("campaign", "")
       })
     }
     
+    if (categoryParam) {
+      const categoryIds = categoryParam.split(',').filter(Boolean)
+      categoryIds.forEach(categoryId => {
+        const categoryName = categoryNames.find(c => c.id === categoryId)?.name || categoryId
+        filters.push({
+          key: `category-${categoryId}`,
+          label: `Kategoria: ${categoryName}`,
+          onRemove: () => {
+            const remaining = categoryIds.filter(id => id !== categoryId)
+            updateSearchParams("category", remaining.length > 0 ? remaining.join(',') : "")
+            setPendingCategories(remaining)
+          }
+        })
+      })
+    }
+    
+    console.log('✅ activeFilters computed:', filters.length, filters.map(f => f.label))
     return filters
-  }
+  }, [promotionParam, sellerParam, campaignParam, categoryParam, sellerNames, categoryNames, updateSearchParams, setPendingCategories])
 
   const handleClearAll = () => {
-    const activeFilters = getActiveFilters()
-    activeFilters.forEach(filter => {
-      if (filter.onRemove) {
-        filter.onRemove()
-      }
+    console.log('🧹 Clear All clicked - clearing all filters')
+    console.log('Current URL params:', {
+      promotionParam,
+      sellerParam,
+      campaignParam,
+      categoryParam
     })
+    
+    // Clear pending categories state
+    setPendingCategories([])
+    
+    // Navigate to clean URL without any query params using Next.js router
+    router.replace(pathname, { scroll: false })
+    
+    console.log('✅ Router.replace called with clean pathname:', pathname)
   }
-
-  const activeFilters = getActiveFilters()
 
   return (
     <div className={cn("w-full bg-primary pt-4 px-4 sm:px-6 border-t border-[#3B3634] max-w-[1200px] mx-auto", className)}>
-      {/* Mobile: Single "Filtry" Button - Show only on screens < 768px */}
+      {/* Mobile */}
       <div className="md:hidden flex items-center gap-3 mb-4">
         <MobilePromotionsFilterModal
           promotionNames={promotionNames}
@@ -224,83 +272,131 @@ export const PromotionsFilterBar = ({
         )}
       </div>
 
-      {/* Desktop: Filter Buttons Row - Show only on screens >= 768px */}
-      <div className="hidden md:flex flex-wrap items-center gap-2 sm:gap-3  overflow-x-auto scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-gray-100 pb-2">
-        {/* Sort Filter */}
+      {/* Desktop */}
+      <div className="hidden md:flex flex-wrap items-center gap-2 sm:gap-3 overflow-x-auto scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-gray-100 pb-2">
         <SortFilter />
         
-        {/* Promotion Name Filter */}
         {promotionNames.length > 0 && (
           <PromotionNameFilterDropdown promotionNames={promotionNames} />
         )}
         
-        {/* Seller Filter */}
         {sellerNames.length > 0 && (
           <SellerFilterDropdown sellerNames={sellerNames} />
         )}
         
-        {/* Campaign Filter */}
         {campaignNames.length > 0 && (
           <CampaignFilterDropdown campaignNames={campaignNames} />
         )}
+        
+        {categoryNames.length > 0 && (
+          <CategoryFilterDropdown categoryNames={categoryNames} />
+        )}
 
-        {/* Clear All Filters */}
         {hasActiveFilters && (
           <button
             onClick={handleClearAll}
-            style={{
-              marginLeft: 'auto',
-              padding: '4px 12px',
-              fontSize: '16px',
-              fontWeight: 'medium',
-              fontFamily: 'var(--font-instrument-sans)',
-              color: '#000000',
-              textDecoration: 'underline',
-              background: 'transparent',
-              border: 'none',
-              cursor: 'pointer',
-              transition: 'color 0.2s ease'
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.color = '#dc2626'
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.color = '#000000'
-            }}
+            className="ml-auto px-3 py-1 text-sm font-medium font-instrument-sans text-black underline hover:text-red-600 transition-colors"
           >
             Wyczyść filtry
           </button>
         )}
       </div>
 
-      {/* Active Filters Row */}
-      {activeFilters.length > 0 && (
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="text-sm text-black font-medium font-instrument-sans mr-2">Aktywne filtry:</span>
-          {activeFilters.map((filter) => (
-            <div
-              key={filter.key}
-              className="flex items-center gap-2 px-3 py-1 bg-[#3B3634] text-white text-sm rounded-full border border-[#3B3634]"
-            >
-              <span>{filter.label}</span>
-              <button
-                onClick={filter.onRemove}
-                className="ml-1 text-gray-500 hover:text-red-600 transition-colors"
-                aria-label={`Remove ${filter.label} filter`}
+      {/* Active Filters */}
+      {(() => {
+        console.log('🎯 Badge render check:', {
+          activeFiltersLength: activeFilters.length,
+          shouldShow: activeFilters.length > 0,
+          filters: activeFilters.map(f => f.label)
+        })
+        return activeFilters.length > 0 && (
+          <div className="flex flex-wrap items-center gap-2 mt-3 pb-4">
+            <span className="text-sm text-black font-medium font-instrument-sans mr-2">Aktywne filtry:</span>
+            {activeFilters.map((filter) => (
+              <div
+                key={filter.key}
+                className="flex items-center gap-2 px-3 py-1.5 bg-[#3B3634] text-white text-sm rounded-full"
               >
-                <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
-                </svg>
-              </button>
-            </div>
-          ))}
-        </div>
-      )}
+                <span className="font-instrument-sans">{filter.label}</span>
+                <button
+                  onClick={filter.onRemove}
+                  className="text-white/60 hover:text-white transition-colors"
+                  aria-label={`Remove ${filter.label} filter`}
+                >
+                  <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                  </svg>
+                </button>
+              </div>
+            ))}
+          </div>
+        )
+      })()}
     </div>
   )
 }
 
-// Sort Filter Component
+// Reusable filter item component
+interface FilterItemProps {
+  label: string
+  isSelected: boolean
+  onClick: () => void
+  disabled?: boolean
+}
+
+const FilterItem = ({ label, isSelected, onClick, disabled }: FilterItemProps) => (
+  <div className="relative">
+    <button
+      type="button"
+      disabled={disabled}
+      onClick={onClick}
+      className={cn(
+        "w-full flex items-center justify-between py-2.5 text-left transition-colors",
+        !disabled && "cursor-pointer hover:bg-[#3B3634]/5"
+      )}
+    >
+      <span className={cn(
+        "text-sm font-instrument-sans select-none",
+        isSelected ? "text-[#3B3634] font-medium" : "text-[#3B3634]/90"
+      )}>
+        {label}
+      </span>
+      <Check 
+        className={cn(
+          "w-4 h-4 text-[#3B3634] transition-opacity duration-150",
+          isSelected ? "opacity-100" : "opacity-0"
+        )}
+        strokeWidth={2.5} 
+      />
+    </button>
+    {/* Thin centered divider line */}
+    <div className="flex justify-center">
+      <div className="w-[99%] h-px bg-[#3B3634]/10" />
+    </div>
+  </div>
+)
+
+// Search input component
+interface FilterSearchProps {
+  value: string
+  onChange: (value: string) => void
+  placeholder: string
+}
+
+const FilterSearch = ({ value, onChange, placeholder }: FilterSearchProps) => (
+  <div className="relative">
+    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#3B3634]/70" />
+    <input
+      type="text"
+      placeholder={placeholder}
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      className="w-full pl-9 pr-3 py-2.5 border border-[#3B3634]/15 text-sm font-instrument-sans bg-white focus:outline-none focus:border-[#3B3634]/30 transition-colors"
+    />
+  </div>
+)
+
+// Sort Filter
 const SortFilter = () => {
   const updateSearchParams = useUpdateSearchParams()
   const searchParams = useSearchParams()
@@ -318,30 +414,21 @@ const SortFilter = () => {
 
   return (
     <FilterDropdown label={`Sortuj: ${currentSortLabel}`} isActive={Boolean(currentSort)}>
-      <div className="space-y-2">
-        <h4 className="font-medium text-black mb-3 font-instrument-sans">Sortuj według</h4>
+      <div className="p-4">
         {sortOptions.map((option) => (
-          <label key={option.value} className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-2 rounded transition-colors">
-            <input
-              type="radio"
-              name="sort"
-              value={option.value}
-              checked={currentSort === option.value}
-              onChange={() => updateSearchParams("sortBy", option.value)}
-              className="w-4 h-4 text-[#3B3634] border-[#3B3634] focus:ring-[#3B3634] focus:ring-2 cursor-pointer"
-              style={{
-                accentColor: '#3B3634'
-              }}
-            />
-            <span className="text-sm text-black font-instrument-sans select-none">{option.label}</span>
-          </label>
+          <FilterItem
+            key={option.value}
+            label={option.label}
+            isSelected={currentSort === option.value}
+            onClick={() => updateSearchParams("sortBy", option.value)}
+          />
         ))}
       </div>
     </FilterDropdown>
   )
 }
 
-// Promotion Name Filter Component
+// Promotion Filter
 const PromotionNameFilterDropdown = ({ promotionNames }: { promotionNames: string[] }) => {
   const searchParams = useSearchParams()
   const isActive = Boolean(searchParams.get("promotion"))
@@ -364,38 +451,28 @@ const PromotionNameFilter = ({ promotionNames }: { promotionNames: string[] }) =
   )
 
   return (
-    <div className="space-y-3">
-      <h4 className="font-medium text-black mb-3 font-instrument-sans">Wybierz promocję</h4>
-      
-      {/* Search input */}
-      <input
-        type="text"
-        placeholder="Szukaj promocji..."
-        value={searchQuery}
-        onChange={(e) => setSearchQuery(e.target.value)}
-        className="w-full px-3 py-2 border border-[#3B3634] rounded-md text-sm font-instrument-sans focus:outline-none focus:ring-2 focus:ring-[#3B3634]"
-      />
+    <div className="flex flex-col">
+      <div className="p-3 border-b border-[#3B3634]/10">
+        <FilterSearch
+          value={searchQuery}
+          onChange={setSearchQuery}
+          placeholder="Szukaj promocji..."
+        />
+      </div>
 
-      {/* Promotion list */}
-      <div className="space-y-2 max-h-[250px] overflow-y-auto">
+      <div className="p-4 max-h-[280px] overflow-y-auto">
         {filteredPromotions.length === 0 ? (
-          <p className="text-sm text-gray-500 font-instrument-sans text-center py-2">
+          <p className="text-sm text-[#3B3634]/50 font-instrument-sans text-center py-6 italic">
             Brak wyników
           </p>
         ) : (
           filteredPromotions.map((name) => (
-            <label key={name} className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-2 rounded transition-colors">
-              <input
-                type="radio"
-                name="promotion"
-                value={name}
-                checked={currentPromotion === name}
-                onChange={() => updateSearchParams("promotion", name)}
-                className="w-4 h-4 text-[#3B3634] border-[#3B3634] focus:ring-[#3B3634] cursor-pointer"
-                style={{ accentColor: '#3B3634' }}
-              />
-              <span className="text-sm text-black font-instrument-sans select-none">{name}</span>
-            </label>
+            <FilterItem
+              key={name}
+              label={name}
+              isSelected={currentPromotion === name}
+              onClick={() => updateSearchParams("promotion", currentPromotion === name ? "" : name)}
+            />
           ))
         )}
       </div>
@@ -403,7 +480,7 @@ const PromotionNameFilter = ({ promotionNames }: { promotionNames: string[] }) =
   )
 }
 
-// Seller Filter Component
+// Seller Filter
 const SellerFilterDropdown = ({ sellerNames }: { sellerNames: { id: string; name: string }[] }) => {
   const searchParams = useSearchParams()
   const isActive = Boolean(searchParams.get("seller"))
@@ -426,38 +503,28 @@ const SellerFilter = ({ sellerNames }: { sellerNames: { id: string; name: string
   )
 
   return (
-    <div className="space-y-3">
-      <h4 className="font-medium text-black mb-3 font-instrument-sans">Wybierz sprzedawcę</h4>
-      
-      {/* Search input */}
-      <input
-        type="text"
-        placeholder="Szukaj sprzedawcy..."
-        value={searchQuery}
-        onChange={(e) => setSearchQuery(e.target.value)}
-        className="w-full px-3 py-2 border border-[#3B3634] rounded-md text-sm font-instrument-sans focus:outline-none focus:ring-2 focus:ring-[#3B3634]"
-      />
+    <div className="flex flex-col">
+      <div className="p-3 border-b border-[#3B3634]/10">
+        <FilterSearch
+          value={searchQuery}
+          onChange={setSearchQuery}
+          placeholder="Szukaj sprzedawcy..."
+        />
+      </div>
 
-      {/* Seller list */}
-      <div className="space-y-2 max-h-[250px] overflow-y-auto">
+      <div className="p-4 max-h-[280px] overflow-y-auto">
         {filteredSellers.length === 0 ? (
-          <p className="text-sm text-gray-500 font-instrument-sans text-center py-2">
+          <p className="text-sm text-[#3B3634]/50 font-instrument-sans text-center py-6 italic">
             Brak wyników
           </p>
         ) : (
           filteredSellers.map((seller) => (
-            <label key={seller.id} className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-2 rounded transition-colors">
-              <input
-                type="radio"
-                name="seller"
-                value={seller.id}
-                checked={currentSeller === seller.id}
-                onChange={() => updateSearchParams("seller", seller.id)}
-                className="w-4 h-4 text-[#3B3634] border-[#3B3634] focus:ring-[#3B3634] cursor-pointer"
-                style={{ accentColor: '#3B3634' }}
-              />
-              <span className="text-sm text-black font-instrument-sans select-none">{seller.name}</span>
-            </label>
+            <FilterItem
+              key={seller.id}
+              label={seller.name}
+              isSelected={currentSeller === seller.id}
+              onClick={() => updateSearchParams("seller", currentSeller === seller.id ? "" : seller.id)}
+            />
           ))
         )}
       </div>
@@ -465,7 +532,7 @@ const SellerFilter = ({ sellerNames }: { sellerNames: { id: string; name: string
   )
 }
 
-// Campaign Filter Component
+// Campaign Filter
 const CampaignFilterDropdown = ({ campaignNames }: { campaignNames: string[] }) => {
   const searchParams = useSearchParams()
   const isActive = Boolean(searchParams.get("campaign"))
@@ -488,41 +555,73 @@ const CampaignFilter = ({ campaignNames }: { campaignNames: string[] }) => {
   )
 
   return (
-    <div className="space-y-3">
-      <h4 className="font-medium text-black mb-3 font-instrument-sans">Wybierz kampanię</h4>
-      
-      {/* Search input */}
-      <input
-        type="text"
-        placeholder="Szukaj kampanii..."
-        value={searchQuery}
-        onChange={(e) => setSearchQuery(e.target.value)}
-        className="w-full px-3 py-2 border border-[#3B3634] rounded-md text-sm font-instrument-sans focus:outline-none focus:ring-2 focus:ring-[#3B3634]"
-      />
+    <div className="flex flex-col">
+      <div className="p-3 border-b border-[#3B3634]/10">
+        <FilterSearch
+          value={searchQuery}
+          onChange={setSearchQuery}
+          placeholder="Szukaj kampanii..."
+        />
+      </div>
 
-      {/* Campaign list */}
-      <div className="space-y-2 max-h-[250px] overflow-y-auto">
+      <div className="p-4 max-h-[280px] overflow-y-auto">
         {filteredCampaigns.length === 0 ? (
-          <p className="text-sm text-gray-500 font-instrument-sans text-center py-2">
+          <p className="text-sm text-[#3B3634] font-instrument-sans text-center py-6 italic">
             Brak wyników
           </p>
         ) : (
           filteredCampaigns.map((name) => (
-            <label key={name} className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-2 rounded transition-colors">
-              <input
-                type="radio"
-                name="campaign"
-                value={name}
-                checked={currentCampaign === name}
-                onChange={() => updateSearchParams("campaign", name)}
-                className="w-4 h-4 text-[#3B3634] border-[#3B3634] focus:ring-[#3B3634] cursor-pointer"
-                style={{ accentColor: '#3B3634' }}
-              />
-              <span className="text-sm text-black font-instrument-sans select-none">{name}</span>
-            </label>
+            <FilterItem
+              key={name}
+              label={name}
+              isSelected={currentCampaign === name}
+              onClick={() => updateSearchParams("campaign", currentCampaign === name ? "" : name)}
+            />
           ))
         )}
       </div>
     </div>
+  )
+}
+
+// Category Filter
+const CategoryFilterDropdown = ({ categoryNames }: { categoryNames: { id: string; name: string }[] }) => {
+  const { pendingCategories, setPendingCategories } = useFilterStore()
+  const searchParams = useSearchParams()
+  const updateSearchParams = useUpdateSearchParams()
+  
+  const urlCategories = searchParams.get("category")?.split(',').filter(Boolean) || []
+  const isActive = urlCategories.length > 0
+  
+  useEffect(() => {
+    setPendingCategories(urlCategories)
+  }, [urlCategories.join(','), setPendingCategories])
+
+  const handleCategoryChange = (categoryIds: string[]) => {
+    setPendingCategories(categoryIds)
+  }
+
+  const handleApply = () => {
+    if (pendingCategories.length > 0) {
+      updateSearchParams("category", pendingCategories.join(','))
+    } else {
+      updateSearchParams("category", "")
+    }
+  }
+
+  return (
+    <FilterDropdown 
+      label={`Kategoria${isActive ? ` (${urlCategories.length})` : ''}`} 
+      isActive={isActive} 
+      onApply={handleApply}
+    >
+      <div className="p-2 max-h-[350px] overflow-y-auto">
+        <CategoryFilter
+          categories={categoryNames}
+          selectedCategories={pendingCategories}
+          onCategoryChange={handleCategoryChange}
+        />
+      </div>
+    </FilterDropdown>
   )
 }
