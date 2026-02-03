@@ -9,18 +9,37 @@ import { useVariantSelection } from "@/components/context/VariantSelectionContex
 import { getVariantAttributes } from "@/lib/data/variant-attributes"
 
 export const ProductAdditionalAttributes = ({
-  product
+  product,
+  initialAttributes
 }: {
   product: HttpTypes.StoreProduct
+  initialAttributes?: any[]
 }) => {
-  const [attributes, setAttributes] = useState<AdditionalAttributeProps[]>([])
+  const { selectedVariantId } = useVariantSelection()
+  
+  // ✅ OPTIMIZATION: Track initial variant ID to prevent fetching server-prefetched data
+  const initialVariantId = useRef(product.variants?.[0]?.id)
+  
+  // ✅ OPTIMIZATION: Use server-prefetched attributes if available
+  const formattedInitialAttributes = initialAttributes?.map(attr => ({
+    id: attr.id,
+    value: attr.value,
+    attribute_id: attr.attribute_id,
+    attribute: {
+      id: attr.attribute.id,
+      name: attr.attribute.name
+    }
+  })) || []
+
+  const [attributes, setAttributes] = useState<AdditionalAttributeProps[]>(formattedInitialAttributes)
   const [isLoading, setIsLoading] = useState(false)
   const [isPending, startTransition] = useTransition()
-  const { selectedVariantId } = useVariantSelection()
 
   // Request deduplication cache - prevents multiple simultaneous requests
   const requestCacheRef = useRef(new Map<string, Promise<any>>())
   const lastFetchedRef = useRef<string>('')
+  // ✅ FIX: Check if prop was passed (not if it has length) - empty array is valid server data
+  const hasServerPrefetchedData = useRef(initialAttributes !== undefined)
 
   // Function to fetch variant attributes with request deduplication
   const fetchVariantAttributes = useCallback(async (productId: string, variantId: string) => {
@@ -95,12 +114,21 @@ export const ProductAdditionalAttributes = ({
   }, [])
 
   useEffect(() => {
+    // ✅ OPTIMIZATION: Skip ALL fetches if we have server-prefetched data for initial variant
+    // Even if the data is empty, it's valid - don't fetch again
+    const isInitialVariant = selectedVariantId === initialVariantId.current
+    if (isInitialVariant && hasServerPrefetchedData.current) {
+      return
+    }
+
     // If we have a selected variant, check local data immediately first
     if (selectedVariantId && product.id) {
+      
       // 1. IMMEDIATE: Check if we have variant data locally and show it right away for a fast UI update
       const selectedVariant = product.variants?.find((v) => v.id === selectedVariantId)
       
       if (selectedVariant?.attribute_values?.length) {
+
         setAttributes(selectedVariant.attribute_values)
       } else {
         setAttributes(product.attribute_values || [])
@@ -118,7 +146,7 @@ export const ProductAdditionalAttributes = ({
       // Otherwise fall back to product attributes
       setAttributes(product.attribute_values || [])
     }
-  }, [product, selectedVariantId, fetchVariantAttributes])
+  }, [product.id, selectedVariantId, fetchVariantAttributes])
   
   if (!attributes.length) return null
 

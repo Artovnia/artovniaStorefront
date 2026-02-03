@@ -11,6 +11,7 @@ import { getUserWishlists } from "@/lib/data/wishlist"
 import { generateBreadcrumbJsonLd, generateCollectionPageJsonLd } from "@/lib/helpers/seo"
 import { getBatchLowestPrices } from "@/lib/data/price-history"
 import { extractFilterOptions } from "@/lib/utils/extract-filter-options"
+import { extractCategoriesWithHierarchy } from "@/lib/data/category-hierarchy"
 import { BatchPriceProvider } from "@/components/context/BatchPriceProvider"
 import { getRegion } from "@/lib/data/regions"
 
@@ -107,6 +108,9 @@ export default async function PromotionsPage({ searchParams }: PromotionsPagePro
     
     // ✅ OPTIMIZATION: Extract filter options from fetched products (no API call)
     const filterOptions = extractFilterOptions(products)
+    
+    // ✅ FIX: Extract categories with full hierarchy for proper tree structure
+    const categoriesWithHierarchy = await extractCategoriesWithHierarchy(products)
     
     // ✅ OPTIMIZATION: Convert products to Map for PromotionDataProvider
     const promotionalProductsMap = new Map(
@@ -207,7 +211,7 @@ export default async function PromotionsPage({ searchParams }: PromotionsPagePro
               promotionNames={filterOptions.promotionNames}
               sellerNames={filterOptions.sellerNames}
               campaignNames={filterOptions.campaignNames}
-              categoryNames={filterOptions.categoryNames}
+              categoryNames={categoriesWithHierarchy}
             />
           </div>
 

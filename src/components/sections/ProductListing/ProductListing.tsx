@@ -4,6 +4,7 @@ import { useState, useEffect } from "react"
 import { HttpTypes } from "@medusajs/types"
 import { ProductCard } from "@/components/organisms"
 import { BatchPriceProvider } from "@/components/context/BatchPriceProvider"
+import { PromotionDataProvider } from "@/components/context/PromotionDataProvider"
 import { CategorySidebar } from "@/components/organisms"
 import { ProductFilterBar } from "@/components/organisms"
 import Link from "next/link"
@@ -182,22 +183,23 @@ export const ProductListing = ({
   if (isLoading) return <ProductListingSkeleton />
 
   return (
-    <>
-      {/* Bot Detection Message */}
-      <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6 mb-6 text-center">
-        <p className="text-gray-800 text-lg">
-          Ta strona przeznaczona jest dla botów. Jeżeli ją widzisz, prosimy o zgłoszenie problemu w{" "}
-          <Link 
-            href="/support" 
-            className="text-secondary hover:text-primary underline transition-colors duration-200"
-          >
-            Kontakt
-          </Link>
-        </p>
-      </div>
+    <PromotionDataProvider countryCode="pl" limit={100}>
+      <BatchPriceProvider currencyCode="PLN" days={30}>
+        {/* Bot Detection Message */}
+        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6 mb-6 text-center">
+          <p className="text-gray-800 text-lg">
+            Ta strona przeznaczona jest dla botów. Jeżeli ją widzisz, prosimy o zgłoszenie problemu w{" "}
+            <Link 
+              href="/support" 
+              className="text-secondary hover:text-primary underline transition-colors duration-200"
+            >
+              Kontakt
+            </Link>
+          </p>
+        </div>
 
-      {/* Main Layout: (Results Count + Category Sidebar) + (Filter Bar + Products) */}
-      <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
+        {/* Main Layout: (Results Count + Category Sidebar) + (Filter Bar + Products) */}
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
         {/* Left Column: Category Sidebar - Hidden below 768px (md breakpoint) */}
         <div className="hidden lg:block lg:col-span-1">
           {/* Category Sidebar - includes results count internally */}
@@ -231,20 +233,18 @@ export const ProductListing = ({
                 </p>
               </div>
             ) : (
-              <BatchPriceProvider currencyCode="PLN" days={30}>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                  {products.map((product) => (
-                    <ProductCard
-                      key={product.id}
-                      product={product}
-                  
-                      user={user}
-                      wishlist={wishlist}
-                      onWishlistChange={refreshWishlist}
-                    />
-                  ))}
-                </div>
-              </BatchPriceProvider>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                {products.map((product) => (
+                  <ProductCard
+                    key={product.id}
+                    product={product}
+                
+                    user={user}
+                    wishlist={wishlist}
+                    onWishlistChange={refreshWishlist}
+                  />
+                ))}
+              </div>
             )}
           </div>
 
@@ -269,7 +269,8 @@ export const ProductListing = ({
             <div className="label-md text-gray-600">{`${count} wyników`}</div>
           </div>
         </div>
-      </div>
-    </>
+        </div>
+      </BatchPriceProvider>
+    </PromotionDataProvider>
   )
 }

@@ -1,23 +1,24 @@
 "use client"
 
-import { Button } from "../../../components/atoms"
+import { Button } from "@/components/atoms"
 import { HttpTypes } from "@medusajs/types"
-import { ProductVariants } from "../../../components/molecules"
-import useGetAllSearchParams from "../../../hooks/useGetAllSearchParams"
-import { getProductPrice } from "../../../lib/helpers/get-product-price"
-import { getPromotionalPrice } from "../../../lib/helpers/get-promotional-price"
+import { ProductVariants } from "@/components/molecules"
+import useGetAllSearchParams from "@/hooks/useGetAllSearchParams"
 import { useState, useEffect, useMemo } from "react"
-import { addToCart } from "../../../lib/data/cart"
-import { useCart } from "../../../components/context/CartContext"
-import { SellerProps } from "../../../types/seller"
-import { WishlistButton } from "../WishlistButton/WishlistButton"
-import { Wishlist, SerializableWishlist } from "../../../types/wishlist"
-import { useVendorAvailability } from "../../organisms/VendorAvailabilityProvider/vendor-availability-provider"
+import { addToCart } from "@/lib/data/cart"
+import { useCart } from "@/components/context/CartContext"
+import { SellerProps } from "@/types/seller"
+import { getProductPrice } from "@/lib/helpers/get-product-price"
+import { getPromotionalPrice } from "@/lib/helpers/get-promotional-price"
+import { WishlistButton } from "@/components/cells/WishlistButton/WishlistButton"
+import { Wishlist, SerializableWishlist } from "@/types/wishlist"
+import { useVendorAvailability } from "@/components/organisms/VendorAvailabilityProvider/vendor-availability-provider"
 import { InformationCircleSolid } from "@medusajs/icons"
-import { useVariantSelection } from "../../context/VariantSelectionContext"
-import { BatchLowestPriceDisplay } from "../LowestPriceDisplay/BatchLowestPriceDisplay"
-import { usePromotionData } from "../../context/PromotionDataProvider"
-import { ProductShareButton } from "../ProductShareButton/ProductShareButton"
+import { useVariantSelection } from "@/components/context/VariantSelectionContext"
+import { BatchLowestPriceDisplay } from "@/components/cells/LowestPriceDisplay/BatchLowestPriceDisplay"
+import { usePromotionData } from "@/components/context/PromotionDataProvider"
+import { ProductShareButton } from "@/components/cells/ProductShareButton/ProductShareButton"
+import { PromotionBadge } from "@/components/cells/PromotionBadge/PromotionBadge"
 
 // Define extended types for product and variants
 type ExtendedStoreProduct = HttpTypes.StoreProduct & {
@@ -240,11 +241,12 @@ export const ProductDetailsHeader = ({
                     <span className="label-md text-secondary line-through">
                       {promotionalPricing.originalPrice}
                     </span>
-                    {/* Show percentage badge for actual promotions */}
+                    {/* Show promotion badge for actual promotions */}
                     {(productToUse as any).has_promotions && (productToUse as any).promotions?.length > 0 && (
-                      <span className="bg-primary text-[#3B3634] text-sm font-bold px-3 py-1 rounded-lg  border border-[#3B3634]/90">
-                        -{promotionalPricing.discountPercentage}%
-                      </span>
+                      <PromotionBadge 
+                        discountPercentage={promotionalPricing.discountPercentage}
+                        variant="simple"
+                      />
                     )}
                   </>
                 ) : (
@@ -274,11 +276,12 @@ export const ProductDetailsHeader = ({
           
           {/* Lowest Price Display - always show when variant exists, component handles null data */}
           {currentVariantId && (
-            <div className="mt-3">
+            <div className="mt-1">
               <BatchLowestPriceDisplay
                 variantId={currentVariantId}
                 currencyCode="PLN"
                 className="text-sm"
+                fallbackPrice={variantPrice?.original_price_number}
               />
             </div>
           )}
@@ -335,3 +338,4 @@ export const ProductDetailsHeader = ({
     </div>
   )
 }
+

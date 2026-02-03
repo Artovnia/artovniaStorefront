@@ -168,7 +168,7 @@ export const ProductVariants = ({
   }
 
   return (
-    <div className="my-4 space-y-2">
+    <div className="my-4 xl:my-6 space-y-2">
       {availableOptions.map(
         (option) => {
           if (!option) return null // Type guard for filtered null values

@@ -1,15 +1,13 @@
+"use client"
+
 import { Carousel } from "@/components/cells"
 import { ProductCard } from "../ProductCard/ProductCard"
-// import { BatchPriceProvider } from "@/components/context/BatchPriceProvider" // Disabled to prevent infinite loops
-import { listProducts } from "@/lib/data/products"
 import { Product } from "@/types/product"
 import { HttpTypes } from "@medusajs/types"
 import { Hit } from "instantsearch.js"
-import { retrieveCustomer } from "@/lib/data/customer"
-import { getUserWishlists } from "@/lib/data/wishlist"
 import { SerializableWishlist } from "@/types/wishlist"
 
-export const HomeProductsCarousel = async ({
+export const HomeProductsCarousel = ({
   locale,
   sellerProducts,
   home,
@@ -27,30 +25,11 @@ export const HomeProductsCarousel = async ({
   wishlist?: SerializableWishlist[]
 }) => {
   try {
-    // ✅ PHASE 1.3: ELIMINATED DUPLICATE WISHLIST FETCHING
-    // User and wishlist are now passed as props from parent components
-    // This removes 2 duplicate API calls per homepage load (customer + wishlist)
-    // Performance improvement: ~500ms faster, ~50KB less data transfer
+    // ✅ CONVERTED TO CLIENT COMPONENT: Now can access React Context from parent providers
+    // Products are always passed as props from parent server component
+    // This allows ProductCard to access PromotionDataProvider and BatchPriceProvider contexts
     
-    // Prioritize provided products to avoid unnecessary API calls
-    let products: any[] = [];
-    
-    // Only fetch all products if not in seller section or if no seller products provided
-    if (!isSellerSection && (!sellerProducts || sellerProducts.length === 0)) {
-      const result = await listProducts({
-        countryCode: locale,
-        queryParams: {
-          limit: home ? 16 : 19, // Optimized limits
-          order: "created_at",
-        },
-      });
-      
-      if (result?.response?.products) {
-        products = result.response.products;
-      }
-    }
-    
-    const displayProducts = sellerProducts?.length ? sellerProducts : products;
+    const displayProducts = sellerProducts || [];
     
     if (!displayProducts.length) {
       return (
@@ -69,9 +48,9 @@ export const HomeProductsCarousel = async ({
         const typedProduct = {
           ...product,
           id: String(product.id),
-          handle: product.handle || String(product.id),
+          handle: (product as any).handle || String(product.id),
           title: product.title || "Untitled Product",
-          thumbnail: product.images?.[0]?.url || product.thumbnail || "/images/product/placeholder.jpg"
+          thumbnail: (product as any).images?.[0]?.url || (product as any).thumbnail || "/images/product/placeholder.jpg"
         };
         
         return (

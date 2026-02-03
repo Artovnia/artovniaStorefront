@@ -12,6 +12,11 @@ interface CategoriesProps {
   headingCategories?: string[]
 }
 
+// Extended type to include mpath (returned by API but not in base types)
+interface CategoryWithMpath extends HttpTypes.StoreProductCategory {
+  mpath?: string
+}
+
 /**
  * ✅ OPTIMIZED: Get categories that have products with SINGLE efficient query
  * Uses React cache() for request deduplication + Next.js fetch cache for persistence
@@ -167,80 +172,153 @@ function buildCategoryTree(flatCategories: HttpTypes.StoreProductCategory[]): Ht
 }
 
 /**
- * OPTIMIZED: Get categories that have products (for UI components that want to filter)
- * This fetches all categories once and filters efficiently to reduce server load
+ * OPTIMIZED: Get categories with products - storefront-only optimization
+ * 
+ * Strategy:
+ * 1. Fetch parent categories with descendants tree (single request)
+ * 2. Check which categories have products
+ * 3. Filter to only show categories with products
  */
 export const listCategoriesWithProducts = async (): Promise<{
   parentCategories: HttpTypes.StoreProductCategory[]
   categories: HttpTypes.StoreProductCategory[]
 }> => {
   try {
-    // ✅ OPTIMIZED: Use cached product check with 24h TTL to prevent spam
-    const categoriesWithProducts = await getCategoriesWithProductsFromDatabase()
-    
-    if (categoriesWithProducts.size === 0) {
-      // Fallback to essential categories if no products found
-      return await getEssentialCategories()
-    }
-    
-    const response = await sdk.client.fetch<
+    // Step 1: Fetch ONLY parent categories with full descendants tree
+    const parentResponse = await sdk.client.fetch<
       HttpTypes.StoreProductCategoryListResponse
     >("/store/product-categories", {
       query: {
-        fields: "id, handle, name, rank, parent_category_id, mpath",
-        limit: 1000,
+        fields: "+category_children.id,+category_children.name,+category_children.handle,+category_children.rank,+category_children.category_children.id,+category_children.category_children.name,+category_children.category_children.handle,+category_children.category_children.rank",
+        parent_category_id: "null", // Only root categories
+        include_descendants_tree: true,
+        limit: 50,
       },
-      next: { revalidate: 3600 }, // 1 hour cache
+      next: { revalidate: 3600 },
     })
-    
-    const allCategories = response?.product_categories || []
-    
-    // Filter categories with products OR their ancestors
-    const filteredCategories = allCategories.filter(category => {
-      return hasProductsInCategoryTree(
-        category, 
-        allCategories, 
-        categoriesWithProducts
-      )
-    })
-    
-    const filteredTree = buildCategoryTree(filteredCategories)
-    const filteredParents = filteredTree.filter(
-      cat => !cat.parent_category_id
-    )
-    
+
+    const parentCategories = parentResponse?.product_categories || []
+
+    if (parentCategories.length === 0) {
+      return await getEssentialCategories()
+    }
+
+    // Step 2: Collect all category IDs from tree
+    const allCategoryIds = collectAllCategoryIds(parentCategories)
+
+    // Step 3: Check which categories have products (cached)
+    const categoriesWithProducts = await getCategoriesWithProductsFromDatabase()
+
+    if (categoriesWithProducts.size === 0) {
+      return await getEssentialCategories()
+    }
+
+    // Step 4: Filter parent categories AND their children recursively
+    // Only keep categories that have products or descendants with products
+    const filteredParents = parentCategories
+      .map(cat => filterCategoryTree(cat, categoriesWithProducts))
+      .filter(cat => cat !== null) as HttpTypes.StoreProductCategory[]
+
+    // Step 5: Flatten for categories array (for backward compatibility)
+    const allCategories = flattenCategories(filteredParents)
+
     return {
       parentCategories: filteredParents,
-      categories: filteredTree
+      categories: allCategories,
     }
   } catch (error) {
-    console.error('Error in listCategoriesWithProducts:', error)
+    console.error("Error in listCategoriesWithProducts:", error)
     return await getEssentialCategories()
   }
 }
 
 /**
- * Check if a category or any of its descendants have products
+ * Helper: Collect all category IDs from tree
  */
-function hasProductsInCategoryTree(
-  category: HttpTypes.StoreProductCategory, 
-  allCategories: HttpTypes.StoreProductCategory[], 
+function collectAllCategoryIds(
+  categories: HttpTypes.StoreProductCategory[]
+): string[] {
+  const ids: string[] = []
+  const traverse = (cats: HttpTypes.StoreProductCategory[]) => {
+    for (const cat of cats) {
+      ids.push(cat.id)
+      if (cat.category_children?.length) {
+        traverse(cat.category_children)
+      }
+    }
+  }
+  traverse(categories)
+  return ids
+}
+
+/**
+ * Helper: Filter category tree recursively, keeping only categories with products
+ * Returns null if category and all descendants have no products
+ */
+function filterCategoryTree(
+  category: HttpTypes.StoreProductCategory,
+  categoriesWithProducts: Set<string>
+): HttpTypes.StoreProductCategory | null {
+  // Recursively filter children first
+  const filteredChildren = category.category_children
+    ?.map(child => filterCategoryTree(child, categoriesWithProducts))
+    .filter(child => child !== null) as HttpTypes.StoreProductCategory[] | undefined
+
+  // Keep category if it has products OR has children with products
+  const hasProducts = categoriesWithProducts.has(category.id)
+  const hasChildrenWithProducts = filteredChildren && filteredChildren.length > 0
+
+  if (hasProducts || hasChildrenWithProducts) {
+    return {
+      ...category,
+      category_children: filteredChildren || []
+    }
+  }
+
+  return null
+}
+
+/**
+ * Helper: Check if category tree has products (legacy - kept for reference)
+ */
+function hasChildWithProducts(
+  category: HttpTypes.StoreProductCategory,
   categoriesWithProducts: Set<string>
 ): boolean {
   // Check if this category has products
   if (categoriesWithProducts.has(category.id)) {
     return true
   }
-  
-  // Check all descendants recursively
-  const descendants = allCategories.filter(cat => cat.parent_category_id === category.id)
-  for (const descendant of descendants) {
-    if (hasProductsInCategoryTree(descendant, allCategories, categoriesWithProducts)) {
-      return true
+
+  // Check children recursively
+  if (category.category_children?.length) {
+    for (const child of category.category_children) {
+      if (hasChildWithProducts(child, categoriesWithProducts)) {
+        return true
+      }
     }
   }
-  
+
   return false
+}
+
+/**
+ * Helper: Flatten tree to array
+ */
+function flattenCategories(
+  categories: HttpTypes.StoreProductCategory[]
+): HttpTypes.StoreProductCategory[] {
+  const result: HttpTypes.StoreProductCategory[] = []
+  const traverse = (cats: HttpTypes.StoreProductCategory[]) => {
+    for (const cat of cats) {
+      result.push(cat)
+      if (cat.category_children?.length) {
+        traverse(cat.category_children)
+      }
+    }
+  }
+  traverse(categories)
+  return result
 }
 
 /**
@@ -282,60 +360,75 @@ async function getEssentialCategories(): Promise<{
 /**
  * Build full category hierarchy path from root to leaf
  * This is used for breadcrumbs to show the complete path
- * Uses parent_category_id to reconstruct the full hierarchy chain
+ * 
+ * OPTIMIZED: Instead of fetching all 1000 categories, we:
+ * 1. Fetch only the target category with mpath
+ * 2. Parse mpath to get parent category IDs
+ * 3. Fetch only those specific parent categories
+ * 
+ * This reduces the query from 1000 categories to ~3-5 categories
  */
 export const getCategoryHierarchy = async (categoryHandle: string): Promise<HttpTypes.StoreProductCategory[]> => {
   try {
-    // Get all categories with parent relationships - include parent_category_id field
-    const { product_categories } = await sdk.client.fetch<{
-      product_categories: HttpTypes.StoreProductCategory[]
+    // Step 1: Fetch only the target category with mpath field
+    const { product_categories: targetCategories } = await sdk.client.fetch<{
+      product_categories: CategoryWithMpath[]
     }>("/store/product-categories", {
       query: {
-        fields: "id, handle, name, rank, parent_category_id, mpath, *parent_category",
-        limit: 1000, // CRITICAL: Match the limit from listCategories
+        fields: "id, handle, name, rank, parent_category_id, mpath",
+        handle: categoryHandle,
       },
       cache: "force-cache",
-      next: { revalidate: 300 }
+      next: { revalidate: 3600 }
     })
 
-    // Find the target category
-    const targetCategory = product_categories.find(cat => cat.handle === categoryHandle)
+    const targetCategory = targetCategories?.[0]
     if (!targetCategory) {
       console.warn(`Target category with handle "${categoryHandle}" not found`)
       return []
     }
 
-    // Build hierarchy path from leaf to root using parent_category_id
-    const hierarchy: HttpTypes.StoreProductCategory[] = []
-    let currentCategory: HttpTypes.StoreProductCategory | null = targetCategory
+    // Step 2: Parse mpath to get parent category IDs
+    // mpath format: "pcat_root.pcat_parent.pcat_current"
+    const mpath = targetCategory.mpath || ''
+    const categoryIds = mpath.split('.').filter(Boolean)
+    
+    // If no parent categories (root category), return just the target
+    if (categoryIds.length <= 1) {
+      return [targetCategory]
+    }
 
-    // Prevent infinite loops with a visited set and max depth
-    const visitedIds = new Set<string>()
-    const maxDepth = 10 // Reasonable max depth for category hierarchy
-    let depth = 0
+    // Step 3: Fetch only the parent categories (exclude the target category itself)
+    const parentIds = categoryIds.slice(0, -1) // Remove last ID (target category)
+    
+    if (parentIds.length === 0) {
+      return [targetCategory]
+    }
 
-    while (currentCategory && !visitedIds.has(currentCategory.id) && depth < maxDepth) {
-      visitedIds.add(currentCategory.id)
-      hierarchy.unshift(currentCategory) // Add to beginning to build root-to-leaf path
-      depth++
-      
-      // Find parent category using parent_category_id field
-      if (currentCategory.parent_category_id) {
-        const parentId: string = currentCategory.parent_category_id
-        currentCategory = product_categories.find(cat => cat.id === parentId) || null
-        
-        if (!currentCategory && process.env.NODE_ENV === 'development') {
-          console.warn(`Parent category with ID "${parentId}" not found`)
-        }
-      } else {
-        // No parent_category_id means this is a root category
-        currentCategory = null
+    const { product_categories: parentCategories } = await sdk.client.fetch<{
+      product_categories: CategoryWithMpath[]
+    }>("/store/product-categories", {
+      query: {
+        fields: "id, handle, name, rank, parent_category_id, mpath",
+        id: parentIds,
+      },
+      cache: "force-cache",
+      next: { revalidate: 3600 }
+    })
+
+    // Step 4: Build hierarchy in correct order (root to leaf)
+    const hierarchy: CategoryWithMpath[] = []
+    
+    // Add parents in order based on mpath
+    categoryIds.slice(0, -1).forEach((id: string) => {
+      const parent = parentCategories.find(cat => cat.id === id)
+      if (parent) {
+        hierarchy.push(parent)
       }
-    }
-
-    if (depth >= maxDepth) {
-      console.warn(`Category hierarchy depth exceeded maximum (${maxDepth}) for category: ${categoryHandle}`)
-    }
+    })
+    
+    // Add target category at the end
+    hierarchy.push(targetCategory)
 
     return hierarchy
   } catch (error) {

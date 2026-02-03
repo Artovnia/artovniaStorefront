@@ -10,6 +10,7 @@ import {
 } from "@/components/organisms"
 import { MobileCategoryBreadcrumbs } from "@/components/molecules/MobileCategoryBreadcrumbs"
 import { BatchPriceProvider } from "@/components/context/BatchPriceProvider"
+import { PromotionDataProvider } from "@/components/context/PromotionDataProvider"
 import { SelectField } from "@/components/molecules/SelectField/SelectField"
 import { Configure, useHits, useRefinementList } from "react-instantsearch"
 import React, { useEffect, useState } from "react"
@@ -331,27 +332,30 @@ const AlgoliaProductsListingWithConfig = (props: AlgoliaProductsListingProps) =>
 
   // Use the correct indexName based on sort selection
   return (
-    <InstantSearchNext 
-      key={instantSearchKey}
-      searchClient={searchClient} 
-      indexName={activeIndexName}
-      future={{
-        preserveSharedStateOnUnmount: true,
-        persistHierarchicalRootCount: false
-      }}
-      routing={false}
-    >
-      <Configure {...configureProps} />
-      <ProductsListing 
-        sortOptions={sortOptions} 
-        category_id={category_id} 
-        categories={categories}
-
-        // Pass category_ids for parent category aggregation
-        category_ids={category_ids}
-        currentCategory={currentCategory}
-      />
-    </InstantSearchNext>
+    <PromotionDataProvider countryCode={locale || 'pl'} limit={100}>
+      <BatchPriceProvider currencyCode="PLN" days={30}>
+        <InstantSearchNext 
+          key={instantSearchKey}
+          searchClient={searchClient} 
+          indexName={activeIndexName}
+          future={{
+            preserveSharedStateOnUnmount: true,
+            persistHierarchicalRootCount: false
+          }}
+          routing={false}
+        >
+          <Configure {...configureProps} />
+          <ProductsListing 
+            sortOptions={sortOptions} 
+            category_id={category_id} 
+            categories={categories}
+            // Pass category_ids for parent category aggregation
+            category_ids={category_ids}
+            currentCategory={currentCategory}
+          />
+        </InstantSearchNext>
+      </BatchPriceProvider>
+    </PromotionDataProvider>
   )
 }
 

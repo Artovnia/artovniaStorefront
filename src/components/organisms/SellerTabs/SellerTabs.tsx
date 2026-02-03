@@ -34,7 +34,15 @@ export const SellerTabs = ({
   initialTotalCount?: number
   initialWishlists?: any[]
   initialPriceData?: Record<string, LowestPriceData | null>
-  categories?: Array<{ id: string; name: string; handle: string }>
+  categories?: Array<{ 
+    id: string; 
+    name: string; 
+    handle?: string;
+    rank?: number;
+    parent_category_id?: string | null;
+    mpath?: string;
+    category_children?: any[];
+  }>
   reviews?: Review[]
   vendorPage?: VendorPage | null
 }) => {

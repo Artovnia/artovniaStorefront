@@ -11,6 +11,8 @@ interface BatchLowestPriceDisplayProps {
   days?: number
   className?: string
   themeMode?: "default" | "light" | "dark"
+  /** Fallback price to use when no price history exists (e.g., variant's original_amount) */
+  fallbackPrice?: number | null
 }
 
 export const BatchLowestPriceDisplay = memo(
@@ -20,6 +22,7 @@ export const BatchLowestPriceDisplay = memo(
     days = 30,
     className,
     themeMode = "default",
+    fallbackPrice,
   }: BatchLowestPriceDisplayProps) => {
     const { registerVariant, unregisterVariant, getPriceData, loading } =
       useBatchPrice()
@@ -37,7 +40,7 @@ export const BatchLowestPriceDisplay = memo(
       default: "text-gray-700",
     }[themeMode]
 
-    if (loading && !priceData) {
+    if (loading && !priceData && !fallbackPrice) {
       return (
         <div className={clsx("animate-pulse", className)}>
           <div
@@ -50,8 +53,9 @@ export const BatchLowestPriceDisplay = memo(
       )
     }
 
-    const lowestPrice = priceData?.lowest_30d_amount || priceData?.current_amount
-    if (!priceData || !lowestPrice) return null
+    // Priority: lowest_30d_amount > current_amount from price history > fallbackPrice (variant's original price)
+    const lowestPrice = priceData?.lowest_30d_amount || priceData?.current_amount || fallbackPrice
+    if (!lowestPrice) return null
 
     return (
       <span

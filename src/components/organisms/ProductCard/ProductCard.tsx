@@ -69,6 +69,7 @@ import { WishlistButton } from "@/components/cells/WishlistButton/WishlistButton
 import { BatchLowestPriceDisplay } from "@/components/cells/LowestPriceDisplay/BatchLowestPriceDisplay"
 import { SerializableWishlist } from "@/types/wishlist"
 import { useRouter } from "next/navigation"
+import { PromotionBadge } from "@/components/cells/PromotionBadge/PromotionBadge"
 
 const ProductCardComponent = ({
   product,
@@ -114,10 +115,11 @@ const ProductCardComponent = ({
   }, [productToUse])
 
   // ✅ FIX: Show promotional prices immediately when mounted (no waiting for isLoading)
-  // Backend pre-calculates discounts, so data is ready on first render
+  // Use productToUse (enriched from context) for discount detection
   const hasAnyDiscount = isMounted && (
     promotionalPricing.discountPercentage > 0 || 
-    product.variants?.some((variant: any) => 
+    (productToUse as any).has_promotions ||
+    productToUse.variants?.some((variant: any) => 
       variant.calculated_price && 
       variant.calculated_price.calculated_amount !== variant.calculated_price.original_amount &&
       variant.calculated_price.calculated_amount < variant.calculated_price.original_amount
@@ -170,28 +172,14 @@ const ProductCardComponent = ({
             onWishlistChange={onWishlistChange} 
           />
         </div>
-        {/* Promotion Badge - Consistent styling to prevent hydration mismatch */}
-{/* Craft Tag with String - Artisanal feel */}
-{hasAnyDiscount && promotionalPricing.discountPercentage > 0 && (product as any).has_promotions && (
-  <div className="absolute top-0 left-4 z-10" suppressHydrationWarning>
-    {/* String */}
-    <div className="w-px h-2 bg-[#3b3634] mx-auto" />
-    {/* Tag */}
-    <div 
-      className="relative bg-[#F5F0E8] px-1   py-2 "
-      style={{
-        clipPath: 'polygon(0 0, 100% 0, 100% 75%, 50% 100%, 0 75%)',
-      }}
-    >
-      {/* Hole punch effect */}
-      <div className="absolute top-1 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-[#3B3634]/45" />
-      <p className="text-[#3B3634] text-xs font-medium font-instrument-sans mt-1 text-center" 
-         style={{ fontFamily: 'cursive' }}>
-        -{promotionalPricing.discountPercentage}%
-      </p>
-    </div>
-  </div>
-)}
+        {/* Promotion Badge - Craft tag for artisanal marketplace feel */}
+        {/* Check productToUse for has_promotions since it may be enriched from PromotionDataProvider */}
+        {hasAnyDiscount && promotionalPricing.discountPercentage > 0 && (productToUse as any).has_promotions && (
+          <PromotionBadge 
+            discountPercentage={promotionalPricing.discountPercentage}
+            variant="card"
+          />
+        )}
         <Link href={productUrl} prefetch={true} aria-label={`Zobacz produkt: ${product.title}`}>
           <div className="overflow-hidden w-full h-full flex justify-center items-center">
             {(product.thumbnail || product.images?.[0]?.url) ? (
@@ -314,6 +302,12 @@ const ProductCardComponent = ({
                   currencyCode="PLN"
                   className="text-xs"
                   themeMode={themeMode}
+                  fallbackPrice={
+                    // Priority: Medusa calculated_price > Algolia prices array > Algolia min_price
+                    product.variants[0]?.calculated_price?.original_amount ||
+                    product.variants[0]?.prices?.[0]?.amount ||
+                    (product as any).min_price
+                  }
                 />
               </div>
             )}

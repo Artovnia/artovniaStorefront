@@ -30,6 +30,7 @@ export const PromotionDataProvider: React.FC<PromotionDataProviderProps> = ({
   initialData = null  // ✅ NEW: Accept server-fetched data (array or Map)
 }) => {
   // ✅ FIX: Convert initialData to Map if it's an array
+  // IMPORTANT: Products with has_promotions flag take priority over those without
   const initialProductMap = React.useMemo(() => {
     if (!initialData) return new Map()
     
@@ -38,12 +39,19 @@ export const PromotionDataProvider: React.FC<PromotionDataProviderProps> = ({
       return initialData
     }
     
-    // If array, convert to Map
+    // If array, convert to Map with priority for promotional products
     if (Array.isArray(initialData)) {
       const map = new Map<string, HttpTypes.StoreProduct>()
       initialData.forEach(product => {
         if (product && product.id) {
-          map.set(product.id, product)
+          const existing = map.get(product.id)
+          // If product has has_promotions flag, always use it
+          // If existing has has_promotions and new doesn't, keep existing
+          if ((product as any).has_promotions) {
+            map.set(product.id, product)
+          } else if (!existing || !(existing as any).has_promotions) {
+            map.set(product.id, product)
+          }
         }
       })
       return map

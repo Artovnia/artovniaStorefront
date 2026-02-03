@@ -8,6 +8,7 @@ export interface LowestPriceData {
   savings_percentage?: number | null
   period_days: number
   found_at?: string
+  has_history?: boolean  // True if variant has price history records
 }
 
 export interface PriceTrendData {

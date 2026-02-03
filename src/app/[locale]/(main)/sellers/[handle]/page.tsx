@@ -21,6 +21,7 @@ import type { Metadata } from "next"
 import { listProductsWithSort } from "../../../../../lib/data/products"
 import { getUserWishlists } from "../../../../../lib/data/wishlist"
 import { getBatchLowestPrices } from "../../../../../lib/data/price-history"
+import { extractCategoriesWithHierarchy } from '@/lib/data/category-hierarchy'
 import { PRODUCT_LIMIT } from "../../../../../const"
 import { Breadcrumbs } from "../../../../../components/atoms/Breadcrumbs/Breadcrumbs"
 import { sdk } from "../../../../../lib/config"
@@ -86,8 +87,8 @@ async function SellerTabsWithData({
     ? priceResult.value
     : undefined
   
-  // ✅ OPTIMIZATION: Extract categories from initial products (no duplicate fetch needed)
-  const categories = initialProducts ? extractCategoriesFromProducts(initialProducts) : undefined
+  // ✅ OPTIMIZATION: Extract categories with full hierarchy from initial products
+  const categories = initialProducts ? await extractCategoriesWithHierarchy(initialProducts) : undefined
 
   return (
     <SellerTabs

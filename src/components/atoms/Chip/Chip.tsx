@@ -46,7 +46,7 @@ export function Chip({
       {color ? (
         <span
           className={cn(
-            'w-[32px] h-[32px] bg-action absolute top-[3px] left-[3px] rounded-xs z-10',
+            'w-[32px] h-[32px] bg-action absolute top-[3px] left-[3px]  z-10',
             disabled && 'bg-disabled'
           )}
           style={{

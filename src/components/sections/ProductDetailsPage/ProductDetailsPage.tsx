@@ -16,29 +16,27 @@ import { generateProductJsonLd, generateBreadcrumbJsonLd } from "@/lib/helpers/s
 import { getUserWishlists } from "@/lib/data/wishlist"
 import { Link } from "@/i18n/routing"
 import { getBatchLowestPrices } from "@/lib/data/price-history"
-import { getRegion } from "@/lib/data/regions"
+import { HttpTypes } from "@medusajs/types"
 
 export const ProductDetailsPage = async ({
   handle,
   locale,
-  product: productProp,
+  product,
+  region,
 }: {
   handle: string
   locale: string
-  product?: any // Optional: if passed from page.tsx, skip fetch
+  product: HttpTypes.StoreProduct
+  region: HttpTypes.StoreRegion
 }) => {
-  // ✅ OPTIMIZATION: Use passed product or fetch if not provided
-  let prod = productProp
-
-  if (!prod) {
-    const { response } = await listProducts({
-      countryCode: locale,
-      queryParams: { handle },
-    })
-    prod = response.products[0]
+  // Product and region are always passed from page.tsx
+  if (!product) {
+    console.error('❌ ProductDetailsPage: No product provided')
+    return null
   }
 
-  if (!prod) return null
+  // ✅ OPTIMIZATION: Get initial variant ID for prefetching
+  const initialVariantId = product.variants?.[0]?.id
 
   // ✅ OPTIMIZATION: Step 2 - Parallel fetch EVERYTHING else (saves ~300-450ms)
   const [
@@ -49,14 +47,16 @@ export const ProductDetailsPage = async ({
     breadcrumbsResult,
     eligibilityResult,
     promotionalProductsResult,
-    regionResult,
+    variantAttributesResult,
   ] = await Promise.allSettled([
-    // Seller products - fetch by seller_id instead of using seller.products array
-    prod.seller?.id
+    // Seller products - fetch ALL 8 products by seller_id
+    // Uses custom endpoint /store/seller/{id}/products (not standard /store/products)
+    // PromotionDataProvider will enrich products that have promotions from promotionalProducts
+    product.seller?.id && region
       ? (async () => {
           const { response } = await listProducts({
-            seller_id: prod.seller.id,
-            countryCode: locale,
+            seller_id: product.seller!.id,
+            regionId: region.id,
             queryParams: { limit: 8 },
           })
           return response.products
@@ -76,12 +76,12 @@ export const ProductDetailsPage = async ({
       .catch(() => ({ user: null, wishlist: [], authenticated: false })),
 
     // Reviews
-    getProductReviews(prod.id).catch(() => ({ reviews: [] })),
+    getProductReviews(product.id).catch(() => ({ reviews: [] })),
 
     // ✅ OPTIMIZED: Batched vendor status (3 requests → 1 request)
-    prod.seller?.id
+    product.seller?.id
       ? Promise.race([
-          getVendorCompleteStatus(prod.seller.id),
+          getVendorCompleteStatus(product.seller.id),
           new Promise((_, reject) =>
             setTimeout(() => reject(new Error("Timeout")), 500)
           ),
@@ -97,10 +97,10 @@ export const ProductDetailsPage = async ({
         }),
 
     // Breadcrumbs
-    buildProductBreadcrumbs(prod, locale),
+    buildProductBreadcrumbs(product, locale),
 
     // Review eligibility (check if user has purchased this product)
-    checkProductReviewEligibility(prod.id).catch(() => ({
+    checkProductReviewEligibility(product.id).catch(() => ({
       isEligible: false,
       hasPurchased: false,
     })),
@@ -111,8 +111,14 @@ export const ProductDetailsPage = async ({
       limit: 50
     }).then(r => r.response.products).catch(() => []),
 
-    // ✅ NEW: Get region for price fetching
-    getRegion(locale).catch(() => null),
+    // ✅ OPTIMIZATION: Prefetch initial variant attributes on server
+    // This eliminates 1-2 client-side POST requests on page load
+    initialVariantId
+      ? (async () => {
+          const { getVariantAttributes } = await import("@/lib/data/variant-attributes")
+          return getVariantAttributes(product.id, initialVariantId)
+        })().catch(() => ({ attribute_values: [] }))
+      : Promise.resolve({ attribute_values: [] }),
   ])
 
   // Extract results with fallbacks
@@ -157,16 +163,16 @@ export const ProductDetailsPage = async ({
       ? promotionalProductsResult.value
       : []
 
-  const region =
-    regionResult.status === "fulfilled"
-      ? regionResult.value
-      : null
+  const initialVariantAttributes =
+    variantAttributesResult.status === "fulfilled"
+      ? variantAttributesResult.value
+      : { attribute_values: [] }
 
   // ✅ NEW: Pre-fetch ALL variant prices on server (product + seller products)
   let initialPriceData = {}
   try {
     const allVariantIds = [
-      ...(prod.variants?.map((v: any) => v.id) || []),
+      ...(product.variants?.map((v: any) => v.id) || []),
       ...sellerProducts.flatMap((p: any) => p.variants?.map((v: any) => v.id) || [])
     ].filter(Boolean)
 
@@ -189,24 +195,24 @@ export const ProductDetailsPage = async ({
   // ✅ FIX: Get price from variant's calculated_price
   const getProductPrice = (): number | undefined => {
     // Try variant calculated price first
-    const variant = prod.variants?.[0]
+    const variant = product.variants?.[0]
     if (variant?.calculated_price?.calculated_amount) {
       return variant.calculated_price.calculated_amount
     }
-    // Fallback to original price
+    // Fallback to original_amount if calculated_amount is not available
     if (variant?.calculated_price?.original_amount) {
       return variant.calculated_price.original_amount
     }
     // Try product-level price (some setups have this)
-    if ((prod as any).calculated_price?.calculated_amount) {
-      return (prod as any).calculated_price.calculated_amount
+    if ((product as any).calculated_price?.calculated_amount) {
+      return (product as any).calculated_price.calculated_amount
     }
     return undefined
   }
 
   // Generate structured data for SEO
   const productPrice = getProductPrice()
-  const productJsonLd = generateProductJsonLd(prod, productPrice, "PLN", reviews)
+  const productJsonLd = generateProductJsonLd(product, productPrice, "PLN", reviews)
   const breadcrumbJsonLd = generateBreadcrumbJsonLd(breadcrumbs)
 
   return (
@@ -227,11 +233,11 @@ export const ProductDetailsPage = async ({
           <Breadcrumbs items={breadcrumbs} />
         </div>
 
-        {/* ✅ OPTIMIZED: Pass server-fetched promotional products and price data */}
+        {/* ✅ OPTIMIZED: Seller products first, then promotional products (promotional override seller) */}
         <PromotionDataProvider 
           countryCode={locale} 
           limit={50}
-          initialData={promotionalProducts}
+          initialData={[...sellerProducts, ...promotionalProducts]}
         >
           <BatchPriceProvider 
             currencyCode="PLN"
@@ -240,8 +246,8 @@ export const ProductDetailsPage = async ({
             initialPriceData={initialPriceData}
           >
             <VendorAvailabilityProvider
-              vendorId={prod.seller?.id}
-              vendorName={prod.seller?.name}
+              vendorId={product.seller?.id}
+              vendorName={product.seller?.name}
               availability={availability}
               holidayMode={holidayMode}
               suspension={suspension}
@@ -251,16 +257,17 @@ export const ProductDetailsPage = async ({
               <div className="flex flex-col md:hidden">
                 <div className="w-full ">
                   <ProductGallery
-                    images={prod?.images || []}
-                    title={prod?.title || ""}
+                    images={product?.images || []}
+                    title={product?.title || ""}
                   />
                 </div>
                 <div className="w-full mt-4">
-                  {prod.seller ? (
+                  {product.seller ? (
                     <ProductDetails
-                      product={{ ...prod, seller: prod.seller }}
+                      product={{ ...product, seller: product.seller }}
                       locale={locale}
                       region={region}
+                      initialVariantAttributes={initialVariantAttributes}
                     />
                   ) : (
                     <div className="p-4 bg-red-50 text-red-800 rounded">
@@ -275,18 +282,19 @@ export const ProductDetailsPage = async ({
                 {/* Left: Sticky Product Gallery */}
                 <div className="md:w-1/2 md:max-w-[calc(50%-12px)] lg:max-w-none md:px-0 md:sticky md:top-20 md:self-start">
                   <ProductGallery
-                    images={prod?.images || []}
-                    title={prod?.title || ""}
+                    images={product?.images || []}
+                    title={product?.title || ""}
                   />
                 </div>
 
                 {/* Right: Scrollable Product Details */}
                 <div className="md:w-1/2 md:max-w-[calc(50%-12px)] lg:max-w-none md:px-0">
-                  {prod.seller ? (
+                  {product.seller ? (
                     <ProductDetails
-                      product={{ ...prod, seller: prod.seller }}
+                      product={{ ...product, seller: product.seller }}
                       locale={locale}
                       region={region}
+                      initialVariantAttributes={initialVariantAttributes}
                     />
                   ) : (
                     <div className="p-4 bg-red-50 text-red-800 rounded">
@@ -305,13 +313,13 @@ export const ProductDetailsPage = async ({
     <h2 className="heading-lg font-bold tracking-tight text-black text-center">
       <span className="font-instrument-serif">Więcej od </span>
       <span className="font-instrument-serif italic">
-        {prod.seller?.name}
+        {product.seller?.name}
       </span>
     </h2>
     <div className="flex justify-end">
-      {prod.seller?.handle && (
+      {product.seller?.handle && (
         <Link 
-          href={`/sellers/${prod.seller.handle}`}
+          href={`/sellers/${product.seller.handle}`}
           className="group relative text-[#3B3634] font-instrument-sans font-medium px-4 py-2 overflow-hidden transition-all duration-300 hover:text-white"
         >
           <span className="absolute inset-0 bg-[#3B3634] transform translate-x-[-100%] group-hover:translate-x-0 transition-transform duration-300 ease-out"></span>
@@ -331,14 +339,14 @@ export const ProductDetailsPage = async ({
     <h2 className="heading-lg font-bold tracking-tight text-black text-center">
       <span className="font-instrument-serif">Więcej od </span>
       <span className="font-instrument-serif italic">
-        {prod.seller?.name}
+        {product.seller?.name}
       </span>
     </h2>
     
-    {prod.seller?.handle && (
+    {product.seller?.handle && (
       <div className="flex justify-center">
         <Link 
-          href={`/sellers/${prod.seller.handle}`}
+          href={`/sellers/${product.seller.handle}`}
           className="group inline-flex items-center gap-3 font-instrument-serif italic text-[17px] text-[#3B3634] border-b-[1.5px] border-[#3B3634] pb-0.5 active:opacity-60 transition-all duration-200"
         >
           <span className="relative">
@@ -379,7 +387,7 @@ export const ProductDetailsPage = async ({
               {/* Product Reviews moved from ProductDetails */}
               <div className="max-w-[1920px] mx-auto">
                 <ProductReviews
-                  productId={prod.id}
+                  productId={product.id}
                   isAuthenticated={isUserAuthenticated}
                   customer={customer}
                   prefetchedReviews={reviews}

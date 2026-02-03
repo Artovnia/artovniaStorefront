@@ -54,7 +54,8 @@ export default async function RootLayout({
     <GuestWishlistProvider>
       <CartProvider initialCart={initialCart}>
         <div className="flex flex-col min-h-screen ">
-          <Header categories={categories.categories || []} regions={regions} />
+          {/* ✅ FIX: Pass parentCategories (tree structure) instead of categories (flat array) */}
+          <Header categories={categories.parentCategories || []} regions={regions} />
           <div className="flex-grow pb-0">
             {children}
           </div>
@@ -67,6 +68,7 @@ export default async function RootLayout({
           {/* ✅ OPTIMIZATION: Footer in Suspense for non-blocking render */}
           {/* Footer is below fold, so it can load after initial content */}
           <Suspense fallback={<div className="h-96 bg-tertiary" />}>
+            {/* Footer can use flat categories for sitemap */}
             <Footer categories={categories.categories || []} />
           </Suspense>
         </div>

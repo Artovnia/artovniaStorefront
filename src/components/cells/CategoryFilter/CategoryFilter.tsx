@@ -3,6 +3,7 @@
 import { cn } from '@/lib/utils';
 import { useMemo, useCallback, useState, useEffect } from 'react';
 import { Check, ChevronRight } from 'lucide-react';
+import { buildCategoryTreeFromFlat } from './CategoryFilterHelpers';
 
 interface CategoryWithChildren {
   id: string;
@@ -31,6 +32,8 @@ export const CategoryFilter = ({
   categoryCounts = new Map(),
   className
 }: CategoryFilterProps): JSX.Element => {
+  // ✅ OPTIMIZED: Handle both nested tree structure (from include_descendants_tree)
+  // and flat array (from extractCategoriesFromProducts)
   const categoryTree = useMemo(() => {
     if (!categories || categories.length === 0) return [];
 
@@ -38,39 +41,33 @@ export const CategoryFilter = ({
       new Map(categories.map(cat => [cat.id, cat])).values()
     );
 
-    return uniqueCategories.filter(cat => {
-      const hasNoParentId = !cat.parent_category_id || cat.parent_category_id === null;
-      const hasNoParentObj = !cat.parent_category || 
-                           cat.parent_category === null || 
-                           (typeof cat.parent_category === 'object' && !cat.parent_category.id);
-      return hasNoParentId && hasNoParentObj;
-    });
+    // Check if categories already have nested children (from include_descendants_tree)
+    const hasNestedStructure = uniqueCategories.some(cat => 
+      cat.category_children && cat.category_children.length > 0
+    );
+
+    if (hasNestedStructure) {
+      // ✅ Categories already have tree structure - just filter root categories
+      return uniqueCategories.filter(cat => {
+        const hasNoParentId = !cat.parent_category_id || cat.parent_category_id === null;
+        const hasNoParentObj = !cat.parent_category || 
+                             cat.parent_category === null || 
+                             (typeof cat.parent_category === 'object' && !cat.parent_category.id);
+        return hasNoParentId && hasNoParentObj;
+      });
+    } else {
+      // ✅ Flat array - build tree structure using mpath or parent_category_id
+      return buildCategoryTreeFromFlat(uniqueCategories);
+    }
   }, [categories]);
 
   // Auto-expand top-level categories (level 0) by default
-  const [expandedCategories, setExpandedCategories] = useState<Set<string>>(() => {
-    const topLevelIds = new Set<string>()
-    if (categories && categories.length > 0) {
-      const uniqueCategories = Array.from(
-        new Map(categories.map(cat => [cat.id, cat])).values()
-      )
-      uniqueCategories.forEach(cat => {
-        const hasNoParentId = !cat.parent_category_id || cat.parent_category_id === null
-        const hasNoParentObj = !cat.parent_category || 
-                             cat.parent_category === null || 
-                             (typeof cat.parent_category === 'object' && !cat.parent_category.id)
-        if (hasNoParentId && hasNoParentObj) {
-          topLevelIds.add(cat.id)
-        }
-      })
-    }
-    return topLevelIds
-  });
+  const [expandedCategories, setExpandedCategories] = useState<Set<string>>(() => new Set<string>());
 
   // Update expanded categories when category tree changes
   useEffect(() => {
     const topLevelIds = new Set<string>()
-    categoryTree.forEach(cat => topLevelIds.add(cat.id))
+    categoryTree.forEach((cat: CategoryWithChildren) => topLevelIds.add(cat.id))
     setExpandedCategories(topLevelIds)
   }, [categoryTree])
 

@@ -30,7 +30,15 @@ export function SellerProductListingClient({
   initialTotalCount?: number
   initialWishlists?: SerializableWishlist[]
   initialPriceData?: Record<string, LowestPriceData | null>
-  categories?: Array<{ id: string; name: string; handle: string }>
+  categories?: Array<{ 
+    id: string; 
+    name: string; 
+    handle?: string;
+    rank?: number;
+    parent_category_id?: string | null;
+    mpath?: string;
+    category_children?: any[];
+  }>
 }) {
   const searchParams = useSearchParams()
   

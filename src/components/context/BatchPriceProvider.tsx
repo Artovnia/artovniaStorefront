@@ -59,22 +59,33 @@ export const BatchPriceProvider: React.FC<BatchPriceProviderProps> = ({
     return Array.from(merged)
   }, [registeredVariants, preloadVariantIds])
 
-  // ✅ CRITICAL FIX: Skip client-side fetch if we have server-provided price data
-  const shouldFetch = variantIds.length > 0 && (!initialPriceData || Object.keys(initialPriceData).length === 0)
+  // ✅ FIX: Only skip fetch for variants that ARE in initialPriceData
+  // Fetch client-side for any NEW variants not in initial data (pagination, filters)
+  const variantsToFetch = useMemo(() => {
+    if (!initialPriceData || Object.keys(initialPriceData).length === 0) {
+      return variantIds // No initial data, fetch all
+    }
+    // Filter to only variants NOT in initialPriceData
+    return variantIds.filter(id => !(id in initialPriceData))
+  }, [variantIds, initialPriceData])
+
+  const shouldFetch = variantsToFetch.length > 0
   
   useEffect(() => {
     if (process.env.NODE_ENV === 'development') {
       if (initialPriceData && Object.keys(initialPriceData).length > 0) {
-        console.log(`✅ [BatchPriceProvider] Using server-provided price data (${Object.keys(initialPriceData).length} variants), skipping client fetch`)
-        console.log(`📊 [BatchPriceProvider] initialPriceData sample:`, Object.entries(initialPriceData)[0])
+        console.log(`✅ [BatchPriceProvider] Using server-provided price data (${Object.keys(initialPriceData).length} variants)`)
+        if (variantsToFetch.length > 0) {
+          console.log(`� [BatchPriceProvider] Will fetch ${variantsToFetch.length} additional variants client-side`)
+        }
       } else if (shouldFetch) {
         console.log(`🔄 [BatchPriceProvider] No server data, will fetch ${variantIds.length} variants client-side`)
       }
     }
-  }, [initialPriceData, shouldFetch, variantIds.length])
+  }, [initialPriceData, shouldFetch, variantIds.length, variantsToFetch.length])
   
   const { data, loading, error } = useBatchLowestPrices({
-    variantIds,
+    variantIds: variantsToFetch, // Only fetch variants not in initialPriceData
     currencyCode,
     regionId,
     days,

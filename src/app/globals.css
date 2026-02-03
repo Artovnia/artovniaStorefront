@@ -106,7 +106,7 @@ button:disabled svg path {
 }
 
 .checkbox-wrapper {
-    @apply rounded-xs bg-component-secondary w-[20px] h-[20px] border border-secondary bg-component-secondary cursor-pointer;
+    @apply rounded-xs bg-component-secondary w-[20px] h-[20px] border border-secondary cursor-pointer;
 }
 .checkbox-wrapper svg {
     @apply pointer-events-none;
@@ -116,7 +116,7 @@ button:disabled svg path {
 }
 
 .chip-wrapper {
-    @apply bg-component inline-flex items-center px-3 py-1 rounded-sm label-sm border hover:bg-component-hover relative;
+    @apply bg-component inline-flex items-center px-2 py-1  label-sm border hover:bg-component-hover relative transition-all duration-200;
 }
 .chip-wrapper svg path {
     @apply fill-secondary;

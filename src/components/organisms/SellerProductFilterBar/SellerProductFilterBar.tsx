@@ -189,10 +189,8 @@ export const SellerProductFilterBar = ({ className, categories = [] }: SellerPro
   }
 
   const handleClearAll = () => {
-    console.log('🧹 Clear All clicked - clearing all filters')
     setPendingCategories([])
     router.replace(pathname, { scroll: false })
-    console.log('✅ Router.replace called with clean pathname:', pathname)
   }
 
   const activeFilters = getActiveFilters()

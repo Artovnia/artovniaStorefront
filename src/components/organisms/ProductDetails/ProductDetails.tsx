@@ -33,12 +33,14 @@ export const ProductDetails = async ({
   product,
   locale,
   region,
+  initialVariantAttributes,
 }: {
   product: HttpTypes.StoreProduct & { 
     seller: SellerProps
   }
   locale: string
   region?: HttpTypes.StoreRegion | null
+  initialVariantAttributes?: { attribute_values: any[] }
 }) => {
   // Pre-calculate variant and locale data
   const selectedVariantId = Array.isArray(product.variants) && product.variants.length > 0 && product.variants[0]?.id 
@@ -114,6 +116,7 @@ export const ProductDetails = async ({
         />
         <ProductAdditionalAttributes
           product={product}
+          initialAttributes={initialVariantAttributes?.attribute_values}
         />
         <ProductPageDetails details={product?.description || ""} />
         <ProductDetailsSellerReviews seller={product.seller} />
