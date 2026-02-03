@@ -8,12 +8,11 @@ export const HERO_BANNERS: HeroBanner[] = [
   {
     id: "main-odkrywaj",
     image: "/images/hero/Hero21.webp",
-    mobileImage: "/images/hero/Hero21-mobile.webp",
     alt: "Odkrywaj nowe produkty w Artovnia",
     url: "/categories",
     focalPoint: {
-      desktop: 'center center', // Adjust to ensure key graphic elements are visible on desktop
-      mobile: 'center center'   // Adjust to ensure key graphic elements are visible on mobile
+      desktop: 'center center',
+      mobile: 'center center'
     },
     content: {
       useLogo: true,
@@ -26,12 +25,11 @@ export const HERO_BANNERS: HeroBanner[] = [
   {
     id: "odkrywaj-promocje",
     image: "/images/hero/Hero22.webp",
-    mobileImage: "/images/hero/Hero22-mobile.webp",
     alt: "Promocje",
     url: "/promotions",
     focalPoint: {
-      desktop: 'center center', // Example: '60% 40%' to focus on right side, upper area
-      mobile: 'center center'   // Example: '50% 30%' to focus on specific product
+      desktop: 'center center',
+      mobile: 'center center'
     },
     content: {
       heading: "Aktualne promocje",
@@ -44,12 +42,11 @@ export const HERO_BANNERS: HeroBanner[] = [
   {
     id: "sprzedawaj-w-artovnia",
     image: "/images/hero/Hero23.webp",
-    mobileImage: "/images/hero/Hero23-mobile.webp",
     alt: "Sprzedawaj w Artovnia",
     url: "https://artovniapanel.netlify.app/login",
     focalPoint: {
-      desktop: 'center center', // Example: 'left center' to focus on left side
-      mobile: 'center center'   // Example: '40% 50%' to focus on left-center area
+      desktop: 'center center',
+      mobile: 'center center'
     },
     content: {
       heading: "Dołącz do nas",
@@ -62,12 +59,11 @@ export const HERO_BANNERS: HeroBanner[] = [
   {
     id: "obrazy",
     image: "/images/hero/Hero24.webp",
-    mobileImage: "/images/hero/Hero24-mobile.webp",
     alt: "Obrazy",
     url: "/categories/obrazy",
     focalPoint: {
-      desktop: 'center center', // Example: '50% 60%' to focus on lower-center area
-      mobile: 'center center'   // Example: 'center bottom' to focus on bottom area
+      desktop: 'center center',
+      mobile: 'center center'
     },
     content: {
       heading: "Sztuka w Twoim domu",

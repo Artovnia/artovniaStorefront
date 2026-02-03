@@ -194,9 +194,9 @@ const ProductCardComponent = ({
 )}
         <Link href={productUrl} prefetch={true} aria-label={`Zobacz produkt: ${product.title}`}>
           <div className="overflow-hidden w-full h-full flex justify-center items-center">
-            {product.thumbnail ? (
+            {(product.thumbnail || product.images?.[0]?.url) ? (
               <Image
-                src={product.thumbnail}
+                src={product.thumbnail || product.images?.[0]?.url || "/images/placeholder.svg"}
                 alt={product.title}
                 width={320}
                 height={320}

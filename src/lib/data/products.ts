@@ -130,6 +130,7 @@ export const listProductsLean = async ({
       region_id: region?.id,
       // ✅ LEAN FIELDS: Only essential data for display
       fields: "id,title,handle,thumbnail,description,created_at,status," +
+              "images.url," + // ✅ Added for thumbnail fallback
               "variants.id,variants.title,variants.calculated_price," +
               "seller.id,seller.handle,seller.store_name,seller.name," + // ✅ Added seller.name for ProductCard
               "categories.id,categories.name,categories.handle," +
@@ -664,6 +665,7 @@ export const batchFetchProductsByHandles = async ({
           handle: handles, // Pass multiple handles
           // ✅ LEAN FIELDS: Only essential data for seller product display
           fields: "id,title,handle,thumbnail,description,created_at,status," +
+                  "images.url," + // ✅ Added for thumbnail fallback
                   "variants.id,variants.title,variants.calculated_price," +
                   "seller.id,seller.handle,seller.store_name," +
                   "categories.id,categories.name,categories.handle," +
