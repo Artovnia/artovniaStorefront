@@ -2,7 +2,6 @@ import { Metadata } from "next"
 import { HttpTypes } from "@medusajs/types"
 import Image from "next/image"
 import { listProductsWithPromotions } from "@/lib/data/products"
-import { getPromotionFilterOptions } from "@/lib/data/promotions"
 import { PromotionListing } from "@/components/sections"
 import { PromotionDataProvider } from "@/components/context/PromotionDataProvider"
 import { PromotionsFilterBar } from "@/components/organisms/PromotionsFilterBar"
@@ -10,6 +9,10 @@ import { detectUserCountry } from "@/lib/helpers/country-detection"
 import { retrieveCustomer } from "@/lib/data/customer"
 import { getUserWishlists } from "@/lib/data/wishlist"
 import { generateBreadcrumbJsonLd, generateCollectionPageJsonLd } from "@/lib/helpers/seo"
+import { getBatchLowestPrices } from "@/lib/data/price-history"
+import { extractFilterOptions } from "@/lib/utils/extract-filter-options"
+import { BatchPriceProvider } from "@/components/context/BatchPriceProvider"
+import { getRegion } from "@/lib/data/regions"
 
 export const metadata: Metadata = {
   title: "Promocje - Najlepsze Okazje na Sztukę i Rękodzieło",
@@ -92,22 +95,35 @@ export default async function PromotionsPage({ searchParams }: PromotionsPagePro
       }
     }
     
-    // Fetch products with promotions and filter options in parallel
-    const [productsResult, filterOptions] = await Promise.all([
-      listProductsWithPromotions({
-        page,
-        limit: 12,
-        countryCode,  // ✅ Use dynamic country
-      }),
-      getPromotionFilterOptions()
-    ])
+    // ✅ CRITICAL FIX: Fetch products only once (no separate filter options call)
+    const productsResult = await listProductsWithPromotions({
+      page,
+      limit: 12,
+      countryCode,  // ✅ Use dynamic country
+    })
 
     const { response, nextPage } = productsResult
     const { products, count } = response
     
-    // ✅ OPTIMIZATION 3: Extract product IDs for PromotionDataProvider
-    // Only fetch promotion data for displayed products (12 instead of 100)
-    const productIds = products.map(p => p.id)
+    // ✅ OPTIMIZATION: Extract filter options from fetched products (no API call)
+    const filterOptions = extractFilterOptions(products)
+    
+    // ✅ OPTIMIZATION: Convert products to Map for PromotionDataProvider
+    const promotionalProductsMap = new Map(
+      products.map(p => [p.id, p])
+    )
+    
+    // ✅ OPTIMIZATION 4: Server-side price fetching for instant rendering
+    // Get region for price fetching
+    const region = await getRegion(countryCode)
+    
+    // Extract all variant IDs from products
+    const variantIds = products
+      .flatMap(p => p.variants?.map(v => v.id) || [])
+      .filter(Boolean)
+    
+    // Fetch price data on server (eliminates client-side loading delay)
+    const priceData = await getBatchLowestPrices(variantIds, 'PLN', region?.id, 30)
 
     // Generate structured data for SEO
     const breadcrumbJsonLd = generateBreadcrumbJsonLd([
@@ -199,17 +215,25 @@ export default async function PromotionsPage({ searchParams }: PromotionsPagePro
           <div className="px-4 sm:px-6 lg:px-8 mx-auto">
             <PromotionDataProvider 
               countryCode={countryCode}
-              productIds={productIds}
+              productIds={[]}
+              initialData={promotionalProductsMap}
             >
-              <PromotionListing
-                initialProducts={products}
-                initialCount={count}
-                initialPage={page}
-                countryCode={countryCode}
-                limit={12}
-                user={user}
-                wishlist={wishlist}
-              />
+              <BatchPriceProvider
+                currencyCode="PLN"
+                regionId={region?.id}
+                days={30}
+                initialPriceData={priceData}
+              >
+                <PromotionListing
+                  initialProducts={products}
+                  initialCount={count}
+                  initialPage={page}
+                  countryCode={countryCode}
+                  limit={12}
+                  user={user}
+                  wishlist={wishlist}
+                />
+              </BatchPriceProvider>
             </PromotionDataProvider>
           </div>
         </div>

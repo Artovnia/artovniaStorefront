@@ -242,7 +242,7 @@ export const ProductDetailsHeader = ({
                     </span>
                     {/* Show percentage badge for actual promotions */}
                     {(productToUse as any).has_promotions && (productToUse as any).promotions?.length > 0 && (
-                      <span className="bg-primary text-[#3B3634] text-sm font-bold px-3 py-1 rounded-lg shadow-lg border border-[#3B3634]/90">
+                      <span className="bg-primary text-[#3B3634] text-sm font-bold px-3 py-1 rounded-lg  border border-[#3B3634]/90">
                         -{promotionalPricing.discountPercentage}%
                       </span>
                     )}
@@ -272,11 +272,8 @@ export const ProductDetailsHeader = ({
             )}
           </div>
           
-          {/* Lowest Price Display - show if there are price list discounts OR promotions */}
+          {/* Lowest Price Display - always show when variant exists, component handles null data */}
           {currentVariantId && (
-            variantPrice?.calculated_price_number !== variantPrice?.original_price_number ||
-            promotionalPricing?.hasPromotion
-          ) && (
             <div className="mt-3">
               <BatchLowestPriceDisplay
                 variantId={currentVariantId}

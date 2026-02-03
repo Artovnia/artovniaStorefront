@@ -59,13 +59,26 @@ export const BatchPriceProvider: React.FC<BatchPriceProviderProps> = ({
     return Array.from(merged)
   }, [registeredVariants, preloadVariantIds])
 
-  // ✅ OPTIMIZATION: Skip client-side fetch if we have server-provided price data
+  // ✅ CRITICAL FIX: Skip client-side fetch if we have server-provided price data
+  const shouldFetch = variantIds.length > 0 && (!initialPriceData || Object.keys(initialPriceData).length === 0)
+  
+  useEffect(() => {
+    if (process.env.NODE_ENV === 'development') {
+      if (initialPriceData && Object.keys(initialPriceData).length > 0) {
+        console.log(`✅ [BatchPriceProvider] Using server-provided price data (${Object.keys(initialPriceData).length} variants), skipping client fetch`)
+        console.log(`📊 [BatchPriceProvider] initialPriceData sample:`, Object.entries(initialPriceData)[0])
+      } else if (shouldFetch) {
+        console.log(`🔄 [BatchPriceProvider] No server data, will fetch ${variantIds.length} variants client-side`)
+      }
+    }
+  }, [initialPriceData, shouldFetch, variantIds.length])
+  
   const { data, loading, error } = useBatchLowestPrices({
     variantIds,
     currencyCode,
     regionId,
     days,
-    enabled: variantIds.length > 0 && !initialPriceData,
+    enabled: shouldFetch,
     initialData: initialPriceData
   })
 
@@ -91,6 +104,7 @@ export const BatchPriceProvider: React.FC<BatchPriceProviderProps> = ({
   const getPriceData = useCallback((variantId: string): LowestPriceData | null => {
     // Get price data from current batch
     const priceData = data[variantId]
+    
     
     if (priceData) {
       // 🚀 Cache successful price lookups for future use

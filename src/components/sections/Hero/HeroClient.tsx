@@ -150,13 +150,13 @@ export const HeroClient = ({
               }`}
               onClick={() => banner.url && (window.location.href = banner.url)}
             >
-              {/* Desktop Image */}
+              {/* Single image for all screen sizes */}
               <Image
                 src={banner.image}
                 alt={banner.alt}
                 fill
-                className="object-cover transition-transform duration-700 group-hover:scale-105 hidden sm:block"
-                style={{ objectPosition: banner.focalPoint?.desktop || banner.objectPosition || 'center' }}
+                className="object-cover transition-transform duration-700 group-hover:scale-105"
+                style={{ objectPosition: banner.focalPoint?.mobile || banner.focalPoint?.desktop || banner.objectPosition || 'center' }}
                 priority={index < HERO_CONFIG.priorityLoadCount}
                 loading="eager"
                 fetchPriority={index < HERO_CONFIG.priorityLoadCount ? "high" : "auto"}
@@ -178,23 +178,6 @@ export const HeroClient = ({
                   console.log(`[Hero] ✅ Image loaded successfully: ${banner.id} (index: ${index})`, banner.image)
                 }}
               />
-              
-              {/* Mobile Image */}
-              {banner.mobileImage && (
-                <Image
-                  src={banner.mobileImage}
-                  alt={banner.alt}
-                  fill
-                  className="object-cover transition-transform duration-700 group-hover:scale-105 sm:hidden"
-                  style={{ objectPosition: banner.focalPoint?.mobile || banner.objectPosition || 'center' }}
-                  priority={index < HERO_CONFIG.priorityLoadCount}
-                  loading="eager"
-                  fetchPriority={index < HERO_CONFIG.priorityLoadCount ? "high" : "auto"}
-                  quality={HERO_CONFIG.imageQuality}
-                  sizes="100vw"
-                  unoptimized={banner.id === 'obrazy'}
-                />
-              )}
               
               <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
               

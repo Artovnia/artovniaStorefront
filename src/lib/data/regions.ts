@@ -4,6 +4,7 @@ import { sdk } from "../config"
 import medusaError from "@/lib/helpers/medusa-error"
 import { HttpTypes } from "@medusajs/types"
 import { getCacheOptions } from "./cookies"
+import { cache } from "react"
 
 export const listRegions = async () => {
   return sdk.client
@@ -32,8 +33,8 @@ export const retrieveRegion = async (id: string) => {
 // Caching strategy:
 // - listRegions() uses next: { revalidate: 3600 } for raw region data
 // - This function builds the mapping on each call (cheap operation)
-// - Next.js will deduplicate identical calls within same request
-export const getRegion = async (countryCode: string): Promise<HttpTypes.StoreRegion | null> => {
+// - React cache() deduplicates identical calls within same request (per-render)
+const getRegionInternal = async (countryCode: string): Promise<HttpTypes.StoreRegion | null> => {
   try {
     const regions = await listRegions()
 
@@ -66,3 +67,8 @@ export const getRegion = async (countryCode: string): Promise<HttpTypes.StoreReg
     return null
   }
 }
+
+// ✅ OPTIMIZATION: Wrap with React cache() to deduplicate calls within same request
+// This reduces 6+ region fetches to 1 per page load
+// React cache() is per-request, so different users still get correct regions
+export const getRegion = cache(getRegionInternal)

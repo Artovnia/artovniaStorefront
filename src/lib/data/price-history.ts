@@ -4,6 +4,7 @@ const MEDUSA_BACKEND_URL = process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || 'http:/
 
 /**
  * Server-side function to fetch batch lowest prices
+ * Uses GET request to enable Next.js Data Cache and Vercel Edge caching
  * Can be used in Server Components to pre-fetch price data
  */
 export async function getBatchLowestPrices(
@@ -17,19 +18,24 @@ export async function getBatchLowestPrices(
   }
 
   try {
-    const response = await fetch(`${MEDUSA_BACKEND_URL}/store/variants/lowest-prices-batch`, {
-      method: 'POST',
+    // Build URL with query parameters for GET request
+    const url = new URL(`${MEDUSA_BACKEND_URL}/store/variants/lowest-prices-batch`)
+    url.searchParams.set('variant_ids', variantIds.join(','))
+    url.searchParams.set('currency_code', currencyCode)
+    if (regionId) {
+      url.searchParams.set('region_id', regionId)
+    }
+    url.searchParams.set('days', days.toString())
+    
+    const response = await fetch(url.toString(), {
+      method: 'GET', // ✅ Changed to GET for Next.js caching
       headers: {
-        'Content-Type': 'application/json',
         'x-publishable-api-key': process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || '',
       },
-      body: JSON.stringify({
-        variant_ids: variantIds,
-        currency_code: currencyCode,
-        region_id: regionId,
-        days
-      }),
-      next: { revalidate: 60 } // Cache for 1 minute
+      next: { 
+        revalidate: 60, // ✅ Now this works with GET!
+        tags: ['prices'] // For revalidation
+      }
     })
 
     if (!response.ok) {

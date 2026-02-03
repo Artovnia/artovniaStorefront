@@ -3,7 +3,6 @@
 import { useState, useEffect, useMemo, useRef } from "react"
 import { HttpTypes } from "@medusajs/types"
 import { ProductCard } from "@/components/organisms"
-import { BatchPriceProvider } from "@/components/context/BatchPriceProvider"
 import { listProductsWithPromotions } from "@/lib/data/products"
 import { retrieveCustomer } from "@/lib/data/customer"
 import { getUserWishlists } from "@/lib/data/wishlist"
@@ -44,7 +43,7 @@ export const PromotionListing = ({
   initialCount = 0,
   initialPage = 1,
   countryCode = "PL",
-  limit = 12,
+  limit = 14,
   user: initialUser = null,
   wishlist: initialWishlist = []
 }: PromotionListingProps) => {
@@ -192,21 +191,21 @@ export const PromotionListing = ({
         </div>
       ) : (
         <>
-          <BatchPriceProvider currencyCode="PLN" days={30}>
-            <div className="w-full flex justify-center ">
-              <ul className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4 sm:gap-12 w-fit mx-auto ">
-                {filteredProducts.map((product) => (
-                  <ProductCard
-                    key={product.id}
-                    product={product}
-                    user={user}
-                    wishlist={wishlist}
-                    onWishlistChange={refreshWishlist}
-                  />
-                ))}
-              </ul>
-            </div>
-          </BatchPriceProvider>
+          {/* ✅ OPTIMIZED: Removed nested BatchPriceProvider - uses parent provider from page.tsx */}
+          {/* Parent provider already has initialPriceData from server, no need for duplicate provider */}
+          <div className="w-full flex justify-center ">
+            <ul className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4 sm:gap-12 w-fit mx-auto ">
+              {filteredProducts.map((product) => (
+                <ProductCard
+                  key={product.id}
+                  product={product}
+                  user={user}
+                  wishlist={wishlist}
+                  onWishlistChange={refreshWishlist}
+                />
+              ))}
+            </ul>
+          </div>
 
           {/* Pagination */}
           {totalPages > 1 && (

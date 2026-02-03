@@ -30,7 +30,7 @@ export const BatchLowestPriceDisplay = memo(
     }, [variantId, registerVariant, unregisterVariant])
 
     const priceData = getPriceData(variantId)
-
+    
     const theme = {
       dark: "text-white/80",
       light: "text-white/80",

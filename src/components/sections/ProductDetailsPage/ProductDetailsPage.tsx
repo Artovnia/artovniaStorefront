@@ -4,7 +4,7 @@ import { ProductReviews } from "@/components/organisms/ProductReviews/ProductRev
 import { VendorAvailabilityProvider } from "../../../components/organisms/VendorAvailabilityProvider/vendor-availability-provider"
 import { BatchPriceProvider } from "@/components/context/BatchPriceProvider"
 import { PromotionDataProvider } from "@/components/context/PromotionDataProvider"
-import { listProducts, batchFetchProductsByHandles } from "../../../lib/data/products"
+import { listProducts, batchFetchProductsByHandles, listProductsWithPromotions } from "../../../lib/data/products"
 import { getVendorCompleteStatus } from "../../../lib/data/vendor-availability"
 import { HomeProductSection } from "../HomeProductSection/HomeProductSection"
 import ProductErrorBoundary from "@/components/molecules/ProductErrorBoundary/ProductErrorBoundary"
@@ -15,6 +15,8 @@ import { getProductReviews, checkProductReviewEligibility } from "@/lib/data/rev
 import { generateProductJsonLd, generateBreadcrumbJsonLd } from "@/lib/helpers/seo"
 import { getUserWishlists } from "@/lib/data/wishlist"
 import { Link } from "@/i18n/routing"
+import { getBatchLowestPrices } from "@/lib/data/price-history"
+import { getRegion } from "@/lib/data/regions"
 
 export const ProductDetailsPage = async ({
   handle,
@@ -46,6 +48,8 @@ export const ProductDetailsPage = async ({
     vendorStatusResult,
     breadcrumbsResult,
     eligibilityResult,
+    promotionalProductsResult,
+    regionResult,
   ] = await Promise.allSettled([
     // Seller products - fetch by seller_id instead of using seller.products array
     prod.seller?.id
@@ -100,6 +104,15 @@ export const ProductDetailsPage = async ({
       isEligible: false,
       hasPurchased: false,
     })),
+
+    // ✅ NEW: Pre-fetch promotional products on server
+    listProductsWithPromotions({
+      countryCode: locale,
+      limit: 50
+    }).then(r => r.response.products).catch(() => []),
+
+    // ✅ NEW: Get region for price fetching
+    getRegion(locale).catch(() => null),
   ])
 
   // Extract results with fallbacks
@@ -138,6 +151,40 @@ export const ProductDetailsPage = async ({
     eligibilityResult.status === "fulfilled"
       ? eligibilityResult.value
       : { isEligible: false, hasPurchased: false }
+
+  const promotionalProducts =
+    promotionalProductsResult.status === "fulfilled"
+      ? promotionalProductsResult.value
+      : []
+
+  const region =
+    regionResult.status === "fulfilled"
+      ? regionResult.value
+      : null
+
+  // ✅ NEW: Pre-fetch ALL variant prices on server (product + seller products)
+  let initialPriceData = {}
+  try {
+    const allVariantIds = [
+      ...(prod.variants?.map((v: any) => v.id) || []),
+      ...sellerProducts.flatMap((p: any) => p.variants?.map((v: any) => v.id) || [])
+    ].filter(Boolean)
+
+    // ✅ OPTIMIZATION: Deduplicate variant IDs to reduce batch request size
+    const uniqueVariantIds = [...new Set(allVariantIds)]
+
+    if (uniqueVariantIds.length > 0 && region) {
+      initialPriceData = await getBatchLowestPrices(
+        uniqueVariantIds,
+        'PLN',
+        region.id,
+        30
+      )
+      
+    } 
+  } catch (error) {
+    console.error('❌ [ProductDetailsPage] Failed to pre-fetch prices:', error)
+  }
 
   // ✅ FIX: Get price from variant's calculated_price
   const getProductPrice = (): number | undefined => {
@@ -180,10 +227,18 @@ export const ProductDetailsPage = async ({
           <Breadcrumbs items={breadcrumbs} />
         </div>
 
-        {/* ✅ FIX: Don't pass productIds - let provider fetch all promotional products (limit 50) */}
-        {/* Product detail pages need access to all promotional products for proper price display */}
-        <PromotionDataProvider countryCode={locale} limit={50}>
-          <BatchPriceProvider currencyCode="PLN" days={30}>
+        {/* ✅ OPTIMIZED: Pass server-fetched promotional products and price data */}
+        <PromotionDataProvider 
+          countryCode={locale} 
+          limit={50}
+          initialData={promotionalProducts}
+        >
+          <BatchPriceProvider 
+            currencyCode="PLN"
+            regionId={region?.id}
+            days={30}
+            initialPriceData={initialPriceData}
+          >
             <VendorAvailabilityProvider
               vendorId={prod.seller?.id}
               vendorName={prod.seller?.name}
@@ -205,6 +260,7 @@ export const ProductDetailsPage = async ({
                     <ProductDetails
                       product={{ ...prod, seller: prod.seller }}
                       locale={locale}
+                      region={region}
                     />
                   ) : (
                     <div className="p-4 bg-red-50 text-red-800 rounded">
@@ -230,6 +286,7 @@ export const ProductDetailsPage = async ({
                     <ProductDetails
                       product={{ ...prod, seller: prod.seller }}
                       locale={locale}
+                      region={region}
                     />
                   ) : (
                     <div className="p-4 bg-red-50 text-red-800 rounded">

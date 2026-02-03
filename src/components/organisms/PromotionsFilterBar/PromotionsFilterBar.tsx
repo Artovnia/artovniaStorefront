@@ -160,12 +160,7 @@ export const PromotionsFilterBar = ({
   
   // Force re-render when URL params change
   useEffect(() => {
-    console.log('🔍 PromotionsFilterBar: URL params changed', {
-      promotionParam,
-      sellerParam,
-      campaignParam,
-      categoryParam
-    })
+ 
     forceUpdate({})
   }, [promotionParam, sellerParam, campaignParam, categoryParam])
 
@@ -178,12 +173,7 @@ export const PromotionsFilterBar = ({
 
   // Build active filters array - directly depends on URL params
   const activeFilters = React.useMemo(() => {
-    console.log('🔄 Computing activeFilters with params:', {
-      promotionParam,
-      sellerParam,
-      campaignParam,
-      categoryParam
-    })
+ 
     
     const filters = []
     
@@ -228,18 +218,12 @@ export const PromotionsFilterBar = ({
       })
     }
     
-    console.log('✅ activeFilters computed:', filters.length, filters.map(f => f.label))
+   
     return filters
   }, [promotionParam, sellerParam, campaignParam, categoryParam, sellerNames, categoryNames, updateSearchParams, setPendingCategories])
 
   const handleClearAll = () => {
-    console.log('🧹 Clear All clicked - clearing all filters')
-    console.log('Current URL params:', {
-      promotionParam,
-      sellerParam,
-      campaignParam,
-      categoryParam
-    })
+ 
     
     // Clear pending categories state
     setPendingCategories([])
@@ -247,7 +231,7 @@ export const PromotionsFilterBar = ({
     // Navigate to clean URL without any query params using Next.js router
     router.replace(pathname, { scroll: false })
     
-    console.log('✅ Router.replace called with clean pathname:', pathname)
+   
   }
 
   return (
@@ -304,11 +288,7 @@ export const PromotionsFilterBar = ({
 
       {/* Active Filters */}
       {(() => {
-        console.log('🎯 Badge render check:', {
-          activeFiltersLength: activeFilters.length,
-          shouldShow: activeFilters.length > 0,
-          filters: activeFilters.map(f => f.label)
-        })
+ 
         return activeFilters.length > 0 && (
           <div className="flex flex-wrap items-center gap-2 mt-3 pb-4">
             <span className="text-sm text-black font-medium font-instrument-sans mr-2">Aktywne filtry:</span>

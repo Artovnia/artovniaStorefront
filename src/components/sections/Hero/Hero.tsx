@@ -47,26 +47,13 @@ export const Hero = ({
             src={firstBanner.image}
             alt={firstBanner.alt}
             fill
-            className="object-cover hidden sm:block"
-            style={{ objectPosition: firstBanner.focalPoint?.desktop || firstBanner.objectPosition || 'center' }}
+            className="object-cover"
+            style={{ objectPosition: firstBanner.focalPoint?.mobile || firstBanner.focalPoint?.desktop || firstBanner.objectPosition || 'center' }}
             priority
             fetchPriority="high"
             quality={HERO_CONFIG.imageQuality}
             sizes="100vw"
           />
-          {firstBanner.mobileImage && (
-            <Image
-              src={firstBanner.mobileImage}
-              alt={firstBanner.alt}
-              fill
-              style={{ objectPosition: firstBanner.focalPoint?.mobile || firstBanner.objectPosition || 'center' }}
-              className="object-cover sm:hidden"
-              priority
-              fetchPriority="high"
-              quality={HERO_CONFIG.imageQuality}
-              sizes="100vw"
-            />
-          )}
           
           <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
           

@@ -32,11 +32,13 @@ function isValidMeasurementsArray(data: any): data is SingleProductMeasurement[]
 export const ProductDetails = async ({
   product,
   locale,
+  region,
 }: {
   product: HttpTypes.StoreProduct & { 
     seller: SellerProps
   }
   locale: string
+  region?: HttpTypes.StoreRegion | null
 }) => {
   // Pre-calculate variant and locale data
   const selectedVariantId = Array.isArray(product.variants) && product.variants.length > 0 && product.variants[0]?.id 
@@ -127,8 +129,8 @@ export const ProductDetails = async ({
         />
         </MeasurementsErrorBoundary>
       </ProductDetailsClient>
-      {/* ✅ OPTIMIZED: ProductDetailsShippingWrapper uses CartContext for region */}
-      <ProductDetailsShippingWrapper product={product} locale={locale} />
+      {/* ✅ OPTIMIZED: ProductDetailsShippingWrapper uses CartContext for region, with server region as fallback */}
+      <ProductDetailsShippingWrapper product={product} locale={locale} region={region} />
       <ProductDetailsFooter
         tags={product?.tags || []}
         posted={product?.created_at || null}

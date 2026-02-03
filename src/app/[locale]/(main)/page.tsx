@@ -19,6 +19,7 @@ import { listProductsWithPromotions } from "@/lib/data/products"
 import type { Metadata } from "next"
 import { generateOrganizationJsonLd, generateWebsiteJsonLd } from "@/lib/helpers/seo"
 import { JsonLd } from "@/components/JsonLd"
+import { getBatchLowestPrices } from "@/lib/data/price-history"
 
 // Loading skeletons for initial load - unified cache prevents these on navigation
 const BlogSkeleton = () => (
@@ -179,6 +180,15 @@ export default async function Home({
     promotionalData.response.products.map(p => [p.id, p])
   )
 
+  // ✅ OPTIMIZATION: Server-side price fetching for instant rendering
+  // Extract all variant IDs from promotional products
+  const variantIds = promotionalData.response.products
+    .flatMap(p => p.variants?.map(v => v.id) || [])
+    .filter(Boolean)
+  
+  // Fetch price data on server (eliminates client-side loading delay)
+  const priceData = await getBatchLowestPrices(variantIds, 'PLN', undefined, 30)
+
   return (
     <>
       {/* Structured Data (JSON-LD) for SEO */}
@@ -190,7 +200,11 @@ export default async function Home({
       limit={30}
       initialData={promotionalProductsMap}
     >
-      <BatchPriceProvider currencyCode="PLN">
+      <BatchPriceProvider 
+        currencyCode="PLN"
+        preloadVariantIds={variantIds}
+        initialPriceData={priceData}
+      >
         <main className="flex flex-col text-primary">
           {/* ✅ Hero renders immediately - no async dependencies */}
           <div className="mx-auto max-w-[1920px] w-full">
