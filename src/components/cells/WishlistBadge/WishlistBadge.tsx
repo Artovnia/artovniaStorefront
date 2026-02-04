@@ -26,7 +26,7 @@ export const WishlistBadge = ({
       <div className="relative">
         <HeartIcon size={20} />
         {wishlistCount > 0 && (
-          <Badge className="absolute -top-2 -right-2 w-4 h-4 p-2">
+          <Badge className="w-4 h-4 p-2">
             {wishlistCount}
           </Badge>
         )}

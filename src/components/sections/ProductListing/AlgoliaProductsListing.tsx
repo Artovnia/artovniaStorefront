@@ -117,6 +117,9 @@ const AlgoliaProductsListingWithConfig = (props: AlgoliaProductsListingProps) =>
   const filterParts: string[] = [];
   
   // Prepare facet filters array for Algolia's facetFilters parameter
+  // CRITICAL: facetFilters is an array of arrays where:
+  // - Items in the same sub-array are OR'd together
+  // - Different sub-arrays are AND'd together
   const facetFiltersList: string[][] = [];
   
   // Only filter by seller if a specific seller handle is provided
@@ -124,11 +127,11 @@ const AlgoliaProductsListingWithConfig = (props: AlgoliaProductsListingProps) =>
     filterParts.push(`seller.handle:"${seller_handle}"`);
   }
   
-  // Add category filter if specified - support both single category_id and multiple category_ids
+  // CRITICAL FIX: Add category filter if specified - support both single category_id and multiple category_ids
+  // This MUST be added to facetFiltersList to ensure it's always applied with AND logic
   const effectiveCategoryIds = category_ids || (category_id ? [category_id] : [])
   
   if (effectiveCategoryIds.length > 0) {
-    
     // SAFE APPROACH: Try new category_ids field first, fallback to original categories.id
     // This ensures backward compatibility while we transition to the new hierarchy system
     
@@ -138,11 +141,10 @@ const AlgoliaProductsListingWithConfig = (props: AlgoliaProductsListingProps) =>
     // Fallback filter: Use original categories.id for immediate compatibility
     const originalCategoryFilters = effectiveCategoryIds.map(id => `categories.id:${id}`)
     
-    
     // Use both approaches to ensure results are found
     // This creates: (category_ids:id1 OR category_ids:id2) OR (categories.id:id1 OR categories.id:id2)
+    // All these are OR'd together in a single sub-array
     facetFiltersList.push([...newCategoryFilters, ...originalCategoryFilters]);
-    
   }
   
   // Add collection filter if specified
@@ -150,14 +152,33 @@ const AlgoliaProductsListingWithConfig = (props: AlgoliaProductsListingProps) =>
     facetFiltersList.push([`collections.id:${collection_id}`]);
   }
   
-  // Add any additional facet filters from URL parameters
+  // CRITICAL FIX: Parse facetFilters from URL and add to facetFiltersList
+  // This ensures URL filters are combined with category filters using AND logic
   if (facetFilters && facetFilters.trim() !== '') {
     const cleanedFacetFilters = facetFilters.trim().startsWith('AND') 
       ? facetFilters.trim().substring(3).trim() 
       : facetFilters.trim();
       
     if (cleanedFacetFilters) {
-      filterParts.push(cleanedFacetFilters);
+      // Split by AND to get individual filter conditions
+      const filterConditions = cleanedFacetFilters.split(' AND ').map(f => f.trim()).filter(Boolean);
+      
+      // Each condition becomes a separate sub-array (AND'd with others)
+      filterConditions.forEach(condition => {
+        // Check if condition has OR logic (parentheses)
+        if (condition.includes(' OR ')) {
+          // Extract filters from OR condition
+          const orFilters = condition
+            .replace(/[()]/g, '') // Remove parentheses
+            .split(' OR ')
+            .map(f => f.trim())
+            .filter(Boolean);
+          facetFiltersList.push(orFilters);
+        } else {
+          // Single condition - add as single-item array
+          facetFiltersList.push([condition]);
+        }
+      });
     }
   }
   
@@ -321,14 +342,13 @@ const AlgoliaProductsListingWithConfig = (props: AlgoliaProductsListingProps) =>
   // We can now use the correct replica index based on the sort option
   // The replica indices are configured in the backend to have the right sorting
   
-  // SOLUTION 4: Optimize InstantSearch key to prevent unnecessary remounts
-  // Only include essential parameters that should trigger a full reset
-  // Exclude frequently changing parameters like sort to prevent excessive remounts
+  // CRITICAL FIX: Include sortBy in key to force InstantSearch remount when sorting changes
+  // This ensures the correct replica index is used and results are properly sorted
   const instantSearchKey = useMemo(() => {
-    // Only include category and collection - remove seller_handle to prevent frequent remounts
     const categoryKey = category_ids ? category_ids.join(',') : (category_id || 'all');
-    return `${categoryKey}-${collection_id || 'all'}`;
-  }, [category_id, category_ids, collection_id]); // Removed seller_handle from dependencies
+    const sortKey = sortBy || 'default';
+    return `${categoryKey}-${collection_id || 'all'}-${sortKey}`;
+  }, [category_id, category_ids, collection_id, sortBy]); // Added sortBy to dependencies
 
   // Use the correct indexName based on sort selection
   return (

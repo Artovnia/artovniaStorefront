@@ -6,6 +6,7 @@ import { useSearchParams } from 'next/navigation'
 import useUpdateSearchParams from '@/hooks/useUpdateSearchParams'
 import { cn } from '@/lib/utils'
 import { SellerAlphabetFilter } from '@/components/cells/SellerAlphabetFilter/SellerAlphabetFilter'
+import { Check } from 'lucide-react'
 
 interface MobileSellerFilterModalProps {
   hasActiveFilters: boolean
@@ -74,28 +75,40 @@ export const MobileSellerFilterModal = ({
         <div className="flex-1 overflow-y-auto p-4 space-y-6">
           {/* Sort Section */}
           <div className="space-y-3">
-            <h3 className="font-medium text-black font-instrument-sans">Sortuj według</h3>
-            <div className="space-y-2">
+            <h3 className="font-medium text-black mb-3 font-instrument-sans text-sm">Sortuj według</h3>
+            <div className="space-y-1">
               {sortOptions.map((option) => (
-                <label key={option.value} className="flex items-center gap-3 cursor-pointer hover:bg-gray-50 p-3 rounded-lg transition-colors">
-                  <input
-                    type="radio"
-                    name="sort"
-                    value={option.value}
-                    checked={currentSort === option.value}
-                    onChange={() => updateSearchParams("sortBy", option.value)}
-                    className="w-5 h-5 text-[#3B3634] border-[#3B3634] focus:ring-[#3B3634] cursor-pointer"
-                    style={{ accentColor: '#3B3634' }}
-                  />
-                  <span className="text-sm text-black font-instrument-sans">{option.label}</span>
-                </label>
+                <div key={option.value} className="relative">
+                  <button
+                    type="button"
+                    onClick={() => updateSearchParams("sortBy", option.value)}
+                    className="w-full flex items-center justify-between py-2.5 text-left transition-colors cursor-pointer hover:bg-[#3B3634]/5"
+                  >
+                    <span className={cn(
+                      "text-sm font-instrument-sans select-none",
+                      currentSort === option.value ? "text-[#3B3634] font-medium" : "text-[#3B3634]/90"
+                    )}>
+                      {option.label}
+                    </span>
+                    <Check 
+                      className={cn(
+                        "w-4 h-4 text-[#3B3634] transition-opacity duration-150",
+                        currentSort === option.value ? "opacity-100" : "opacity-0"
+                      )}
+                      strokeWidth={2.5} 
+                    />
+                  </button>
+                  <div className="flex justify-center">
+                    <div className="w-[99%] h-px bg-[#3B3634]/10" />
+                  </div>
+                </div>
               ))}
             </div>
           </div>
 
           {/* Alphabet Filter */}
-          <div className="space-y-3 border-t border-gray-200 pt-4">
-            <h3 className="font-medium text-black font-instrument-sans">Filtruj według litery</h3>
+          <div className="space-y-3 border-t border-[#3B3634]/10 pt-6">
+            <h3 className="font-medium text-black mb-3 font-instrument-sans text-sm">Filtruj według litery</h3>
             <SellerAlphabetFilter />
           </div>
         </div>
@@ -108,14 +121,14 @@ export const MobileSellerFilterModal = ({
                 onClearAll()
                 setIsOpen(false)
               }}
-              className="w-full py-3 px-4 border border-[#3B3634] rounded-lg text-[#3B3634] font-medium font-instrument-sans hover:bg-gray-50 transition-colors"
+              className="w-full py-3 px-4 border border-[#3B3634] text-[#3B3634] font-medium font-instrument-sans hover:bg-gray-50 transition-colors"
             >
               Wyczyść filtry
             </button>
           )}
           <button
             onClick={handleApply}
-            className="w-full py-3 px-4 bg-[#3B3634] text-white rounded-lg font-medium font-instrument-sans hover:bg-opacity-90 transition-colors"
+            className="w-full py-3 px-4 bg-[#3B3634] text-white font-semibold font-instrument-sans hover:bg-[#2a2523] transition-colors"
           >
             Zastosuj
           </button>

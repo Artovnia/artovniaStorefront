@@ -85,7 +85,6 @@ const Cart: React.FC = () => {
               shipping_total={cart?.shipping_total || 0}
               total={cart?.total || 0}
               currency_code={cart?.currency_code || ""}
-              tax={cart?.tax_total || 0}
             />
           </div>
           <div className="w-full mt-4">

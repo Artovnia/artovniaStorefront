@@ -5,6 +5,7 @@ import { createPortal } from 'react-dom'
 import { useSearchParams } from 'next/navigation'
 import useUpdateSearchParams from '@/hooks/useUpdateSearchParams'
 import { cn } from '@/lib/utils'
+import { Check } from 'lucide-react'
 
 interface MobilePromotionsFilterModalProps {
   promotionNames?: string[]
@@ -81,43 +82,67 @@ export const MobilePromotionsFilterModal = ({
         <div className="flex-1 overflow-y-auto p-4 space-y-6">
           {/* Sort Section */}
           <div className="space-y-3">
-            <h3 className="font-medium text-black font-instrument-sans">Sortuj według</h3>
-            <div className="space-y-2">
+            <h3 className="font-medium text-black mb-3 font-instrument-sans text-sm">Sortuj według</h3>
+            <div className="space-y-1">
               {sortOptions.map((option) => (
-                <label key={option.value} className="flex items-center gap-3 cursor-pointer hover:bg-gray-50 p-3 rounded-lg transition-colors">
-                  <input
-                    type="radio"
-                    name="sort"
-                    value={option.value}
-                    checked={currentSort === option.value}
-                    onChange={() => updateSearchParams("sortBy", option.value)}
-                    className="w-5 h-5 text-[#3B3634] border-[#3B3634] focus:ring-[#3B3634] cursor-pointer"
-                    style={{ accentColor: '#3B3634' }}
-                  />
-                  <span className="text-sm text-black font-instrument-sans">{option.label}</span>
-                </label>
+                <div key={option.value} className="relative">
+                  <button
+                    type="button"
+                    onClick={() => updateSearchParams("sortBy", option.value)}
+                    className="w-full flex items-center justify-between py-2.5 text-left transition-colors cursor-pointer hover:bg-[#3B3634]/5"
+                  >
+                    <span className={cn(
+                      "text-sm font-instrument-sans select-none",
+                      currentSort === option.value ? "text-[#3B3634] font-medium" : "text-[#3B3634]/90"
+                    )}>
+                      {option.label}
+                    </span>
+                    <Check 
+                      className={cn(
+                        "w-4 h-4 text-[#3B3634] transition-opacity duration-150",
+                        currentSort === option.value ? "opacity-100" : "opacity-0"
+                      )}
+                      strokeWidth={2.5} 
+                    />
+                  </button>
+                  <div className="flex justify-center">
+                    <div className="w-[99%] h-px bg-[#3B3634]/10" />
+                  </div>
+                </div>
               ))}
             </div>
           </div>
 
           {/* Promotion Filter */}
           {promotionNames.length > 0 && (
-            <div className="space-y-3 border-t border-gray-200 pt-4">
-              <h3 className="font-medium text-black font-instrument-sans">Promocja</h3>
-              <div className="space-y-2 max-h-[200px] overflow-y-auto">
+            <div className="space-y-3 border-t border-[#3B3634]/10 pt-6">
+              <h3 className="font-medium text-black mb-3 font-instrument-sans text-sm">Promocja</h3>
+              <div className="space-y-1 max-h-[200px] overflow-y-auto">
                 {promotionNames.map((name) => (
-                  <label key={name} className="flex items-center gap-3 cursor-pointer hover:bg-gray-50 p-3 rounded-lg transition-colors">
-                    <input
-                      type="radio"
-                      name="promotion"
-                      value={name}
-                      checked={currentPromotion === name}
-                      onChange={() => updateSearchParams("promotion", name)}
-                      className="w-5 h-5 text-[#3B3634] border-[#3B3634] focus:ring-[#3B3634] cursor-pointer"
-                      style={{ accentColor: '#3B3634' }}
-                    />
-                    <span className="text-sm text-black font-instrument-sans">{name}</span>
-                  </label>
+                  <div key={name} className="relative">
+                    <button
+                      type="button"
+                      onClick={() => updateSearchParams("promotion", name)}
+                      className="w-full flex items-center justify-between py-2.5 text-left transition-colors cursor-pointer hover:bg-[#3B3634]/5"
+                    >
+                      <span className={cn(
+                        "text-sm font-instrument-sans select-none",
+                        currentPromotion === name ? "text-[#3B3634] font-medium" : "text-[#3B3634]/90"
+                      )}>
+                        {name}
+                      </span>
+                      <Check 
+                        className={cn(
+                          "w-4 h-4 text-[#3B3634] transition-opacity duration-150",
+                          currentPromotion === name ? "opacity-100" : "opacity-0"
+                        )}
+                        strokeWidth={2.5} 
+                      />
+                    </button>
+                    <div className="flex justify-center">
+                      <div className="w-[99%] h-px bg-[#3B3634]/10" />
+                    </div>
+                  </div>
                 ))}
               </div>
             </div>
@@ -125,22 +150,34 @@ export const MobilePromotionsFilterModal = ({
 
           {/* Seller Filter */}
           {sellerNames.length > 0 && (
-            <div className="space-y-3 border-t border-gray-200 pt-4">
-              <h3 className="font-medium text-black font-instrument-sans">Sprzedawca</h3>
-              <div className="space-y-2 max-h-[200px] overflow-y-auto">
+            <div className="space-y-3 border-t border-[#3B3634]/10 pt-6">
+              <h3 className="font-medium text-black mb-3 font-instrument-sans text-sm">Sprzedawca</h3>
+              <div className="space-y-1 max-h-[200px] overflow-y-auto">
                 {sellerNames.map((seller) => (
-                  <label key={seller.id} className="flex items-center gap-3 cursor-pointer hover:bg-gray-50 p-3 rounded-lg transition-colors">
-                    <input
-                      type="radio"
-                      name="seller"
-                      value={seller.id}
-                      checked={currentSeller === seller.id}
-                      onChange={() => updateSearchParams("seller", seller.id)}
-                      className="w-5 h-5 text-[#3B3634] border-[#3B3634] focus:ring-[#3B3634] cursor-pointer"
-                      style={{ accentColor: '#3B3634' }}
-                    />
-                    <span className="text-sm text-black font-instrument-sans">{seller.name}</span>
-                  </label>
+                  <div key={seller.id} className="relative">
+                    <button
+                      type="button"
+                      onClick={() => updateSearchParams("seller", seller.id)}
+                      className="w-full flex items-center justify-between py-2.5 text-left transition-colors cursor-pointer hover:bg-[#3B3634]/5"
+                    >
+                      <span className={cn(
+                        "text-sm font-instrument-sans select-none",
+                        currentSeller === seller.id ? "text-[#3B3634] font-medium" : "text-[#3B3634]/90"
+                      )}>
+                        {seller.name}
+                      </span>
+                      <Check 
+                        className={cn(
+                          "w-4 h-4 text-[#3B3634] transition-opacity duration-150",
+                          currentSeller === seller.id ? "opacity-100" : "opacity-0"
+                        )}
+                        strokeWidth={2.5} 
+                      />
+                    </button>
+                    <div className="flex justify-center">
+                      <div className="w-[99%] h-px bg-[#3B3634]/10" />
+                    </div>
+                  </div>
                 ))}
               </div>
             </div>
@@ -148,22 +185,34 @@ export const MobilePromotionsFilterModal = ({
 
           {/* Campaign Filter */}
           {campaignNames.length > 0 && (
-            <div className="space-y-3 border-t border-gray-200 pt-4">
-              <h3 className="font-medium text-black font-instrument-sans">Kampania</h3>
-              <div className="space-y-2 max-h-[200px] overflow-y-auto">
+            <div className="space-y-3 border-t border-[#3B3634]/10 pt-6">
+              <h3 className="font-medium text-black mb-3 font-instrument-sans text-sm">Kampania</h3>
+              <div className="space-y-1 max-h-[200px] overflow-y-auto">
                 {campaignNames.map((name) => (
-                  <label key={name} className="flex items-center gap-3 cursor-pointer hover:bg-gray-50 p-3 rounded-lg transition-colors">
-                    <input
-                      type="radio"
-                      name="campaign"
-                      value={name}
-                      checked={currentCampaign === name}
-                      onChange={() => updateSearchParams("campaign", name)}
-                      className="w-5 h-5 text-[#3B3634] border-[#3B3634] focus:ring-[#3B3634] cursor-pointer"
-                      style={{ accentColor: '#3B3634' }}
-                    />
-                    <span className="text-sm text-black font-instrument-sans">{name}</span>
-                  </label>
+                  <div key={name} className="relative">
+                    <button
+                      type="button"
+                      onClick={() => updateSearchParams("campaign", name)}
+                      className="w-full flex items-center justify-between py-2.5 text-left transition-colors cursor-pointer hover:bg-[#3B3634]/5"
+                    >
+                      <span className={cn(
+                        "text-sm font-instrument-sans select-none",
+                        currentCampaign === name ? "text-[#3B3634] font-medium" : "text-[#3B3634]/90"
+                      )}>
+                        {name}
+                      </span>
+                      <Check 
+                        className={cn(
+                          "w-4 h-4 text-[#3B3634] transition-opacity duration-150",
+                          currentCampaign === name ? "opacity-100" : "opacity-0"
+                        )}
+                        strokeWidth={2.5} 
+                      />
+                    </button>
+                    <div className="flex justify-center">
+                      <div className="w-[99%] h-px bg-[#3B3634]/10" />
+                    </div>
+                  </div>
                 ))}
               </div>
             </div>
@@ -178,14 +227,14 @@ export const MobilePromotionsFilterModal = ({
                 onClearAll()
                 setIsOpen(false)
               }}
-              className="w-full py-3 px-4 border border-[#3B3634] rounded-lg text-[#3B3634] font-medium font-instrument-sans hover:bg-gray-50 transition-colors"
+              className="w-full py-3 px-4 border border-[#3B3634] text-[#3B3634] font-medium font-instrument-sans hover:bg-gray-50 transition-colors"
             >
               Wyczyść filtry
             </button>
           )}
           <button
             onClick={handleApply}
-            className="w-full py-3 px-4 bg-[#3B3634] text-white rounded-lg font-medium font-instrument-sans hover:bg-opacity-90 transition-colors"
+            className="w-full py-3 px-4 bg-[#3B3634] text-white font-semibold font-instrument-sans hover:bg-[#2a2523] transition-colors"
           >
             Zastosuj
           </button>

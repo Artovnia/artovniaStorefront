@@ -91,7 +91,7 @@ export const CartDropdown = ({
       <Link href="/cart" className="relative" aria-label={`Koszyk${cartItemsCount ? ` - ${cartItemsCount} ${cartItemsCount === 1 ? 'produkt' : 'produkty'}` : ' - pusty'}`}>
         <CartIcon size={20} />
         {Boolean(cartItemsCount) && (
-          <Badge className="absolute -top-2 -right-2 w-4 h-4 p-2">
+          <Badge className="w-4 h-4 p-2">
             {cartItemsCount}
           </Badge>
         )}

@@ -409,24 +409,54 @@ export const ProductFilterBar = ({
 
   // Clear all filters handler
   const handleClearAll = () => {
-    const activeFilters = getActiveFilters()
-    activeFilters.forEach(filter => {
-      if (filter.onRemove) {
-        filter.onRemove()
-      }
-    })
+    // CRITICAL FIX: Clear all filter types properly
     
-    // CRITICAL FIX: Also reset sort filter to default
-    const currentSort = searchParams.get("sortBy")
-    if (currentSort) {
-      const params = new URLSearchParams(searchParams.toString())
-      params.delete("sortBy")
-      router.push(`${pathname}?${params.toString()}`, { scroll: false })
+    // 1. Clear Zustand store (both active and pending state)
+    const { clearAllFilters } = useFilterStore.getState()
+    clearAllFilters()
+    
+    // 2. Clear Algolia color refinements
+    if (refineColor && colorFacetItems) {
+      colorFacetItems
+        .filter(item => item.isRefined)
+        .forEach(item => {
+          refineColor(item.value)
+        })
     }
+    
+    // 3. Clear Algolia rating refinements
+    if (refineRating && ratingFacetItems) {
+      ratingFacetItems
+        .filter(item => item.isRefined)
+        .forEach(item => {
+          refineRating(item.label)
+        })
+    }
+    
+    // 4. Clear URL parameters (except category, page, and sortBy)
+    const params = new URLSearchParams(searchParams.toString())
+    
+    // Remove all filter params but preserve category navigation and sorting
+    const paramsToRemove = [
+      'min_price', 'max_price',
+      'size', 'rating', 'condition',
+      'min_length', 'max_length',
+      'min_width', 'max_width',
+      'min_height', 'max_height',
+      'min_weight', 'max_weight'
+    ]
+    
+    paramsToRemove.forEach(param => params.delete(param))
+    
+    // Reset to page 1
+    params.set('page', '1')
+    
+    // Update URL without clearing category or sort
+    router.push(`${pathname}?${params.toString()}`, { scroll: false })
   }
 
   return (
-    <div className={cn("w-full bg-primary border-b border-[#3B3634] py-4 px-4 sm:px-6", className)}>
+    <div className={cn("w-full bg-primary border-b border-[#3B3634] py-4 px-4 sm:px-6 space-y-1", className)}>
       {/* Mobile: Single "Filtry" Button - Show only on screens < 768px */}
       <div className="md:hidden flex items-center gap-3 ">
         <MobileFilterModal 

@@ -8,6 +8,8 @@ import { CombinedDimensionFilter } from "@/components/cells/CombinedDimensionFil
 import { useSearchParams } from 'next/navigation'
 import { useFilterStore } from '@/stores/filterStore'
 import { useApplyFilters } from '@/hooks/useApplyFilters'
+import useUpdateSearchParams from '@/hooks/useUpdateSearchParams'
+import { Check } from 'lucide-react'
 
 interface MobileFilterModalProps {
   colorFacetItems?: any[]
@@ -22,22 +24,44 @@ export const MobileFilterModal = ({
   hasActiveFilters,
   onClearAll
 }: MobileFilterModalProps) => {
-  const [isOpen, setIsOpen] = useState(false)
   const [mounted, setMounted] = useState(false)
   const searchParams = useSearchParams()
   const applyFilters = useApplyFilters()
-  const { resetPendingFilters } = useFilterStore()
-
+  
+  // CRITICAL FIX: Use URL hash to persist modal state across router.push re-renders
+  // This prevents the modal from closing when sorting triggers a page re-render
+  const [isOpen, setIsOpen] = useState(false)
+  
   useEffect(() => {
     setMounted(true)
-  }, [])
-
-  // Initialize pending filters when modal opens
-  useEffect(() => {
-    if (isOpen) {
-      resetPendingFilters()
+    // Check if modal should be open based on hash
+    if (typeof window !== 'undefined' && window.location.hash === '#filters') {
+      setIsOpen(true)
     }
-  }, [isOpen, resetPendingFilters])
+  }, [])
+  
+  // Sync modal state with hash changes
+  useEffect(() => {
+    const handleHashChange = () => {
+      setIsOpen(window.location.hash === '#filters')
+    }
+    
+    window.addEventListener('hashchange', handleHashChange)
+    return () => window.removeEventListener('hashchange', handleHashChange)
+  }, [])
+  
+  // Update hash when modal opens/closes
+  const handleSetIsOpen = (open: boolean) => {
+    if (open) {
+      window.location.hash = 'filters'
+    } else {
+      // Remove hash without adding to history
+      if (window.location.hash === '#filters') {
+        history.replaceState(null, '', window.location.pathname + window.location.search)
+      }
+    }
+    setIsOpen(open)
+  }
 
   // Prevent body scroll when modal is open
   useEffect(() => {
@@ -53,7 +77,7 @@ export const MobileFilterModal = ({
 
   const handleApplyFilters = () => {
     applyFilters()
-    setIsOpen(false)
+    handleSetIsOpen(false)
   }
 
   const modalContent = isOpen && (
@@ -61,7 +85,7 @@ export const MobileFilterModal = ({
       {/* Backdrop */}
       <div 
         className="absolute inset-0 bg-black/50 backdrop-blur-sm"
-        onClick={() => setIsOpen(false)}
+        onClick={() => handleSetIsOpen(false)}
       />
       
       {/* Modal */}
@@ -70,7 +94,7 @@ export const MobileFilterModal = ({
         <div className="flex items-center justify-between p-4 border-b border-[#3B3634]">
           <h2 className="text-xl font-semibold font-instrument-sans text-black">Filtry</h2>
           <button
-            onClick={() => setIsOpen(false)}
+            onClick={() => handleSetIsOpen(false)}
             className="p-2 hover:bg-gray-100 rounded-full transition-colors"
             aria-label="Zamknij"
           >
@@ -117,7 +141,7 @@ export const MobileFilterModal = ({
             <button
               onClick={() => {
                 onClearAll()
-                setIsOpen(false)
+                handleSetIsOpen(false)
               }}
               className="w-full py-3 px-4 text-center font-instrument-sans font-medium text-black border border-[#3B3634]  hover:bg-gray-50 transition-colors"
             >
@@ -139,7 +163,7 @@ export const MobileFilterModal = ({
     <>
       {/* Mobile Filter Button */}
       <button
-        onClick={() => setIsOpen(true)}
+        onClick={() => handleSetIsOpen(true)}
         className={cn(
           "flex items-center gap-2 px-4 py-2 rounded-full border transition-all duration-200",
           "text-sm font-medium font-instrument-sans",
@@ -189,7 +213,8 @@ const FilterSection = ({ title, children }: { title: string, children: React.Rea
 // Sort Filter Section
 const SortFilterSection = () => {
   const searchParams = useSearchParams()
-  const [selectedSort, setSelectedSort] = useState(searchParams.get("sortBy") || "")
+  const updateSearchParams = useUpdateSearchParams()
+  const currentSort = searchParams.get("sortBy") || ""
 
   const sortOptions = [
     { label: "Domyślne", value: "" },
@@ -199,23 +224,44 @@ const SortFilterSection = () => {
     { label: "Najstarsze", value: "created_at_asc" },
   ]
 
+  // CRITICAL FIX: Handle sort change without closing modal
+  // Use event.preventDefault and stopPropagation to prevent modal close
+  const handleSortChange = (value: string, e: React.MouseEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    updateSearchParams("sortBy", value)
+    // Modal will stay open because we're not calling setIsOpen(false)
+  }
+
   return (
     <div className="space-y-3">
       <h3 className="font-medium text-black font-instrument-sans text-base">Sortuj według</h3>
-      <div className="space-y-2">
+      <div className="space-y-1">
         {sortOptions.map((option) => (
-          <label key={option.value} className="flex items-center gap-3 cursor-pointer hover:bg-gray-50 p-3 rounded-lg transition-colors">
-            <input
-              type="radio"
-              name="sort"
-              value={option.value}
-              checked={selectedSort === option.value}
-              onChange={() => setSelectedSort(option.value)}
-              className="w-5 h-5 text-[#3B3634] border-[#3B3634] focus:ring-[#3B3634] focus:ring-2 cursor-pointer"
-              style={{ accentColor: '#3B3634' }}
-            />
-            <span className="text-sm text-black font-instrument-sans select-none">{option.label}</span>
-          </label>
+          <div key={option.value} className="relative">
+            <button
+              type="button"
+              onClick={(e) => handleSortChange(option.value, e)}
+              className="w-full flex items-center justify-between py-2.5 px-3 text-left transition-colors cursor-pointer hover:bg-[#3B3634]/5 rounded-lg"
+            >
+              <span className={cn(
+                "text-sm font-instrument-sans select-none",
+                currentSort === option.value ? "text-[#3B3634] font-medium" : "text-[#3B3634]/90"
+              )}>
+                {option.label}
+              </span>
+              <Check 
+                className={cn(
+                  "w-4 h-4 text-[#3B3634] transition-opacity duration-150",
+                  currentSort === option.value ? "opacity-100" : "opacity-0"
+                )}
+                strokeWidth={2.5} 
+              />
+            </button>
+            <div className="flex justify-center">
+              <div className="w-[99%] h-px bg-[#3B3634]/10" />
+            </div>
+          </div>
         ))}
       </div>
     </div>

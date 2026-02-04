@@ -36,7 +36,6 @@ const translations = {
     priceBreakdown: 'Podsumowanie ceny',
     subtotal: 'Produkty',
     shipping: 'Dostawa',
-    tax: 'Podatek',
     discount: 'Rabat',
     finalTotal: 'Razem do zapłaty'
   },
@@ -67,7 +66,6 @@ const translations = {
     priceBreakdown: 'Price Breakdown',
     subtotal: 'Subtotal',
     shipping: 'Shipping',
-    tax: 'Tax',
     discount: 'Discount',
     finalTotal: 'Total'
   }

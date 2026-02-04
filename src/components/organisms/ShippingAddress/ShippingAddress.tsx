@@ -130,11 +130,58 @@ const ShippingAddress = forwardRef<
       billingMetadata.nip || cartMetadata.nip || "",
     "billing_address.metadata.want_invoice":
       billingMetadata.want_invoice || cartMetadata.want_invoice || false,
+    // Full billing address fields
+    "billing_address.first_name": cart?.billing_address?.first_name || "",
+    "billing_address.last_name": cart?.billing_address?.last_name || "",
+    "billing_address.address_1": cart?.billing_address?.address_1 || "",
+    "billing_address.company": cart?.billing_address?.company || "",
+    "billing_address.postal_code": cart?.billing_address?.postal_code || "",
+    "billing_address.city": cart?.billing_address?.city || "",
+    "billing_address.country_code": cart?.billing_address?.country_code || "",
+    "billing_address.province": cart?.billing_address?.province || "",
+    "billing_address.phone": cart?.billing_address?.phone || "",
   })
+
+  const [copyFromDelivery, setCopyFromDelivery] = useState(true)
 
   const [hasUserInteracted, setHasUserInteracted] = useState(false)
   const [nipError, setNipError] = useState<string | null>(null)
   const [companyError, setCompanyError] = useState<string | null>(null)
+
+  // Handle copying delivery address to billing address
+  const handleCopyFromDelivery = useCallback(() => {
+    if (copyFromDelivery) {
+      setFormData((prev) => ({
+        ...prev,
+        "billing_address.first_name": prev["shipping_address.first_name"],
+        "billing_address.last_name": prev["shipping_address.last_name"],
+        "billing_address.address_1": prev["shipping_address.address_1"],
+        "billing_address.postal_code": prev["shipping_address.postal_code"],
+        "billing_address.city": prev["shipping_address.city"],
+        "billing_address.country_code": prev["shipping_address.country_code"],
+        "billing_address.province": prev["shipping_address.province"],
+        "billing_address.phone": prev["shipping_address.phone"],
+      }))
+    }
+  }, [copyFromDelivery])
+
+  // Auto-copy when delivery address changes and copyFromDelivery is true
+  useEffect(() => {
+    if (copyFromDelivery) {
+      handleCopyFromDelivery()
+    }
+  }, [
+    formData["shipping_address.first_name"],
+    formData["shipping_address.last_name"],
+    formData["shipping_address.address_1"],
+    formData["shipping_address.postal_code"],
+    formData["shipping_address.city"],
+    formData["shipping_address.country_code"],
+    formData["shipping_address.province"],
+    formData["shipping_address.phone"],
+    copyFromDelivery,
+    handleCopyFromDelivery,
+  ])
   const lastCartEmailRef = useRef(cart?.email)
   const inputRefsMap = useRef<
     Map<string, HTMLInputElement | HTMLSelectElement>
@@ -445,6 +492,7 @@ const ShippingAddress = forwardRef<
 
         {formData["billing_address.metadata.want_invoice"] && (
           <div className="mt-4 p-4 bg-cream-100 border border-cream-200 space-y-4">
+            {/* NIP and Company Name */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <Input
@@ -463,24 +511,170 @@ const ShippingAddress = forwardRef<
                   placeholder="np. 1234567890"
                   maxLength={10}
                   error={nipError || undefined}
+                  required
                 />
               </div>
               <Input
                 label="Nazwa firmy"
-                name="shipping_address.company"
-                value={formData["shipping_address.company"]}
+                name="billing_address.company"
+                value={formData["billing_address.company"]}
                 changeValue={(value) => {
-                  handleInputChange("shipping_address.company", value)
+                  handleInputChange("billing_address.company", value)
                   if (value && companyError) {
                     setCompanyError(null)
                   }
                 }}
-                ref={registerInputRef("shipping_address.company")}
+                ref={registerInputRef("billing_address.company")}
                 autoComplete="organization"
-                required={!!formData["billing_address.metadata.nip"]}
+                required
                 error={companyError || undefined}
               />
             </div>
+
+            {/* Copy from delivery address checkbox */}
+            <div className="border-t border-cream-300 pt-4">
+              <Checkbox
+                id="copy-from-delivery"
+                checked={copyFromDelivery}
+                onChange={() => {
+                  const newValue = !copyFromDelivery
+                  setCopyFromDelivery(newValue)
+                  if (newValue) {
+                    // Immediately copy when checkbox is checked
+                    setFormData((prev) => ({
+                      ...prev,
+                      "billing_address.first_name": prev["shipping_address.first_name"],
+                      "billing_address.last_name": prev["shipping_address.last_name"],
+                      "billing_address.address_1": prev["shipping_address.address_1"],
+                      "billing_address.postal_code": prev["shipping_address.postal_code"],
+                      "billing_address.city": prev["shipping_address.city"],
+                      "billing_address.country_code": prev["shipping_address.country_code"],
+                      "billing_address.province": prev["shipping_address.province"],
+                      "billing_address.phone": prev["shipping_address.phone"],
+                    }))
+                  }
+                }}
+                label="Adres faktury taki sam jak adres dostawy"
+              />
+            </div>
+
+            {/* Full billing address fields - only show when NOT copying from delivery */}
+            {!copyFromDelivery && (
+              <div className="space-y-4 border-t border-cream-300 pt-4">
+                <h4 className="text-sm font-medium text-plum">
+                  Adres do faktury
+                </h4>
+                
+                {/* Billing Personal Info - Not required for companies */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <Input
+                    label="Imię"
+                    name="billing_address.first_name"
+                    autoComplete="billing given-name"
+                    value={formData["billing_address.first_name"]}
+                    changeValue={(value) =>
+                      handleInputChange("billing_address.first_name", value)
+                    }
+                    ref={registerInputRef("billing_address.first_name")}
+                  />
+                  <Input
+                    label="Nazwisko"
+                    name="billing_address.last_name"
+                    autoComplete="billing family-name"
+                    value={formData["billing_address.last_name"]}
+                    changeValue={(value) =>
+                      handleInputChange("billing_address.last_name", value)
+                    }
+                    ref={registerInputRef("billing_address.last_name")}
+                  />
+                </div>
+
+                {/* Billing Address */}
+                <Input
+                  label="Ulica i numer"
+                  name="billing_address.address_1"
+                  autoComplete="billing address-line1"
+                  value={formData["billing_address.address_1"]}
+                  changeValue={(value) =>
+                    handleInputChange("billing_address.address_1", value)
+                  }
+                  ref={registerInputRef("billing_address.address_1")}
+                  required
+                />
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <Input
+                    label="Kod pocztowy"
+                    name="billing_address.postal_code"
+                    autoComplete="billing postal-code"
+                    value={formData["billing_address.postal_code"]}
+                    changeValue={(value) =>
+                      handleInputChange("billing_address.postal_code", value)
+                    }
+                    ref={registerInputRef("billing_address.postal_code")}
+                    required
+                  />
+                  <div className="sm:col-span-2">
+                    <Input
+                      label="Miasto"
+                      name="billing_address.city"
+                      autoComplete="billing address-level2"
+                      value={formData["billing_address.city"]}
+                      changeValue={(value) =>
+                        handleInputChange("billing_address.city", value)
+                      }
+                      ref={registerInputRef("billing_address.city")}
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <Input
+                    label="Województwo"
+                    name="billing_address.province"
+                    autoComplete="billing address-level1"
+                    value={formData["billing_address.province"]}
+                    changeValue={(value) =>
+                      handleInputChange("billing_address.province", value)
+                    }
+                    ref={registerInputRef("billing_address.province")}
+                  />
+                  <div>
+                    <label className="block text-xs text-plum mb-1.5">
+                      Kraj <span className="text-accent-copper">*</span>
+                    </label>
+                    <CountrySelect
+                      name="billing_address.country_code"
+                      autoComplete="billing country"
+                      region={cart?.region}
+                      value={formData["billing_address.country_code"]}
+                      onChange={(e) => {
+                        handleInputChange(
+                          "billing_address.country_code",
+                          e.target.value
+                        )
+                      }}
+                      ref={registerInputRef("billing_address.country_code")}
+                      required
+                      className="w-full px-4 py-3.5 bg-cream-50 text-plum border border-cream-300 text-sm focus:outline-none focus:border-plum"
+                    />
+                  </div>
+                </div>
+
+                <Input
+                  label="Telefon"
+                  name="billing_address.phone"
+                  autoComplete="billing tel"
+                  value={formData["billing_address.phone"]}
+                  changeValue={(value) =>
+                    handleInputChange("billing_address.phone", value)
+                  }
+                  ref={registerInputRef("billing_address.phone")}
+                />
+              </div>
+            )}
+
             <p className="text-xs text-plum-muted">
               Faktura zostanie wystawiona na powyższe dane.
             </p>

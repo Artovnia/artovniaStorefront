@@ -5,6 +5,7 @@ import NativeSelect, {
   NativeSelectProps,
 } from "@/components/molecules/NativeSelect/NativeSelect"
 import clsx from "clsx"
+import { getCountryNamePL } from "@/lib/helpers/country-translations"
 
 const CountrySelect = forwardRef<
   HTMLSelectElement,
@@ -26,7 +27,8 @@ const CountrySelect = forwardRef<
 
     return region.countries?.map((country) => ({
       value: country.iso_2,
-      label: country.display_name,
+      // Use Polish translation if available, fallback to original display_name
+      label: getCountryNamePL(country.iso_2 || '', country.display_name || ''),
     }))
   }, [region])
 

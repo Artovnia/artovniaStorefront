@@ -74,7 +74,6 @@ export const BatchPriceProvider: React.FC<BatchPriceProviderProps> = ({
   useEffect(() => {
     if (process.env.NODE_ENV === 'development') {
       if (initialPriceData && Object.keys(initialPriceData).length > 0) {
-        console.log(`✅ [BatchPriceProvider] Using server-provided price data (${Object.keys(initialPriceData).length} variants)`)
         if (variantsToFetch.length > 0) {
           console.log(`� [BatchPriceProvider] Will fetch ${variantsToFetch.length} additional variants client-side`)
         }

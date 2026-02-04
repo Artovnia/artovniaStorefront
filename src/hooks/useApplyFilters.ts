@@ -86,6 +86,13 @@ export const useApplyFilters = () => {
     // Reset to page 1 when filters change
     params.set('page', '1')
     
+    // CRITICAL FIX: Preserve sortBy parameter - it's not part of pending filters
+    // Sorting is applied immediately via updateSearchParams, so we must preserve it
+    const currentSort = searchParams.get('sortBy')
+    if (currentSort) {
+      params.set('sortBy', currentSort)
+    }
+    
     // Update URL - this triggers a single Algolia search
     // CRITICAL FIX: Use absolute path with pathname for proper routing
     router.push(`${pathname}?${params.toString()}`, { scroll: false })

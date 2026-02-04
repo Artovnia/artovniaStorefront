@@ -7,13 +7,11 @@ export const CartSummary = ({
   shipping_total,
   total,
   currency_code,
-  tax,
 }: {
   item_total: number
   shipping_total: number
   total: number
   currency_code: string
-  tax: number
 }) => {
   return (
     <div>
@@ -23,15 +21,6 @@ export const CartSummary = ({
           <span className="text-primary">
             {convertToLocale({
               amount: item_total,
-              currency_code,
-            })}
-          </span>
-        </div>
-        <div className="flex justify-between">
-          <span>Podatek:</span>
-          <span className="text-primary">
-            {convertToLocale({
-              amount: tax,
               currency_code,
             })}
           </span>

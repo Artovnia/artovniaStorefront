@@ -19,7 +19,10 @@ const useUpdateSearchParams = () => {
       updatedSearchParams.set(field, value);
     }
 
-    router.replace(`${pathname}?${updatedSearchParams}`, {
+    // CRITICAL FIX: Use router.push instead of router.replace
+    // router.replace doesn't trigger proper re-renders for InstantSearch
+    // router.push ensures the component re-renders with new sort/filter params
+    router.push(`${pathname}?${updatedSearchParams}`, {
       scroll: false,
     });
   };

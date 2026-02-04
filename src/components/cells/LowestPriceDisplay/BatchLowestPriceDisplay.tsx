@@ -65,7 +65,7 @@ export const BatchLowestPriceDisplay = memo(
           className
         )}
       >
-        Najniższa z {days}dni: {formatPrice(lowestPrice, currencyCode)}
+        Najniższa cena z {days} dni: {formatPrice(lowestPrice, currencyCode)}
       </span>
     )
   }

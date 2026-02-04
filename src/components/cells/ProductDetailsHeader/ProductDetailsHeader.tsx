@@ -274,8 +274,8 @@ export const ProductDetailsHeader = ({
             )}
           </div>
           
-          {/* Lowest Price Display - always show when variant exists, component handles null data */}
-          {currentVariantId && (
+          {/* Lowest Price Display - only show when product has discount/promotion */}
+          {hasAnyDiscount && currentVariantId && (
             <div className="mt-1">
               <BatchLowestPriceDisplay
                 variantId={currentVariantId}
