@@ -83,15 +83,22 @@ export const useApplyFilters = () => {
       }
     })
     
+    // Sort filter - apply pending sort if set
+    if (state.pendingSort) {
+      params.set('sortBy', state.pendingSort)
+    } else if (state.pendingSort === '') {
+      // Empty string means clear sorting
+      params.delete('sortBy')
+    } else {
+      // No pending sort change, preserve current sort
+      const currentSort = searchParams.get('sortBy')
+      if (currentSort) {
+        params.set('sortBy', currentSort)
+      }
+    }
+    
     // Reset to page 1 when filters change
     params.set('page', '1')
-    
-    // CRITICAL FIX: Preserve sortBy parameter - it's not part of pending filters
-    // Sorting is applied immediately via updateSearchParams, so we must preserve it
-    const currentSort = searchParams.get('sortBy')
-    if (currentSort) {
-      params.set('sortBy', currentSort)
-    }
     
     // Update URL - this triggers a single Algolia search
     // CRITICAL FIX: Use absolute path with pathname for proper routing

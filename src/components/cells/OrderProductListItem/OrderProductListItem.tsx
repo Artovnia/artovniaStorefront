@@ -69,14 +69,14 @@ export const OrderProductListItem = ({
           {/* Show promotional pricing if discount was applied */}
           {item.discount_total && item.discount_total > 0 ? (
             <>
-              {/* Original price (crossed out) - TOTAL for all items */}
+              {/* Original price (crossed out) - use subtotal (original total before discount) */}
               <span className="text-secondary line-through text-sm">
                 {convertToLocale({
-                  amount: item.unit_price * (item.quantity || 1),
+                  amount: item.subtotal || (item.unit_price * (item.quantity || 1)),
                   currency_code: currency_code,
                 })}
               </span>
-              {/* Paid price (discounted) - TOTAL for all items */}
+              {/* Paid price (discounted) - TOTAL actually paid */}
               <span className="text-primary font-semibold">
                 {convertToLocale({
                   amount: item.total,
@@ -95,7 +95,7 @@ export const OrderProductListItem = ({
             /* No discount - show total price for all items */
             <span>
               {convertToLocale({
-                amount: item.unit_price * (item.quantity || 1),
+                amount: item.total || (item.unit_price * (item.quantity || 1)),
                 currency_code: currency_code,
               })}
             </span>

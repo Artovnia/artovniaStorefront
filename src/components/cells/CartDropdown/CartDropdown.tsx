@@ -38,7 +38,7 @@ export const CartDropdown = ({
   const previousItemCount = usePrevious(cartItemsCount)
   const total = convertToLocale({
     amount: cart?.item_total || 0,
-    currency_code: cart?.currency_code || "eur",
+    currency_code: cart?.currency_code || "pln",
   })
 
   // ✅ FIXED: Auto-refresh cart only ONCE on mount
@@ -88,14 +88,18 @@ export const CartDropdown = ({
       onMouseOver={() => setOpen(true)}
       onMouseLeave={() => setOpen(false)}
     >
-      <Link href="/cart" className="relative" aria-label={`Koszyk${cartItemsCount ? ` - ${cartItemsCount} ${cartItemsCount === 1 ? 'produkt' : 'produkty'}` : ' - pusty'}`}>
-        <CartIcon size={20} />
-        {Boolean(cartItemsCount) && (
-          <Badge className="w-4 h-4 p-2">
-            {cartItemsCount}
-          </Badge>
-        )}
-      </Link>
+      <Link 
+  href="/cart" 
+  className="relative inline-flex" // ← Add inline-flex here
+  aria-label={`Koszyk${cartItemsCount ? ` - ${cartItemsCount} ${cartItemsCount === 1 ? 'produkt' : 'produkty'}` : ' - pusty'}`}
+>
+  <CartIcon size={20} />
+  {Boolean(cartItemsCount) && (
+    <Badge className="w-4 h-4 p-2">
+      {cartItemsCount}
+    </Badge>
+  )}
+</Link>
       <Dropdown show={open}>
         <div className="lg:w-[460px] shadow-lg">
           <h3 className="uppercase heading-md border-b p-4">Koszyk</h3>

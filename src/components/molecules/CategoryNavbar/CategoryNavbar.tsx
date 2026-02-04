@@ -193,7 +193,7 @@ export const CategoryNavbar = ({ categories, onClose, onDropdownStateChange }: C
           "font-instrument-sans" // Use CSS variable for self-hosted fonts
         )}
       >
-        Wszystkie produkty
+        Wszystkie
       </Link>
       
       {/* Parent Category Navigation Items */}

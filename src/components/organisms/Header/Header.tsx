@@ -114,8 +114,8 @@ useEffect(() => {
     <header className="sticky top-0 z-50 bg-primary shadow-sm">
       <div className="flex  lg:py-2 max-w-[1920px] mx-auto">
         <div className="flex items-center gap-2 lg:gap-4 lg:w-1/3 py-4 ml-4">
-          {/* Country Selector - Left side - Hide on mobile, show on md and up */}
-          <div className="hidden md:block">
+          {/* Country Selector - Left side - Hide on mobile, show on xl and up */}
+          <div className="hidden xl:block">
             <CountrySelectorWrapper regions={regions} />
           </div>
           
@@ -138,7 +138,7 @@ useEffect(() => {
           {/* Store link - Icon on mobile, text on desktop */}
           <a 
             href="https://artovniapanel.netlify.app/login" 
-            className="hidden md:inline text-lg font-medium hover:text-action transition-colors hover:underline  items-center"
+            className="hidden xl:inline text-lg font-medium hover:text-action transition-colors hover:underline  items-center"
             aria-label="Załóż sklep"
           >
           
@@ -152,7 +152,7 @@ useEffect(() => {
           </div>
 
           <CartDropdown />
-          <div className="hidden md:inline items-center gap-2 lg:gap-4">
+          <div className="hidden xl:inline items-center gap-2 lg:gap-4">
             <UserDropdown user={user} />
           </div>
         </div>

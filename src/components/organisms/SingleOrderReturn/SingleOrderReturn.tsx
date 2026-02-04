@@ -1,7 +1,6 @@
 "use client"
 
 import { Avatar } from "@/components/atoms"
-import { Badge } from "@/components/atoms"
 import { Card } from "@/components/atoms"
 import { Divider } from "@/components/atoms"
 import { Heading } from "@medusajs/ui"
@@ -119,9 +118,9 @@ export const SingleOrderReturn = ({
               sprzedawcą.
             </p>
           </div>
-          <Badge className="w-fit whitespace-nowrap bg-red-100 text-red-700">
+          <span className="inline-flex w-fit items-center justify-center whitespace-nowrap rounded-sm border border-red-200 bg-red-100 px-3 py-1.5 text-xs font-medium text-red-700">
             Brakujące dane
-          </Badge>
+          </span>
         </div>
       </Card>
     )
@@ -408,11 +407,11 @@ export const SingleOrderReturn = ({
 
                     {/* Reason Badge and Price */}
                     <div className="flex items-center justify-between gap-2 sm:w-1/2 sm:justify-end sm:gap-4">
-                      <Badge className="max-w-[180px] truncate rounded-sm border border-[#3B3634] bg-primary text-primary sm:max-w-none">
+                      <span className="inline-flex max-w-[180px] items-center justify-center truncate rounded-sm border border-[#3B3634] bg-primary px-3 py-1.5 text-xs font-medium text-primary sm:max-w-none">
                         {returnLineItem
                           ? getReasonLabel(returnLineItem)
                           : "Powód zwrotu niedostępny"}
-                      </Badge>
+                      </span>
                       <p className="label-sm flex-shrink-0 !font-semibold text-primary">
                         {convertToLocale({
                           amount: itemDisplayPrice,

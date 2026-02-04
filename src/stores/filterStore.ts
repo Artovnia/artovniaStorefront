@@ -77,6 +77,9 @@ interface FilterState {
   pendingCondition: string | null
   setPendingCondition: (condition: string | null) => void
   
+  pendingSort: string | null
+  setPendingSort: (sort: string | null) => void
+  
   pendingCategories: string[]
   setPendingCategories: (categories: string[]) => void
   addPendingCategory: (category: string) => void
@@ -97,6 +100,10 @@ interface FilterState {
   // Editing state to prevent URL sync interference
   isEditingPrice: boolean
   setIsEditingPrice: (editing: boolean) => void
+  
+  // Mobile filter modal state (persists across router.push re-renders)
+  isMobileFilterModalOpen: boolean
+  setIsMobileFilterModalOpen: (open: boolean) => void
   
   // Apply pending filters (move pending to active)
   applyPendingFilters: () => void
@@ -231,6 +238,9 @@ export const useFilterStore = create<FilterState>()(
       pendingCondition: null,
       setPendingCondition: (condition) => set({ pendingCondition: condition }),
       
+      pendingSort: null,
+      setPendingSort: (sort) => set({ pendingSort: sort }),
+      
       pendingCategories: [],
       setPendingCategories: (categories) => set({ pendingCategories: categories }),
       addPendingCategory: (category) => set((state) => ({
@@ -263,6 +273,10 @@ export const useFilterStore = create<FilterState>()(
       isEditingPrice: false,
       setIsEditingPrice: (editing) => set({ isEditingPrice: editing }),
       
+      // Mobile filter modal state (persists across router.push re-renders)
+      isMobileFilterModalOpen: false,
+      setIsMobileFilterModalOpen: (open) => set({ isMobileFilterModalOpen: open }),
+      
       // Apply pending filters (move pending to active)
       applyPendingFilters: () => set((state) => ({
         selectedColors: [...state.pendingColors],
@@ -283,6 +297,7 @@ export const useFilterStore = create<FilterState>()(
         pendingSizes: [...state.selectedSizes],
         pendingRating: state.selectedRating,
         pendingCondition: state.selectedCondition,
+        pendingSort: null, // Sort is read from URL, not stored in active state
         pendingCategories: [...state.selectedCategories],
         pendingDimensionFilters: { ...state.dimensionFilters }
       })),
@@ -312,6 +327,7 @@ export const useFilterStore = create<FilterState>()(
         pendingSizes: [],
         pendingRating: null,
         pendingCondition: null,
+        pendingSort: null,
         pendingCategories: [],
         pendingDimensionFilters: {
           min_length: '',
@@ -329,12 +345,14 @@ export const useFilterStore = create<FilterState>()(
       name: 'filter-store', // unique name for localStorage key
       // Only persist essential filter state
       // NOTE: Price filters are NOT persisted - URL params are the source of truth
+      // NOTE: Modal state is NOT persisted - should not reopen on page reload
       partialize: (state) => ({
         selectedColors: state.selectedColors,
         // minPrice and maxPrice removed from persistence - causes stale data issues
         selectedSizes: state.selectedSizes,
         selectedRating: state.selectedRating,
         selectedCondition: state.selectedCondition,
+        // isMobileFilterModalOpen excluded - modal should not persist across reloads
       }),
     }
   )

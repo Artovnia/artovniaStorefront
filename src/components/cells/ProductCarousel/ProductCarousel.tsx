@@ -160,13 +160,14 @@ export const ProductCarousel = ({
                   <Image
                     src={slide.url}
                     alt={title}
-                    width={700}
-                    height={700}
-                    quality={index === 0 ? 85 : 75}
+                    width={800}
+                    height={800}
+                    quality={index === 0 ? 80 : 70}
                     priority={index === 0}
                     loading={index === 0 ? "eager" : "lazy"}
-                    placeholder="blur"
-                    blurDataURL="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFQEBAQAAAAAAAAAAAAAAAAAAAAX/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oADAMBAAIRAxEAPwCdABmX/9k="
+                    fetchPriority={index === 0 ? "high" : "auto"}
+                    placeholder={index === 0 ? "blur" : "empty"}
+                    blurDataURL={index === 0 ? "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFQEBAQAAAAAAAAAAAAAAAAAAAAX/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oADAMBAAIRAxEAPwCdABmX/9k=" : undefined}
                     sizes="(max-width: 640px) 100vw, (max-width: 768px) 90vw, 700px"
                     className="max-h-[700px] w-full h-auto aspect-square object-cover object-center hover:scale-105 transition-transform duration-300"
                     unoptimized={false}
@@ -233,8 +234,9 @@ export const ProductCarousel = ({
                       src={slide.url}
                       alt={title}
                       fill
-                      quality={60}
+                      quality={50}
                       loading="lazy"
+                      placeholder="empty"
                       className="object-cover transition-transform duration-300 hover:scale-105"
                       sizes="80px"
                       unoptimized={false}
@@ -257,8 +259,9 @@ export const ProductCarousel = ({
                       src={slides[0].url}
                       alt={`${title} - animacja`}
                       fill
-                      quality={60}
+                      quality={50}
                       loading="lazy"
+                      placeholder="empty"
                       className="object-cover transition-transform duration-300 hover:scale-105"
                       sizes="80px"
                       unoptimized={false}
@@ -321,11 +324,12 @@ export const ProductCarousel = ({
                     src={slides[selectedImageIndex].url}
                     alt={title}
                     fill
-                    quality={90}
+                    quality={selectedImageIndex === 0 ? 85 : 75}
                     priority={selectedImageIndex === 0}
                     loading={selectedImageIndex === 0 ? "eager" : "lazy"}
-                    placeholder="blur"
-                    blurDataURL="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFQEBAQAAAAAAAAAAAAAAAAAAAAX/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oADAMBAAIRAxEAPwCdABmX/9k="
+                    fetchPriority={selectedImageIndex === 0 ? "high" : "auto"}
+                    placeholder={selectedImageIndex === 0 ? "blur" : "empty"}
+                    blurDataURL={selectedImageIndex === 0 ? "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFQEBAQAAAAAAAAAAAAAAAAAAAAX/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oADAMBAAIRAxEAPwCdABmX/9k=" : undefined}
                     className={`object-cover transition-all duration-500 ease-out hover:scale-105 ${
                       isTransitioning 
                         ? "opacity-0 scale-105 blur-sm" 

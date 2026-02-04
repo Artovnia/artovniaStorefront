@@ -75,25 +75,25 @@ export const Navbar = ({
   return (
     <>
       {/* Mobile Search - Only visible on mobile, hidden on desktop */}
-      <div className="md:hidden">
+      <div className="xl:hidden">
         <MobileProductSearch />
       </div>
 
       {/* Desktop Navbar */}
       <div 
-        className="hidden md:block w-full border ring-1 ring-[#BFB7AD] bg-primary relative"
+        className="hidden xl:block w-full border ring-1 ring-[#BFB7AD] bg-primary relative"
         onMouseLeave={handleDropdownMouseLeave}
         aria-label="Main navigation bar with categories"
       >
         <div className="flex py-4 justify-between max-w-[1920px] mx-auto">
-        <div className="hidden md:flex w-full">
+        <div className="hidden xl:flex w-full">
           <CategoryNavbar 
             categories={categories} 
             onDropdownStateChange={handleDropdownStateChange}
           />
         </div>
 
-        <div className="hidden md:flex px-0 mr-4">
+        <div className="hidden xl:flex px-0 mr-4">
           <NavbarSearch />
         </div>
       </div>

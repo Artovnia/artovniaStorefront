@@ -280,7 +280,18 @@ const AlgoliaProductsListingWithConfig = (props: AlgoliaProductsListingProps) =>
   }
   
   // Use as configureProps
-  const configureProps = algoliaParams;
+  const configureProps = {
+    ...algoliaParams,
+    // CRITICAL FIX: Declare facets for color and rating filtering
+    // Without this, Algolia throws "Cannot refine the undeclared facet" errors
+    attributesForFaceting: [
+      'color_families',
+      'average_rating',
+      'categories.lvl0',
+      'categories.lvl1',
+      'categories.lvl2',
+    ],
+  };
   
   // Create a memoized search client with caching to prevent excessive queries
   const searchClient = useMemo(() => {

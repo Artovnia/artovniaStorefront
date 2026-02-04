@@ -21,7 +21,7 @@ export const MobileNavbar = ({
   };
 
   return (
-    <div className='lg:hidden flex items-center gap-2'>
+    <div className='xl:hidden flex items-center gap-2'>
       <button 
         onClick={handleOpenMenu}
         className="p-2 hover:bg-gray-100 rounded-full transition-colors"
