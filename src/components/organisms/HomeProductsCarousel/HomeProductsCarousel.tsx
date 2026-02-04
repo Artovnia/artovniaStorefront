@@ -61,6 +61,7 @@ export const HomeProductsCarousel = ({
             user={user}
             wishlist={wishlist}
             index={index}  // ✅ Pass index for priority loading
+            isSellerSection={isSellerSection}  // ✅ Force lazy loading for seller products
           />
         );
       })

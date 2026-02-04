@@ -79,6 +79,7 @@ const ProductCardComponent = ({
   wishlist = [],
   onWishlistChange,
   index = 999,
+  isSellerSection = false,
 }: {
   product: Hit<HttpTypes.StoreProduct> | Partial<Hit<BaseHit>>
   sellerPage?: boolean
@@ -87,6 +88,7 @@ const ProductCardComponent = ({
   wishlist?: SerializableWishlist[]
   onWishlistChange?: () => void
   index?: number  // ✅ NEW: For priority loading first 4 products
+  isSellerSection?: boolean  // ✅ NEW: Force lazy loading for seller section to prioritize main gallery
 }) => {
   const { prefetchOnHover } = useHoverPrefetch()
   const router = useRouter()
@@ -190,8 +192,8 @@ const ProductCardComponent = ({
                 height={320}
                 quality={75}  // Reduced from 80 for better performance
                 className="object-cover w-full object-center h-full lg:group-hover:scale-105 transition-all duration-300"
-                priority={index < 4}  // ✅ Only first 4 products get priority
-                loading={index < 4 ? "eager" : "lazy"}  // ✅ Lazy load rest
+                priority={!isSellerSection && index < 4}  // ✅ Never prioritize seller section images
+                loading={isSellerSection ? "lazy" : (index < 4 ? "eager" : "lazy")}  // ✅ Always lazy load seller section
                 sizes="(max-width: 640px) 160px, 352px"  // ✅ Responsive sizes
                 placeholder="blur"  // ✅ Smooth loading with blur effect
                 blurDataURL="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFQEBAQAAAAAAAAAAAAAAAAAAAAX/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oADAMBAAIRAxEAPwCdABmX/9k="

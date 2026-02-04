@@ -234,7 +234,7 @@ export const listProductsForDetail = async ({
           "variants.options.id,variants.options.value,variants.options.option_id," +
           "variants.options.option.id,variants.options.option.title," +
           // Seller - include photo/logo for display
-          "seller.id,seller.handle,seller.store_name,seller.photo,seller.logo_url," +
+          "seller.id,seller.handle,seller.name,seller.store_name,seller.photo,seller.logo_url," +
           // Categories for breadcrumbs
           "categories.id,categories.name,categories.handle,categories.parent_category_id," +
           // Collection (optional)
