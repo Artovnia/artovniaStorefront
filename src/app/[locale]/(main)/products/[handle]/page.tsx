@@ -4,6 +4,7 @@ import { ProductDetailsPage } from "@/components/sections"
 import { listProductsForDetail } from "@/lib/data/products"
 import { getRegion } from "@/lib/data/regions"
 import { generateProductMetadata } from "@/lib/helpers/seo"
+import { ScrollToTop } from "@/components/utils/ScrollToTop"
 import type { Metadata } from "next"
 import { cache } from 'react'
 
@@ -89,6 +90,9 @@ export default async function ProductPage({
 
   return (
     <>
+      {/* ✅ FIX: Ensure page always opens at top, not random scroll position */}
+      <ScrollToTop />
+      
       {/* ✅ CRITICAL: Preload LCP image for 200-400ms faster perceived load */}
       {firstImageUrl && (
         <link
