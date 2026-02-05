@@ -201,13 +201,8 @@ export const ProductCarousel = ({
                     quality={index === 0 ? 80 : 70}
                     priority={index === 0}
                     loading={index === 0 ? "eager" : "lazy"}
-                    fetchPriority={index === 0 ? "high" : "auto"}
-                    placeholder={index === 0 ? "blur" : "empty"}
-                    blurDataURL={
-                      index === 0
-                        ? "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFQEBAQAAAAAAAAAAAAAAAAAAAAX/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oADAMBAAIRAxEAPwCdABmX/9k="
-                        : undefined
-                    }
+                    fetchPriority={index === 0 ? "high" : "low"}
+                    placeholder="empty"
                     sizes="(max-width: 640px) 100vw, (max-width: 828px) 100vw, 50vw"
                     className="max-h-[700px] w-full h-auto aspect-square object-cover object-center hover:scale-105 transition-transform duration-300"
                     unoptimized={false}
@@ -284,6 +279,7 @@ export const ProductCarousel = ({
                       fill
                       quality={50}
                       loading="lazy"
+                      fetchPriority="low"
                       placeholder="empty"
                       className="object-cover transition-transform duration-300 hover:scale-105"
                       sizes="80px"
@@ -309,6 +305,7 @@ export const ProductCarousel = ({
                       fill
                       quality={50}
                       loading="lazy"
+                      fetchPriority="low"
                       placeholder="empty"
                       className="object-cover transition-transform duration-300 hover:scale-105"
                       sizes="80px"
@@ -385,12 +382,7 @@ export const ProductCarousel = ({
                       priority={selectedImageIndex === 0}
                       loading={selectedImageIndex === 0 ? "eager" : "lazy"}
                       fetchPriority={selectedImageIndex === 0 ? "high" : "auto"}
-                      placeholder={selectedImageIndex === 0 ? "blur" : "empty"}
-                      blurDataURL={
-                        selectedImageIndex === 0
-                          ? "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFQEBAQAAAAAAAAAAAAAAAAAAAAX/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oADAMBAAIRAxEAPwCdABmX/9k="
-                          : undefined
-                      }
+                      placeholder="empty"
                       className={`object-cover bg-[#F4F0EB] transition-all duration-500 ease-out hover:scale-105 ${
                         isTransitioning
                           ? "opacity-0 scale-105 blur-sm"

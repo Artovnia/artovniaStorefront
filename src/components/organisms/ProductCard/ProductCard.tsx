@@ -183,20 +183,20 @@ const ProductCardComponent = ({
           />
         )}
         <Link href={productUrl} prefetch={true} aria-label={`Zobacz produkt: ${product.title}`}>
-          <div className="overflow-hidden w-full h-full flex justify-center items-center">
+          <div className="overflow-hidden w-full h-full flex justify-center items-center" style={{ backgroundColor: '#F4F0EB' }}>
             {(product.thumbnail || product.images?.[0]?.url) ? (
               <Image
                 src={product.thumbnail || product.images?.[0]?.url || "/images/placeholder.svg"}
                 alt={product.title}
                 width={320}
                 height={320}
-                quality={75}  // Reduced from 80 for better performance
+                quality={75}
                 className="object-cover w-full object-center h-full lg:group-hover:scale-105 transition-all duration-300"
-                priority={!isSellerSection && index < 4}  // ✅ Never prioritize seller section images
-                loading={isSellerSection ? "lazy" : (index < 4 ? "eager" : "lazy")}  // ✅ Always lazy load seller section
-                sizes="(max-width: 640px) 160px, 352px"  // ✅ Responsive sizes
-                placeholder="blur"  // ✅ Smooth loading with blur effect
-                blurDataURL="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFQEBAQAAAAAAAAAAAAAAAAAAAAX/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oADAMBAAIRAxEAPwCdABmX/9k="
+                priority={!isSellerSection && index < 4}
+                loading={isSellerSection ? "lazy" : (index < 4 ? "eager" : "lazy")}
+                fetchPriority={isSellerSection ? "low" : (index < 4 ? "auto" : "low")}
+                sizes="(max-width: 640px) 160px, 352px"
+                placeholder="empty"
                 unoptimized={false}
               />
             ) : (
