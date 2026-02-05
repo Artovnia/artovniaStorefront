@@ -7,12 +7,10 @@ import {
 } from "@/components/cells"
 import { ProductDetailsShippingWrapper } from "@/components/cells/ProductDetailsShipping/ProductDetailsShippingWrapper"
 import { getProductMeasurements } from "@/lib/data/measurements"
-import { retrieveCustomer, isAuthenticated } from "@/lib/data/customer"
-import { getUserWishlists } from "@/lib/data/wishlist"
-// ✅ REMOVED: retrieveCart - now using CartContext in client component
+// ✅ REMOVED: retrieveCustomer, isAuthenticated, getUserWishlists - now passed from parent
 import { unifiedCache } from "@/lib/utils/unified-cache"
 import { SellerProps } from "@/types/seller"
-import { Wishlist, SerializableWishlist } from "@/types/wishlist"
+import { SerializableWishlist } from "@/types/wishlist"
 import { SingleProductMeasurement } from "@/types/product"
 import { HttpTypes } from "@medusajs/types"
 import "@/types/medusa"
@@ -34,6 +32,8 @@ export const ProductDetails = async ({
   locale,
   region,
   initialVariantAttributes,
+  user,
+  wishlist: wishlistProp,
 }: {
   product: HttpTypes.StoreProduct & { 
     seller: SellerProps
@@ -41,6 +41,8 @@ export const ProductDetails = async ({
   locale: string
   region?: HttpTypes.StoreRegion | null
   initialVariantAttributes?: { attribute_values: any[] }
+  user?: HttpTypes.StoreCustomer | null
+  wishlist?: SerializableWishlist[]
 }) => {
   // Pre-calculate variant and locale data
   const selectedVariantId = Array.isArray(product.variants) && product.variants.length > 0 && product.variants[0]?.id 
@@ -50,29 +52,10 @@ export const ProductDetails = async ({
   const supportedLocales = ['en', 'pl']
   const currentLocale = supportedLocales.includes(locale) ? locale : 'en'
   
-  // ✅ OPTIMIZED: Removed cart fetch - region now handled by client component using CartContext
-  const [user, authenticated] = await Promise.allSettled([
-    retrieveCustomer(), // Direct call - no cache for user data
-    isAuthenticated(),  // Direct call - no cache for auth data
-  ])
-
-  // Extract results
-  const customer = user.status === 'fulfilled' ? user.value : null
-  const isUserAuthenticated = authenticated.status === 'fulfilled' ? authenticated.value : false
-
-  // Load wishlist if user is authenticated - use safe cache key
-  let wishlist: SerializableWishlist[] = []
-  if (customer) {
-    try {
-      const response = await unifiedCache.get(
-        `wishlists:user:${customer.id}:data`, // More specific, still user-specific but clearer
-        () => getUserWishlists()
-      )
-      wishlist = response.wishlists
-    } catch (error) {
-      console.error('Error fetching wishlists:', error)
-    }
-  }
+  // ✅ OPTIMIZED: Use user and wishlist from props (passed from ProductDetailsPage)
+  // This ensures fresh data on router.refresh() instead of stale cached data
+  const customer = user || null
+  const wishlist = wishlistProp || []
 
   // Try to load measurements quickly, but don't block page render
   let initialMeasurements: SingleProductMeasurement[] | undefined = undefined

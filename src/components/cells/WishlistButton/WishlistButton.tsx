@@ -60,7 +60,14 @@ export const WishlistButton = ({
           onWishlistChange()
         }
         
-        // Force router refresh to update Header and other components
+        // ✅ Dispatch custom event with product details for optimistic updates
+        console.log(`📢 [WishlistButton] Dispatching wishlist:change event`, { productId, action: 'add' })
+        window.dispatchEvent(new CustomEvent('wishlist:change', {
+          detail: { productId, action: 'add' }
+        }))
+        console.log(`✅ [WishlistButton] Event dispatched successfully`)
+        
+        // Force router refresh to update server components
         setTimeout(() => {
           router.refresh()
         }, 100)
@@ -91,7 +98,14 @@ export const WishlistButton = ({
           onWishlistChange()
         }
         
-        // Force router refresh to update Header and other components
+        // ✅ Dispatch custom event with product details for optimistic updates
+        console.log(`📢 [WishlistButton] Dispatching wishlist:change event`, { productId, action: 'remove' })
+        window.dispatchEvent(new CustomEvent('wishlist:change', {
+          detail: { productId, action: 'remove' }
+        }))
+        console.log(`✅ [WishlistButton] Event dispatched successfully`)
+        
+        // Force router refresh to update server components
         setTimeout(() => {
           router.refresh()
         }, 100)
@@ -105,13 +119,18 @@ export const WishlistButton = ({
       setIsWishlistAdding(false)
     }
   }
+  const handleClick = () => {
+    console.log(`🖱️ [WishlistButton] Button clicked`, { productId, isWishlisted })
+    if (isWishlisted) {
+      handleRemoveFromWishlist()
+    } else {
+      handleAddToWishlist()
+    }
+  }
+
   return (
     <Button
-      onClick={
-        isWishlisted
-          ? () => handleRemoveFromWishlist()
-          : () => handleAddToWishlist()
-      }
+      onClick={handleClick}
       variant="tonal"
       className="w-7 h-7   p-0 flex items-center ring-1 ring-[#B7B7AD] justify-center rounded-full bg-[#F4F0EB] bg-opacity-80 hover:bg-[#B7B7AD] hover:fill-[#B7B7AD]"
       loading={isWishlistAdding}

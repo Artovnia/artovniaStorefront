@@ -18,6 +18,7 @@ import { Link } from "@/i18n/routing"
 import { getBatchLowestPrices } from "@/lib/data/price-history"
 import { HttpTypes } from "@medusajs/types"
 import { Suspense } from "react"
+import { unstable_noStore as noStore } from "next/cache"
 
 export const ProductDetailsPage = async ({
   handle,
@@ -65,16 +66,17 @@ export const ProductDetailsPage = async ({
       : Promise.resolve([]),
 
     // User data (customer + wishlist)
-    retrieveCustomer()
-      .then(async (user) => {
-        if (user) {
-          const wishlistData = await getUserWishlists()
-          const authenticated = await isAuthenticated()
-          return { user, wishlist: wishlistData.wishlists || [], authenticated }
-        }
-        return { user: null, wishlist: [], authenticated: false }
-      })
-      .catch(() => ({ user: null, wishlist: [], authenticated: false })),
+    // ✅ Force dynamic fetch for wishlist to prevent stale cached data
+    (async () => {
+      noStore() // Opt out of caching for wishlist data
+      const user = await retrieveCustomer()
+      if (user) {
+        const wishlistData = await getUserWishlists()
+        const authenticated = await isAuthenticated()
+        return { user, wishlist: wishlistData.wishlists || [], authenticated }
+      }
+      return { user: null, wishlist: [], authenticated: false }
+    })().catch(() => ({ user: null, wishlist: [], authenticated: false })),
 
     // Reviews
     getProductReviews(product.id).catch(() => ({ reviews: [] })),
@@ -158,7 +160,7 @@ export const ProductDetailsPage = async ({
     eligibilityResult.status === "fulfilled"
       ? eligibilityResult.value
       : { isEligible: false, hasPurchased: false }
-
+ 
   const promotionalProducts =
     promotionalProductsResult.status === "fulfilled"
       ? promotionalProductsResult.value
@@ -269,6 +271,8 @@ export const ProductDetailsPage = async ({
                       locale={locale}
                       region={region}
                       initialVariantAttributes={initialVariantAttributes}
+                      user={customer}
+                      wishlist={wishlist}
                     />
                   ) : (
                     <div className="p-4 bg-red-50 text-red-800 rounded">
@@ -296,6 +300,8 @@ export const ProductDetailsPage = async ({
                       locale={locale}
                       region={region}
                       initialVariantAttributes={initialVariantAttributes}
+                      user={customer}
+                      wishlist={wishlist}
                     />
                   ) : (
                     <div className="p-4 bg-red-50 text-red-800 rounded">
@@ -307,7 +313,7 @@ export const ProductDetailsPage = async ({
 
               {/* ✅ OPTIMIZATION: Defer below-fold content to prioritize gallery images */}
               <Suspense fallback={<div className="my-24 h-96 bg-gray-50 animate-pulse" />}>
-                <div className="my-24 text-black max-w-[1920px] mx-auto">
+                <div className="my-24 xl:mt-40 text-black max-w-[1920px] mx-auto">
                 {/* Custom heading with mixed styling and button */}
   <div className="mb-6 px-4 sm:px-6 lg:px-8">
     {/* Desktop Layout: Grid with centered heading and right-aligned button */}

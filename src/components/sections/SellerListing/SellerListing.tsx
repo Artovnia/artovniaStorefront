@@ -132,7 +132,7 @@ export const SellerListing = ({
     return (
       <div className={cn("w-full ", className)}>
         <SellerFilterBar />
-        <div className="text-center py-12">
+        <div className="text-center py-12 ">
           <h2 className="text-xl font-bold text-red-600 mb-2 font-instrument-sans">
             Wystąpił błąd
           </h2>
@@ -149,70 +149,68 @@ export const SellerListing = ({
   }
 
   return (
-    <div className={cn("w-full  ", className)}>
-      {/* Filter Bar */}
-      <SellerFilterBar />
+  <div className={cn("w-full", className)}>
+    {/* Filter Bar */}
+    <SellerFilterBar />
 
+    {/* Content Area */}
+    <div className="px-4 sm:px-6 max-w-[1200px] mx-auto pt-2 xl:pt-24 pb-12 xl:pb-24">
       {/* Results Info */}
-      
-      <div className="px-4 sm:px-6 py-4 bg-primary max-w-[1200px] mx-auto ">
-        <div className="flex items-center justify-between">
-          <p className="text-sm text-gray-600 font-instrument-sans">
-            {loading ? (
-              "Ładowanie..."
-            ) : (
-              <>
-                Znaleziono {totalCount} sprzedawc{totalCount === 1 ? 'a' : totalCount < 5 ? 'ów' : 'ów'}
-                {letter && ` na literę "${letter}"`}
-              </>
-            )}
-          </p>
-          {totalPages > 1 && (
-            <p className="text-sm text-gray-600 font-instrument-sans">
-              Strona {currentPage} z {totalPages}
-            </p>
+      <div className="flex items-center justify-between mb-6">
+        <p className="text-sm text-gray-600 font-instrument-sans">
+          {loading ? (
+            "Ładowanie..."
+          ) : (
+            <>
+              Znaleziono {totalCount} sprzedawc{totalCount === 1 ? 'a' : totalCount < 5 ? 'ów' : 'ów'}
+              {letter && ` na literę "${letter}"`}
+            </>
           )}
-        </div>
-      </div>
-
-      {/* Content Area */}
-      <div className="px-4 sm:px-6 py-8 max-w-[1200px] mx-auto">
-        {loading ? (
-          <SellerListingSkeleton />
-        ) : sellers.length === 0 ? (
-          <div className="text-center py-12">
-            <h2 className="text-xl font-bold text-gray-800 mb-2 font-instrument-sans">
-              Brak wyników
-            </h2>
-            <p className="text-gray-600 font-instrument-sans">
-              {letter 
-                ? `Nie znaleziono sprzedawców zaczynających się na literę "${letter}"`
-                : "Nie znaleziono żadnych sprzedawców"
-              }
-            </p>
-          </div>
-        ) : (
-          <>
-            {/* Sellers Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-4 gap-6 justify-items-center mb-8">
-              {sellers.map((seller) => (
-                <SellerCard key={seller.id} seller={seller} />
-              ))}
-            </div>
-
-            {/* Pagination */}
-            {totalPages > 1 && (
-              <div className="flex justify-center mt-8">
-                <Pagination 
-                  pages={totalPages} 
-                  setPage={handlePageChange} 
-                  currentPage={currentPage} 
-                />
-              </div>
-            )}
-          </>
+        </p>
+        {totalPages > 1 && (
+          <p className="text-sm text-gray-600 font-instrument-sans">
+            Strona {currentPage} z {totalPages}
+          </p>
         )}
       </div>
+
+      {/* Sellers Content */}
+      {loading ? (
+        <SellerListingSkeleton />
+      ) : sellers.length === 0 ? (
+        <div className="text-center py-12">
+          <h2 className="text-xl font-bold text-gray-800 mb-2 font-instrument-sans">
+            Brak wyników
+          </h2>
+          <p className="text-gray-600 font-instrument-sans">
+            {letter 
+              ? `Nie znaleziono sprzedawców zaczynających się na literę "${letter}"`
+              : "Nie znaleziono żadnych sprzedawców"
+            }
+          </p>
+        </div>
+      ) : (
+        <>
+          {/* Sellers Grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-4 gap-6 justify-items-center mb-8">
+            {sellers.map((seller) => (
+              <SellerCard key={seller.id} seller={seller} />
+            ))}
+          </div>
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="flex justify-center mt-8">
+              <Pagination 
+                pages={totalPages} 
+                setPage={handlePageChange} 
+                currentPage={currentPage} 
+              />
+            </div>
+          )}
+        </>
+      )}
     </div>
-  )
+  </div>
+)
 }

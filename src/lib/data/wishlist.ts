@@ -34,7 +34,16 @@ export const getUserWishlists = async (): Promise<WishlistResponse> => {
             title: product.title || '',
             handle: product.handle || '',
             thumbnail: product.thumbnail || null,
-            variants: product.variants || [],
+            // ✅ Include variants with calculated_price for price display
+            variants: product.variants?.map(variant => ({
+              id: variant.id,
+              title: variant.title,
+              calculated_price: variant.calculated_price ? {
+                calculated_amount: variant.calculated_price.calculated_amount,
+                original_amount: variant.calculated_price.original_amount,
+                currency_code: variant.calculated_price.currency_code,
+              } : undefined,
+            })) || [],
             seller: product.seller ? {
               id: product.seller.id || '',
               name: product.seller.name || '',
@@ -94,7 +103,10 @@ export const addWishlistItem = async ({
       
       // Check if the error is because item is already in wishlist
       if (response.status === 400 && errorText.includes('Cannot create multiple links')) {
+        // Item already in wishlist - this is not an error, just revalidate and return success
+        revalidatePath("/", "layout")
         revalidatePath("/wishlist")
+        revalidatePath("/products", "page")
         return { success: true, alreadyExists: true }
       }
       
@@ -104,6 +116,7 @@ export const addWishlistItem = async ({
     // Revalidate all pages that might display wishlist data
     revalidatePath("/", "layout") // Revalidate entire site (Header is in layout)
     revalidatePath("/wishlist")
+    revalidatePath("/products", "page") // Revalidate all product pages
     return { success: true, alreadyExists: false }
   } catch (error) {
     throw error
@@ -156,9 +169,43 @@ export const removeWishlistItem = async ({
     // Revalidate all pages that might display wishlist data
     revalidatePath("/", "layout") // Revalidate entire site (Header is in layout)
     revalidatePath("/wishlist")
+    revalidatePath("/products", "page") // Revalidate all product pages
     return { success: true }
   } catch (error) {
     console.error('❌ Error removing item from wishlist:', error)
     throw error
   }
+}
+
+export const getWishlistProductIds = async (): Promise<{
+  productIds: string[]
+  wishlistId: string | null
+}> => {
+  const authHeaders = await getAuthHeaders()
+
+  if (!("authorization" in authHeaders)) {
+    return { productIds: [], wishlistId: null }
+  }
+
+  const headers = {
+    ...authHeaders,
+    "Content-Type": "application/json",
+    "x-publishable-api-key": process.env
+      .NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY as string,
+  }
+
+  return sdk.client
+    .fetch<{ product_ids: string[]; wishlist_id: string | null }>(
+      `/store/wishlist/product-ids`,
+      {
+        cache: "no-cache",
+        headers,
+        method: "GET",
+      }
+    )
+    .then((res) => ({
+      productIds: res.product_ids || [],
+      wishlistId: res.wishlist_id || null,
+    }))
+    .catch(() => ({ productIds: [], wishlistId: null }))
 }

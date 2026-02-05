@@ -92,14 +92,79 @@ export const ProductDetailsHeader = ({
   const { isAvailable, availability, holidayMode, openHolidayModal } = useVendorAvailability();
   const [isAdding, setIsAdding] = useState(false)
   const [isMounted, setIsMounted] = useState(false)
+  const [optimisticWishlist, setOptimisticWishlist] = useState(wishlist)
+  const [pendingUpdate, setPendingUpdate] = useState(false)
   const { allSearchParams } = useGetAllSearchParams()
   const { selectedVariantId, setSelectedVariantId } = useVariantSelection() // Removed updateUrlWithVariant to prevent direct usage
   const { getProductWithPromotions, isLoading } = usePromotionData()
 
   // Ensure component is mounted on client-side to prevent hydration mismatch
   useEffect(() => {
+   
     setIsMounted(true)
   }, [])
+
+  // ✅ Update optimistic wishlist when prop changes (from server refresh)
+  // BUT only if we're not in the middle of a pending update
+  useEffect(() => {
+    const serverHasProduct = wishlist?.[0]?.products?.some(p => p.id === product.id)
+    const optimisticHasProduct = optimisticWishlist?.[0]?.products?.some(p => p.id === product.id)
+    
+    
+    if (!pendingUpdate) {
+      // No pending update - safe to sync with server
+      setOptimisticWishlist(wishlist)
+    } else {
+      // We have a pending update - check if server now matches our optimistic state
+      if (serverHasProduct === optimisticHasProduct) {
+        // Server caught up with our optimistic state - sync and clear pending
+        setOptimisticWishlist(wishlist)
+        setPendingUpdate(false)
+      } 
+    }
+  }, [wishlist, product.id]) // Removed pendingUpdate and optimisticWishlist to prevent loops
+
+  // ✅ Listen for wishlist changes and update optimistically
+  useEffect(() => {
+    const handleWishlistChange = (event: any) => {
+      // Get the product ID and action from the event
+      const { productId: changedProductId, action } = event.detail || {}
+      
+     
+      
+      if (changedProductId === product.id) {
+        // Immediately update optimistic state for THIS product
+        // Use functional update to get current state
+        if (action === 'add') {
+          setOptimisticWishlist(current => {
+            if (!current?.[0]) return current
+            const updatedWishlist = [{
+              ...current[0],
+              products: [...(current[0]?.products || []), { id: product.id }]
+            }]
+            return updatedWishlist as any
+          })
+        } else if (action === 'remove') {
+          setOptimisticWishlist(current => {
+            if (!current?.[0]) return current
+            const updatedWishlist = [{
+              ...current[0],
+              products: (current[0]?.products || []).filter(p => p.id !== product.id)
+            }]
+            return updatedWishlist as any
+          })
+        }
+      }
+      
+      // Mark that we're waiting for server refresh
+      setPendingUpdate(true)
+    }
+
+    window.addEventListener('wishlist:change', handleWishlistChange)
+    return () => {
+      window.removeEventListener('wishlist:change', handleWishlistChange)
+    }
+  }, [product.id])
 
   // CRITICAL FIX: Calculate selectedVariantOptions based on current variant from context
   const selectedVariantOptions = useMemo(() => {
@@ -222,7 +287,7 @@ export const ProductDetailsHeader = ({
   const canAddToCart = hasStock && variantHasPrice && isAvailable
 
   return (
-    <div className="pl-5 pr-5 pb-5">
+    <div className="xl:pl-5 xl:pr-5 xl:pb-5">
       <div className="flex justify-between">
         <div>
           <h2 className="label-md text-secondary">
@@ -286,20 +351,23 @@ export const ProductDetailsHeader = ({
             </div>
           )}
         </div>
+        
+        {/* Action Buttons: Wishlist and Share */}
         <div className="flex flex-col sm:flex-row items-center gap-2">
-         
           {/* Add to Wishlist */}
-          <WishlistButton
-            productId={product.id}
-            wishlist={wishlist}
-            user={user}
-          />
-
-           {/* Share Button */}
+          {isMounted && (
+            <WishlistButton
+              productId={product.id}
+              wishlist={optimisticWishlist}
+              user={user}
+            />
+          )}
+          
+          {/* Share Button */}
           <ProductShareButton
             productTitle={product.title}
+            productUrl={typeof window !== 'undefined' ? window.location.href : undefined}
           />
-          
         </div>
       </div>
       {/* Product Variants */}

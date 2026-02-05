@@ -99,7 +99,7 @@ export default async function PromotionsPage({ searchParams }: PromotionsPagePro
     // ✅ CRITICAL FIX: Fetch products only once (no separate filter options call)
     const productsResult = await listProductsWithPromotions({
       page,
-      limit: 12,
+      limit: 15,
       countryCode,  // ✅ Use dynamic country
     })
 

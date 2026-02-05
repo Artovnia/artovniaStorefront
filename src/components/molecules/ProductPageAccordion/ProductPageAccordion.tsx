@@ -35,7 +35,7 @@ export const ProductPageAccordion = ({
     <div className="border-t border-[#3B3634]/10">
       <div
         onClick={openHandler}
-        className="flex justify-between items-center cursor-pointer px-4 py-4 
+        className="flex justify-between items-center cursor-pointer xl:px-4 py-4 
                    hover:bg-[#3B3634]/5 transition-all duration-200
                    active:scale-[0.99]"
       >
@@ -55,7 +55,7 @@ export const ProductPageAccordion = ({
       <div
         ref={accordionRef}
         className={cn(
-          'transition-all duration-300 overflow-hidden px-4'
+          'transition-all duration-300 overflow-hidden xl:px-4'
         )}
         style={{ maxHeight: open ? 'none' : 0 }}
       >

@@ -209,9 +209,9 @@ export default async function SellersPage({
       </section>
 
       {/* Main Content */}
-      <div className="max-w-[1920px] mx-auto" id="sellers-content">
+      <div className="max-w-[1920px] mx-auto " id="sellers-content">
         {/* ✅ PERFORMANCE: Suspense allows hero to render immediately while data loads */}
-        <div className="px-4 sm:px-6 lg:px-8 py-6">
+        <div className="px-4 sm:px-6 lg:px-8 py-6 ">
           <Suspense fallback={<SellerListingFallback />}>
             <SellerListingWithData 
               page={page}

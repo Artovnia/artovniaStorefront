@@ -165,6 +165,8 @@ const AboutUsContent = () => {
       alt="Artovnia - przestrzeń dla sztuki"
       fill
       className="object-cover"
+      priority={true}
+      
     />
   </div>
 </motion.div>

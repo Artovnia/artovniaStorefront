@@ -63,7 +63,7 @@ export const MobileCategoryBreadcrumbs = ({ currentCategory, className, resultsC
   return (
     <div className={cn("md:hidden w-full", className)}>
       {/* Category Header - Consistent with "Wszystkie produkty" styling */}
-      <div className="px-4 py-4 border-b border-[#3B3634]/10">
+      <div className="px-2 py-2 border-b border-[#3B3634]/10">
         <h1 className="text-2xl font-instrument-serif text-[#3B3634] tracking-tight uppercase mb-2">
           {currentCategory.name}
         </h1>
@@ -73,7 +73,7 @@ export const MobileCategoryBreadcrumbs = ({ currentCategory, className, resultsC
       </div>
 
       {/* Breadcrumb Navigation */}
-      <nav className="w-full px-4 py-2 backdrop-blur-sm border-b border-[#3B3634]/10" aria-label="Category breadcrumb">
+      <nav className="w-full px-2 py-2 backdrop-blur-sm border-b border-[#3B3634]/10" aria-label="Category breadcrumb">
         <div className="flex items-center gap-1 flex-wrap">
           {breadcrumbs.map((item, index) => {
             const isLast = index === breadcrumbs.length - 1

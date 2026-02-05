@@ -186,15 +186,26 @@ export const createReview = async (review: any) => {
 
     // Parse and return the result
     const result = await response.json()
+    console.log('📝 [createReview] Backend response:', result)
     
-    // Revalidate paths using Next.js revalidatePath (server-side only)
+    // Revalidate paths and tags using Next.js cache invalidation
     try {
+      const productId = review.product_id || review.reference_id
+      
+      // ✅ CRITICAL: Invalidate the tagged cache for product reviews
+      if (productId) {
+        const { revalidateTag } = await import('next/cache')
+        revalidateTag(`product-reviews-${productId}`)
+      }
+      
+      // Revalidate paths for UI updates
       revalidatePath('/user/reviews')
       revalidatePath('/user/reviews/written')
       
-      // Only revalidate product page if this is a product review
-      if (review.reference === 'product' && review.product_id) {
-        revalidatePath(`/products/${review.product_id}`)
+      // Revalidate product pages
+      if (review.reference === 'product' && productId) {
+        revalidatePath(`/products/${productId}`)
+        revalidatePath('/products', 'page') // Revalidate all product pages
       }
     } catch (revalidateError) {
       // Revalidation is optional, continue even if it fails
@@ -420,6 +431,7 @@ export const checkProductReviewEligibility = async (productId: string): Promise<
     )
     
     if (!response.ok) {
+      console.error(`❌ Review eligibility endpoint failed with status ${response.status}`)
       // If endpoint doesn't exist, fall back to checking orders
       // This is a backup method
       return await checkEligibilityViaOrders(productId, requestHeaders)

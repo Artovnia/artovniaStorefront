@@ -5,6 +5,7 @@ import { sdk } from "../config"
 import { HttpTypes } from "@medusajs/types"
 import { revalidateTag } from "next/cache"
 import { redirect } from "next/navigation"
+import { cache } from "react"
 import {
   getAuthHeaders,
   getCacheOptions,
@@ -16,7 +17,9 @@ import {
 } from "./cookies"
 import { unifiedLogout, unifiedLogin, setAuthToken as unifiedSetAuthToken } from "../auth/unified-auth"
 
-export const retrieveCustomer =
+// ✅ Use React.cache() to deduplicate customer requests within a single page render
+// This prevents multiple /store/customers/me requests on the same page
+export const retrieveCustomer = cache(
   async (useCache: boolean = true): Promise<HttpTypes.StoreCustomer | null> => {
     try {
       const authHeaders = await getAuthHeaders()
@@ -66,6 +69,7 @@ export const retrieveCustomer =
       return null
     }
   }
+)
 
 // ADD: Helper function to check if user is authenticated
 export const isAuthenticated = async (): Promise<boolean> => {

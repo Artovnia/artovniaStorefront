@@ -90,7 +90,7 @@ export const CartDropdown = ({
     >
       <Link 
   href="/cart" 
-  className="relative inline-flex" // ← Add inline-flex here
+  className="relative " // ← Add inline-flex here
   aria-label={`Koszyk${cartItemsCount ? ` - ${cartItemsCount} ${cartItemsCount === 1 ? 'produkt' : 'produkty'}` : ' - pusty'}`}
 >
   <CartIcon size={20} />

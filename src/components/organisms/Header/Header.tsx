@@ -90,21 +90,26 @@ export const Header = ({
     }
   }, [refreshTrigger])
 
-  // Listen for auth state changes (login/logout)
+  // Listen for auth state changes (login/logout) and wishlist changes
 useEffect(() => {
   const handleAuthChange = () => {
     setRefreshTrigger(prev => prev + 1)
   }
 
+  const handleWishlistChange = () => {
+    // ✅ Refresh wishlist count when items are added/removed
+    setRefreshTrigger(prev => prev + 1)
+  }
     
-    // Listen for custom auth events
+    // Listen for custom auth and wishlist events
     window.addEventListener('auth:login', handleAuthChange)
     window.addEventListener('auth:logout', handleAuthChange)
+    window.addEventListener('wishlist:change', handleWishlistChange)
 
     return () => {
-     
       window.removeEventListener('auth:login', handleAuthChange)
       window.removeEventListener('auth:logout', handleAuthChange)
+      window.removeEventListener('wishlist:change', handleWishlistChange)
     }
   }, [])
 

@@ -1,7 +1,7 @@
 "use client"
 import Image from "next/image"
 import { EmblaCarouselType } from "embla-carousel"
-import { useCallback, useEffect, useState } from "react"
+import { useCallback } from "react"
 import { cn } from "@/lib/utils"
 import { Indicator } from "@/components/atoms"
 import useEmblaCarousel from "embla-carousel-react"
@@ -9,15 +9,17 @@ import { MedusaProductImage } from "@/types/product"
 
 interface ProductCarouselIndicatorProps {
   slides: MedusaProductImage[]
+  selectedIndex: number
+  showAnimatedSlide?: boolean
   embla?: EmblaCarouselType
 }
 
 export const ProductCarouselIndicator = ({
   slides = [],
+  selectedIndex,
+  showAnimatedSlide = false,
   embla: parentEmbla,
 }: ProductCarouselIndicatorProps) => {
-  const [selectedIndex, setSelectedIndex] = useState(0)
-
   const [emblaRef, emblaApi] = useEmblaCarousel({
     axis: "y",
     loop: true,
@@ -35,28 +37,22 @@ export const ProductCarouselIndicator = ({
     [parentEmbla, emblaApi]
   )
 
-  const onSelect = useCallback((emblaApi: EmblaCarouselType) => {
-    setSelectedIndex(emblaApi.selectedScrollSnap())
-  }, [])
-
-  useEffect(() => {
-    if (!parentEmbla) return
-
-    onSelect(parentEmbla)
-    parentEmbla.on("reInit", onSelect).on("select", onSelect)
-  }, [parentEmbla, onSelect])
+  // Calculate total slides for indicator
+  const totalSlides = showAnimatedSlide ? slides.length + 1 : slides.length
 
   return (
-    <div className="embla__dots absolute lg:top-3 bottom-3 lg:bottom-auto left-3 right-3 w-auto max-w-[calc(100%-24px)] h-[2px]">
-      <div className="lg:hidden">
+    <div className="embla__dots relative lg:absolute lg:top-3 lg:bottom-auto w-full lg:w-auto lg:max-w-[calc(100%-24px)] py-3 lg:py-0 lg:block">
+      {/* Mobile indicator - needs explicit width for Indicator to work */}
+      <div className="lg:hidden w-full px-4">
         <Indicator
           step={selectedIndex + 1}
           size="large"
-          maxStep={slides?.length || 0}
+          maxStep={totalSlides}
         />
       </div>
 
-      <div className="embla relative">
+      {/* Desktop thumbnails */}
+      <div className="embla relative hidden lg:block">
         <div
           className="embla__viewport overflow-hidden rounded-xs"
           ref={emblaRef}
@@ -65,7 +61,7 @@ export const ProductCarouselIndicator = ({
             {(slides || []).map((slide, index) => (
               <div
                 key={slide.id}
-                className="mb-3 rounded-sm cursor-pointer w-16 h-16 bg-primary hidden lg:block"
+                className="mb-3 rounded-sm cursor-pointer w-16 h-16 bg-primary"
                 onClick={() => changeSlideHandler(index)}
               >
                 <Image
@@ -74,7 +70,7 @@ export const ProductCarouselIndicator = ({
                   width={64}
                   height={64}
                   className={cn(
-                    "rounded-sm border-2 transition-color duration-300 hidden lg:block w-16 h-16 object-cover",
+                    "rounded-sm border-2 transition-color duration-300 w-16 h-16 object-cover",
                     selectedIndex === index
                       ? "border-primary"
                       : "border-tertiary"

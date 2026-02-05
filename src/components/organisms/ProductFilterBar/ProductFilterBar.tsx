@@ -456,7 +456,7 @@ export const ProductFilterBar = ({
   }
 
   return (
-    <div className={cn("w-full bg-primary border-b border-[#3B3634] py-4 px-4 sm:px-6 space-y-1", className)}>
+    <div className={cn("w-full bg-primary border-b border-[#3B3634] py-4 px-2 sm:px-6 space-y-1", className)}>
       {/* Mobile: Single "Filtry" Button - Show only on screens < 768px */}
       <div className="md:hidden flex items-center gap-3 ">
         <MobileFilterModal 
