@@ -15,6 +15,7 @@ export const HomeProductsCarousel = ({
   isSellerSection = false,
   user = null,
   wishlist = [],
+  noMobileMargin = false,
 }: {
   locale: string
   sellerProducts: Product[]
@@ -23,6 +24,7 @@ export const HomeProductsCarousel = ({
   isSellerSection?: boolean
   user?: HttpTypes.StoreCustomer | null
   wishlist?: SerializableWishlist[]
+  noMobileMargin?: boolean
 }) => {
   try {
     // ✅ CONVERTED TO CLIENT COMPONENT: Now can access React Context from parent providers
@@ -81,6 +83,7 @@ export const HomeProductsCarousel = ({
           align="start"
           items={productCards}
           theme={theme}
+          noMobileMargin={noMobileMargin}
         />
       </div>
     );

@@ -15,6 +15,7 @@ export const HomeProductSection = async ({
   isSellerSection = false, // Identifies if this component shows a specific seller's products
   user = null, // ✅ NEW: User data for wishlist functionality
   wishlist = [], // ✅ NEW: Wishlist data for wishlist icons
+  noMobileMargin = false, // When true, removes carousel mx-4 (use when already inside a padded container)
 }: {
   heading: string
   locale?: string
@@ -28,6 +29,7 @@ export const HomeProductSection = async ({
   isSellerSection?: boolean
   user?: HttpTypes.StoreCustomer | null // ✅ NEW
   wishlist?: SerializableWishlist[] // ✅ NEW
+  noMobileMargin?: boolean
 }) => {
   // ✅ OPTIMIZED: Removed BatchPriceProvider - uses parent provider from ProductDetailsPage
   // This eliminates duplicate batch requests and shares price data cache
@@ -62,6 +64,7 @@ export const HomeProductSection = async ({
             isSellerSection={isSellerSection}
             user={user}
             wishlist={wishlist}
+            noMobileMargin={noMobileMargin}
           />
         </div>
       </div>

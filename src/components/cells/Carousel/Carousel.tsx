@@ -10,11 +10,13 @@ export const CustomCarousel = ({
   items,
   align = 'start', // Not used anymore but kept for backwards compatibility
   theme = 'default', // Add theme prop for arrow styling
+  noMobileMargin = false, // When true, removes mx-4 (use when already inside a padded container)
 }: {
   variant?: 'light' | 'dark';
   items: React.ReactNode[];
   align?: 'center' | 'start' | 'end';
   theme?: 'default' | 'light' | 'dark';
+  noMobileMargin?: boolean;
 }) => {
   // Use refs for direct DOM manipulation instead of carousel library
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -117,7 +119,7 @@ export const CustomCarousel = ({
 
         {/* Content Column - Scrollable container */}
         <div 
-          className='overflow-x-auto scrollbar-hide xl:mx-4'
+          className={`overflow-x-auto scrollbar-hide ${noMobileMargin ? '' : 'mx-4'}`}
           ref={scrollContainerRef}
           onScroll={handleScroll}
           style={{

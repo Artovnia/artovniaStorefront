@@ -178,7 +178,7 @@ export const ProductCarousel = ({
   return (
     <>
       {/* Mobile/Tablet: Carousel Layout */}
-      <div className="lg:hidden w-full overflow-hidden bg-[#F4F0EB]">
+      <div className="lg:hidden w-full overflow-hidden bg-[#F4F0EB]" style={{ backgroundColor: '#F4F0EB' }}>
         <div className="embla relative w-full">
           <div
             className="embla__viewport overflow-hidden rounded-xs"
@@ -190,6 +190,7 @@ export const ProductCarousel = ({
                 <div
                   key={slide.id}
                   className="embla__slide flex-[0_0_100%] min-w-0 h-[350px] cursor-zoom-in bg-[#F4F0EB]"
+                  style={{ backgroundColor: '#F4F0EB' }}
                   onClick={() => openZoomModal(index)}
                 >
                   <Image
@@ -242,7 +243,7 @@ export const ProductCarousel = ({
       </div>
 
       {/* Desktop: Thumbnails on left, main image on right */}
-      <div className="hidden lg:block bg-[#F4F0EB]">
+      <div className="hidden lg:block bg-[#F4F0EB]" style={{ backgroundColor: '#F4F0EB' }}>
         <div className="flex gap-4">
           {/* Left: Thumbnail Column with Scroll */}
           {totalSlides > 1 && (
@@ -347,7 +348,7 @@ export const ProductCarousel = ({
 
           {/* Right: Main Image */}
           <div className="flex-1 min-w-0 bg-[#F4F0EB]">
-            <div className="relative aspect-square w-full max-h-[698px] overflow-hidden rounded-xs group">
+            <div className="relative aspect-square w-full max-h-[698px] overflow-hidden rounded-xs group bg-[#F4F0EB]" style={{ backgroundColor: '#F4F0EB' }}>
               {/* Navigation Arrows */}
               {totalSlides > 1 && (
                 <>
@@ -373,6 +374,7 @@ export const ProductCarousel = ({
                 slides[selectedImageIndex] && (
                   <div
                     className="relative w-full h-full cursor-zoom-in bg-[#F4F0EB]"
+                    style={{ backgroundColor: '#F4F0EB' }}
                     onClick={() => openZoomModal(selectedImageIndex)}
                   >
                     <Image

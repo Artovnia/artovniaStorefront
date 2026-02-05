@@ -390,6 +390,7 @@ export const ProductDetailsPage = async ({
                     isSellerSection={true}
                     user={customer}
                     wishlist={wishlist}
+                    noMobileMargin={true}
                   />
                 </div>
               </Suspense>

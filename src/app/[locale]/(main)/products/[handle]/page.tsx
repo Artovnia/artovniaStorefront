@@ -85,37 +85,17 @@ export default async function ProductPage({
     )
   }
 
-  // ✅ OPTIMIZATION: Get first image URL for LCP preload
-  const firstImageUrl = product.images?.[0]?.url
-  
-  // ✅ FIX: Build proper Next.js image optimization URL for preload
-  // IMPORTANT: Width values MUST match next.config.ts deviceSizes: [640, 828, 1200, 1920]
-  // Using non-configured sizes (like 750, 1080) causes 400 Bad Request errors!
-  const getNextImageUrl = (url: string, width: number, quality: number) => 
-    `/_next/image?url=${encodeURIComponent(url)}&w=${width}&q=${quality}`
-
   return (
     <>
       {/* ✅ FIX: Ensure page always opens at top, not random scroll position */}
       <ScrollToTop />
       
-      {/* ✅ CRITICAL: Preload LCP image for faster perceived load
-          - href must be the Next.js optimized URL (not raw S3 URL)
-          - Width values MUST be from next.config.ts deviceSizes: [640, 828, 1200, 1920]
-          - Quality must match what Image component uses (85 for desktop, 80 for mobile)
-      */}
-      {firstImageUrl && (
-        <link
-          rel="preload"
-          as="image"
-          href={getNextImageUrl(firstImageUrl, 828, 85)}
-          // @ts-ignore - Next.js supports imageSrcSet
-          imageSrcSet={`${getNextImageUrl(firstImageUrl, 640, 80)} 640w, ${getNextImageUrl(firstImageUrl, 828, 85)} 828w, ${getNextImageUrl(firstImageUrl, 1200, 85)} 1200w`}
-          // @ts-ignore - Next.js supports imageSizes
-          imageSizes="(max-width: 640px) 100vw, (max-width: 828px) 100vw, 50vw"
-          fetchPriority="high"
-        />
-      )}
+      {/* Manual <link rel="preload"> REMOVED — Next.js Image with priority={true} 
+          automatically generates a preload hint in <head>. Having both caused:
+          1. Duplicate preload hints (manual + auto) for the same image
+          2. "Preloaded but not used within a few seconds" warnings (7+ per page)
+          3. The manual preload URL didn't always match the actual srcSet the browser chose
+          Next.js auto-preload is more reliable because it uses the exact same URL generation. */}
       
       <main className="container">
         <ProductDetailsPage handle={handle} locale={locale} product={product} region={region} />
