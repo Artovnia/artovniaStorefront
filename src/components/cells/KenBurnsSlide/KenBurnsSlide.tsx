@@ -132,11 +132,11 @@ export const KenBurnsSlide = ({
               src={image.url}
               alt={`${alt} - ${index + 1}`}
               fill
-              quality={85}
+              quality={70}
               className="object-cover"
-              sizes="(max-width: 640px) 100vw, (max-width: 1024px) 90vw, 800px"
-              priority={index === 0}
-              loading={index === 0 ? 'eager' : 'lazy'}
+              sizes="(max-width: 640px) 100vw, 50vw"
+              loading="lazy"
+              fetchPriority="low"
             />
           </div>
         )

@@ -32,6 +32,7 @@ export const ProductCarousel = ({
   const [canScrollDown, setCanScrollDown] = useState(false)
   const [isAnimatedSlideActive, setIsAnimatedSlideActive] = useState(false)
   const [mobileSelectedIndex, setMobileSelectedIndex] = useState(0)
+  const [mainImageLoaded, setMainImageLoaded] = useState(false)
   const thumbnailContainerRef = useRef<HTMLDivElement>(null)
 
   // Check if we should show animated slide (only if we have at least 1 image)
@@ -203,6 +204,7 @@ export const ProductCarousel = ({
                     loading={index === 0 ? "eager" : "lazy"}
                     fetchPriority={index === 0 ? "high" : "low"}
                     placeholder="empty"
+                    onLoad={index === 0 ? () => { if (!mainImageLoaded) setMainImageLoaded(true) } : undefined}
                     sizes="(max-width: 640px) 100vw, (max-width: 828px) 100vw, 50vw"
                     className="max-h-[700px] w-full h-auto aspect-square object-cover object-center hover:scale-105 transition-transform duration-300"
                     unoptimized={false}
@@ -210,18 +212,21 @@ export const ProductCarousel = ({
                 </div>
               ))}
 
-              {/* Animated slide for mobile */}
+              {/* Animated slide for mobile — deferred until main image loads to avoid competing fetches */}
               {showAnimatedSlide && slides.length > 0 && (
                 <div
                   key="animated-slide"
-                  className="embla__slide flex-[0_0_100%] min-w-0 h-[350px] relative"
+                  className="embla__slide flex-[0_0_100%] min-w-0 h-[350px] relative bg-[#F4F0EB]"
+                  style={{ backgroundColor: '#F4F0EB' }}
                 >
-                  <KenBurnsSlide
-                    images={slides}
-                    alt={`${title} - podgląd animowany`}
-                    isActive={true}
-                    className="h-full"
-                  />
+                  {mainImageLoaded && (
+                    <KenBurnsSlide
+                      images={slides}
+                      alt={`${title} - podgląd animowany`}
+                      isActive={true}
+                      className="h-full"
+                    />
+                  )}
                 </div>
               )}
             </div>
@@ -262,55 +267,61 @@ export const ProductCarousel = ({
                 ref={thumbnailContainerRef}
                 className="flex flex-col gap-2 max-h-[624px] overflow-y-auto no-scrollbar scroll-smooth mt-5"
               >
-                {/* Regular image thumbnails */}
+                {/* Regular image thumbnails — Images deferred until main image loads */}
                 {slides.map((slide, index) => (
                   <button
                     key={slide.id}
                     onClick={() => handleThumbnailClick(index)}
-                    className={`relative w-20 h-20 rounded-xs overflow-hidden border-2 transition-all duration-300 flex-shrink-0 ${
+                    className={`relative w-20 h-20 rounded-xs overflow-hidden border-2 transition-all duration-300 flex-shrink-0 bg-[#F4F0EB] ${
                       selectedImageIndex === index
                         ? "border-[#3B3634] ring-2 ring-[#3B3634] shadow-md"
                         : "border-gray-200 hover:border-[#3B3634]/50"
                     }`}
+                    style={{ backgroundColor: '#F4F0EB' }}
                   >
-                    <Image
-                      src={slide.url}
-                      alt={title}
-                      fill
-                      quality={50}
-                      loading="lazy"
-                      fetchPriority="low"
-                      placeholder="empty"
-                      className="object-cover transition-transform duration-300 hover:scale-105"
-                      sizes="80px"
-                      unoptimized={false}
-                    />
+                    {mainImageLoaded && (
+                      <Image
+                        src={slide.url}
+                        alt={title}
+                        fill
+                        quality={50}
+                        loading="lazy"
+                        fetchPriority="low"
+                        placeholder="empty"
+                        className="object-cover transition-transform duration-300 hover:scale-105"
+                        sizes="80px"
+                        unoptimized={false}
+                      />
+                    )}
                   </button>
                 ))}
 
-                {/* Animated slide thumbnail */}
+                {/* Animated slide thumbnail — deferred until main image loads */}
                 {showAnimatedSlide && slides[0] && (
                   <button
                     onClick={handleAnimatedSlideClick}
-                    className={`relative w-20 h-20 rounded-xs overflow-hidden border-2 transition-all duration-300 flex-shrink-0 ${
+                    className={`relative w-20 h-20 rounded-xs overflow-hidden border-2 transition-all duration-300 flex-shrink-0 bg-[#F4F0EB] ${
                       selectedImageIndex === animatedSlideIndex
                         ? "border-[#3B3634] ring-2 ring-[#3B3634] shadow-md"
                         : "border-gray-200 hover:border-[#3B3634]/50"
                     }`}
+                    style={{ backgroundColor: '#F4F0EB' }}
                     title="Podgląd animowany"
                   >
-                    <Image
-                      src={slides[0].url}
-                      alt={`${title} - animacja`}
-                      fill
-                      quality={50}
-                      loading="lazy"
-                      fetchPriority="low"
-                      placeholder="empty"
-                      className="object-cover transition-transform duration-300 hover:scale-105"
-                      sizes="80px"
-                      unoptimized={false}
-                    />
+                    {mainImageLoaded && (
+                      <Image
+                        src={slides[0].url}
+                        alt={`${title} - animacja`}
+                        fill
+                        quality={50}
+                        loading="lazy"
+                        fetchPriority="low"
+                        placeholder="empty"
+                        className="object-cover transition-transform duration-300 hover:scale-105"
+                        sizes="80px"
+                        unoptimized={false}
+                      />
+                    )}
                     {/* Play icon overlay */}
                     <div className="absolute inset-0 bg-black/30 flex items-center justify-center">
                       <div className="w-6 h-6 rounded-full bg-white/90 flex items-center justify-center">
@@ -378,11 +389,12 @@ export const ProductCarousel = ({
                       src={slides[selectedImageIndex].url}
                       alt={title}
                       fill
-                      quality={selectedImageIndex === 0 ? 85 : 75}
+                      quality={80}
                       priority={selectedImageIndex === 0}
                       loading={selectedImageIndex === 0 ? "eager" : "lazy"}
                       fetchPriority={selectedImageIndex === 0 ? "high" : "auto"}
                       placeholder="empty"
+                      onLoad={() => { if (!mainImageLoaded) setMainImageLoaded(true) }}
                       className={`object-cover bg-[#F4F0EB] transition-all duration-500 ease-out hover:scale-105 ${
                         isTransitioning
                           ? "opacity-0 scale-105 blur-sm"
