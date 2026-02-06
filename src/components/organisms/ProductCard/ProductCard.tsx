@@ -63,7 +63,7 @@ import { getProductPrice } from "@/lib/helpers/get-product-price"
 import { getPromotionalPrice } from "@/lib/helpers/get-promotional-price"
 import { usePromotionData } from "@/components/context/PromotionDataProvider"
 import { BaseHit, Hit } from "instantsearch.js"
-import { useHoverPrefetch } from "@/hooks/useHoverPrefetch"
+import { useProductImagePrefetch } from "@/hooks/useProductImagePrefetch"
 import clsx from "clsx"
 import { WishlistButton } from "@/components/cells/WishlistButton/WishlistButton"
 import { BatchLowestPriceDisplay } from "@/components/cells/LowestPriceDisplay/BatchLowestPriceDisplay"
@@ -90,7 +90,7 @@ const ProductCardComponent = ({
   index?: number  // ✅ NEW: For priority loading first 4 products
   isSellerSection?: boolean  // ✅ NEW: Force lazy loading for seller section to prioritize main gallery
 }) => {
-  const { prefetchOnHover } = useHoverPrefetch()
+  const { prefetchProductImage } = useProductImagePrefetch()
   const router = useRouter()
   const { getProductWithPromotions, isLoading } = usePromotionData()
   const [isMounted, setIsMounted] = useState(false)
@@ -128,12 +128,16 @@ const ProductCardComponent = ({
     )
   )
   
-  // Fallback prefetch method that works even if hook fails
-  const handleMouseEnter = () => {
+  // Prefetch both route and detail-page image on hover/touch
+  const handlePrefetch = () => {
     try {
-      router.prefetch(`/products/${product.handle}`)
-    } catch (error) {
+      router.prefetch(productUrl)
+    } catch {
+      // Route prefetch failed, non-critical
     }
+    // Prefetch the detail-page-sized image so it's cached before navigation
+    const imageUrl = product.thumbnail || product.images?.[0]?.url
+    prefetchProductImage(imageUrl)
   }
   
   // ✅ SAFETY CHECK: Ensure product has required fields before price calculation
@@ -160,8 +164,8 @@ const ProductCardComponent = ({
           "p-0": !sellerPage
         }
       )}
-      {...prefetchOnHover(productUrl)}
-      onMouseEnter={handleMouseEnter}
+      onMouseEnter={handlePrefetch}
+      onTouchStart={handlePrefetch}
     >
       {/* RESPONSIVE CARD SIZE: Mobile optimized for 2-column grid */}
       {/* Mobile (<640px): h-[200px] w-[160px] | Desktop (640px+): h-[315px] w-[252px] */}
