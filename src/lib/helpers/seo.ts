@@ -446,7 +446,9 @@ export const generateProductMetadata = (
     return productTitle
   }
 
-  // Use highest quality image
+  // Use raw product image URL for OG/social sharing
+  // Raw S3 URLs are directly accessible JPEG/PNG files that all crawlers handle reliably
+  // Avoid /_next/image URLs — formats config (WebP-only) causes content negotiation issues
   const ogImage = getProductImage(product)
 
   return {
@@ -480,21 +482,31 @@ export const generateProductMetadata = (
       images: [
         {
           url: ogImage,
-          width: 1200,
-          height: 630,
+          // NOTE: width/height intentionally omitted — actual S3 product images
+          // are various sizes (square, portrait, etc.), NOT 1200x630.
+          // Declaring mismatched dimensions causes Messenger to reject the image.
+          // Facebook determines actual dimensions from the image itself.
+          //
+          // NOTE: type intentionally omitted — Messenger's preview renderer
+          // doesn't reliably handle "image/webp". Letting the crawler detect
+          // the type from response headers ensures broader compatibility.
           alt: product?.title,
-          type: "image/webp",
         },
       ],
       type: "website",
       locale: locale === "pl" ? "pl_PL" : "en_US",
     },
-    other:
-      product?.tags && product.tags.length > 0
-        ? {
-            "article:tag": product.tags.map((t) => t.value),
-          }
-        : undefined,
+    other: {
+      // fb:app_id improves Messenger link preview reliability
+      // Messenger's crawler is stricter than Facebook feed about requiring this
+      // Facebook reads both <meta name="fb:app_id"> and <meta property="fb:app_id">
+      ...(process.env.NEXT_PUBLIC_FB_APP_ID
+        ? { "fb:app_id": process.env.NEXT_PUBLIC_FB_APP_ID }
+        : {}),
+      ...(product?.tags && product.tags.length > 0
+        ? { "article:tag": product.tags.map((t) => t.value) }
+        : {}),
+    },
     twitter: {
       card: "summary_large_image",
       site: "@artovnia",
@@ -574,8 +586,6 @@ export const generateCategoryMetadata = (
       images: [
         {
           url: categoryImage,
-          width: 1200,
-          height: 630,
           alt: category.name,
         },
       ],
@@ -648,8 +658,6 @@ export const generateSellerMetadata = (
       images: [
         {
           url: sellerImage,
-          width: 1200,
-          height: 630,
           alt: `${seller.name} - Profil artysty`,
         },
       ],
