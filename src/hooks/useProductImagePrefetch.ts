@@ -31,6 +31,10 @@ const ALL_WIDTHS = [80, 160, 252, 370, 640, 828, 1200, 1920]
 // Must match the quality used in ProductCarousel's main image
 const DETAIL_QUALITY = 80
 
+// LQIP: tiny placeholder image for instant visual feedback
+const LQIP_QUALITY = 10
+const LQIP_WIDTH = 80
+
 /**
  * Calculates the exact width parameter Next.js will use for the detail page
  * main image, based on current viewport and device pixel ratio.
@@ -76,13 +80,26 @@ export function useProductImagePrefetch() {
     prefetchedRef.current.add(imageUrl)
 
     try {
+      // 1. Prefetch the LQIP version FIRST — tiny (~2-5KB), loads almost instantly.
+      //    When user navigates, the blurred placeholder appears immediately.
+      const lqipUrl = buildNextImageUrl(imageUrl, LQIP_WIDTH, LQIP_QUALITY)
+      const lqipImg = new window.Image()
+      lqipImg.src = lqipUrl
+      prefetchImagesRef.current.push(lqipImg)
+
+      const lqipCleanup = () => {
+        prefetchImagesRef.current = prefetchImagesRef.current.filter((i) => i !== lqipImg)
+      }
+      lqipImg.onload = lqipCleanup
+      lqipImg.onerror = lqipCleanup
+      setTimeout(lqipCleanup, 15000)
+
+      // 2. Prefetch the full-quality image — sends identical Accept headers as <img> tags.
+      //    This guarantees the browser HTTP cache serves the same response when
+      //    the detail page's <Image priority> component requests the same URL.
+      //    The image is decoded in advance, making display even faster.
       const width = getDetailImageWidth()
       const nextImageUrl = buildNextImageUrl(imageUrl, width, DETAIL_QUALITY)
-
-      // Use new Image() to prefetch — sends identical Accept headers as <img> tags.
-      // This guarantees the browser HTTP cache serves the same response when
-      // the detail page's <Image priority> component requests the same URL.
-      // The image is decoded in advance, making display even faster.
       const img = new window.Image()
       img.src = nextImageUrl
       // Keep reference alive until fetch completes, then release

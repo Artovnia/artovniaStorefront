@@ -4,6 +4,7 @@ import useEmblaCarousel from "embla-carousel-react"
 import Image from "next/image"
 import { ProductCarouselIndicator } from "@/components/molecules"
 import { KenBurnsSlide } from "@/components/cells"
+import { LqipImage } from "@/components/cells/LqipImage/LqipImage"
 import { ImageZoomModal } from "@/components/molecules/ImageZoomModal/ImageZoomModal"
 import { useScreenSize } from "@/hooks/useScreenSize"
 import { MedusaProductImage } from "@/types/product"
@@ -45,6 +46,11 @@ export const ProductCarousel = ({
   // Determine if we're on mobile/tablet
   const isMobile =
     screenSize === "xs" || screenSize === "sm" || screenSize === "md"
+  const isDesktop = screenSize === "lg" || screenSize === "xl" || screenSize === "2xl"
+  // screenSize === '' during SSR/first render. After hydration it resolves.
+  // We use this to conditionally render images ONLY in the active layout,
+  // preventing desktop images from loading on mobile and vice versa.
+  const isHydrated = screenSize !== ""
 
   // Navigation functions for arrows (now includes animated slide)
   const goToPrevious = () => {
@@ -179,70 +185,89 @@ export const ProductCarousel = ({
   return (
     <>
       {/* Mobile/Tablet: Carousel Layout */}
-      <div className="lg:hidden w-full overflow-hidden bg-[#F4F0EB]" style={{ backgroundColor: '#F4F0EB' }}>
-        <div className="embla relative w-full">
-          <div
-            className="embla__viewport overflow-hidden rounded-xs"
-            ref={emblaRef}
-          >
-            <div className="embla__container h-[350px] flex w-full">
-              {/* Regular image slides */}
-              {(slides || []).map((slide, index) => (
-                <div
-                  key={slide.id}
-                  className="embla__slide flex-[0_0_100%] min-w-0 h-[350px] cursor-zoom-in bg-[#F4F0EB]"
-                  style={{ backgroundColor: '#F4F0EB' }}
-                  onClick={() => openZoomModal(index)}
-                >
-                  <Image
-                    src={slide.url}
-                    alt={title}
-                    width={800}
-                    height={800}
-                    quality={index === 0 ? 80 : 70}
-                    priority={index === 0}
-                    loading={index === 0 ? "eager" : "lazy"}
-                    fetchPriority={index === 0 ? "high" : "low"}
-                    placeholder="empty"
-                    onLoad={index === 0 ? () => { if (!mainImageLoaded) setMainImageLoaded(true) } : undefined}
-                    sizes="(max-width: 640px) 100vw, (max-width: 828px) 100vw, 50vw"
-                    className="max-h-[700px] w-full h-auto aspect-square object-cover object-center hover:scale-105 transition-transform duration-300"
-                    unoptimized={false}
-                  />
-                </div>
-              ))}
+      {/* After hydration, only render if actually on mobile. During SSR, render for CSS lg:hidden. */}
+      {(!isHydrated || isMobile) && (
+        <div className="lg:hidden w-full overflow-hidden bg-[#F4F0EB]" style={{ backgroundColor: '#F4F0EB' }}>
+          <div className="embla relative w-full">
+            <div
+              className="embla__viewport overflow-hidden rounded-xs"
+              ref={emblaRef}
+            >
+              <div className="embla__container h-[350px] flex w-full">
+                {/* Regular image slides */}
+                {(slides || []).map((slide, index) => (
+                  <div
+                    key={slide.id}
+                    className="embla__slide flex-[0_0_100%] min-w-0 h-[350px] cursor-zoom-in bg-[#F4F0EB]"
+                    style={{ backgroundColor: '#F4F0EB' }}
+                    onClick={() => openZoomModal(index)}
+                  >
+                    {index === 0 ? (
+                      <LqipImage
+                        src={slide.url}
+                        alt={title}
+                        width={800}
+                        height={800}
+                        quality={80}
+                        priority={isHydrated && isMobile}
+                        loading="eager"
+                        fetchPriority="high"
+                        onLoad={() => { if (!mainImageLoaded) setMainImageLoaded(true) }}
+                        sizes="(max-width: 640px) 100vw, (max-width: 828px) 100vw, 50vw"
+                        className="max-h-[700px] w-full h-auto aspect-square object-cover object-center hover:scale-105 transition-transform duration-300"
+                      />
+                    ) : (
+                      <Image
+                        src={slide.url}
+                        alt={title}
+                        width={800}
+                        height={800}
+                        quality={70}
+                        loading="lazy"
+                        fetchPriority="low"
+                        placeholder="empty"
+                        sizes="(max-width: 640px) 100vw, (max-width: 828px) 100vw, 50vw"
+                        className="max-h-[700px] w-full h-auto aspect-square object-cover object-center hover:scale-105 transition-transform duration-300"
+                        unoptimized={false}
+                      />
+                    )}
+                  </div>
+                ))}
 
-              {/* Animated slide for mobile — deferred until main image loads to avoid competing fetches */}
-              {showAnimatedSlide && slides.length > 0 && (
-                <div
-                  key="animated-slide"
-                  className="embla__slide flex-[0_0_100%] min-w-0 h-[350px] relative bg-[#F4F0EB]"
-                  style={{ backgroundColor: '#F4F0EB' }}
-                >
-                  {mainImageLoaded && (
-                    <KenBurnsSlide
-                      images={slides}
-                      alt={`${title} - podgląd animowany`}
-                      isActive={true}
-                      className="h-full"
-                    />
-                  )}
-                </div>
-              )}
+                {/* Animated slide for mobile — deferred until main image loads to avoid competing fetches */}
+                {showAnimatedSlide && slides.length > 0 && (
+                  <div
+                    key="animated-slide"
+                    className="embla__slide flex-[0_0_100%] min-w-0 h-[350px] relative bg-[#F4F0EB]"
+                    style={{ backgroundColor: '#F4F0EB' }}
+                  >
+                    {mainImageLoaded && (
+                      <KenBurnsSlide
+                        images={slides}
+                        alt={`${title} - podgląd animowany`}
+                        isActive={true}
+                        className="h-full"
+                      />
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
+            {/* Indicator moved outside embla__viewport */}
+            {slides?.length ? (
+              <ProductCarouselIndicator
+                slides={slides}
+                selectedIndex={mobileSelectedIndex}
+                showAnimatedSlide={showAnimatedSlide}
+              />
+            ) : null}
           </div>
-          {/* Indicator moved outside embla__viewport */}
-          {slides?.length ? (
-            <ProductCarouselIndicator
-              slides={slides}
-              selectedIndex={mobileSelectedIndex}
-              showAnimatedSlide={showAnimatedSlide}
-            />
-          ) : null}
         </div>
-      </div>
+      )}
 
       {/* Desktop: Thumbnails on left, main image on right */}
+      {/* After hydration, only render if actually on desktop. During SSR, render for CSS hidden lg:block. */}
+      {(!isHydrated || isDesktop) && (
       <div className="hidden lg:block bg-[#F4F0EB]" style={{ backgroundColor: '#F4F0EB' }}>
         <div className="flex gap-4">
           {/* Left: Thumbnail Column with Scroll */}
@@ -252,7 +277,7 @@ export const ProductCarousel = ({
               {canScrollUp && (
                 <button
                   onClick={() => scrollThumbnails("up")}
-                  className="absolute -top-[2px] left-1/2 -translate-x-1/2 z-10 bg-white/95 hover:bg-[#3B3634] rounded-full p-2  transition-all duration-300 hover:scale-110 backdrop-blur-sm border border-[#3B3634]"
+                  className="absolute -top-[2px] left-1/2 -translate-x-1/2 z-10 bg-white/95 hover:bg-[#3B3634] rounded-full p-2  transition-all duration-300 hover:scale-110   backdrop-blur-sm border border-[#3B3634]"
                   aria-label="Scroll thumbnails up"
                 >
                   <ArrowUpIcon
@@ -279,20 +304,16 @@ export const ProductCarousel = ({
                     }`}
                     style={{ backgroundColor: '#F4F0EB' }}
                   >
-                    {mainImageLoaded && (
-                      <Image
-                        src={slide.url}
-                        alt={title}
-                        fill
-                        quality={50}
-                        loading="lazy"
-                        fetchPriority="low"
-                        placeholder="empty"
-                        className="object-cover transition-transform duration-300 hover:scale-105"
-                        sizes="80px"
-                        unoptimized={false}
-                      />
-                    )}
+                    <LqipImage
+                      src={slide.url}
+                      alt={title}
+                      fill
+                      quality={50}
+                      loading="lazy"
+                      fetchPriority="low"
+                      className="object-cover transition-transform duration-300 hover:scale-105"
+                      sizes="80px"
+                    />
                   </button>
                 ))}
 
@@ -308,22 +329,18 @@ export const ProductCarousel = ({
                     style={{ backgroundColor: '#F4F0EB' }}
                     title="Podgląd animowany"
                   >
-                    {mainImageLoaded && (
-                      <Image
-                        src={slides[0].url}
-                        alt={`${title} - animacja`}
-                        fill
-                        quality={50}
-                        loading="lazy"
-                        fetchPriority="low"
-                        placeholder="empty"
-                        className="object-cover transition-transform duration-300 hover:scale-105"
-                        sizes="80px"
-                        unoptimized={false}
-                      />
-                    )}
+                    <LqipImage
+                      src={slides[0].url}
+                      alt={`${title} - animacja`}
+                      fill
+                      quality={50}
+                      loading="lazy"
+                      fetchPriority="low"
+                      className="object-cover transition-transform duration-300 hover:scale-105"
+                      sizes="80px"
+                    />
                     {/* Play icon overlay */}
-                    <div className="absolute inset-0 bg-black/30 flex items-center justify-center">
+                    <div className="absolute inset-0 bg-black/30 flex items-center justify-center z-10">
                       <div className="w-6 h-6 rounded-full bg-white/90 flex items-center justify-center">
                         <svg
                           className="w-3 h-3 text-[#3B3634] ml-0.5"
@@ -385,7 +402,7 @@ export const ProductCarousel = ({
                     style={{ backgroundColor: '#F4F0EB' }}
                     onClick={() => openZoomModal(selectedImageIndex)}
                   >
-                    <Image
+                    <LqipImage
                       src={slides[selectedImageIndex].url}
                       alt={title}
                       fill
@@ -393,7 +410,6 @@ export const ProductCarousel = ({
                       priority={selectedImageIndex === 0}
                       loading={selectedImageIndex === 0 ? "eager" : "lazy"}
                       fetchPriority={selectedImageIndex === 0 ? "high" : "auto"}
-                      placeholder="empty"
                       onLoad={() => { if (!mainImageLoaded) setMainImageLoaded(true) }}
                       className={`object-cover bg-[#F4F0EB] transition-all duration-500 ease-out hover:scale-105 ${
                         isTransitioning
@@ -401,7 +417,6 @@ export const ProductCarousel = ({
                           : "opacity-100 scale-100 blur-0"
                       }`}
                       sizes="(max-width: 640px) 100vw, (max-width: 828px) 100vw, 50vw"
-                      unoptimized={false}
                     />
 
                     {/* Elegant overlay gradient for premium feel */}
@@ -433,6 +448,7 @@ export const ProductCarousel = ({
           </div>
         </div>
       </div>
+      )}
 
       {/* Image Zoom Modal */}
       <ImageZoomModal

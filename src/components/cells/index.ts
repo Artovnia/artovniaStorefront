@@ -41,6 +41,7 @@ import NewsletterSubscription from "./NewsletterSubscription/NewsletterSubscript
 import { ConditionalNewsletter } from "./ConditionalNewsletter"
 import { ProductShareButton } from "./ProductShareButton/ProductShareButton"
 import { KenBurnsSlide } from "./KenBurnsSlide/KenBurnsSlide"
+import { LqipImage } from "./LqipImage/LqipImage"
 // ProductGPSRDetails has been moved to molecules/ProductGPSR
 
 export {
@@ -87,4 +88,5 @@ export {
   ConditionalNewsletter,
   ProductShareButton,
   KenBurnsSlide,
+  LqipImage,
 }

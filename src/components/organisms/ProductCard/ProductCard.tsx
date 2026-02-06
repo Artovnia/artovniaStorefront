@@ -53,7 +53,8 @@
  */
 
 import Image from "next/image"
-import { useEffect, useState, useMemo, memo } from "react"
+import { useEffect, useState, useMemo, memo, useRef } from "react"
+import { LqipImage } from "@/components/cells/LqipImage/LqipImage"
 
 import { Button } from "@/components/atoms"
 import { HttpTypes } from "@medusajs/types"
@@ -95,12 +96,58 @@ const ProductCardComponent = ({
   const { getProductWithPromotions, isLoading } = usePromotionData()
   const [isMounted, setIsMounted] = useState(false)
   const productUrl = `/products/${product.handle}`
+  const cardRef = useRef<HTMLDivElement>(null)
   
   
   // Ensure component is mounted on client-side to prevent hydration mismatch
   useEffect(() => {
     setIsMounted(true)
   }, [])
+
+  // Mobile: Prefetch detail image when card becomes visible in viewport.
+  // On mobile there's no hover, so onTouchStart only gives ~50-100ms head start
+  // before navigation — not enough for the image to load. IntersectionObserver
+  // starts the prefetch when the user can SEE the card, giving seconds of head
+  // start before they tap. The 300ms dwell threshold avoids prefetching cards
+  // that quickly scroll past (bandwidth optimization).
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    // Only activate on touch devices — desktop uses hover prefetch instead
+    const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0
+    if (!isTouchDevice) return
+
+    const imageUrl = product.thumbnail || product.images?.[0]?.url
+    if (!imageUrl) return
+
+    const card = cardRef.current
+    if (!card) return
+
+    let dwellTimer: ReturnType<typeof setTimeout> | null = null
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          // Wait 300ms of continuous visibility before prefetching
+          dwellTimer = setTimeout(() => {
+            prefetchProductImage(imageUrl)
+          }, 300)
+        } else {
+          if (dwellTimer) {
+            clearTimeout(dwellTimer)
+            dwellTimer = null
+          }
+        }
+      },
+      { threshold: 0.5 } // Card must be at least 50% visible
+    )
+
+    observer.observe(card)
+
+    return () => {
+      observer.disconnect()
+      if (dwellTimer) clearTimeout(dwellTimer)
+    }
+  }, [product.thumbnail, product.images, prefetchProductImage])
   
   // ✅ OPTIMIZATION: Get promotional product data synchronously (no delay)
   const promotionalProduct = getProductWithPromotions(product.id)
@@ -164,6 +211,7 @@ const ProductCardComponent = ({
           "p-0": !sellerPage
         }
       )}
+      ref={cardRef}
       onMouseEnter={handlePrefetch}
       onTouchStart={handlePrefetch}
     >
@@ -189,7 +237,7 @@ const ProductCardComponent = ({
         <Link href={productUrl} prefetch={true} aria-label={`Zobacz produkt: ${product.title}`}>
           <div className="overflow-hidden w-full h-full flex justify-center items-center" style={{ backgroundColor: '#F4F0EB' }}>
             {(product.thumbnail || product.images?.[0]?.url) ? (
-              <Image
+              <LqipImage
                 src={product.thumbnail || product.images?.[0]?.url || "/images/placeholder.svg"}
                 alt={product.title}
                 width={320}
@@ -200,8 +248,6 @@ const ProductCardComponent = ({
                 loading={isSellerSection ? "lazy" : (index < 4 ? "eager" : "lazy")}
                 fetchPriority={isSellerSection ? "low" : (index < 4 ? "auto" : "low")}
                 sizes="(max-width: 640px) 160px, 352px"
-                placeholder="empty"
-                unoptimized={false}
               />
             ) : (
               <Image
