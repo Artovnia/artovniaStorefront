@@ -3,6 +3,7 @@ import { footerLinks } from "@/data/footerLinks"
 import { FacebookIcon, InstagramIcon, LinkedInIcon, YouTubeIcon, PinterestIcon } from "@/icons/social"
 import { HttpTypes } from "@medusajs/types"
 import Image from "next/image"
+import { FooterAccordion } from "./FooterAccordion"
 
 interface FooterProps {
   categories?: HttpTypes.StoreProductCategory[]
@@ -50,15 +51,12 @@ export function Footer({ categories = [] }: FooterProps) {
       role="contentinfo"
       aria-label="Stopka strony"
     >
-      {/* Main Footer Content - 5 Columns */}
+      {/* Main Footer Content - 4 Columns */}
       <div className="max-w-[1920px] mx-auto px-6 py-12" id="footer-content">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-0 lg:gap-8">
           
           {/* Column 1: Sklep (Categories) */}
-          <div>
-            <h2 className="text-white font-instrument-sans font-normal text-lg mb-6 uppercase" id="footer-shop">
-              Sklep
-            </h2>
+          <FooterAccordion title="Sklep" id="footer-shop">
             <nav className="space-y-3 font-instrument-sans uppercase" aria-labelledby="footer-shop">
                <Link 
                 href="/tags" 
@@ -79,13 +77,10 @@ export function Footer({ categories = [] }: FooterProps) {
                 </Link>
               ))}
             </nav>
-          </div>
+          </FooterAccordion>
 
           {/* Column 2: O nas */}
-          <div>
-            <h2 className="text-white font-instrument-sans font-normal text-lg mb-6 uppercase" id="footer-about">
-              O nas
-            </h2>
+          <FooterAccordion title="O nas" id="footer-about">
             <nav className="space-y-3 font-instrument-sans uppercase" aria-labelledby="footer-about">
               {footerLinks.about.map(({ name, href }) => (
                 <Link 
@@ -104,13 +99,10 @@ export function Footer({ categories = [] }: FooterProps) {
               </Link>
              
             </nav>
-          </div>
+          </FooterAccordion>
 
           {/* Column 3: Dla kupujących */}
-          <div>
-            <h2 className="text-white font-instrument-sans font-normal text-lg mb-6 uppercase" id="footer-buyers">
-              Dla kupujących
-            </h2>
+          <FooterAccordion title="Dla kupujących" id="footer-buyers">
             <nav className="space-y-3 font-instrument-sans uppercase" aria-labelledby="footer-buyers">
               {footerLinks.customerServices.map(({ name, href }) => (
                 <Link 
@@ -122,13 +114,10 @@ export function Footer({ categories = [] }: FooterProps) {
                 </Link>
               ))}
             </nav>
-          </div>
+          </FooterAccordion>
 
           {/* Column 4: Dla sprzedających */}
-          <div>
-            <h2 className="text-white font-instrument-sans font-normal text-lg mb-6 uppercase" id="footer-sellers">
-              Dla sprzedających
-            </h2>
+          <FooterAccordion title="Dla sprzedających" id="footer-sellers">
             <nav className="space-y-3 font-instrument-sans uppercase" aria-labelledby="footer-sellers">
               <Link href="/przewodnik-sprzedawcy" className="block text-white hover:underline transition-colors duration-200 text-sm">
                 Zacznij z nami sprzedawać
@@ -148,7 +137,7 @@ export function Footer({ categories = [] }: FooterProps) {
                 FAQ
               </Link>
             </nav>
-          </div>
+          </FooterAccordion>
 
         </div>
       </div>

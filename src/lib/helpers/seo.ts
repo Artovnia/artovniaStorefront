@@ -496,17 +496,12 @@ export const generateProductMetadata = (
       type: "website",
       locale: locale === "pl" ? "pl_PL" : "en_US",
     },
-    other: {
-      // fb:app_id improves Messenger link preview reliability
-      // Messenger's crawler is stricter than Facebook feed about requiring this
-      // Facebook reads both <meta name="fb:app_id"> and <meta property="fb:app_id">
-      ...(process.env.NEXT_PUBLIC_FB_APP_ID
-        ? { "fb:app_id": process.env.NEXT_PUBLIC_FB_APP_ID }
-        : {}),
-      ...(product?.tags && product.tags.length > 0
+    // fb:app_id is injected as <meta property> in root layout.tsx
+    // (Next.js other field generates <meta name> which Facebook ignores)
+    other:
+      product?.tags && product.tags.length > 0
         ? { "article:tag": product.tags.map((t) => t.value) }
-        : {}),
-    },
+        : undefined,
     twitter: {
       card: "summary_large_image",
       site: "@artovnia",

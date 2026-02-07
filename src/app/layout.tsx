@@ -130,6 +130,13 @@ export default async function RootLayout({
   
   return (
     <html lang={locale} className={`${instrumentSans.variable} ${instrumentSerif.variable}`}>
+      <head>
+        {/* fb:app_id must use <meta property> not <meta name> — Next.js other field
+            generates <meta name> which Facebook ignores. Required for Messenger link previews. */}
+        {process.env.NEXT_PUBLIC_FB_APP_ID && (
+          <meta property="fb:app_id" content={process.env.NEXT_PUBLIC_FB_APP_ID} />
+        )}
+      </head>
       <NextIntlClientProvider messages={messages}>
         <body
           className={`${instrumentSans.className} antialiased bg-primary text-primary`}

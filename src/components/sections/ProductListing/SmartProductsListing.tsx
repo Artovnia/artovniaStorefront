@@ -2,7 +2,6 @@
 
 import { HttpTypes } from "@medusajs/types"
 import { ProductListing } from "./ProductListing"
-import { ProductListingSkeleton } from "@/components/organisms/ProductListingSkeleton/ProductListingSkeleton"
 import dynamic from "next/dynamic"
 
 // Dynamically import Algolia component with SSR enabled

@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useRef } from "react"
 import { HttpTypes } from "@medusajs/types"
-import { ProductListingSkeleton } from "@/components/organisms/ProductListingSkeleton/ProductListingSkeleton"
 import { ProductListing } from "./ProductListing"
 import dynamic from "next/dynamic"
 
@@ -10,7 +9,6 @@ import dynamic from "next/dynamic"
 const AlgoliaProductsListing = dynamic(
   () => import("./AlgoliaProductsListing").then(mod => ({ default: mod.AlgoliaProductsListing })),
   {
-    loading: () => <ProductListingSkeleton />,
     ssr: false,
   }
 )

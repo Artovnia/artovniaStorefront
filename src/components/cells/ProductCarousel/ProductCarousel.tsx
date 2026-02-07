@@ -209,7 +209,7 @@ export const ProductCarousel = ({
                         width={800}
                         height={800}
                         quality={80}
-                        priority={isHydrated && isMobile}
+                        priority={true}
                         loading="eager"
                         fetchPriority="high"
                         onLoad={() => { if (!mainImageLoaded) setMainImageLoaded(true) }}

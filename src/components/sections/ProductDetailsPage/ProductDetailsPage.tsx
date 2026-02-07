@@ -256,44 +256,20 @@ export const ProductDetailsPage = async ({
               suspension={suspension}
               showModalOnLoad={!!availability?.onHoliday}
             >
-              {/* Mobile Layout: Stacked vertically */}
-              <div className="flex flex-col md:hidden">
-                <div className="w-full ">
-                  <ProductGallery
-                    images={product?.images || []}
-                    title={product?.title || ""}
-                  />
-                </div>
-                <div className="w-full mt-4">
-                  {product.seller ? (
-                    <ProductDetails
-                      product={{ ...product, seller: product.seller }}
-                      locale={locale}
-                      region={region}
-                      initialVariantAttributes={initialVariantAttributes}
-                      user={customer}
-                      wishlist={wishlist}
-                    />
-                  ) : (
-                    <div className="p-4 bg-red-50 text-red-800 rounded">
-                      Seller information is missing for this product.
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Desktop Layout: Sticky gallery on left, scrollable details on right */}
-              <div className="hidden md:flex md:flex-row md:gap-6 lg:gap-12 max-w-[1920px] mx-auto md:px-4 lg:px-0">
-                {/* Left: Sticky Product Gallery */}
-                <div className="md:w-1/2 md:max-w-[calc(50%-12px)] lg:max-w-none md:px-0 md:sticky md:top-20 md:self-start">
+              {/* Single responsive layout: stacked on mobile, side-by-side on desktop */}
+              {/* Previously two separate layouts (md:hidden + hidden md:flex) caused duplicate
+                  ProductGallery rendering, doubling image requests and competing preloads */}
+              <div className="flex flex-col md:flex-row md:gap-6 lg:gap-12 max-w-[1920px] mx-auto md:px-4 lg:px-0">
+                {/* Gallery: full-width stacked on mobile, sticky left half on desktop */}
+                <div className="w-full md:w-1/2 md:max-w-[calc(50%-12px)] lg:max-w-none md:px-0 md:sticky md:top-20 md:self-start">
                   <ProductGallery
                     images={product?.images || []}
                     title={product?.title || ""}
                   />
                 </div>
 
-                {/* Right: Scrollable Product Details */}
-                <div className="md:w-1/2 md:max-w-[calc(50%-12px)] lg:max-w-none md:px-0">
+                {/* Details: below gallery on mobile, scrollable right half on desktop */}
+                <div className="w-full mt-4 md:mt-0 md:w-1/2 md:max-w-[calc(50%-12px)] lg:max-w-none md:px-0">
                   {product.seller ? (
                     <ProductDetails
                       product={{ ...product, seller: product.seller }}

@@ -8,25 +8,6 @@ import { PromotionDataProvider } from "@/components/context/PromotionDataProvide
 import { CategorySidebar } from "@/components/organisms"
 import { ProductFilterBar } from "@/components/organisms"
 import Link from "next/link"
-// Simple loading component since skeleton import has issues
-const ProductListingSkeleton = () => (
-  <div className="animate-pulse">
-    <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
-      <div className="hidden lg:block lg:col-span-1">
-        <div className="h-6 bg-gray-200 rounded mb-4"></div>
-        <div className="h-64 bg-gray-200 rounded"></div>
-      </div>
-      <div className="lg:col-span-4">
-        <div className="h-16 bg-gray-200 rounded mb-6"></div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {Array.from({ length: 8 }).map((_, i) => (
-            <div key={i} className="h-64 bg-gray-200 rounded"></div>
-          ))}
-        </div>
-      </div>
-    </div>
-  </div>
-)
 import { PRODUCT_LIMIT } from "@/const"
 import { listProductsWithSort } from '@/lib/data/products'
 import { retrieveCustomer } from '@/lib/data/customer'
@@ -180,7 +161,7 @@ export const ProductListing = ({
     fetchProducts()
   }, [category_id, collection_id, seller_id, searchParams, currentPage])
 
-  if (isLoading) return <ProductListingSkeleton />
+  if (isLoading) return null
 
   return (
     <PromotionDataProvider countryCode="pl" limit={100}>

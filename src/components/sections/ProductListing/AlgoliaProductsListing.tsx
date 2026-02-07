@@ -36,7 +36,6 @@ import { useSearchParams } from "next/navigation"
 import { getFacedFilters } from "@/lib/helpers/get-faced-filters"
 import useUpdateSearchParams from "@/hooks/useUpdateSearchParams"
 import { PRODUCT_LIMIT } from "@/const"
-import { ProductListingSkeleton } from "@/components/organisms/ProductListingSkeleton/ProductListingSkeleton"
 
 interface AlgoliaProductsListingProps {
   category_id?: string
@@ -76,7 +75,7 @@ const AlgoliaProductsListingFallback = (props: AlgoliaProductsListingProps) => {
   )
   
   return (
-    <React.Suspense fallback={<ProductListingSkeleton />}>
+    <React.Suspense fallback={null}>
       <ProductListingFallback
         category_id={category_id}
         category_ids={category_ids}
@@ -491,7 +490,7 @@ const ProductsListing = ({
     updateSearchParams("sortBy", value);
   }
 
-  if (!results?.processingTimeMS) return <ProductListingSkeleton />
+  if (!results?.processingTimeMS) return null
 
   return (
     <>
