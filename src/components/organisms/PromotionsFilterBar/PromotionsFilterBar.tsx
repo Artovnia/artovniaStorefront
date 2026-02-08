@@ -151,6 +151,23 @@ export const PromotionsFilterBar = ({
   const updateSearchParams = useUpdateSearchParams()
   const { setPendingCategories } = useFilterStore()
   const [, forceUpdate] = useState({})
+
+  // Flatten the category tree into a Map<id, name> for active filter label lookups
+  // categoryNames is a tree structure with nested category_children,
+  // so a simple .find() on the top-level array misses child categories
+  const flatCategoryMap = React.useMemo(() => {
+    const map = new Map<string, string>()
+    const flatten = (categories: { id: string; name: string; category_children?: any[] }[]) => {
+      categories.forEach(cat => {
+        map.set(cat.id, cat.name)
+        if (cat.category_children && cat.category_children.length > 0) {
+          flatten(cat.category_children)
+        }
+      })
+    }
+    flatten(categoryNames)
+    return map
+  }, [categoryNames])
   
   // Get current filter values from URL
   const promotionParam = searchParams.get("promotion")
@@ -205,7 +222,7 @@ export const PromotionsFilterBar = ({
     if (categoryParam) {
       const categoryIds = categoryParam.split(',').filter(Boolean)
       categoryIds.forEach(categoryId => {
-        const categoryName = categoryNames.find(c => c.id === categoryId)?.name || categoryId
+        const categoryName = flatCategoryMap.get(categoryId) || categoryId
         filters.push({
           key: `category-${categoryId}`,
           label: `Kategoria: ${categoryName}`,
@@ -220,7 +237,7 @@ export const PromotionsFilterBar = ({
     
    
     return filters
-  }, [promotionParam, sellerParam, campaignParam, categoryParam, sellerNames, categoryNames, updateSearchParams, setPendingCategories])
+  }, [promotionParam, sellerParam, campaignParam, categoryParam, sellerNames, flatCategoryMap, updateSearchParams, setPendingCategories])
 
   const handleClearAll = () => {
  

@@ -405,6 +405,30 @@ const ensureValidImageUrl = (
   return `${baseUrl}${imageUrl.startsWith("/") ? "" : "/"}${imageUrl}`
 }
 
+/**
+ * Convert a raw image URL to an OG-safe proxy URL that serves JPEG.
+ * 
+ * WHY: All product images on S3 are stored as WebP (converted by the backend's
+ * S3 file service). Facebook Messenger's link preview renderer does NOT reliably
+ * support WebP — it silently drops the image. The /api/og-image route fetches
+ * the WebP from S3 and converts it to JPEG on-the-fly, cached by Vercel CDN.
+ * 
+ * Only proxies external URLs (S3). Local/relative URLs are returned as-is
+ * since they may already be JPEG/PNG (e.g. placeholder images).
+ */
+const getOgImageUrl = (imageUrl: string): string => {
+  const baseUrl = getBaseUrl()
+
+  // Only proxy external URLs (S3 images that are WebP)
+  // Local images (e.g. /images/placeholder.webp) don't need proxying
+  if (imageUrl.startsWith("http://") || imageUrl.startsWith("https://")) {
+    return `${baseUrl}/api/og-image?url=${encodeURIComponent(imageUrl)}`
+  }
+
+  // Local/relative URLs — return absolute URL as-is
+  return imageUrl.startsWith("/") ? `${baseUrl}${imageUrl}` : `${baseUrl}/${imageUrl}`
+}
+
 // ============================================
 // METADATA GENERATORS
 // ============================================
@@ -446,10 +470,11 @@ export const generateProductMetadata = (
     return productTitle
   }
 
-  // Use raw product image URL for OG/social sharing
-  // Raw S3 URLs are directly accessible JPEG/PNG files that all crawlers handle reliably
-  // Avoid /_next/image URLs — formats config (WebP-only) causes content negotiation issues
-  const ogImage = getProductImage(product)
+  // Get raw S3 image URL (WebP)
+  const rawImage = getProductImage(product)
+  // Convert to OG-safe JPEG proxy URL for Facebook/Messenger compatibility
+  // The /api/og-image route converts WebP→JPEG on-the-fly (cached by Vercel CDN)
+  const ogImage = getOgImageUrl(rawImage)
 
   return {
     title: buildSeoTitle(),
@@ -482,14 +507,13 @@ export const generateProductMetadata = (
       images: [
         {
           url: ogImage,
-          // NOTE: width/height intentionally omitted — actual S3 product images
-          // are various sizes (square, portrait, etc.), NOT 1200x630.
-          // Declaring mismatched dimensions causes Messenger to reject the image.
-          // Facebook determines actual dimensions from the image itself.
-          //
-          // NOTE: type intentionally omitted — Messenger's preview renderer
-          // doesn't reliably handle "image/webp". Letting the crawler detect
-          // the type from response headers ensures broader compatibility.
+          // The /api/og-image proxy converts WebP→JPEG for Messenger compatibility
+          // Declaring type helps Messenger identify the format (the actual fix)
+          type: "image/jpeg",
+          // NOTE: width/height intentionally omitted — product images are various
+          // aspect ratios (square, portrait, landscape). The proxy uses fit:'inside'
+          // which preserves aspect ratio, so actual output dimensions vary.
+          // Declaring mismatched dimensions can cause crawlers to reject the image.
           alt: product?.title,
         },
       ],
@@ -540,6 +564,8 @@ export const generateCategoryMetadata = (
   }
 
   const categoryImage = getCategoryImage()
+  // Convert to OG-safe JPEG proxy URL for Messenger compatibility
+  const ogCategoryImage = getOgImageUrl(categoryImage)
 
   // Build SEO title with parent category if available
   const buildCategoryTitle = (): string => {
@@ -580,7 +606,8 @@ export const generateCategoryMetadata = (
       siteName,
       images: [
         {
-          url: categoryImage,
+          url: ogCategoryImage,
+          type: "image/jpeg",
           alt: category.name,
         },
       ],
@@ -593,7 +620,7 @@ export const generateCategoryMetadata = (
       creator: "@artovnia",
       title: category.name,
       description,
-      images: [categoryImage],
+      images: [ogCategoryImage],
     },
   }
 }
@@ -623,6 +650,8 @@ export const generateSellerMetadata = (
     seller.photo || seller.logo_url,
     `${baseUrl}/ArtovniaOgImage.png`
   )
+  // Convert to OG-safe JPEG proxy URL for Messenger compatibility
+  const ogSellerImage = getOgImageUrl(sellerImage)
 
   return {
     robots: "index, follow",
@@ -652,7 +681,8 @@ export const generateSellerMetadata = (
       siteName,
       images: [
         {
-          url: sellerImage,
+          url: ogSellerImage,
+          type: "image/jpeg",
           alt: `${seller.name} - Profil artysty`,
         },
       ],
@@ -665,7 +695,7 @@ export const generateSellerMetadata = (
       creator: "@artovnia",
       title: `${seller.name} - Artysta`,
       description,
-      images: [sellerImage],
+      images: [ogSellerImage],
     },
   }
 }

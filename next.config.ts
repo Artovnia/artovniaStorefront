@@ -221,6 +221,36 @@ const nextConfig: NextConfig = {
         ],
       },
       
+      // CACHE: Promotions page (public data, ISR-cached)
+      {
+        source: '/promotions',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, s-maxage=300, stale-while-revalidate=3600', // 5min CDN, 1hr stale
+          },
+          {
+            key: 'CDN-Cache-Control',
+            value: 'public, s-maxage=300, stale-while-revalidate=3600',
+          },
+        ],
+      },
+      
+      // CACHE: Sellers pages (public data, ISR-cached)
+      {
+        source: '/sellers/:path*',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, s-maxage=300, stale-while-revalidate=3600', // 5min CDN, 1hr stale
+          },
+          {
+            key: 'CDN-Cache-Control',
+            value: 'public, s-maxage=300, stale-while-revalidate=3600',
+          },
+        ],
+      },
+      
       // CACHE: Static content pages
       {
         source: '/(about|how-to-buy|delivery|payment|returns|selling-guide|sellers-faq)',

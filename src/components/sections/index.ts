@@ -22,6 +22,7 @@ import { OrderReturnSection } from "./OrderReturnSection/OrderReturnSection"
 import { OrderDetailsSection } from "./OrderDetailsSection/OrderDetailsSection"
 import { SmartBestProductsSection } from "./HomeProductSection/SmartBestProductsSection"
 import CheckoutWrapper from "./CheckoutWrapper/CheckoutWrapper"
+import { PageHero } from "./PageHero/PageHero"
 
 export {
   Hero,
@@ -47,5 +48,6 @@ export {
   OrderDetailsSection,
   SmartBestProductsSection,
   DesignerOfTheWeekSection,
-  CheckoutWrapper
+  CheckoutWrapper,
+  PageHero
 }

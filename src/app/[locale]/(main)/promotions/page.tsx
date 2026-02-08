@@ -1,8 +1,7 @@
 import { Metadata } from "next"
-import { HttpTypes } from "@medusajs/types"
-import Image from "next/image"
+import { Suspense } from "react"
 import { listProductsWithPromotions } from "@/lib/data/products"
-import { PromotionListing } from "@/components/sections"
+import { PromotionListing, PageHero } from "@/components/sections"
 import { PromotionDataProvider } from "@/components/context/PromotionDataProvider"
 import { PromotionsFilterBar } from "@/components/organisms/PromotionsFilterBar"
 import { detectUserCountry } from "@/lib/helpers/country-detection"
@@ -71,219 +70,176 @@ interface PromotionsPageProps {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>
 }
 
+// ✅ PERFORMANCE: Async sub-component for data fetching
+// Wrapped in Suspense so the hero section streams to the browser immediately
+// while this component fetches data from the backend
+async function PromotionsContent({ page }: { page: number }) {
+  // ✅ OPTIMIZATION: Detect country first (needed by downstream calls)
+  const countryCode = await detectUserCountry()
+
+  // ✅ OPTIMIZATION: Fetch products, region, and user data in parallel
+  const [productsResult, region, userData] = await Promise.all([
+    listProductsWithPromotions({
+      page,
+      limit: 15,
+      countryCode,
+    }),
+    getRegion(countryCode),
+    // User data fetch (non-critical, won't fail the page)
+    (async () => {
+      try {
+        const user = await retrieveCustomer()
+        if (user) {
+          const wishlistData = await getUserWishlists()
+          return { user, wishlist: wishlistData.wishlists || [] }
+        }
+        return { user: null, wishlist: [] as any[] }
+      } catch (error) {
+        if ((error as any)?.status !== 401) {
+          console.error("Error fetching user data:", error)
+        }
+        return { user: null, wishlist: [] as any[] }
+      }
+    })(),
+  ])
+
+  const { response } = productsResult
+  const { products, count } = response
+  const { user, wishlist } = userData
+
+  // ✅ OPTIMIZATION: Extract filter options and categories in parallel
+  const [filterOptions, categoriesWithHierarchy] = await Promise.all([
+    Promise.resolve(extractFilterOptions(products)),
+    extractCategoriesWithHierarchy(products),
+  ])
+
+  // ✅ OPTIMIZATION: Convert products to Map for PromotionDataProvider
+  const promotionalProductsMap = new Map(
+    products.map(p => [p.id, p])
+  )
+
+  // Extract all variant IDs and fetch price data
+  const variantIds = products
+    .flatMap(p => p.variants?.map(v => v.id) || [])
+    .filter(Boolean)
+
+  const priceData = await getBatchLowestPrices(variantIds, 'PLN', region?.id, 30)
+
+  return (
+    <>
+      {/* Filter Bar */}
+      <div className="px-4 sm:px-6 lg:px-8 pt-6">
+        <PromotionsFilterBar
+          promotionNames={filterOptions.promotionNames}
+          sellerNames={filterOptions.sellerNames}
+          campaignNames={filterOptions.campaignNames}
+          categoryNames={categoriesWithHierarchy}
+        />
+      </div>
+
+      {/* Products Listing */}
+      <div className="px-4 sm:px-6 lg:px-8 mx-auto">
+        <PromotionDataProvider
+          countryCode={countryCode}
+          productIds={[]}
+          initialData={promotionalProductsMap}
+        >
+          <BatchPriceProvider
+            currencyCode="PLN"
+            regionId={region?.id}
+            days={30}
+            initialPriceData={priceData}
+          >
+            <PromotionListing
+              initialProducts={products}
+              initialCount={count}
+              initialPage={page}
+              countryCode={countryCode}
+              limit={12}
+              user={user}
+              wishlist={wishlist}
+            />
+          </BatchPriceProvider>
+        </PromotionDataProvider>
+      </div>
+    </>
+  )
+}
+
+// ✅ PERFORMANCE: Minimal fallback — no skeleton on cached navigations
+// This only shows on the very first uncached load while data streams in
+function PromotionsContentFallback() {
+  return (
+    <div className="px-4 sm:px-6 lg:px-8 pt-6">
+      <div className="max-w-[1920px] mx-auto">
+        <div className="mb-6">
+          <div className="h-4 bg-gray-200/50 rounded w-48 animate-pulse" />
+        </div>
+        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4 sm:gap-12">
+          {Array.from({ length: 10 }).map((_, i) => (
+            <div key={i} className="bg-white rounded-lg shadow-md animate-pulse overflow-hidden">
+              <div className="aspect-square bg-gray-200/50" />
+              <div className="p-4 space-y-3">
+                <div className="h-4 bg-gray-200/50 rounded w-3/4" />
+                <div className="h-4 bg-gray-200/50 rounded w-1/2" />
+                <div className="h-6 bg-gray-200/50 rounded w-1/3" />
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export default async function PromotionsPage({ searchParams }: PromotionsPageProps) {
   const resolvedSearchParams = await searchParams
   const page = typeof resolvedSearchParams.page === "string" ? parseInt(resolvedSearchParams.page) : 1
-  
-  try {
-    // ✅ OPTIMIZATION 1: Use dynamic country detection instead of hardcoded "PL"
-    const countryCode = await detectUserCountry()
-    
-    // ✅ OPTIMIZATION 2: Fetch user data once at page level (eliminate duplicate calls)
-    let user = null
-    let wishlist: any[] = []
-    
-    try {
-      user = await retrieveCustomer()
-      if (user) {
-        const wishlistData = await getUserWishlists()
-        wishlist = wishlistData.wishlists || []
-      }
-    } catch (error) {
-      // User not authenticated - this is normal
-      if ((error as any)?.status !== 401) {
-        console.error("Error fetching user data:", error)
-      }
-    }
-    
-    // ✅ CRITICAL FIX: Fetch products only once (no separate filter options call)
-    const productsResult = await listProductsWithPromotions({
-      page,
-      limit: 15,
-      countryCode,  // ✅ Use dynamic country
-    })
 
-    const { response, nextPage } = productsResult
-    const { products, count } = response
-    
-    // ✅ OPTIMIZATION: Extract filter options from fetched products (no API call)
-    const filterOptions = extractFilterOptions(products)
-    
-    // ✅ FIX: Extract categories with full hierarchy for proper tree structure
-    const categoriesWithHierarchy = await extractCategoriesWithHierarchy(products)
-    
-    // ✅ OPTIMIZATION: Convert products to Map for PromotionDataProvider
-    const promotionalProductsMap = new Map(
-      products.map(p => [p.id, p])
-    )
-    
-    // ✅ OPTIMIZATION 4: Server-side price fetching for instant rendering
-    // Get region for price fetching
-    const region = await getRegion(countryCode)
-    
-    // Extract all variant IDs from products
-    const variantIds = products
-      .flatMap(p => p.variants?.map(v => v.id) || [])
-      .filter(Boolean)
-    
-    // Fetch price data on server (eliminates client-side loading delay)
-    const priceData = await getBatchLowestPrices(variantIds, 'PLN', region?.id, 30)
+  // Generate structured data for SEO (non-blocking, no API calls)
+  const breadcrumbJsonLd = generateBreadcrumbJsonLd([
+    { label: "Strona główna", path: "/" },
+    { label: "Promocje", path: "/promotions" },
+  ])
+  const collectionJsonLd = generateCollectionPageJsonLd(
+    "Promocje - Najlepsze Okazje",
+    "Odkryj najlepsze promocje i wyprzedaże na Artovnia. Unikalne dzieła sztuki i rękodzieła w obniżonych cenach.",
+    `${process.env.NEXT_PUBLIC_BASE_URL}/promotions`
+  )
 
-    // Generate structured data for SEO
-    const breadcrumbJsonLd = generateBreadcrumbJsonLd([
-      { label: "Strona główna", path: "/" },
-      { label: "Promocje", path: "/promotions" },
-    ])
-    const collectionJsonLd = generateCollectionPageJsonLd(
-      "Promocje - Najlepsze Okazje",
-      "Odkryj najlepsze promocje i wyprzedaże na Artovnia. Unikalne dzieła sztuki i rękodzieła w obniżonych cenach.",
-      `${process.env.NEXT_PUBLIC_BASE_URL}/promotions`
-    )
+  return (
+    <>
+      {/* Structured Data (JSON-LD) for SEO */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(collectionJsonLd) }}
+      />
 
-    return (
-      <>
-        {/* Structured Data (JSON-LD) for SEO */}
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
-        />
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(collectionJsonLd) }}
-        />
-        
       <div className="min-h-screen bg-primary">
-        {/* Hero Section with Image and Overlay */}
-        <section 
-          className="relative w-full max-w-[1920px] mx-auto h-[250px] sm:h-[250px] md:h-[300px] lg:h-[300px] xl:h-[400px] overflow-hidden"
-          aria-labelledby="promotions-heading"
-        >
-          {/* Background Image - Optimized for immediate loading */}
-          <Image
-            src="/images/promotions/promotions.webp"
-            alt="Ceramiczne naczynia i dekoracje - promocje Artovnia"
-            fill
-            priority
-            loading="eager"
-            fetchPriority="high"
-            className="object-cover object-center"
-            sizes="100vw"
-            quality={85}
-            unoptimized={false}
-          />
-
-         
-          {/* Content Overlay */}
-          <div className="relative h-full w-full px-4 sm:px-6 lg:px-8 z-10">
-            <div className="flex flex-col items-center justify-center h-full text-center">
-              {/* Main Heading with high contrast for accessibility */}
-              <h1 
-                id="promotions-heading"
-                className="text-3xl sm:text-4xl md:text-5xl lg:text-5xl xl:text-6xl font-instrument-serif italic font-normal text-white mb-4 sm:mb-6 drop-shadow-2xl"
-              >
-                Promocje
-              </h1>
-              
-              {/* Subtitle with accessible contrast */}
-              <p className="text-md sm:text-lg md:text-xl lg:text-xl text-white font-instrument-sans max-w-3xl drop-shadow-lg uppercase">
-                Najlepsze okazje i promocyjne ceny na wybrane produkty
-              </p>
-              
-              
-            </div>
-          </div>
-
-          {/* Skip to content link for keyboard navigation (WCAG 2.4.1) */}
-          <a 
-            href="#promotions-content"
-            className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-white focus:text-[#3B3634] focus:rounded focus:shadow-lg focus:outline-none focus:ring-2 focus:ring-[#3B3634] focus:ring-offset-2"
-          >
-            Przejdź do treści promocji
-          </a>
-        </section>
+        {/* ✅ PERFORMANCE: Hero renders instantly via streaming (no data dependency) */}
+        {/* Static image import = build-time optimization + blur placeholder */}
+        <PageHero
+          title="Promocje"
+          subtitle="Najlepsze okazje i promocyjne ceny na wybrane produkty"
+          headingId="promotions-heading"
+          contentId="promotions-content"
+          skipLinkText="Przejdź do treści promocji"
+          imageAlt="Ceramiczne naczynia i dekoracje - promocje Artovnia"
+        />
 
         {/* Main Content */}
         <div className="max-w-[1920px] mx-auto w-full" id="promotions-content">
-
-          {/* Filter Bar */}
-          <div className="px-4 sm:px-6 lg:px-8 pt-6">
-            <PromotionsFilterBar
-              promotionNames={filterOptions.promotionNames}
-              sellerNames={filterOptions.sellerNames}
-              campaignNames={filterOptions.campaignNames}
-              categoryNames={categoriesWithHierarchy}
-            />
-          </div>
-
-          {/* Products Listing - No Suspense needed, data already fetched on server */}
-          <div className="px-4 sm:px-6 lg:px-8 mx-auto">
-            <PromotionDataProvider 
-              countryCode={countryCode}
-              productIds={[]}
-              initialData={promotionalProductsMap}
-            >
-              <BatchPriceProvider
-                currencyCode="PLN"
-                regionId={region?.id}
-                days={30}
-                initialPriceData={priceData}
-              >
-                <PromotionListing
-                  initialProducts={products}
-                  initialCount={count}
-                  initialPage={page}
-                  countryCode={countryCode}
-                  limit={12}
-                  user={user}
-                  wishlist={wishlist}
-                />
-              </BatchPriceProvider>
-            </PromotionDataProvider>
-          </div>
+          {/* ✅ PERFORMANCE: Suspense streams hero immediately, data loads in background */}
+          {/* On cached navigations (ISR warm), this resolves instantly — no fallback shown */}
+          <Suspense fallback={<PromotionsContentFallback />}>
+            <PromotionsContent page={page} />
+          </Suspense>
         </div>
       </div>
-      </>
-    )
-  } catch (error) {
-    console.error("Error fetching promotions:", error)
-    
-    return (
-      <div className="min-h-screen bg-primary">
-        {/* Error Hero Section */}
-        <section className="relative w-full h-[300px] sm:h-[350px] md:h-[400px] overflow-hidden">
-          <Image
-            src="/images/promotions/15.webp"
-            alt="Ceramiczne naczynia i dekoracje - promocje Artovnia"
-            fill
-            priority
-            loading="eager"
-            fetchPriority="high"
-            className="object-cover object-center 2xl:object-contain"
-            sizes="100vw"
-            quality={75}
-          />
-          <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/50 to-black/70" aria-hidden="true" />
-          <div className="relative h-full max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-center z-10">
-            <h1 className="text-4xl sm:text-5xl md:text-6xl font-instrument-serif italic text-white drop-shadow-2xl">
-              Promocje
-            </h1>
-          </div>
-        </section>
-        
-        {/* Error Message */}
-        <div className="max-w-[1920px] mx-auto px-4 py-12">
-          <div 
-            className="flex flex-col items-center justify-center min-h-[400px] text-center"
-            role="alert"
-            aria-live="assertive"
-          >
-            <h2 className="text-2xl  mb-4 font-instrument-serif text-red-600">Wystąpił błąd</h2>
-            <p className="text-[#3B3634] mb-6 font-instrument-sans">
-              Nie udało się załadować promocji. Spróbuj ponownie później.
-            </p>
-          </div>
-        </div>
-      </div>
-    )
-  }
+    </>
+  )
 }
