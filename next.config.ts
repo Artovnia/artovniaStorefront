@@ -45,6 +45,7 @@ const nextConfig: NextConfig = {
   serverExternalPackages: [
     '@medusajs/js-sdk',
     'algoliasearch',
+    'sharp', // Used by /api/og-image route at runtime; must not be bundled by webpack
   ],
   
   webpack: (config, { dev, isServer }) => {

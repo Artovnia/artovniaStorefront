@@ -50,7 +50,6 @@
     "rehype-sanitize": "^6.0.0",
     "remark-breaks": "^4.0.0",
     "remark-gfm": "^4.0.1",
-    "sharp": "^0.34.5",
     "styled-components": "^6.1.19",
     "tailwind-merge": "^2.6.0",
     "talkjs": "^0.37.0",

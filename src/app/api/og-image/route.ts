@@ -81,32 +81,49 @@ export async function GET(request: NextRequest) {
     }
 
     // Convert WebP (or any other format) to JPEG using sharp
-    // sharp is already a dependency (used by the backend S3 service and Next.js internally)
-    const sharp = (await import("sharp")).default
+    // sharp is listed in serverExternalPackages (not bundled by webpack)
+    // and available at runtime via Next.js's bundled copy on Vercel
+    try {
+      const sharp = (await import("sharp")).default
 
-    const jpegBuffer = await sharp(imageBuffer, {
-      failOnError: false,
-      limitInputPixels: false,
-    })
-      .resize(OG_MAX_SIZE, OG_MAX_SIZE, {
-        fit: "inside",
-        withoutEnlargement: true,
+      const jpegBuffer = await sharp(imageBuffer, {
+        failOnError: false,
+        limitInputPixels: false,
       })
-      .jpeg({
-        quality: OG_QUALITY,
-        progressive: true, // Progressive JPEG loads faster for crawlers
-      })
-      .toBuffer()
+        .resize(OG_MAX_SIZE, OG_MAX_SIZE, {
+          fit: "inside",
+          withoutEnlargement: true,
+        })
+        .jpeg({
+          quality: OG_QUALITY,
+          progressive: true, // Progressive JPEG loads faster for crawlers
+        })
+        .toBuffer()
 
-    return new NextResponse(new Uint8Array(jpegBuffer), {
-      status: 200,
-      headers: {
-        "Content-Type": "image/jpeg",
-        // Cache for 30 days on CDN — images don't change once uploaded
-        "Cache-Control": "public, max-age=2592000, s-maxage=2592000, stale-while-revalidate=86400",
-        "CDN-Cache-Control": "public, max-age=2592000",
-      },
-    })
+      return new NextResponse(new Uint8Array(jpegBuffer), {
+        status: 200,
+        headers: {
+          "Content-Type": "image/jpeg",
+          // Cache for 30 days on CDN — images don't change once uploaded
+          "Cache-Control": "public, max-age=2592000, s-maxage=2592000, stale-while-revalidate=86400",
+          "CDN-Cache-Control": "public, max-age=2592000",
+        },
+      })
+    } catch (sharpError) {
+      // Fallback: if sharp is unavailable, redirect to Next.js image optimizer
+      // which handles WebP→JPEG conversion natively
+      console.warn("[og-image] sharp unavailable, falling back to /_next/image:", sharpError)
+      const nextImageUrl = new URL("/_next/image", request.nextUrl.origin)
+      nextImageUrl.searchParams.set("url", imageUrl)
+      nextImageUrl.searchParams.set("w", String(OG_MAX_SIZE))
+      nextImageUrl.searchParams.set("q", String(OG_QUALITY))
+      return NextResponse.redirect(nextImageUrl, {
+        status: 302,
+        headers: {
+          "Cache-Control": "public, max-age=2592000, s-maxage=2592000, stale-while-revalidate=86400",
+        },
+      })
+    }
   } catch (error) {
     console.error("[og-image] Error processing image:", error)
     return new NextResponse("Error processing image", { status: 500 })
