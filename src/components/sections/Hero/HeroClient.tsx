@@ -6,6 +6,20 @@ import { ArrowLeftIcon, ArrowRightIcon } from "@/icons"
 import { HeroBanner } from "./Hero"
 import { HERO_CONFIG } from "@/config/hero-banners"
 
+// Responsive focal point: returns mobile value on small screens, desktop on larger
+const useIsMobile = (breakpoint = 768) => {
+  const [isMobile, setIsMobile] = useState(true) // Default to mobile (SSR-safe)
+  
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < breakpoint)
+    check()
+    window.addEventListener('resize', check)
+    return () => window.removeEventListener('resize', check)
+  }, [breakpoint])
+  
+  return isMobile
+}
+
 // Track image loading errors for debugging
 const imageLoadErrors = new Set<string>()
 
@@ -20,6 +34,7 @@ export const HeroClient = ({
   className = "",
   pauseOnHover = HERO_CONFIG.pauseOnHover
 }: HeroClientProps) => {
+  const isMobile = useIsMobile()
   // Create infinite scroll by duplicating first and last slides
   const extendedBanners = [
     banners[banners.length - 1], // Clone of last slide at beginning
@@ -156,7 +171,7 @@ export const HeroClient = ({
                 alt={banner.alt}
                 fill
                 className="object-cover transition-transform duration-700 group-hover:scale-105"
-                style={{ objectPosition: banner.focalPoint?.mobile || banner.focalPoint?.desktop || banner.objectPosition || 'center' }}
+                style={{ objectPosition: (isMobile ? banner.focalPoint?.mobile : banner.focalPoint?.desktop) || banner.objectPosition || 'center' }}
                 priority={index < HERO_CONFIG.priorityLoadCount}
                 loading="eager"
                 fetchPriority={index < HERO_CONFIG.priorityLoadCount ? "high" : "auto"}

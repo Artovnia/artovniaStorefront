@@ -12,7 +12,7 @@ export const HERO_BANNERS: HeroBanner[] = [
     url: "/categories",
     focalPoint: {
       desktop: 'center center',
-      mobile: 'center center'
+      mobile: '25% center'
     },
     content: {
       useLogo: true,
@@ -46,7 +46,7 @@ export const HERO_BANNERS: HeroBanner[] = [
     url: "https://artovniapanel.netlify.app/login",
     focalPoint: {
       desktop: 'center center',
-      mobile: 'center center'
+      mobile: '36% center'
     },
     content: {
       heading: "Dołącz do nas",

@@ -198,9 +198,9 @@ export const MobileUserNavigation = () => {
 {/* Region Selector Button */}
               <button
                 onClick={() => setIsRegionModalOpen(true)}
-                className="flex flex-col items-center justify-center mb-2 flex-1 group"
+                className="flex flex-col items-center justify-center mb-1 flex-1 group"
               >
-                <div className="w-10 h-10 rounded-full flex items-center justify-center text-gray-600 transition-all duration-200 group-hover:text-[#3B3634]">
+                <div className="w-10 h-8 rounded-full flex items-center justify-center text-gray-600 transition-all duration-200 group-hover:text-[#3B3634]">
                   <GlobeIcon className="w-5 h-5" />
                 </div>
                 <span className="text-[10px] font-medium text-gray-600 group-hover:text-[#3B3634]">Region</span>
@@ -224,10 +224,10 @@ export const MobileUserNavigation = () => {
               {/* Profile Button */}
               <button
                 onClick={toggleMenu}
-                className="flex flex-col items-center justify-center mb-2 flex-1 group relative"
+                className="flex flex-col items-center justify-center mb-1 flex-1 group relative"
               >
                 <div className={cn(
-                  "w-10 h-10 rounded-full flex items-center justify-center transition-all duration-200",
+                  "w-10 h-8 rounded-full flex items-center justify-center transition-all duration-200",
                   isMenuOpen
                     ? "text-[#3B3634]"
                     : "text-gray-600 group-hover:text-[#3B3634]"
