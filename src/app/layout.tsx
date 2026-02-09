@@ -105,6 +105,11 @@ export const metadata: Metadata = {
   manifest: '/manifest.webmanifest',
   verification: {
     google: '5gtEHPGbUGzbdwDywE6OOu9C8K6ilXCykQO_kSfQqDM',
+    other: {
+      ...(process.env.BING_VERIFICATION_CODE && {
+        'msvalidate.01': process.env.BING_VERIFICATION_CODE,
+      }),
+    },
   },
   other: {
     'preconnect': [

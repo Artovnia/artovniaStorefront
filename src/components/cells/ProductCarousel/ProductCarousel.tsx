@@ -7,6 +7,7 @@ import { KenBurnsSlide } from "@/components/cells"
 import { LqipImage } from "@/components/cells/LqipImage/LqipImage"
 import { ImageZoomModal } from "@/components/molecules/ImageZoomModal/ImageZoomModal"
 import { useScreenSize } from "@/hooks/useScreenSize"
+import { useGalleryPrefetch } from "@/hooks/useGalleryPrefetch"
 import { MedusaProductImage } from "@/types/product"
 import { useState, useRef, useEffect, useCallback } from "react"
 import {
@@ -24,6 +25,7 @@ export const ProductCarousel = ({
   title?: string
 }) => {
   const screenSize = useScreenSize()
+  const { prefetchGalleryImage, prefetchAllForKenBurns, prefetchAdjacent } = useGalleryPrefetch()
   const [selectedImageIndex, setSelectedImageIndex] = useState(0)
   const [isTransitioning, setIsTransitioning] = useState(false)
   const [isZoomModalOpen, setIsZoomModalOpen] = useState(false)
@@ -43,6 +45,9 @@ export const ProductCarousel = ({
   // Index of the animated slide (last position)
   const animatedSlideIndex = slides.length
 
+  // Extract image URLs for prefetch reuse
+  const imageUrls = slides.map((s) => s.url)
+
   // Determine if we're on mobile/tablet
   const isMobile =
     screenSize === "xs" || screenSize === "sm" || screenSize === "md"
@@ -57,7 +62,12 @@ export const ProductCarousel = ({
     if (totalSlides <= 1) return
     setIsTransitioning(true)
     setTimeout(() => {
-      setSelectedImageIndex((prev) => (prev === 0 ? totalSlides - 1 : prev - 1))
+      setSelectedImageIndex((prev) => {
+        const newIdx = prev === 0 ? totalSlides - 1 : prev - 1
+        // Prefetch neighbors of the new slide
+        if (newIdx < slides.length) prefetchAdjacent(imageUrls, newIdx)
+        return newIdx
+      })
       setIsTransitioning(false)
     }, 150)
   }
@@ -66,7 +76,12 @@ export const ProductCarousel = ({
     if (totalSlides <= 1) return
     setIsTransitioning(true)
     setTimeout(() => {
-      setSelectedImageIndex((prev) => (prev === totalSlides - 1 ? 0 : prev + 1))
+      setSelectedImageIndex((prev) => {
+        const newIdx = prev === totalSlides - 1 ? 0 : prev + 1
+        // Prefetch neighbors of the new slide
+        if (newIdx < slides.length) prefetchAdjacent(imageUrls, newIdx)
+        return newIdx
+      })
       setIsTransitioning(false)
     }, 150)
   }
@@ -77,12 +92,16 @@ export const ProductCarousel = ({
     setTimeout(() => {
       setSelectedImageIndex(index)
       setIsTransitioning(false)
+      // Prefetch neighbors of the newly selected slide
+      if (index < slides.length) prefetchAdjacent(imageUrls, index)
     }, 150)
   }
 
   // Handle animated slide activation
   const handleAnimatedSlideClick = () => {
     if (selectedImageIndex === animatedSlideIndex) return
+    // Prefetch ALL images for KenBurns before activating
+    prefetchAllForKenBurns(imageUrls)
     setIsTransitioning(true)
     setTimeout(() => {
       setSelectedImageIndex(animatedSlideIndex)
@@ -297,6 +316,7 @@ export const ProductCarousel = ({
                   <button
                     key={slide.id}
                     onClick={() => handleThumbnailClick(index)}
+                    onMouseEnter={() => prefetchGalleryImage(slide.url)}
                     className={`relative w-20 h-20 rounded-xs overflow-hidden border-2 transition-all duration-300 flex-shrink-0 bg-[#F4F0EB] ${
                       selectedImageIndex === index
                         ? "border-[#3B3634] ring-2 ring-[#3B3634] shadow-md"
@@ -321,6 +341,7 @@ export const ProductCarousel = ({
                 {showAnimatedSlide && slides[0] && (
                   <button
                     onClick={handleAnimatedSlideClick}
+                    onMouseEnter={() => prefetchAllForKenBurns(imageUrls)}
                     className={`relative w-20 h-20 rounded-xs overflow-hidden border-2 transition-all duration-300 flex-shrink-0 bg-[#F4F0EB] ${
                       selectedImageIndex === animatedSlideIndex
                         ? "border-[#3B3634] ring-2 ring-[#3B3634] shadow-md"

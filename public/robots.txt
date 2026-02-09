@@ -19,4 +19,15 @@ Disallow: /cart
 Disallow: /checkout/
 Disallow: /api/
 
+User-agent: Bingbot
+Allow: /
+Disallow: /account/
+Disallow: /user/
+Disallow: /cart
+Disallow: /checkout/
+Disallow: /api/
+
+# Canonical domain (non-www)
+Host: https://artovnia.com
+
 Sitemap: https://artovnia.com/sitemap.xml

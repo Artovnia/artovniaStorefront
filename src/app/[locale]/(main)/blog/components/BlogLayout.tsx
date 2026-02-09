@@ -38,7 +38,7 @@ export default function BlogLayout({
         <div className="absolute inset-0 bg-[#F4F0EB]" aria-hidden="true">
           <Image
             src="/images/blog/blogHeader.webp"
-            alt=""
+            alt="Blog Artovnia - sztuka i rękodzieło"
             fill
             priority
             fetchPriority="high"

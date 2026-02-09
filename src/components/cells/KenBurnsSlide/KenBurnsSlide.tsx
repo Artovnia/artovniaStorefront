@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react'
 import Image from 'next/image'
+import { useGalleryPrefetch } from '@/hooks/useGalleryPrefetch'
 
 interface KenBurnsSlideProps {
   images: Array<{ url: string; id: string }>
@@ -40,6 +41,7 @@ export const KenBurnsSlide = ({
   const [previousIndex, setPreviousIndex] = useState<number | null>(null)
   const intervalRef = useRef<NodeJS.Timeout | null>(null)
   const containerRef = useRef<HTMLDivElement>(null)
+  const { prefetchKenBurnsImage } = useGalleryPrefetch()
 
   const goToNextImage = useCallback(() => {
     if (images.length <= 1) return
@@ -49,10 +51,16 @@ export const KenBurnsSlide = ({
     setCurrentIndex(nextIndex)
     onImageChange?.(nextIndex)
 
+    // Prefetch 2 slides ahead so it's cached before we crossfade to it
+    if (images.length > 2) {
+      const aheadIndex = (nextIndex + 1) % images.length
+      prefetchKenBurnsImage(images[aheadIndex].url)
+    }
+
     setTimeout(() => {
       setPreviousIndex(null)
     }, TRANSITION_DURATION)
-  }, [currentIndex, images.length, onImageChange])
+  }, [currentIndex, images.length, onImageChange, prefetchKenBurnsImage, images])
 
   useEffect(() => {
     if (isActive && images.length > 1) {
@@ -72,12 +80,19 @@ export const KenBurnsSlide = ({
     }
   }, [isActive, goToNextImage, images.length])
 
+  // When KenBurns becomes active, prefetch the first 2 images immediately
   useEffect(() => {
+    if (isActive && images.length > 0) {
+      prefetchKenBurnsImage(images[0].url)
+      if (images.length > 1) {
+        prefetchKenBurnsImage(images[1].url)
+      }
+    }
     if (!isActive) {
       setCurrentIndex(0)
       setPreviousIndex(null)
     }
-  }, [isActive])
+  }, [isActive, images, prefetchKenBurnsImage])
 
   if (!images.length) return null
 

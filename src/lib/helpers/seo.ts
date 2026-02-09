@@ -476,6 +476,28 @@ export const generateProductMetadata = (
   // The /api/og-image route converts WebP→JPEG on-the-fly (cached by Vercel CDN)
   const ogImage = getOgImageUrl(rawImage)
 
+  // Extract price and availability for Facebook product meta tags
+  const productPrice = extractProductPrice(product)
+  const availabilityUrl = getProductAvailability(product)
+  // Map schema.org availability URL to Facebook's simpler format
+  const fbAvailability = availabilityUrl.includes("OutOfStock")
+    ? "out of stock"
+    : availabilityUrl.includes("LimitedAvailability")
+      ? "available for order"
+      : "in stock"
+
+  // Build other meta tags: article:tag + Facebook product tags
+  // Facebook product:* tags enable richer link previews with price badges
+  const otherMeta: Record<string, string | string[]> = {}
+  if (product?.tags && product.tags.length > 0) {
+    otherMeta["article:tag"] = product.tags.map((t) => t.value)
+  }
+  if (productPrice && productPrice > 0) {
+    otherMeta["product:price:amount"] = productPrice.toFixed(2)
+    otherMeta["product:price:currency"] = "PLN"
+  }
+  otherMeta["product:availability"] = fbAvailability
+
   return {
     title: buildSeoTitle(),
     description,
@@ -522,10 +544,7 @@ export const generateProductMetadata = (
     },
     // fb:app_id is injected as <meta property> in root layout.tsx
     // (Next.js other field generates <meta name> which Facebook ignores)
-    other:
-      product?.tags && product.tags.length > 0
-        ? { "article:tag": product.tags.map((t) => t.value) }
-        : undefined,
+    other: Object.keys(otherMeta).length > 0 ? otherMeta : undefined,
     twitter: {
       card: "summary_large_image",
       site: "@artovnia",
@@ -1203,4 +1222,5 @@ export {
   extractProductPrice,
   generateDescription,
   getProductWeight,
+  getProductAvailability,
 }

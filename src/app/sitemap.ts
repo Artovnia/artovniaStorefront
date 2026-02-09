@@ -142,9 +142,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         .filter((product) => product.handle)
         .map((product) => ({
           url: `${baseUrl}/products/${product.handle}`,
-          lastModified: product.created_at 
-            ? new Date(product.created_at) 
-            : new Date(),
+          lastModified: product.updated_at
+            ? new Date(product.updated_at)
+            : product.created_at
+              ? new Date(product.created_at)
+              : new Date(),
           changeFrequency: 'weekly' as const,
           priority: 0.7,
         }))
@@ -221,12 +223,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       ...sellerPages,
     ]
 
-    console.log(`✅ Sitemap: Generated ${allPages.length} total URLs`)
-    console.log(`   - ${staticPages.length} static pages`)
-    console.log(`   - ${productPages.length} products`)
-    console.log(`   - ${categoryPages.length} categories`)
-    console.log(`   - ${blogPages.length} blog posts`)
-    console.log(`   - ${sellerPages.length} sellers`)
 
     return allPages
   } catch (error) {

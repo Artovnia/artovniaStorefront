@@ -16,6 +16,7 @@ export const listProductsForSitemap = async ({
   products: Array<{
     handle: string
     created_at: string | null
+    updated_at: string | null
     seller?: { handle: string } | null
   }>
   count: number
@@ -31,7 +32,7 @@ export const listProductsForSitemap = async ({
       method: "GET",
       query: {
         limit,
-        fields: "id,handle,created_at,metadata", // Minimal fields for sitemap
+        fields: "id,handle,created_at,updated_at,metadata", // Minimal fields for sitemap
       },
       next: {
         tags: ["products"],
@@ -45,6 +46,7 @@ export const listProductsForSitemap = async ({
       products: response.products.map(p => ({
         handle: p.handle || '',
         created_at: p.created_at || null,
+        updated_at: (p as any).updated_at || null,
         seller: (p as any).seller ? {
           handle: (p as any).seller.handle || ''
         } : null
