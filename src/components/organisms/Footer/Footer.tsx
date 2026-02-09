@@ -18,15 +18,9 @@ interface FooterProps {
  * @param categories - Product categories to display in footer navigation
  */
 export function Footer({ categories = [] }: FooterProps) {
-  // Filter to show only top-level parent categories (no parent_category_id)
-  const topLevelCategories = categories.filter(cat => {
-    const hasNoParentId = !cat.parent_category_id || cat.parent_category_id === null
-    const hasNoParentObj = !cat.parent_category || 
-                         cat.parent_category === null || 
-                         (typeof cat.parent_category === 'object' && !cat.parent_category.id)
-    
-    return hasNoParentId && hasNoParentObj
-  })
+  // categories prop now receives parentCategories directly from layout
+  // (top-level only, pre-filtered) — no additional filtering needed
+  const topLevelCategories = categories
   
   const getIcon = (label: string) => {
     switch(label) {

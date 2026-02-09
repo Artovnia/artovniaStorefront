@@ -68,8 +68,8 @@ export default async function RootLayout({
           {/* ✅ OPTIMIZATION: Footer in Suspense for non-blocking render */}
           {/* Footer is below fold, so it can load after initial content */}
           <Suspense fallback={<div className="h-96 bg-tertiary" />}>
-            {/* Footer can use flat categories for sitemap */}
-            <Footer categories={categories.categories || []} />
+            {/* Footer shows top-level parent categories only - use parentCategories (same as Header) */}
+            <Footer categories={categories.parentCategories || []} />
           </Suspense>
         </div>
         <MobileUserNavigation />

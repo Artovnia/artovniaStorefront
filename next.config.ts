@@ -252,13 +252,17 @@ const nextConfig: NextConfig = {
         ],
       },
       
-      // CACHE: Static content pages
+      // CACHE: Static content pages (all informational/legal pages)
       {
-        source: '/(about|how-to-buy|delivery|payment|returns|selling-guide|sellers-faq)',
+        source: '/(about|how-to-buy|delivery|payment|returns|selling-guide|sellers-faq|faq|regulamin|polityka-prywatnosci|support|tags)',
         headers: [
           {
             key: 'Cache-Control',
-            value: 'public, s-maxage=3600, stale-while-revalidate=86400', // 1hr CDN
+            value: 'public, s-maxage=3600, stale-while-revalidate=86400', // 1hr CDN, 1day stale
+          },
+          {
+            key: 'CDN-Cache-Control',
+            value: 'public, s-maxage=3600, stale-while-revalidate=86400',
           },
         ],
       },

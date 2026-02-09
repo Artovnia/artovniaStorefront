@@ -2,7 +2,6 @@ import { Metadata } from "next"
 import { getTranslations } from "next-intl/server"
 import React, { Suspense } from "react"
 import TermsOfUseContent from "@/components/pages/terms/TermsOfUseContent"
-import { Footer } from "@/components/organisms/Footer/Footer"
 import { Link } from "@/i18n/routing"
 import { ArrowLeftIcon } from "@/icons"
 
@@ -56,8 +55,6 @@ export default async function TermsPage() {
           </div>
         </Suspense>
       </main>
-      
-      <Footer />
     </div>
     
   )

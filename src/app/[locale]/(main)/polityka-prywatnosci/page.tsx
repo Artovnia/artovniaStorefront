@@ -2,7 +2,7 @@ import { Metadata } from "next"
 import { getTranslations } from "next-intl/server"
 import React, { Suspense } from "react"
 import PrivacyPolicyContent from "@/components/pages/privacy/PrivacyPolicyContent"
-import { Footer } from "@/components/organisms/Footer/Footer"
+
 import { Link } from "@/i18n/routing"
 import { ArrowLeftIcon } from "@/icons"
 
