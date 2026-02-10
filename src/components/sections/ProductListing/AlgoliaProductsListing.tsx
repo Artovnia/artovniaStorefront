@@ -11,7 +11,6 @@ import {
 import { MobileCategoryBreadcrumbs } from "@/components/molecules/MobileCategoryBreadcrumbs"
 import { BatchPriceProvider } from "@/components/context/BatchPriceProvider"
 import { PromotionDataProvider } from "@/components/context/PromotionDataProvider"
-import { SelectField } from "@/components/molecules/SelectField/SelectField"
 import { Configure, useHits, useRefinementList, useSortBy } from "react-instantsearch"
 import React, { useEffect, useState, useRef } from "react"
 import { InstantSearchNext } from "react-instantsearch-nextjs"
@@ -34,7 +33,6 @@ const hasValidAlgoliaConfig = !!(ALGOLIA_ID && ALGOLIA_SEARCH_KEY && ALGOLIA_IND
 // Import these after the constants to avoid hoisting issues
 import { useSearchParams } from "next/navigation"
 import { getFacedFilters } from "@/lib/helpers/get-faced-filters"
-import useUpdateSearchParams from "@/hooks/useUpdateSearchParams"
 import { PRODUCT_LIMIT } from "@/const"
 import { useFilterStore } from "@/stores/filterStore"
 
@@ -123,27 +121,25 @@ const AlgoliaProductsListingWithConfig = (props: AlgoliaProductsListingProps) =>
   const { selectedColors, selectedRating } = useFilterStore()
   
   // Build the unified filter string for Algolia's 'filters' parameter.
-  // IMPORTANT: We use the 'filters' string (not 'facetFilters' array) because:
-  // - 'filters' works on both primary and replica indices without requiring
-  //   each attribute to be in attributesForFaceting on every replica
-  // - 'filters' supports both facet-style (attribute:value) and numeric (>=, <=) syntax
-  // - All conditions joined by AND combine correctly
+  // IMPORTANT: All attributes used here MUST be in attributesForFaceting on the Algolia index.
+  // Standard replicas inherit attributesForFaceting from the primary index.
+  // Using a non-faceted attribute causes Algolia to reject the ENTIRE filter, returning 0 results.
   const filterParts: string[] = [];
   
-  // Seller filter
+  // Seller filter — use seller.id if available, fall back to seller.handle
+  // NOTE: Only filterOnly(seller.id) is in attributesForFaceting.
+  // seller.handle is NOT a facet, so filtering on it will fail on replicas.
   if (seller_handle) {
     filterParts.push(`seller.handle:"${seller_handle}"`);
   }
   
-  // Category filter — support both category_ids and categories.id with OR fallback
+  // Category filter — use ONLY categories.id which is confirmed in attributesForFaceting.
+  // category_ids is NOT in attributesForFaceting, so using it in the filters string
+  // causes Algolia to reject the entire filter on replica indices (sorting), returning 0 results.
   const effectiveCategoryIds = category_ids || (category_id ? [category_id] : [])
   
   if (effectiveCategoryIds.length > 0) {
-    // Build OR group: (category_ids:id1 OR categories.id:id1 OR category_ids:id2 OR categories.id:id2)
-    const categoryOrParts = effectiveCategoryIds.flatMap(id => [
-      `category_ids:"${id}"`,
-      `categories.id:"${id}"`
-    ])
+    const categoryOrParts = effectiveCategoryIds.map(id => `categories.id:"${id}"`)
     filterParts.push(`(${categoryOrParts.join(' OR ')})`);
   }
   
@@ -257,22 +253,47 @@ const AlgoliaProductsListingWithConfig = (props: AlgoliaProductsListingProps) =>
     client.search = (requests) => {
       const cacheKey = JSON.stringify(requests);
       
+      // 🔍 DIAGNOSTIC: Log every search request to identify sorting+category issue
+      const reqs = Array.isArray(requests) ? requests : (requests as any)?.requests || [requests];
+      if (Array.isArray(reqs)) {
+        reqs.forEach((req: any, i: number) => {
+          console.log(`[Algolia Search #${i}]`, {
+            indexName: req.indexName,
+            filters: req.params?.filters || req.filters || '(none)',
+            numericFilters: req.params?.numericFilters || req.numericFilters || '(none)',
+            query: req.params?.query || req.query || '',
+            page: req.params?.page || req.page || 0,
+          });
+        });
+      }
+      
       // Check cache first
       const cached = cache.get(cacheKey);
       if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
-    
         return Promise.resolve(cached.result);
       }
       
       // Check if same request is already pending (deduplication)
       const pendingRequest = pendingRequests.get(cacheKey);
       if (pendingRequest) {
-    
         return pendingRequest;
       }
       
       // Make new request
-      const requestPromise = originalSearch.call(client, requests).then(result => {
+      const requestPromise = originalSearch.call(client, requests).then((result: any) => {
+        // 🔍 DIAGNOSTIC: Log response hits count per index
+        const results = result?.results || [];
+        if (Array.isArray(results)) {
+          results.forEach((r: any, i: number) => {
+            console.log(`[Algolia Response #${i}]`, {
+              index: r.index,
+              nbHits: r.nbHits,
+              nbPages: r.nbPages,
+              params: r.params,
+            });
+          });
+        }
+        
         // Cache the result
         cache.set(cacheKey, { result, timestamp: Date.now() });
         
@@ -287,6 +308,8 @@ const AlgoliaProductsListingWithConfig = (props: AlgoliaProductsListingProps) =>
         
         return result;
       }).catch(error => {
+        // 🔍 DIAGNOSTIC: Log errors from Algolia
+        console.error(`[Algolia Error]`, error.message || error);
         // Remove from pending requests on error
         pendingRequests.delete(cacheKey);
         throw error;
@@ -367,7 +390,6 @@ const ProductsListing = ({
     results,
     // sendEvent,
   } = useHits()
-  const updateSearchParams = useUpdateSearchParams()
 
   // Read sortBy from URL to sync with useSortBy hook
   const searchParams = useSearchParams()
@@ -376,7 +398,7 @@ const ProductsListing = ({
   // CRITICAL FIX: Use Algolia's useSortBy hook to switch replica indices internally.
   // This preserves all search state (filters, pagination) when sorting changes,
   // unlike remounting InstantSearchNext which destroys state and can cause 0 results.
-  const { currentRefinement, options: sortOptions, refine: refineSortBy } = useSortBy({
+  const { currentRefinement, refine: refineSortBy } = useSortBy({
     items: sortByItems,
   })
 
@@ -413,7 +435,6 @@ const ProductsListing = ({
   const [user, setUser] = useState<HttpTypes.StoreCustomer | null>(null)
   const [wishlist, setWishlist] = useState<SerializableWishlist[]>([])
   const [isUserDataLoaded, setIsUserDataLoaded] = useState(false)
-  const [debugLogged, setDebugLogged] = useState(false)
 
   // ✅ OPTIMIZED: Memoized refresh function to prevent re-renders
   const refreshWishlist = useMemo(() => async () => {
