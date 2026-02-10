@@ -47,7 +47,7 @@ const CategoryNavItem = ({ category, isActive, isCurrentRoute, onHover, onClose 
         href={`/categories/${category.handle}`}
         onClick={handleCategoryClick}
         className={cn(
-          "uppercase px-4 py-2 text-lg block whitespace-nowrap font-normal transition-colors",
+          "uppercase px-4 py-1 text-lg block whitespace-nowrap font-normal transition-colors",
           "flex items-center",
           "font-instrument-sans",
           isCurrentRoute && "border-b-2 border-[#3B3634]",
@@ -205,7 +205,7 @@ export const CategoryNavbar = ({ categories, activeCategory, onClose, onDropdown
           onClick={() => onClose?.()}
           className={cn(
             "uppercase flex items-center justify-between text-lg transition-colors",
-            "px-4 py-2 font-normal",
+            "px-4 py-1 font-normal",
             "font-instrument-sans",
             "hover:border-b-2 hover:border-[#3B3634]/40"
           )}
@@ -233,7 +233,7 @@ export const CategoryNavbar = ({ categories, activeCategory, onClose, onDropdown
           onClick={() => onClose?.()}
           className={cn(
             "uppercase flex items-center justify-between text-lg transition-colors",
-            "px-4 py-2 font-normal text-red-600 hover:text-red-700",
+            "px-4 py-1 font-normal text-red-600 hover:text-red-700",
             "font-instrument-sans",
             "hover:border-b-2 hover:border-red-600"
           )}

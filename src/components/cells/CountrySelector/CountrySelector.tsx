@@ -104,7 +104,7 @@ export const CountrySelector = ({
         onClick={() => setIsOpen(!isOpen)}
         disabled={isPending}
         className={clsx(
-          "flex items-center gap-2 px-4 py-2.5",
+          "flex items-center gap-2 px-2 py-1.5",
           "bg-primary hover:bg-[#3B3634]",
           "border border-[#3B3634]/20 hover:border-[#3B3634]/40",
           "transition-all duration-300 ease-out",

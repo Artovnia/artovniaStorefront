@@ -34,17 +34,24 @@ export const NavbarSearch = () => {
     router.push(`/categories`)
   }
 
-  return (
-    <form className="flex items-center" method="POST" onSubmit={submitHandler}>
-      <Input
-        icon={<SearchIcon />}
-        placeholder="Wyszukaj produkt"
-        value={search}
-        changeValue={setSearch}
-        clearable={true}
-        onClear={handleClear}
-      />
-      <input type="submit" className="hidden" />
-    </form>
+
+   return (
+  <form
+    className="flex items-center w-full"
+    method="POST"
+    onSubmit={submitHandler}
+  >
+    <Input
+      icon={<SearchIcon />}
+      placeholder="Wyszukaj produkt"
+      value={search}
+      changeValue={setSearch}
+      clearable={true}
+      onClear={handleClear}
+      className="py-2 text-md min-w-[350px] "
+    />
+    <input type="submit" className="hidden" />
+  </form>
+
   )
 }

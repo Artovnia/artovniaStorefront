@@ -28,7 +28,7 @@ export function CountrySelectorWrapper({ regions }: CountrySelectorWrapperProps)
   // Show Poland flag immediately while regions load
   if (!regions || regions.length === 0) {
     return (
-      <div className="flex items-center gap-2 px-4 py-2.5 bg-primary border border-[#3B3634]/20">
+      <div className="flex items-center gap-2 px-2 py-1.5 bg-primary border border-[#3B3634]/20">
         <span className="text-xl">🇵🇱</span>
       </div>
     )
