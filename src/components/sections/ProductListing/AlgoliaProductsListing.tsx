@@ -119,71 +119,57 @@ const AlgoliaProductsListingWithConfig = (props: AlgoliaProductsListingProps) =>
   
 
   // Read active color and rating selections from Zustand store
-  // CRITICAL FIX: These are added directly to Configure's facetFilters
-  // instead of using useRefinementList's refine() which creates a separate
-  // widget state that can race with Configure and lose category filters
+  // These are added to the unified 'filters' string (not facetFilters array)
+  // to ensure compatibility with both primary and replica indices
   const { selectedColors, selectedRating } = useFilterStore()
   
-  // Build the filter string for Algolia
+  // Build the unified filter string for Algolia's 'filters' parameter.
+  // IMPORTANT: We use the 'filters' string (not 'facetFilters' array) because:
+  // - 'filters' works on both primary and replica indices without requiring
+  //   each attribute to be in attributesForFaceting on every replica
+  // - 'filters' supports both facet-style (attribute:value) and numeric (>=, <=) syntax
+  // - All conditions joined by AND combine correctly
   const filterParts: string[] = [];
   
-  // Prepare facet filters array for Algolia's facetFilters parameter
-  // CRITICAL: facetFilters is an array of arrays where:
-  // - Items in the same sub-array are OR'd together
-  // - Different sub-arrays are AND'd together
-  const facetFiltersList: string[][] = [];
-  
-  // Only filter by seller if a specific seller handle is provided
+  // Seller filter
   if (seller_handle) {
     filterParts.push(`seller.handle:"${seller_handle}"`);
   }
   
-  // CRITICAL FIX: Add category filter if specified - support both single category_id and multiple category_ids
-  // This MUST be added to facetFiltersList to ensure it's always applied with AND logic
+  // Category filter — support both category_ids and categories.id with OR fallback
   const effectiveCategoryIds = category_ids || (category_id ? [category_id] : [])
   
   if (effectiveCategoryIds.length > 0) {
-    // SAFE APPROACH: Try new category_ids field first, fallback to original categories.id
-    // This ensures backward compatibility while we transition to the new hierarchy system
-    
-    // Primary filter: Use new category_ids field for hierarchy support
-    const newCategoryFilters = effectiveCategoryIds.map(id => `category_ids:${id}`)
-    
-    // Fallback filter: Use original categories.id for immediate compatibility
-    const originalCategoryFilters = effectiveCategoryIds.map(id => `categories.id:${id}`)
-    
-    // Use both approaches to ensure results are found
-    // This creates: (category_ids:id1 OR category_ids:id2) OR (categories.id:id1 OR categories.id:id2)
-    // All these are OR'd together in a single sub-array
-    facetFiltersList.push([...newCategoryFilters, ...originalCategoryFilters]);
+    // Build OR group: (category_ids:id1 OR categories.id:id1 OR category_ids:id2 OR categories.id:id2)
+    const categoryOrParts = effectiveCategoryIds.flatMap(id => [
+      `category_ids:"${id}"`,
+      `categories.id:"${id}"`
+    ])
+    filterParts.push(`(${categoryOrParts.join(' OR ')})`);
   }
   
-  // Add collection filter if specified
+  // Collection filter
   if (collection_id) {
-    facetFiltersList.push([`collections.id:${collection_id}`]);
+    filterParts.push(`collections.id:"${collection_id}"`);
   }
   
-  // CRITICAL FIX: Add color filters from Zustand store to facetFiltersList
-  // This ensures colors are AND'd with category filters in a single Configure component
+  // Color filters from Zustand store (OR'd together — user wants any of these colors)
   if (selectedColors.length > 0) {
-    // Multiple colors are OR'd together (user wants any of these colors)
-    const colorFilters = selectedColors.map(color => `color_families:${color}`)
-    facetFiltersList.push(colorFilters)
+    const colorOrParts = selectedColors.map(color => `color_families:"${color}"`)
+    filterParts.push(`(${colorOrParts.join(' OR ')})`);
   }
   
-  // CRITICAL FIX: Add rating filter from Zustand store to facetFiltersList
+  // Rating filter from Zustand store
   if (selectedRating) {
-    facetFiltersList.push([`average_rating:${selectedRating}`])
+    filterParts.push(`average_rating:${selectedRating}`);
   }
   
-  // URL-based filters (size, dimensions, condition) are in the facetFilters string
-  // from getFacedFilters(). These are passed directly as algoliaParams.filters below.
-  // Algolia automatically AND's the 'filters' string with 'facetFilters' array,
-  // so all filters combine correctly with category, color, and rating.
+  // URL-based filters (size, dimensions, condition) from getFacedFilters()
+  if (facetFilters && facetFilters.trim() !== '') {
+    filterParts.push(facetFilters.trim())
+  }
   
-  // IMPORTANT: When there's a search query, we should NOT filter by products.title
-  // Instead, let Algolia's search functionality handle the query
-  // Remove any products.title filter if we have a search query
+  // Remove products.title filter when there's a search query
   if (query) {
     const titleFilterIndex = filterParts.findIndex(part => part.startsWith('products.title:'));
     if (titleFilterIndex !== -1) {
@@ -191,13 +177,7 @@ const AlgoliaProductsListingWithConfig = (props: AlgoliaProductsListingProps) =>
     }
   }
   
-  // Combine seller filter with URL-based filters (size, dimensions, condition)
-  // Both use Algolia's 'filters' string parameter which supports numeric comparisons
-  const allFilterParts = [...filterParts]
-  if (facetFilters && facetFilters.trim() !== '') {
-    allFilterParts.push(facetFilters.trim())
-  }
-  const filters = allFilterParts.length > 0 ? allFilterParts.join(' AND ') : ''
+  const filters = filterParts.length > 0 ? filterParts.join(' AND ') : ''
   
   // Define UI sort options for display in the SelectField
   const sortOptions = [
@@ -279,10 +259,8 @@ const AlgoliaProductsListingWithConfig = (props: AlgoliaProductsListingProps) =>
     algoliaParams.numericFilters = numericFilters;
   }
   
-  // Add facet filters if any (for array fields like categories)
-  if (facetFiltersList.length > 0) {
-    algoliaParams.facetFilters = facetFiltersList;
-  }
+  // All filters (category, color, rating, size, dimensions) are now in the unified
+  // 'filters' string above. No separate facetFilters needed.
   
   // Use as configureProps
   const configureProps = {
@@ -290,6 +268,7 @@ const AlgoliaProductsListingWithConfig = (props: AlgoliaProductsListingProps) =>
     // NOTE: Facets are configured in Algolia dashboard, not via API
     // attributesForFaceting is deprecated and causes 400 errors
   };
+  
   
   
   // Create a memoized search client with caching to prevent excessive queries
