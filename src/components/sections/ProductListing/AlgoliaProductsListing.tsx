@@ -12,7 +12,7 @@ import { MobileCategoryBreadcrumbs } from "@/components/molecules/MobileCategory
 import { BatchPriceProvider } from "@/components/context/BatchPriceProvider"
 import { PromotionDataProvider } from "@/components/context/PromotionDataProvider"
 import { SelectField } from "@/components/molecules/SelectField/SelectField"
-import { Configure, useHits, useRefinementList } from "react-instantsearch"
+import { Configure, useHits, useRefinementList, useSortBy } from "react-instantsearch"
 import React, { useEffect, useState, useRef } from "react"
 import { InstantSearchNext } from "react-instantsearch-nextjs"
 import { liteClient as algoliasearch } from "algoliasearch/lite"
@@ -115,7 +115,6 @@ const AlgoliaProductsListingWithConfig = (props: AlgoliaProductsListingProps) =>
   const numericFilters: string[] = filterResult.numericFilters
   const page: number = +(searchParams.get("page") || 1)
   const query: string = searchParams.get("query") || ""
-  const sortBy: string | null = searchParams.get("sortBy") || null
   
 
   // Read active color and rating selections from Zustand store
@@ -179,42 +178,16 @@ const AlgoliaProductsListingWithConfig = (props: AlgoliaProductsListingProps) =>
   
   const filters = filterParts.length > 0 ? filterParts.join(' AND ') : ''
   
-  // Define UI sort options for display in the SelectField
-  const sortOptions = [
-    { label: "Domyślne", value: "" },
-    { label: "Cena: Niska do wysokiej", value: "price_asc" },
-    { label: "Cena: Wysoka do niskiej", value: "price_desc" },
-    { label: "Najnowsze", value: "created_at_desc" },
-    { label: "Najstarsze", value: "created_at_asc" },
+  // Sort items for Algolia's useSortBy hook — maps UI labels to replica index names
+  // useSortBy switches the index INTERNALLY without remounting InstantSearchNext,
+  // which preserves all search state (filters, pagination, etc.)
+  const sortByItems = [
+    { label: "Domyślne", value: ALGOLIA_INDEX_NAME },
+    { label: "Cena: Niska do wysokiej", value: `${ALGOLIA_INDEX_NAME}_price_asc` },
+    { label: "Cena: Wysoka do niskiej", value: `${ALGOLIA_INDEX_NAME}_price_desc` },
+    { label: "Najnowsze", value: `${ALGOLIA_INDEX_NAME}_created_at_desc` },
+    { label: "Najstarsze", value: `${ALGOLIA_INDEX_NAME}_created_at_asc` },
   ]
-  
-  // Define index names using our naming constants for consistency
-  // Base product index
-  const PRIMARY_INDEX_NAME = ALGOLIA_INDEX_NAME;
-  
-  // Map UI sort options to the correct replica indices
-  // These replica indices are configured in the Algolia backend
-  const getIndexName = (sortOption: string | null): string => {
-    const PRIMARY_INDEX_NAME = ALGOLIA_INDEX_NAME;
-    
-    // Use the replica indices with their predefined sorting
-    // These match the constants in the backend service.ts PRODUCT_REPLICAS
-    switch (sortOption) {
-      case 'price_asc':
-        return `${PRIMARY_INDEX_NAME}_price_asc`;
-      case 'price_desc':
-        return `${PRIMARY_INDEX_NAME}_price_desc`;
-      case 'created_at_desc':
-        return `${PRIMARY_INDEX_NAME}_created_at_desc`;
-      case 'created_at_asc':
-        return `${PRIMARY_INDEX_NAME}_created_at_asc`;
-      default:
-        return PRIMARY_INDEX_NAME;
-    }
-  }
-  
-  // Get the index name based on sort selection
-  const activeIndexName = getIndexName(sortBy);
   
   // Create search parameters object for Algolia
   const algoliaParams: any = {
@@ -328,25 +301,21 @@ const AlgoliaProductsListingWithConfig = (props: AlgoliaProductsListingProps) =>
     return client;
   }, []);
   
-  // We can now use the correct replica index based on the sort option
-  // The replica indices are configured in the backend to have the right sorting
-  
-  // CRITICAL FIX: Include sortBy in key to force InstantSearch remount when sorting changes
-  // This ensures the correct replica index is used and results are properly sorted
+  // Key for InstantSearchNext — only remount when the actual data context changes
+  // (category, collection), NOT when sorting changes. Sorting is handled by useSortBy
+  // hook inside ProductsListing which switches replica index internally.
   const instantSearchKey = useMemo(() => {
     const categoryKey = category_ids ? category_ids.join(',') : (category_id || 'all');
-    const sortKey = sortBy || 'default';
-    return `${categoryKey}-${collection_id || 'all'}-${sortKey}`;
-  }, [category_id, category_ids, collection_id, sortBy]); // Added sortBy to dependencies
+    return `${categoryKey}-${collection_id || 'all'}`;
+  }, [category_id, category_ids, collection_id]);
 
-  // Use the correct indexName based on sort selection
   return (
     <PromotionDataProvider countryCode={locale || 'pl'} limit={100}>
       <BatchPriceProvider currencyCode="PLN" days={30}>
         <InstantSearchNext 
           key={instantSearchKey}
           searchClient={searchClient} 
-          indexName={activeIndexName}
+          indexName={ALGOLIA_INDEX_NAME}
           future={{
             preserveSharedStateOnUnmount: true,
             persistHierarchicalRootCount: false
@@ -355,10 +324,9 @@ const AlgoliaProductsListingWithConfig = (props: AlgoliaProductsListingProps) =>
         >
           <Configure {...configureProps} />
           <ProductsListing 
-            sortOptions={sortOptions} 
+            sortByItems={sortByItems} 
             category_id={category_id} 
             categories={categories}
-            // Pass category_ids for parent category aggregation
             category_ids={category_ids}
             currentCategory={currentCategory}
             hasEverHadResults={hasEverHadResults}
@@ -369,15 +337,15 @@ const AlgoliaProductsListingWithConfig = (props: AlgoliaProductsListingProps) =>
   )
 }
 
-// Define the interface for sort options
-interface SortOption {
+// Sort item for Algolia's useSortBy hook
+interface SortByItem {
   label: string
   value: string
 }
 
 // Define props interface for the ProductsListing component
 interface ProductsListingProps {
-  sortOptions?: SortOption[]
+  sortByItems: SortByItem[]
   category_id?: string
   category_ids?: string[]
   categories?: HttpTypes.StoreProductCategory[]
@@ -387,7 +355,7 @@ interface ProductsListingProps {
 
 
 const ProductsListing = ({ 
-  sortOptions, 
+  sortByItems, 
   category_id, 
   category_ids, 
   categories = [], 
@@ -400,7 +368,30 @@ const ProductsListing = ({
     // sendEvent,
   } = useHits()
   const updateSearchParams = useUpdateSearchParams()
-  
+
+  // Read sortBy from URL to sync with useSortBy hook
+  const searchParams = useSearchParams()
+  const urlSortBy = searchParams.get("sortBy") || null
+
+  // CRITICAL FIX: Use Algolia's useSortBy hook to switch replica indices internally.
+  // This preserves all search state (filters, pagination) when sorting changes,
+  // unlike remounting InstantSearchNext which destroys state and can cause 0 results.
+  const { currentRefinement, options: sortOptions, refine: refineSortBy } = useSortBy({
+    items: sortByItems,
+  })
+
+  // Sync URL sortBy param → useSortBy hook.
+  // The SortFilter component in ProductFilterBar updates the URL directly,
+  // so we need this effect to pick up URL changes and call refineSortBy.
+  useEffect(() => {
+    const targetIndex = urlSortBy
+      ? `${ALGOLIA_INDEX_NAME}_${urlSortBy}`
+      : ALGOLIA_INDEX_NAME;
+    if (currentRefinement !== targetIndex) {
+      refineSortBy(targetIndex);
+    }
+  }, [urlSortBy, currentRefinement, refineSortBy])
+
   // Algolia color facet counts — used for display only (counts per color family)
   // Color filtering is applied through Configure's facetFiltersList, not refine()
   const { items: colorFacetItems } = useRefinementList({
@@ -473,11 +464,6 @@ const ProductsListing = ({
       isMounted = false // Cleanup flag
     }
   }, []) // Empty dependency array - fetch only once
-
-  const selectOptionHandler = (value: string) => {
-    // Update the URL search params to trigger re-render with new sort
-    updateSearchParams("sortBy", value);
-  }
 
   // hasEverHadResults is passed from parent (persists across InstantSearch remounts)
   const isAlgoliaReady = !!results?.processingTimeMS
