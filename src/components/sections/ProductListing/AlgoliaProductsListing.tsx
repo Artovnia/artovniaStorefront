@@ -104,6 +104,25 @@ const AlgoliaProductsListingWithConfig = (props: AlgoliaProductsListingProps) =>
   // so revisiting a category doesn't flash skeleton
   const hasEverHadResults = useRef(false)
 
+  // Clear persisted Zustand filters (colors, rating) when category/collection context changes.
+  // Without this, stale filters from a previous category persist in localStorage and can
+  // cause 0 results in a new category that doesn't have matching products.
+  const categoryKey = category_ids ? category_ids.join(',') : (category_id || 'all')
+  const contextKey = `${categoryKey}-${collection_id || 'all'}-${seller_handle || 'all'}`
+  const prevContextKey = useRef(contextKey)
+  
+  useEffect(() => {
+    if (prevContextKey.current !== contextKey) {
+      prevContextKey.current = contextKey
+      // Clear color and rating filters that are stored in Zustand (and persisted to localStorage)
+      const { clearColors, clearRating, setPendingColors, setPendingRating } = useFilterStore.getState()
+      clearColors()
+      clearRating()
+      setPendingColors([])
+      setPendingRating(null)
+    }
+  }, [contextKey])
+
   const searchParams = useSearchParams()
 
   // Get URL parameters for filtering and pagination
@@ -126,20 +145,19 @@ const AlgoliaProductsListingWithConfig = (props: AlgoliaProductsListingProps) =>
   // Using a non-faceted attribute causes Algolia to reject the ENTIRE filter, returning 0 results.
   const filterParts: string[] = [];
   
-  // Seller filter — use seller.id if available, fall back to seller.handle
-  // NOTE: Only filterOnly(seller.id) is in attributesForFaceting.
-  // seller.handle is NOT a facet, so filtering on it will fail on replicas.
+  // Seller filter — seller.handle is in attributesForFaceting (filterOnly)
   if (seller_handle) {
     filterParts.push(`seller.handle:"${seller_handle}"`);
   }
   
-  // Category filter — use ONLY categories.id which is confirmed in attributesForFaceting.
-  // category_ids is NOT in attributesForFaceting, so using it in the filters string
-  // causes Algolia to reject the entire filter on replica indices (sorting), returning 0 results.
+  // Category filter — use category_ids which contains the FULL ancestor hierarchy.
+  // categories.id only has directly assigned categories (leaf nodes), so filtering
+  // on a parent category ID would miss products assigned to child categories.
+  // category_ids is now in attributesForFaceting (filterOnly) on both primary and replicas.
   const effectiveCategoryIds = category_ids || (category_id ? [category_id] : [])
   
   if (effectiveCategoryIds.length > 0) {
-    const categoryOrParts = effectiveCategoryIds.map(id => `categories.id:"${id}"`)
+    const categoryOrParts = effectiveCategoryIds.map(id => `category_ids:"${id}"`)
     filterParts.push(`(${categoryOrParts.join(' OR ')})`);
   }
   
@@ -253,20 +271,6 @@ const AlgoliaProductsListingWithConfig = (props: AlgoliaProductsListingProps) =>
     client.search = (requests) => {
       const cacheKey = JSON.stringify(requests);
       
-      // 🔍 DIAGNOSTIC: Log every search request to identify sorting+category issue
-      const reqs = Array.isArray(requests) ? requests : (requests as any)?.requests || [requests];
-      if (Array.isArray(reqs)) {
-        reqs.forEach((req: any, i: number) => {
-          console.log(`[Algolia Search #${i}]`, {
-            indexName: req.indexName,
-            filters: req.params?.filters || req.filters || '(none)',
-            numericFilters: req.params?.numericFilters || req.numericFilters || '(none)',
-            query: req.params?.query || req.query || '',
-            page: req.params?.page || req.page || 0,
-          });
-        });
-      }
-      
       // Check cache first
       const cached = cache.get(cacheKey);
       if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
@@ -281,19 +285,6 @@ const AlgoliaProductsListingWithConfig = (props: AlgoliaProductsListingProps) =>
       
       // Make new request
       const requestPromise = originalSearch.call(client, requests).then((result: any) => {
-        // 🔍 DIAGNOSTIC: Log response hits count per index
-        const results = result?.results || [];
-        if (Array.isArray(results)) {
-          results.forEach((r: any, i: number) => {
-            console.log(`[Algolia Response #${i}]`, {
-              index: r.index,
-              nbHits: r.nbHits,
-              nbPages: r.nbPages,
-              params: r.params,
-            });
-          });
-        }
-        
         // Cache the result
         cache.set(cacheKey, { result, timestamp: Date.now() });
         
@@ -308,8 +299,7 @@ const AlgoliaProductsListingWithConfig = (props: AlgoliaProductsListingProps) =>
         
         return result;
       }).catch(error => {
-        // 🔍 DIAGNOSTIC: Log errors from Algolia
-        console.error(`[Algolia Error]`, error.message || error);
+        console.error('[Algolia Search Error]', error.message || error);
         // Remove from pending requests on error
         pendingRequests.delete(cacheKey);
         throw error;
