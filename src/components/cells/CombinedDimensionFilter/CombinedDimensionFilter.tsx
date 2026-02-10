@@ -221,7 +221,7 @@ export function CombinedDimensionFilter({ onClose, showButton = true }: Combined
   
   return (
     <div className="p-4">
-      <h4 className="font-medium text-black mb-3 font-instrument-sans text-sm">Wymiary</h4>
+    
       
       {/* Length section */}
       <div className="mb-4">

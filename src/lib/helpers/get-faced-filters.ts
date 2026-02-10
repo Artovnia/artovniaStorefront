@@ -133,22 +133,11 @@ export const getFacedFilters = (filters: ReadonlyURLSearchParams): FilterResult 
       if (key === "min_price") minPrice = value
       if (key === "max_price") maxPrice = value
 
-      // Handle rating filter
-      // Note: Using exact match (=) instead of >= for precise rating filtering
-      // If you want "X stars and above" behavior, change to >=
-      if (key === "rating" && value) {
-        const ratingField = getOption(key)
-        if (ratingField) {
-          const splited = value.split(",")
-          
-          if (splited.length > 1) {
-            const orConditions = splited.map(val => `${ratingField}:${val}`)
-            filterParts.push(`(${orConditions.join(' OR ')})`)
-          } else {
-            filterParts.push(`${ratingField}:${splited[0]}`)
-          }
-        }
-      }
+      // NOTE: Rating filter is NOT parsed here anymore.
+      // Rating is applied directly through Configure's facetFiltersList via Zustand store
+      // (selectedRating → facetFiltersList in AlgoliaProductsListingWithConfig).
+      // The URL 'rating' param is still set by useApplyFilters and synced to Zustand
+      // by useSyncFiltersFromURL, but parsing it here would create a duplicate filter.
     }
   }
   

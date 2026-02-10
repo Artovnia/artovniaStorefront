@@ -36,6 +36,7 @@ import { useSearchParams } from "next/navigation"
 import { getFacedFilters } from "@/lib/helpers/get-faced-filters"
 import useUpdateSearchParams from "@/hooks/useUpdateSearchParams"
 import { PRODUCT_LIMIT } from "@/const"
+import { useFilterStore } from "@/stores/filterStore"
 
 interface AlgoliaProductsListingProps {
   category_id?: string
@@ -117,6 +118,12 @@ const AlgoliaProductsListingWithConfig = (props: AlgoliaProductsListingProps) =>
   const sortBy: string | null = searchParams.get("sortBy") || null
   
 
+  // Read active color and rating selections from Zustand store
+  // CRITICAL FIX: These are added directly to Configure's facetFilters
+  // instead of using useRefinementList's refine() which creates a separate
+  // widget state that can race with Configure and lose category filters
+  const { selectedColors, selectedRating } = useFilterStore()
+  
   // Build the filter string for Algolia
   const filterParts: string[] = [];
   
@@ -156,35 +163,23 @@ const AlgoliaProductsListingWithConfig = (props: AlgoliaProductsListingProps) =>
     facetFiltersList.push([`collections.id:${collection_id}`]);
   }
   
-  // CRITICAL FIX: Parse facetFilters from URL and add to facetFiltersList
-  // This ensures URL filters are combined with category filters using AND logic
-  if (facetFilters && facetFilters.trim() !== '') {
-    const cleanedFacetFilters = facetFilters.trim().startsWith('AND') 
-      ? facetFilters.trim().substring(3).trim() 
-      : facetFilters.trim();
-      
-    if (cleanedFacetFilters) {
-      // Split by AND to get individual filter conditions
-      const filterConditions = cleanedFacetFilters.split(' AND ').map(f => f.trim()).filter(Boolean);
-      
-      // Each condition becomes a separate sub-array (AND'd with others)
-      filterConditions.forEach(condition => {
-        // Check if condition has OR logic (parentheses)
-        if (condition.includes(' OR ')) {
-          // Extract filters from OR condition
-          const orFilters = condition
-            .replace(/[()]/g, '') // Remove parentheses
-            .split(' OR ')
-            .map(f => f.trim())
-            .filter(Boolean);
-          facetFiltersList.push(orFilters);
-        } else {
-          // Single condition - add as single-item array
-          facetFiltersList.push([condition]);
-        }
-      });
-    }
+  // CRITICAL FIX: Add color filters from Zustand store to facetFiltersList
+  // This ensures colors are AND'd with category filters in a single Configure component
+  if (selectedColors.length > 0) {
+    // Multiple colors are OR'd together (user wants any of these colors)
+    const colorFilters = selectedColors.map(color => `color_families:${color}`)
+    facetFiltersList.push(colorFilters)
   }
+  
+  // CRITICAL FIX: Add rating filter from Zustand store to facetFiltersList
+  if (selectedRating) {
+    facetFiltersList.push([`average_rating:${selectedRating}`])
+  }
+  
+  // URL-based filters (size, dimensions, condition) are in the facetFilters string
+  // from getFacedFilters(). These are passed directly as algoliaParams.filters below.
+  // Algolia automatically AND's the 'filters' string with 'facetFilters' array,
+  // so all filters combine correctly with category, color, and rating.
   
   // IMPORTANT: When there's a search query, we should NOT filter by products.title
   // Instead, let Algolia's search functionality handle the query
@@ -196,7 +191,13 @@ const AlgoliaProductsListingWithConfig = (props: AlgoliaProductsListingProps) =>
     }
   }
   
-  const filters = filterParts.length > 0 ? filterParts.join(' AND ') : ''
+  // Combine seller filter with URL-based filters (size, dimensions, condition)
+  // Both use Algolia's 'filters' string parameter which supports numeric comparisons
+  const allFilterParts = [...filterParts]
+  if (facetFilters && facetFilters.trim() !== '') {
+    allFilterParts.push(facetFilters.trim())
+  }
+  const filters = allFilterParts.length > 0 ? allFilterParts.join(' AND ') : ''
   
   // Define UI sort options for display in the SelectField
   const sortOptions = [
@@ -289,6 +290,7 @@ const AlgoliaProductsListingWithConfig = (props: AlgoliaProductsListingProps) =>
     // NOTE: Facets are configured in Algolia dashboard, not via API
     // attributesForFaceting is deprecated and causes 400 errors
   };
+  
   
   // Create a memoized search client with caching to prevent excessive queries
   const searchClient = useMemo(() => {
@@ -420,21 +422,21 @@ const ProductsListing = ({
   } = useHits()
   const updateSearchParams = useUpdateSearchParams()
   
-  // SOLUTION  // RESTORED: Algolia color filtering using color_families attribute
-  // Based on the product object structure, color_families contains the family names we need
-  const { items: colorFacetItems, refine: refineColor } = useRefinementList({
-    attribute: 'color_families', // This is the correct attribute for color family filtering
+  // Algolia color facet counts — used for display only (counts per color family)
+  // Color filtering is applied through Configure's facetFiltersList, not refine()
+  const { items: colorFacetItems } = useRefinementList({
+    attribute: 'color_families',
     limit: 50,
   })
 
   
   
-  // Rating filter - requires average_rating to be searchable (not filterOnly) in Algolia
-  // To get facet counts, configure in Algolia: searchable(average_rating)
-  const { items: ratingFacetItems, refine: refineRating } = useRefinementList({
+  // Rating facet counts — used for display only
+  // Rating filtering is applied through Configure's facetFiltersList, not refine()
+  const { items: ratingFacetItems } = useRefinementList({
     attribute: 'average_rating',
     limit: 10,
-    sortBy: ['name:desc'], // Sort by rating value descending (5, 4, 3, 2, 1)
+    sortBy: ['name:desc'],
   })
 
   // ✅ OPTIMIZED: Memoized user data fetching to prevent re-renders
@@ -535,8 +537,6 @@ const ProductsListing = ({
             <ProductFilterBar 
               colorFacetItems={colorFacetItems}
               ratingFacetItems={ratingFacetItems}
-              refineColor={refineColor}
-              refineRating={refineRating}
             />
           </div>
 

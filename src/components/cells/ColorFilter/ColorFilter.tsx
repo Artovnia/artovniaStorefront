@@ -139,7 +139,7 @@ export const ColorFilter = ({ algoliaFacetItems = [], onClose, showButton = true
 
   return (
     <div className="p-4">
-      <h4 className="font-medium text-black mb-3 font-instrument-sans text-sm">Kolor</h4>
+      
       <ul className="space-y-1">
         {colorFilters.length > 0 ? (
           colorFilters.map(({ label, amount, colorStyle, value, tooltip, isRefined }) => (

@@ -48,7 +48,7 @@ export const PriceFilter = ({ onClose, showButton = true }: PriceFilterProps = {
 
   return (
     <div className="p-4">
-      <h4 className="font-medium text-black mb-3 font-instrument-sans text-sm">Zakres cen</h4>
+     
       <div className="flex gap-2 flex-col sm:flex-row">
         <div className="flex-1">
           <div className="relative">

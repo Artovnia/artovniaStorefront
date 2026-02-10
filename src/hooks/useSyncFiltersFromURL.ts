@@ -6,8 +6,8 @@ import { useFilterStore } from '@/stores/filterStore'
  * Hook to sync filter store state FROM URL params (URL is source of truth)
  * This ensures the store always reflects the current URL state
  * 
- * NOTE: Colors are NOT synced from URL because they use Algolia refinements
- * Color state is managed separately via refineColor callbacks
+ * NOTE: Colors are NOT synced from URL because they are managed via Zustand store
+ * and applied through Configure's facetFiltersList in AlgoliaProductsListingWithConfig
  */
 export const useSyncFiltersFromURL = () => {
   const searchParams = useSearchParams()

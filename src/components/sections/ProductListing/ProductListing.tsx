@@ -226,8 +226,6 @@ export const ProductListing = ({
             <ProductFilterBar 
               colorFacetItems={[]} // No Algolia facet data in Postgres mode
               ratingFacetItems={[]} // No Algolia facet data in Postgres mode
-              refineColor={undefined} // No Algolia refinement in Postgres mode
-              refineRating={undefined} // No Algolia refinement in Postgres mode
             />
           </div>
 

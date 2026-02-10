@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react'
+import React, { useState, useRef, useEffect, useCallback } from 'react'
 import { createPortal } from 'react-dom'
 import { cn } from '@/lib/utils'
 import { Input, StarRating } from "@/components/atoms"
@@ -9,9 +9,7 @@ import { ColorFilter, SizeFilter, ProductRatingFilter, PriceFilter } from "@/com
 import { CombinedDimensionFilter } from "@/components/cells/CombinedDimensionFilter/CombinedDimensionFilter"
 import { useSearchParams } from 'next/navigation'
 import useUpdateSearchParams from '@/hooks/useUpdateSearchParams'
-import { useRefinementList } from 'react-instantsearch'
 import { useFilterStore } from '@/stores/filterStore'
-import useFilters from '@/hooks/useFilters'
 import { MobileFilterModal } from '@/components/organisms/MobileFilterModal/MobileFilterModal'
 import { useApplyFilters } from '@/hooks/useApplyFilters'
 import { useSyncFiltersFromURL } from '@/hooks/useSyncFiltersFromURL'
@@ -148,19 +146,15 @@ const FilterDropdown = ({ label, children, isActive, className, onApply }: Filte
 
 interface ProductFilterBarProps {
   className?: string
-  // SOLUTION 1: Accept centralized facet data as props to reduce Algolia queries
+  // Accept centralized facet data as props for facet counts display
   colorFacetItems?: any[]
   ratingFacetItems?: any[]
-  refineColor?: (value: string) => void
-  refineRating?: (value: string) => void
 }
 
 export const ProductFilterBar = ({ 
   className,
   colorFacetItems = [],
   ratingFacetItems = [],
-  refineColor,
-  refineRating
 }: ProductFilterBarProps) => {
   const searchParams = useSearchParams()
   const updateSearchParams = useUpdateSearchParams()
@@ -174,96 +168,9 @@ export const ProductFilterBar = ({
   // Get color and rating selections from Zustand store
   const { selectedColors, clearColors, selectedRating, clearRating } = useFilterStore()
   
-  // SOLUTION 1: Removed useRefinementList hooks - now using centralized facet data from props
-  // This eliminates multiple Algolia queries and reduces total query count significantly
-
-  // SOLUTION 2: Debounced synchronization to prevent rapid-fire queries
-  const debouncedSyncColors = useCallback(
-    (() => {
-      let timeoutId: NodeJS.Timeout
-      return (colors: string[], facetItems: any[], refine?: (value: string) => void) => {
-        clearTimeout(timeoutId)
-        timeoutId = setTimeout(() => {
-          if (!refine || facetItems.length === 0) return
-
-          const algoliaRefinedColors = facetItems
-            .filter(item => item.isRefined)
-            .map(item => item.value)
-
-          const zustandSet = new Set(colors)
-          const algoliaSet = new Set(algoliaRefinedColors)
-
-          const needsSync = 
-            zustandSet.size !== algoliaSet.size ||
-            colors.some(color => !algoliaSet.has(color)) ||
-            algoliaRefinedColors.some(color => !zustandSet.has(color))
-
-          if (needsSync) {
-            const refinementsToApply: string[] = []
-            
-            algoliaRefinedColors.forEach(color => {
-              if (!zustandSet.has(color)) {
-                refinementsToApply.push(color)
-              }
-            })
-            
-            colors.forEach(color => {
-              if (!algoliaSet.has(color)) {
-                refinementsToApply.push(color)
-              }
-            })
-
-            if (refinementsToApply.length > 0) {
-              requestAnimationFrame(() => {
-                refinementsToApply.forEach(color => {
-                  refine(color)
-                })
-              })
-            }
-          }
-        }, 300) // 300ms debounce
-      }
-    })(),
-    []
-  )
-
-  // CRITICAL FIX: Sync Zustand color selections with Algolia refinements
-  // This runs AFTER applyPendingFilters moves pending -> active state
-  // The URL update triggers re-render, then this effect syncs Algolia
-  useEffect(() => {
-    if (!refineColor || colorFacetItems.length === 0) return;
-    
-    // Use selectedColors (active state) not pendingColors
-    // This effect runs after Apply button updates the active state
-    debouncedSyncColors(selectedColors, colorFacetItems, refineColor)
-  }, [selectedColors, colorFacetItems, refineColor, debouncedSyncColors])
-  
-  // CRITICAL FIX: Sync Zustand rating selection with Algolia refinements
-  // This runs AFTER applyPendingFilters moves pending -> active state
-  useEffect(() => {
-    if (!refineRating || ratingFacetItems.length === 0) return; // Wait for Algolia to be ready
-    
-    const algoliaRefinedRating = ratingFacetItems.find(item => item.isRefined)?.label || null;
-    
-    // Use selectedRating (active state) not pendingRating
-    // Check if synchronization is needed
-    const needsSync = selectedRating !== algoliaRefinedRating;
-    
-    if (needsSync) {
-      // Use requestAnimationFrame to defer refinements until after current render cycle
-      requestAnimationFrame(() => {
-        // Clear current refinement if there is one
-        if (algoliaRefinedRating && algoliaRefinedRating !== selectedRating) {
-          refineRating(algoliaRefinedRating);
-        }
-        
-        // Apply new refinement if needed
-        if (selectedRating && selectedRating !== algoliaRefinedRating) {
-          refineRating(selectedRating);
-        }
-      });
-    }
-  }, [selectedRating, ratingFacetItems, refineRating])
+  // Colors and ratings are now applied directly through Configure's facetFiltersList
+  // in AlgoliaProductsListingWithConfig. No need to sync with useRefinementList refine().
+  // This eliminates the race condition that caused category filters to be lost.
   
   // Check if any filters are active
   // Read price from store for immediate updates
@@ -324,24 +231,23 @@ export const ProductFilterBar = ({
       })
     }
     
-    // Add color filters from Algolia facet items (for proper Clear All functionality)
-    if (colorFacetItems && refineColor) {
-      colorFacetItems
-        .filter(item => item.isRefined) // Only show refined/selected colors
-        .forEach((item, index) => {
-          filters.push({
-            key: `color-${index}`,
-            label: `Kolor: ${item.label}`,
-            onRemove: () => {
-              // Use Algolia refine function to properly clear the refinement
-              refineColor(item.value)
-              
-              // Also remove from Zustand store for UI consistency
-              const { removeColor } = useFilterStore.getState()
-              removeColor(item.value)
-            }
-          })
+    // Add color filters from Zustand store (colors are applied via Configure facetFilters)
+    if (selectedColors.length > 0) {
+      // Find display names from colorFacetItems if available
+      selectedColors.forEach((colorValue, index) => {
+        const facetItem = colorFacetItems.find(item => item.value === colorValue)
+        const displayLabel = facetItem?.label || colorValue
+        filters.push({
+          key: `color-${index}`,
+          label: `Kolor: ${displayLabel}`,
+          onRemove: () => {
+            // Remove from Zustand store — Configure will re-render without this color
+            const { removeColor, removePendingColor } = useFilterStore.getState()
+            removeColor(colorValue)
+            removePendingColor(colorValue)
+          }
         })
+      })
     }
     
     const size = searchParams.get("size")
@@ -409,31 +315,12 @@ export const ProductFilterBar = ({
 
   // Clear all filters handler
   const handleClearAll = () => {
-    // CRITICAL FIX: Clear all filter types properly
-    
     // 1. Clear Zustand store (both active and pending state)
+    // This will cause Configure to re-render without color/rating facetFilters
     const { clearAllFilters } = useFilterStore.getState()
     clearAllFilters()
     
-    // 2. Clear Algolia color refinements
-    if (refineColor && colorFacetItems) {
-      colorFacetItems
-        .filter(item => item.isRefined)
-        .forEach(item => {
-          refineColor(item.value)
-        })
-    }
-    
-    // 3. Clear Algolia rating refinements
-    if (refineRating && ratingFacetItems) {
-      ratingFacetItems
-        .filter(item => item.isRefined)
-        .forEach(item => {
-          refineRating(item.label)
-        })
-    }
-    
-    // 4. Clear URL parameters (except category, page, and sortBy)
+    // 2. Clear URL parameters (except category, page, and sortBy)
     const params = new URLSearchParams(searchParams.toString())
     
     // Remove all filter params but preserve category navigation and sorting
