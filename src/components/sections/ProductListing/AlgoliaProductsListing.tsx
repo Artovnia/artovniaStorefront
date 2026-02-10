@@ -13,7 +13,7 @@ import { BatchPriceProvider } from "@/components/context/BatchPriceProvider"
 import { PromotionDataProvider } from "@/components/context/PromotionDataProvider"
 import { SelectField } from "@/components/molecules/SelectField/SelectField"
 import { Configure, useHits, useRefinementList } from "react-instantsearch"
-import React, { useEffect, useState } from "react"
+import React, { useEffect, useState, useRef } from "react"
 import { InstantSearchNext } from "react-instantsearch-nextjs"
 import { liteClient as algoliasearch } from "algoliasearch/lite"
 import { useMemo } from "react"
@@ -100,6 +100,11 @@ const AlgoliaProductsListingWithConfig = (props: AlgoliaProductsListingProps) =>
     categories = [],
     currentCategory,
   } = props
+
+  // Track if we've ever received Algolia results — persists across InstantSearch remounts
+  // so revisiting a category doesn't flash skeleton
+  const hasEverHadResults = useRef(false)
+
   const searchParams = useSearchParams()
 
   // Get URL parameters for filtering and pagination
@@ -375,6 +380,7 @@ const AlgoliaProductsListingWithConfig = (props: AlgoliaProductsListingProps) =>
             // Pass category_ids for parent category aggregation
             category_ids={category_ids}
             currentCategory={currentCategory}
+            hasEverHadResults={hasEverHadResults}
           />
         </InstantSearchNext>
       </BatchPriceProvider>
@@ -395,6 +401,7 @@ interface ProductsListingProps {
   category_ids?: string[]
   categories?: HttpTypes.StoreProductCategory[]
   currentCategory?: HttpTypes.StoreProductCategory
+  hasEverHadResults: React.MutableRefObject<boolean>
 }
 
 
@@ -403,7 +410,8 @@ const ProductsListing = ({
   category_id, 
   category_ids, 
   categories = [], 
-  currentCategory 
+  currentCategory,
+  hasEverHadResults 
 }: ProductsListingProps) => {
   const {
     items,
@@ -490,14 +498,21 @@ const ProductsListing = ({
     updateSearchParams("sortBy", value);
   }
 
-  if (!results?.processingTimeMS) return null
+  // hasEverHadResults is passed from parent (persists across InstantSearch remounts)
+  const isAlgoliaReady = !!results?.processingTimeMS
+
+  if (isAlgoliaReady) {
+    hasEverHadResults.current = true
+  }
+
+  // Only show product grid skeleton on truly first load (never visited before)
+  const showProductSkeleton = !isAlgoliaReady && !hasEverHadResults.current
 
   return (
     <>
       <div className="grid grid-cols-1 lg:grid-cols-6 gap-4 w-full">
-        {/* Left Column: Category Sidebar with Results Count - Hidden below 768px (md breakpoint) */}
+        {/* Left Column: Category Sidebar — always rendered immediately */}
         <div className="hidden lg:block lg:col-span-1">
-          {/* Category Sidebar - Now includes results count */}
           <CategorySidebar 
             parentCategoryHandle={category_id ? undefined : undefined} 
             className="bg-primary pl-4"
@@ -515,7 +530,7 @@ const ProductsListing = ({
             resultsCount={results?.nbHits || 0}
           />
           
-          {/* Filter Bar - Above products */}
+          {/* Filter Bar — always rendered, not dependent on Algolia response */}
           <div className="mb-6">
             <ProductFilterBar 
               colorFacetItems={colorFacetItems}
@@ -525,16 +540,26 @@ const ProductsListing = ({
             />
           </div>
 
-          {/* Products Grid - Below filter bar */}
+          {/* Products Grid — skeleton only on first-ever load */}
           <div className="w-full">
-            {!items.length ? (
+            {showProductSkeleton ? (
+              <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4 sm:gap-4 lg:gap-6 2xl:gap-8 animate-pulse">
+                {Array.from({ length: 10 }).map((_, i) => (
+                  <div key={i} className="space-y-3">
+                    <div className="aspect-[3/4] bg-gray-200 rounded-lg" />
+                    <div className="h-4 w-3/4 bg-gray-200 rounded" />
+                    <div className="h-4 w-1/3 bg-gray-200 rounded" />
+                  </div>
+                ))}
+              </div>
+            ) : !items.length && isAlgoliaReady ? (
               <div className="text-center w-full my-10">
                 <h2 className="uppercase text-primary heading-lg">Brak wyników</h2>
                 <p className="mt-4 text-lg">
                   Nie znaleziono produktów spełniających Twoje kryteria
                 </p>
               </div>
-            ) : (
+            ) : items.length > 0 ? (
               <div className="w-full flex justify-center xl:justify-start">
                 <ul className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4 sm:gap-4 lg:gap-6 2xl:gap-8 w-fit mx-auto xl:mx-0">
                     {items
@@ -553,15 +578,17 @@ const ProductsListing = ({
                       })}
                 </ul>
               </div>
-            )}
+            ) : null}
           </div>
         </div>
       </div>
       
       {/* Pagination - Centered on full page width */}
-      <div className="w-full mt-10">
-        <ProductsPagination pages={results?.nbPages || 1} />
-      </div>
+      {isAlgoliaReady && (results?.nbPages || 0) > 1 && (
+        <div className="w-full mt-10">
+          <ProductsPagination pages={results?.nbPages || 1} />
+        </div>
+      )}
     </>
   )
 }

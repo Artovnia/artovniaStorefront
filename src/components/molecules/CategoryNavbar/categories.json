@@ -1,0 +1,533 @@
+[
+  {
+    "id": "pcat_01K15YZGJC6T1VRNZDVR59D9M9",
+    "name": "Nowości",
+    "handle": "nowosci",
+    "rank": 0,
+    "children": [
+      {
+        "id": "pcat_01K19BWM4NBAKWXBV6XS5A5WBN",
+        "name": "Nowości tygodnia",
+        "handle": "nowosci-tygodnia",
+        "rank": 0
+      },
+      {
+        "id": "pcat_01K19BXA0MNWPGDWPM7QCG9CWS",
+        "name": "Ostatnio dodane",
+        "handle": "ostatnio-dodane",
+        "rank": 1
+      },
+      {
+        "id": "pcat_01K19BY3EGM9RJ9C4PNW584P9X",
+        "name": "Nowe kolekcje",
+        "handle": "nowe-kolekcje",
+        "rank": 2
+      },
+      {
+        "id": "pcat_01K19BYPN8SXA55MK25CGRG8Z7",
+        "name": "Rekomendacje redakcji",
+        "handle": "rekomendacje-redakcji",
+        "rank": 3
+      }
+    ]
+  },
+  {
+    "id": "pcat_01K15Z0F0E5RPE6GB7EM8X0REB",
+    "name": "Ona",
+    "handle": "ona",
+    "rank": 1,
+    "children": [
+      {
+        "id": "pcat_01K16ZZAVY74V7830Q760XJ5AF",
+        "name": "Biżuteria",
+        "handle": "bizuteria",
+        "rank": 0,
+        "children": [
+          { "id": "pcat_01K1700P2ATE2GPNXBD9FQV6XE", "name": "Naszyjniki", "handle": "naszyjniki", "rank": 0 },
+          { "id": "pcat_01K189RYQ4QCYAYVVPSA97B1VQ", "name": "Bransoletki", "handle": "bransoletki", "rank": 1 },
+          { "id": "pcat_01K189SHH40YG49FF1EFMAKAK8", "name": "Kolczyki", "handle": "kolczyki", "rank": 2 },
+          { "id": "pcat_01K189TAX1A6DF07GT591QE00J", "name": "Pierścionki", "handle": "pierscionki", "rank": 3 },
+          { "id": "pcat_01K189TRJVPFFW1CEKS1QSCBH4", "name": "Broszki", "handle": "broszki", "rank": 4 },
+          { "id": "pcat_01K189VHD81RFMYGEQ0AVCVMS1", "name": "Zawieszki/charmsy", "handle": "zawieszki-charmsy", "rank": 5 },
+          { "id": "pcat_01K189W2XQWSYQZRQ965B155KC", "name": "Zestawy biżuterii", "handle": "zestawy-biżuterii", "rank": 6 },
+          { "id": "pcat_01K189WS856FEXYHR8327YES2Y", "name": "Biżuteria personalizowana", "handle": "bizuteria-personalizowana", "rank": 7 }
+        ]
+      },
+      {
+        "id": "pcat_01K19C2323G3JQKP3T93GPQKWG",
+        "name": "Ubrania",
+        "handle": "ubrania",
+        "rank": 1,
+        "children": [
+          { "id": "pcat_01K19C7DWANQ6VDKHCMRJJAJBC", "name": "Sukienki", "handle": "sukienki", "rank": 0 },
+          { "id": "pcat_01K19C8548SQ37GSDENDG2SBK6", "name": "Bluzki i koszule", "handle": "bluzki-i-koszule", "rank": 1 },
+          { "id": "pcat_01K19C99VYA5FQHSGEP174796J", "name": "Swetry i kardigany", "handle": "swetry-i-kardigany", "rank": 2 },
+          { "id": "pcat_01K19CAGY2FGE9E1QQA7T214G2", "name": "Spodnie", "handle": "spodnie", "rank": 3 },
+          { "id": "pcat_01K19CA5VCGNYKCHE4JNEYJQJR", "name": "Spódnice", "handle": "spodnice", "rank": 4 },
+          { "id": "pcat_01K19CBJD8262ASC2DJZGY53M3", "name": "Marynarki i żakiety", "handle": "marynarki-i-zakiety", "rank": 5 },
+          { "id": "pcat_01K19CCFW25BVKGDGA6BGVD8EG", "name": "Płaszcze i kurtki", "handle": "plaszcze-i-kurtki", "rank": 6 },
+          { "id": "pcat_01K19CCWN2EYPTQTC0G00RYVW9", "name": "Bielizna", "handle": "bielizna", "rank": 7 },
+          { "id": "pcat_01K19CD6EMJZKPJXS2S392NW88", "name": "Buty", "handle": "buty", "rank": 8 }
+        ]
+      },
+      {
+        "id": "pcat_01K19C4QWTZR17Q2X7TS9BF8RZ",
+        "name": "Torebki i plecaki",
+        "handle": "torebki-i-plecaki",
+        "rank": 2,
+        "children": [
+          { "id": "pcat_01K19DEJKCYN34WB8TBN9NHG9W", "name": "Torebki na ramię", "handle": "torebki-na-ramie", "rank": 0 },
+          { "id": "pcat_01K19DF1QE7JYR6BZ39YWG7EF0", "name": "Kopertówki", "handle": "kopertowki", "rank": 1 },
+          { "id": "pcat_01K19DFJTFYQTQ89CTQ2579NAQ", "name": "Plecaki", "handle": "plecaki", "rank": 2 },
+          { "id": "pcat_01K19DFVFXNRH7BR1BPSJRY73R", "name": "Nerki", "handle": "nerki", "rank": 3 },
+          { "id": "pcat_01K19DGCAWSPFK1SJ894DC390A", "name": "Torby XXL", "handle": "torby-xxl", "rank": 4 },
+          { "id": "pcat_01K19DGYDCN8R52W41E3G7FH6A", "name": "Kosmetyczki", "handle": "kosmetyczki", "rank": 5 },
+          { "id": "pcat_01K19DHHJTT718JXZKNZBT7QDR", "name": "Torby na zakupy", "handle": "torby-na-zakupy", "rank": 6 }
+        ]
+      },
+      {
+        "id": "pcat_01K19C5R8PQJ86QSFS7MSC56BJ",
+        "name": "Dodatki",
+        "handle": "dodatki",
+        "rank": 3,
+        "children": [
+          { "id": "pcat_01K19EA1TQ48MV9TS59NBB0Q8F", "name": "Czapki i kapelusze", "handle": "czapki-i-kapelusze", "rank": 0 },
+          { "id": "pcat_01K19EB70GE11KYJ1WARP8MGFG", "name": "Szaliki i chusty", "handle": "szaliki-i-chusty", "rank": 1 },
+          { "id": "pcat_01K19EAKKF24PG74AR13QCPSCN", "name": "Rękawiczki", "handle": "rekawiczki", "rank": 2 },
+          { "id": "pcat_01K19EBN99ZK9CWZTE2D2T2Q52", "name": "Portfele", "handle": "portfele", "rank": 3 },
+          { "id": "pcat_01K19EC3QJY51GTFF57X41SE12", "name": "Paski", "handle": "paski", "rank": 4 }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "pcat_01K15Z104MV753X87VZP9VEDAF",
+    "name": "On",
+    "handle": "on",
+    "rank": 2,
+    "children": [
+      {
+        "id": "pcat_01K19EEQNCXTVGFE9GTGS4GBE5",
+        "name": "Biżuteria",
+        "handle": "bizuteria-meska",
+        "rank": 0,
+        "children": [
+          { "id": "pcat_01K19EFSWRTEYBEPN10X1QBWQV", "name": "Bransolety", "handle": "bransolety", "rank": 0 },
+          { "id": "pcat_01K19EHM4F1DR462Q9K5FSTDQV", "name": "Naszyjniki", "handle": "naszyjniki-meskie", "rank": 1 },
+          { "id": "pcat_01K19EJE7PGNVB38FMCQC37RZN", "name": "Spinki do mankietów", "handle": "spinki-do-mankietow", "rank": 2 }
+        ]
+      },
+      {
+        "id": "pcat_01K19EP8QMBW242YQRZY6B86QT",
+        "name": "Ubrania",
+        "handle": "ubrania-leskie",
+        "rank": 1,
+        "children": [
+          { "id": "pcat_01K19EQF1DBPZS7YM2CFFKMZPR", "name": "T-shirty i koszule", "handle": "tshirty-i-koszule", "rank": 0 },
+          { "id": "pcat_01K19ER0GZ01K6DP458ZJ74G5F", "name": "Bluzy i swetry", "handle": "bluzy-i-swetry", "rank": 1 },
+          { "id": "pcat_01K19ERF4WSHMNMCMAFBFFEP6P", "name": "Spodnie", "handle": "spodnie-meskie", "rank": 2 },
+          { "id": "pcat_01K19ERVEJ8GYC98X913CQD7H5", "name": "Marynarki", "handle": "marynarki", "rank": 3 },
+          { "id": "pcat_01K19ESV8K6RAH754YQ9KWBNZ9", "name": "Płaszcze i kurtki", "handle": "plaszcze-i-krutki-meskie", "rank": 4 },
+          { "id": "pcat_01K19F5RDCCYZVACW6JVCEYQHE", "name": "Bielizna", "handle": "bielizna-meska", "rank": 5 }
+        ]
+      },
+      {
+        "id": "pcat_01K19FCSHZB30CDJFAA56DDCXA",
+        "name": "Dodatki",
+        "handle": "dodatki-meskie",
+        "rank": 2,
+        "children": [
+          { "id": "pcat_01K19F798X2XFJ515PPK7N6XAD", "name": "Czapki i kapelusze", "handle": "czapki-i-kapelusze-meskie", "rank": 0 },
+          { "id": "pcat_01K19F7XCX2CKT3QDMES92YMDC", "name": "Rękawiczki", "handle": "rekawiczki-meskie", "rank": 1 },
+          { "id": "pcat_01K19F8802GQGDBRNZE5QDFWF5", "name": "Szaliki", "handle": "szaliki", "rank": 2 }
+        ]
+      },
+      {
+        "id": "pcat_01K19FEM7VJAHA17HJ2VQZJ0RQ",
+        "name": "Akcesoria",
+        "handle": "akcesoria-meskie",
+        "rank": 3,
+        "children": [
+          { "id": "pcat_01K19FF9X2JGSHFT501PJ9RHAR", "name": "Portfele", "handle": "portfele-meskie", "rank": 0 },
+          { "id": "pcat_01K19FFWJYZBVBDFGJWMS0HJ0F", "name": "Nerki i saszetki", "handle": "nerki-i-saszetki", "rank": 1 },
+          { "id": "pcat_01K19FGG425QKDY6QNQWEJSG3V", "name": "Torby i plecaki", "handle": "torby-i-plecaki-meskie", "rank": 2 },
+          { "id": "pcat_01K19FHR04V0WP216BME6KAP6J", "name": "Paski", "handle": "paski-meskie", "rank": 3 }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "pcat_01K15Z1DMD59P7FJKGTGQEQYVE",
+    "name": "Dziecko",
+    "handle": "dziecko",
+    "rank": 3,
+    "children": [
+      {
+        "id": "pcat_01K19FQTXNK2XY88KEEQ0423GS",
+        "name": "Ubranka",
+        "handle": "ubranka",
+        "rank": 0,
+        "children": [
+          { "id": "pcat_01K19FRK2ZHVTX915DFWVTKYQJ", "name": "Body i śpioszki", "handle": "body-i-spioszki", "rank": 0 },
+          { "id": "pcat_01K19G2ESMVDCTSYM4XT5N87P4", "name": "Bluzki i t-shirty", "handle": "bluzki-i-tshirty", "rank": 1 },
+          { "id": "pcat_01K19FS9BMP44GS1SQ11RPE5RC", "name": "Sukienki i spódniczki", "handle": "sukienki-i-spodniczki", "rank": 2 },
+          { "id": "pcat_01K19FT02B12T196WN2VDWVQET", "name": "Spodenki i spodnie", "handle": "spodenki-i-spodnie", "rank": 3 },
+          { "id": "pcat_01K19FTHP8J0EA0A6GZW3ZJZJQ", "name": "Bluzy i sweterki", "handle": "bluzy-i-sweterki", "rank": 4 },
+          { "id": "pcat_01K19FVM5K9EN7GYXGYP1SZY6X", "name": "Bielizna i pieluchy", "handle": "bielizna-i-pieluchy", "rank": 5 },
+          { "id": "pcat_01K19FWC29N0C4KDJE80N7AQA8", "name": "Czapeczki i opaski", "handle": "czapeczki-i-opaski", "rank": 6 },
+          { "id": "pcat_01K19FXRG56Z1AAEGYK4CS6ERC", "name": "Szaliki i rękawiczki", "handle": "szaliki-i-rękawiczki", "rank": 7 },
+          { "id": "pcat_01K19FYJB8Z8VA7KVV19WHW4EW", "name": "Ozdoby do włosów", "handle": "ozdoby-do-wlosow", "rank": 8 },
+          { "id": "pcat_01K19FZC9130XHS6Q6XYRDGH58", "name": "Biżuteria dla dzieci", "handle": "bizuteria-dla-dzieci", "rank": 9 },
+          { "id": "pcat_01K19G09QY0Z6VDFN7E3FYKJ9R", "name": "Pozostałe", "handle": "dzieci-pozostale", "rank": 10 }
+        ]
+      },
+      {
+        "id": "pcat_01K19G43VTMZX09QV8F9YS36M6",
+        "name": "Zabawki",
+        "handle": "zabawki",
+        "rank": 1,
+        "children": [
+          { "id": "pcat_01K19G4NK9EWXXH06VG0Q88XRD", "name": "Przytulanki i maskotki", "handle": "przytulanki-i-maskotki", "rank": 0 },
+          { "id": "pcat_01K19G562S822V85GP0GRHQPA6", "name": "Zabawki sensoryczne", "handle": "zabawki-sensoryczne", "rank": 1 },
+          { "id": "pcat_01K19G5SB5714TKBKKZTP5M8H6", "name": "Lalki i ubranka", "handle": "lalki-i-ubranka", "rank": 2 },
+          { "id": "pcat_01K19G6NNGQRA43JWNN50ZFYK6", "name": "Gry i układanki drewniane", "handle": "gry-i-ukladanki-drewniane", "rank": 3 },
+          { "id": "pcat_01K19G73NADBZ4T24Z7YHN59CX", "name": "Książeczki", "handle": "ksiazeczki", "rank": 4 },
+          { "id": "pcat_01K19G7PKWNFYSRPF7FC9PR6JE", "name": "Pozostałe", "handle": "zabawki-pozostałe", "rank": 5 }
+        ]
+      },
+      {
+        "id": "pcat_01K19GH9VH60C5G4B48MKQW7WB",
+        "name": "Dekoracje do pokoju dziecięcego",
+        "handle": "dekoracje-do-pokoju-dzieciecego",
+        "rank": 2,
+        "children": [
+          { "id": "pcat_01K19GHQ3Z9HYW63KE27REE1DB", "name": "Plakaty i obrazki", "handle": "plakaty-i-obrazki", "rank": 0 },
+          { "id": "pcat_01K19GJA6CJ1J98STZBDH8EDPW", "name": "Girlandy i ozdoby wiszące", "handle": "girlandy-i-ozdoby-wiszace", "rank": 1 },
+          { "id": "pcat_01K19GJT7TRDEBNK82VVBR3091", "name": "Poduszki ozdobne", "handle": "poduszki-ozdobne", "rank": 2 },
+          { "id": "pcat_01K19GKTKHP8X3HX9693R51BQ0", "name": "Lampki i mobilki", "handle": "lampki-i-mobilki", "rank": 3 },
+          { "id": "pcat_01K19GKC9J99SKAY5F8A5FYBQF", "name": "Kocyki i kołderki", "handle": "kocyki-i-kolderki", "rank": 4 },
+          { "id": "pcat_01K19GMB2D9PMXMJ7RF846MVM5", "name": "Łapacze snów", "handle": "lapacze-snow", "rank": 5 },
+          { "id": "pcat_01K19GMXHWQ3A3WTHYDMNZ0F4V", "name": "Namioty i tipi", "handle": "namioty-i-tipi", "rank": 6 },
+          { "id": "pcat_01K19GNG5D77ZED40MP4K9A5ZW", "name": "Pojemniki na zabawki", "handle": "pojemniki-na-zabawki", "rank": 7 },
+          { "id": "pcat_01K19GQ256R9J6FK76Q9FG2Y5S", "name": "Pozostałe", "handle": "pozostale-dekoracje-dzieciece", "rank": 8 }
+        ]
+      },
+      {
+        "id": "pcat_01K19GSAZ41Q40HXN3H2KKY02A",
+        "name": "Akcesoria dziecięce",
+        "handle": "akcesoria-dzieciece",
+        "rank": 3,
+        "children": [
+          { "id": "pcat_01K19GSWMV31NT7PBY2JMQJVGT", "name": "Kocyki i otulacze", "handle": "kocyki-i-otulacze", "rank": 0 },
+          { "id": "pcat_01K19GV4A9R2757PESJRD1CBYH", "name": "Torby do wózka", "handle": "torby-do-wozka", "rank": 1 },
+          { "id": "pcat_01K19GTDB1765BNYXH1BWW2HZJ", "name": "Śliniaki i gryzaki", "handle": "sliniaki-i-gryzaki", "rank": 2 },
+          { "id": "pcat_01K19GVREE5TG9T9RVW7MH7QVE", "name": "Zestawy prezentowe", "handle": "dzieci-zestawy-prezentowe", "rank": 3 },
+          { "id": "pcat_01K19GW4CV0RWJJJY37VR75946", "name": "Akcesoria szkolne", "handle": "akcesoria-szkolne", "rank": 4 },
+          { "id": "pcat_01K19GX0CXA8FHTVWW5J7G6V3D", "name": "Pozostałe", "handle": "pozostale-akcesoria-dzieciece", "rank": 5 }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "pcat_01K15Z26HDX07Y6N9F9J34CYCQ",
+    "name": "Zwierzęta",
+    "handle": "zwierzeta",
+    "rank": 4,
+    "children": [
+      { "id": "pcat_01K19GYWH0W3C6SW0RV59A07TK", "name": "Smycze", "handle": "smycze", "rank": 0 },
+      { "id": "pcat_01K19GZ581TMEYSMGG45QR78TP", "name": "Szelki", "handle": "szelki", "rank": 1 },
+      { "id": "pcat_01K19GZGA64GDGYS45JRNNHTVA", "name": "Obroże", "handle": "obroze", "rank": 2 },
+      { "id": "pcat_01K19H00MZAX1RT3QW7NAQZS6D", "name": "Ubranka", "handle": "ubranka-dla-zwierzat", "rank": 3 },
+      { "id": "pcat_01K19H0CN25FBWCK1A45HNGANJ", "name": "Chustki i bandany", "handle": "chustki-i-bandany", "rank": 4 },
+      { "id": "pcat_01K19H0ZDFGCWF4XZ34H9EFXY9", "name": "Zabawki", "handle": "zabawki-dla-zwierzat", "rank": 5 },
+      { "id": "pcat_01K19H1GNDJ6YBYMXBNJNJQZ1K", "name": "Zawieszki i indentyfikatory", "handle": "zawieszki-i-indentyfikatory", "rank": 6 },
+      { "id": "pcat_01K19H1X20PY3XFDR2NPT5D0NF", "name": "Miski", "handle": "miski", "rank": 7 },
+      { "id": "pcat_01K19H27SVQP37GR5XJVHMH9GA", "name": "Legowiska", "handle": "legowiska", "rank": 8 },
+      { "id": "pcat_01K19H2TPKPV74RFY0FB884P7N", "name": "Pozostałe", "handle": "pozostale-zwierzeta", "rank": 9 }
+    ]
+  },
+  {
+    "id": "pcat_01K15Z2NRQJ4333BH98W49HPRE",
+    "name": "Dom",
+    "handle": "dom",
+    "rank": 5,
+    "children": [
+      {
+        "id": "pcat_01K19H4ZHR8458MGGN10M19CN4",
+        "name": "Dekoracje",
+        "handle": "dekoracje",
+        "rank": 0,
+        "children": [
+          { "id": "pcat_01K19H5D1W6WJXBDMDAAHDWN93", "name": "Plakaty", "handle": "plakaty", "rank": 0 },
+          { "id": "pcat_01K19H5PKKZ6YPV7FTTPM9FGMA", "name": "Obrazy", "handle": "obrazy", "rank": 1 },
+          { "id": "pcat_01K19H62SE4NGZ0XR1TWXMC1ME", "name": "Lustra", "handle": "lustra", "rank": 2 },
+          { "id": "pcat_01K19H6EG5TE39J45KX5SVGNJQ", "name": "Ceramika dekoracyjna", "handle": "ceramika-dekoracyjna", "rank": 3 },
+          { "id": "pcat_01K19H6RKWYDVZPZH04ME1QHGQ", "name": "Świece", "handle": "swiece", "rank": 4 },
+          { "id": "pcat_01K19H731KM44NR8N4VEWZHESX", "name": "Świeczniki", "handle": "swieczniki", "rank": 5 },
+          { "id": "pcat_01K19H7JZ6F2BSB5FEM9DZJ90D", "name": "Figury i rzeźby", "handle": "figury-i-rzezby", "rank": 6 },
+          { "id": "pcat_01K19H7X6WS4NK0G73GBBEHHVS", "name": "Wazony", "handle": "wazony", "rank": 7 },
+          { "id": "pcat_01K19H85Q0QPNGFY4GTYAQ42D1", "name": "Zegary", "handle": "zegary", "rank": 8 },
+          { "id": "pcat_01K19H8GDR7FTPSS1FCNWY6TQC", "name": "Ozdoby sezonowe", "handle": "ozdoby-sezonowe", "rank": 9 },
+          { "id": "pcat_01K19H8YVK5C7A0PAF4BBMG6DN", "name": "Makramy i makatki", "handle": "makramy-i-makatki", "rank": 10 },
+          { "id": "pcat_01K19HA4SKQVNZMMXJDS6Y5ZSD", "name": "Łapacze snów", "handle": "łapacze-snow-2", "rank": 11 },
+          { "id": "pcat_01K19HAGNF436ASHYSM8YNM7ZT", "name": "Wianki", "handle": "wianki", "rank": 12 },
+          { "id": "pcat_01K19HAYBRQEQ0F2S546F4AMAT", "name": "Literki", "handle": "literki", "rank": 13 },
+          { "id": "pcat_01K19HB83XPJXQFBJ8N6Q71ABK", "name": "Magnesy", "handle": "magnesy", "rank": 14 }
+        ]
+      },
+      {
+        "id": "pcat_01K19HDQ5QGNBN030YSX7K601K",
+        "name": "Tekstylia",
+        "handle": "tekstylia",
+        "rank": 1,
+        "children": [
+          { "id": "pcat_01K19HE4N0BY5VB0B6FCPDYHE7", "name": "Poduszki dekoracyjne", "handle": "poduszki-dekoracyjne", "rank": 0 },
+          { "id": "pcat_01K19HEMP43ET72EA5N36BEEX9", "name": "Koce i pledy", "handle": "koce-i-pledy", "rank": 1 },
+          { "id": "pcat_01K19HF6BF8QR4W48NMZN59QZ7", "name": "Obrusy i bieżniki", "handle": "obrusy-i-bieżniki", "rank": 2 },
+          { "id": "pcat_01K19HFPQJG262BHB4ZX1D9RMN", "name": "Zasłony i firanki", "handle": "zaslony-i-firanki", "rank": 3 },
+          { "id": "pcat_01K19HG2K5NW1RJHVK4DTE5EGF", "name": "Dywany i chodniki", "handle": "dywany-i-chodniki", "rank": 4 }
+        ]
+      },
+      {
+        "id": "pcat_01K19HH8MJ3XY1CG5B0FT54HH2",
+        "name": "Meble",
+        "handle": "meble",
+        "rank": 2,
+        "children": [
+          { "id": "pcat_01KEAS5G0PQP9V02NXVZ9RZBZB", "name": "Półki", "handle": "półki", "rank": 0 },
+          { "id": "pcat_01K19HHW21T8J43V1ABX0SZM7F", "name": "Krzesła i taborety", "handle": "krzesla-i-taborety", "rank": 1 },
+          { "id": "pcat_01K19HJ6DP6A70H4DWW0K0MAQA", "name": "Wieszaki", "handle": "wieszaki", "rank": 2 },
+          { "id": "pcat_01K19HJG35VJ947K1R2DGWBQMB", "name": "Pufy", "handle": "pufy", "rank": 3 },
+          { "id": "pcat_01K19HK0NG7GBQ26JEGA2RYD0E", "name": "Stoły i stoliki", "handle": "stoly-i-stoliki", "rank": 4 },
+          { "id": "pcat_01K19HK9RHCB0AEZJRA00T2Q1S", "name": "Komody", "handle": "komody", "rank": 5 },
+          { "id": "pcat_01K19HKQ868YQ8A8FK55N573SZ", "name": "Szafki nocne", "handle": "szafki-nocne", "rank": 6 }
+        ]
+      },
+      {
+        "id": "pcat_01K19HMYCST0DMQQ83EFNF0BQM",
+        "name": "Lampy",
+        "handle": "lampy",
+        "rank": 3,
+        "children": [
+          { "id": "pcat_01K19HN8GZZH7E8N9C7Q9XTWX4", "name": "Nocne", "handle": "nocne", "rank": 0 },
+          { "id": "pcat_01K19HNK6EWY84VT8PZ5320KAF", "name": "Wiszące", "handle": "wiszace", "rank": 1 },
+          { "id": "pcat_01K19HNWSX9AHJEKEW9R41GQ63", "name": "Stojące", "handle": "stojace", "rank": 2 },
+          { "id": "pcat_01KEJBV6JPE3W6Z2MCNV06BP7K", "name": "Lampa stołowa", "handle": "Stołowe", "rank": 3 }
+        ]
+      },
+      {
+        "id": "pcat_01K19HQ1CG7RVEBSSJX4PR6GQ0",
+        "name": "Kuchnia i jadalnia",
+        "handle": "kuchnia-i-jadalnia",
+        "rank": 4,
+        "children": [
+          { "id": "pcat_01K19HQH4J62C2JMEBGYJPEWKP", "name": "Kubki i filiżanki", "handle": "kubki-i-filizanki", "rank": 0 },
+          { "id": "pcat_01K19HT6V2FJVCFWN2HQ4SW1KF", "name": "Czajniki i dzbanki", "handle": "czajniki-i-dzbanki", "rank": 1 },
+          { "id": "pcat_01K19HQX8C87KAS5Q7TB99THEJ", "name": "Talerze i miski", "handle": "talerze-i-miski", "rank": 2 },
+          { "id": "pcat_01K19HRFADP19V9SA30Q0VN1B1", "name": "Deski do krojenia i serwowania", "handle": "deski-do-krojenia-i-serwowania", "rank": 3 },
+          { "id": "pcat_01K19HRYJG3XGT9VZF2ENJ52AP", "name": "Fartuchy i ściereczki", "handle": "fartuchy-i-sciereczki", "rank": 4 },
+          { "id": "pcat_01K19HSD64EW3SM9P2WMKNE7C9", "name": "Podkładki i serwetki", "handle": "podkladki-i-serwetki", "rank": 5 },
+          { "id": "pcat_01K19HSQ8J053MFVM80V076HYN", "name": "Wałki", "handle": "walki", "rank": 6 },
+          { "id": "pcat_01K19HTZNYB1P036JWN4ASVR4Q", "name": "Pozostałe", "handle": "pozostale-kuchnia", "rank": 7 }
+        ]
+      },
+      {
+        "id": "pcat_01K19HXFRZ25VN82KM10Q6A792",
+        "name": "Organizacja",
+        "handle": "organizacja",
+        "rank": 5,
+        "children": [
+          { "id": "pcat_01K19HY8YCKME13J1A49PXQYE2", "name": "Kosze i pudełka", "handle": "kosze-i-pudelka", "rank": 0 },
+          { "id": "pcat_01K19HYS3G7DVWJ5REMJCYRKQE", "name": "Wieszaki i haczyki", "handle": "wieszaki-i-haczyki", "rank": 1 },
+          { "id": "pcat_01K19HZFEDKYBJTQQ70X6ZCNBR", "name": "Notesy i planery", "handle": "notesy-i-planery", "rank": 2 },
+          { "id": "pcat_01K19HZZHGVJGXWEFX5EWJEYST", "name": "Magnesy i tablice", "handle": "magnesy-i-tablice", "rank": 3 }
+        ]
+      },
+      {
+        "id": "pcat_01K19J0M4F4WEJ7BT40ZE81PE3",
+        "name": "Ogród i balkon",
+        "handle": "ogrod-i-balkon",
+        "rank": 6,
+        "children": [
+          { "id": "pcat_01K19J13CWEF9RV6G1JGMFNNNA", "name": "Doniczki i osłonki", "handle": "doniczki-i-oslonki", "rank": 0 },
+          { "id": "pcat_01K19J1JNB3W7V9EH41V0HWY41", "name": "Ozdoby ogrodowe", "handle": "ozdoby-ogrodowe", "rank": 1 },
+          { "id": "pcat_01K19J2B9F98BV9B1HE234BJBB", "name": "Domki i karmniki dla ptaków", "handle": "domki-i-karmniki-dla-ptakow", "rank": 2 },
+          { "id": "pcat_01K19J2X4A8JJPVG075QB0RKTT", "name": "Lampiony i dekoracje świetlne", "handle": "lampiony-i-dekoracje-swietlne", "rank": 3 }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "pcat_01K15Z3520EGSNQQZKJ3MQAHTA",
+    "name": "Akcesoria",
+    "handle": "akcesoria",
+    "rank": 6,
+    "children": [
+      {
+        "id": "pcat_01K19JM7N5NKK7SC24CP7NP2W4",
+        "name": "Moda",
+        "handle": "moda",
+        "rank": 0,
+        "children": [
+          { "id": "pcat_01K19JMXHS741GB5SVXEJW8CT9", "name": "Okulary przeciwsłoneczne", "handle": "okulary-przeciwsloneczne", "rank": 0 },
+          { "id": "pcat_01K19JNCK2ANJVRX3DMYEHPXNQ", "name": "Przypinki i naszywki", "handle": "przypinki-i-naszywki", "rank": 1 },
+          { "id": "pcat_01K19JNQJ5FM15T5GE68WAQXYK", "name": "Breloki", "handle": "breloki", "rank": 2 }
+        ]
+      },
+      {
+        "id": "pcat_01K19JPBJR3TVNDW8S475K8SQY",
+        "name": "Technologia",
+        "handle": "technologia",
+        "rank": 1,
+        "children": [
+          { "id": "pcat_01K19JPTQY329CZNKQ1FNXNWC8", "name": "Etui na telefon", "handle": "etui-na-elefon", "rank": 0 },
+          { "id": "pcat_01K19JQ9BD3MXEE5WE6NV8709Q", "name": "Pokrowce na laptop", "handle": "pokrowce-na-laptop", "rank": 1 },
+          { "id": "pcat_01K19JQNXD9ANRMDRCY5BZG0MA", "name": "Uchwyty i podstawki", "handle": "uchwyty-i-podstawki", "rank": 2 },
+          { "id": "pcat_01K19JR5QG04PZ7VR66P72Y4AT", "name": "Osłony na słuchawki", "handle": "osłony-na-słuchawki", "rank": 3 }
+        ]
+      },
+      {
+        "id": "pcat_01K19JS621Z6BPBVKBFFY3WFHS",
+        "name": "Papeteria i biuro",
+        "handle": "papeteria-i-biuro",
+        "rank": 2,
+        "children": [
+          { "id": "pcat_01K19JSK8E4W3E6QG4VE4B9N8D", "name": "Kalendarze i planery", "handle": "kalendarze-i-planery", "rank": 0 },
+          { "id": "pcat_01K19JT4KHVWMBV93DW1GF2N18", "name": "Zakładki do książek", "handle": "zakladki-do-ksiazek", "rank": 1 },
+          { "id": "pcat_01K19JTSW0RA10XY79HKQVSTVJ", "name": "Piórniki i przyborniki", "handle": "piorniki-i-przyborniki", "rank": 2 },
+          { "id": "pcat_01K19JV3MJQA6C54CGXVQ4Y4DH", "name": "Albumy", "handle": "albumy", "rank": 3 }
+        ]
+      },
+      {
+        "id": "pcat_01K19JVQG7VAX2W1AK5156HVMJ",
+        "name": "Podróże",
+        "handle": "podroze",
+        "rank": 3,
+        "children": [
+          { "id": "pcat_01K19JW72SG4TGR3M6FZFQXCEM", "name": "Etui na dokumenty", "handle": "etui-na-dokumenty", "rank": 0 },
+          { "id": "pcat_01K19JWR37ASKKTMHBXBT0JV2S", "name": "Pokrowce na walizkę", "handle": "pokrowce-na-walizke", "rank": 1 },
+          { "id": "pcat_01K19JX6XM1TCHP9SB0FEBFHFD", "name": "Woreczki i organizery", "handle": "woreczki-i-organizery", "rank": 2 },
+          { "id": "pcat_01K19JXR26JXDYRA29H858ZD4E", "name": "Poduszki podróżne", "handle": "poduszki-podrozne", "rank": 3 },
+          { "id": "pcat_01K19JY57J6PBDYBFFVXVMM8YQ", "name": "Do roweru", "handle": "do-roweru", "rank": 4 }
+        ]
+      },
+      {
+        "id": "pcat_01K19JYN9SGXEJ5TFN4W9NTVV4",
+        "name": "Pozostałe",
+        "handle": "akcesoria-pozostałe",
+        "rank": 4
+      }
+    ]
+  },
+  {
+    "id": "pcat_01K15Z3ZDH11G9YVRNM61WE5PQ",
+    "name": "Prezenty i okazje",
+    "handle": "prezenty-i-okazje",
+    "rank": 7,
+    "children": [
+      {
+        "id": "pcat_01K19K12P2PY2X868WEHEB94RE",
+        "name": "Urodziny",
+        "handle": "urodziny",
+        "rank": 0,
+        "children": [
+          { "id": "pcat_01K19K1GX16M18Z8JPX0ZYQ188", "name": "Prezent dla niej", "handle": "prezent-dla-niej", "rank": 0 },
+          { "id": "pcat_01K19K20EKVCY986B5AC9EPD8B", "name": "Prezent dla niego", "handle": "prezent-dla-niego", "rank": 1 },
+          { "id": "pcat_01K19K2FE2T70V1Z24PKNZB7EP", "name": "Prezent dla dziecka", "handle": "prezent-dla-dziecka", "rank": 2 },
+          { "id": "pcat_01K19K33WF3XB7VKXMDVGZ81SE", "name": "Dekoracje urodzinowe", "handle": "dekoracje-urodzinowe", "rank": 3 }
+        ]
+      },
+      { "id": "pcat_01K19K3K5W0YVEW4DRW650H6G2", "name": "Kartki okolicznościowe", "handle": "kartki-okolicznosciowe", "rank": 1 },
+      { "id": "pcat_01K19K3WRZNR7V6AW0GEGTBBQX", "name": "Opakowania", "handle": "opakowania", "rank": 2 },
+      {
+        "id": "pcat_01K19K4A18HYKTC3APYK2THNQD",
+        "name": "Ślub i wesele",
+        "handle": "slub-i-wesele",
+        "rank": 3,
+        "children": [
+          { "id": "pcat_01K19K5M3TWGHZY8RMXX7A5WPC", "name": "Dekoracje ślubne", "handle": "dekoracje-slubne", "rank": 0 },
+          { "id": "pcat_01K19K63AJE5R7022FWMXR1HYH", "name": "Księgi gości", "handle": "ksiegi-gosci", "rank": 1 },
+          { "id": "pcat_01K19K6GVAGBPDQ04AFT5XR56F", "name": "Zaproszenia i kartki", "handle": "zaproszenia-i-kartki", "rank": 2 },
+          { "id": "pcat_01K19K6ZQMT92KAZCN1NJCHMN5", "name": "Upominki dla gości", "handle": "upominki-dla-gosci", "rank": 3 },
+          { "id": "pcat_01K19K7GAQ5HWPJ3H7A0VNVFEH", "name": "Biżuteria i akcesoria ślubne", "handle": "bizuteria-i-akcesoria-slubne", "rank": 4 }
+        ]
+      },
+      {
+        "id": "pcat_01K19K8A382PEZRVNJEMXZQDXJ",
+        "name": "Rocznice i walentynki",
+        "handle": "rocznice-i-walentynki",
+        "rank": 4,
+        "children": [
+          { "id": "pcat_01K19KA0QYMY40HW2KCATDC254", "name": "Prezent dla niej", "handle": "prezent-dla-niej-walentynki-rocznica", "rank": 0 },
+          { "id": "pcat_01K19KANZDWCSVKR2EV80K4H8V", "name": "Prezent dla niego", "handle": "prezent-dla-niego-walentynki-rocznica", "rank": 1 },
+          { "id": "pcat_01K19KB41EVTRGB7DY91SHZ2CW", "name": "Kartki miłosne", "handle": "kartki-milosne", "rank": 2 }
+        ]
+      },
+      {
+        "id": "pcat_01K19KBW4TWPGEVEB9ASE91S4H",
+        "name": "Boże Narodzenie",
+        "handle": "boze-narodzenie",
+        "rank": 5,
+        "children": [
+          { "id": "pcat_01K19KC8GMSM36Q7MHX0414EK3", "name": "Ozdoby choinkowe", "handle": "ozdoby-choinkowe", "rank": 0 },
+          { "id": "pcat_01K19KCN860NSWATCH8DX6VG91", "name": "Kalendarze adwentowe", "handle": "kalendarze-adwentowe", "rank": 1 },
+          { "id": "pcat_01K19KD05TPX376J695B873H9R", "name": "Prezentowniki", "handle": "prezentowniki", "rank": 2 }
+        ]
+      },
+      { "id": "pcat_01K19KDA0N6ARX7Y9WZRW0S1MQ", "name": "Wielkanoc", "handle": "Wielkanoc", "rank": 6 },
+      { "id": "pcat_01K19KDJVE20ED811EJWQN46K3", "name": "Halloween", "handle": "halloween", "rank": 7 },
+      { "id": "pcat_01K19KEDBZVKXZDRDY52XGV5P3", "name": "Dzień Matki / Ojca / Babci / Dziadka", "handle": "dzien-matki-ojca-babci-dziadki", "rank": 8 },
+      { "id": "pcat_01K19KEXG9XS8DGF1MFKADGMRC", "name": "Chrzest i komunia", "handle": "chrzest-i-komunia", "rank": 9 },
+      { "id": "pcat_01K19KFB8KKMHQTAPNZHSJ80NY", "name": "Wieczór Panieński", "handle": "wieczor-panienski", "rank": 10 },
+      { "id": "pcat_01K19KFTH5BEGP8C2480NXFVSB", "name": "Wieczór Kawalerski", "handle": "wieczor-kawalerski", "rank": 11 },
+      { "id": "pcat_01K19KG7SR917FHAHH4WCVXCAS", "name": "Baby Shower", "handle": "baby-shower", "rank": 12 },
+      { "id": "pcat_01K19KGNHTMW7DT5MNXGW75HQT", "name": "Zestawy prezentowe", "handle": "zestawy-prezentowe", "rank": 13 }
+    ]
+  },
+  {
+    "id": "pcat_01K15Z4A81ZREXXTTKSZ16JZBN",
+    "name": "Vintage",
+    "handle": "vintage",
+    "rank": 8,
+    "children": [
+      {
+        "id": "pcat_01K19KVTZB6QJ6341QS516CDPK",
+        "name": "Moda vintage",
+        "handle": "moda-vintage",
+        "rank": 0,
+        "children": [
+          { "id": "pcat_01K19KWA7MAYQKTYHYE3TE164H", "name": "Ubrania", "handle": "ubrania-vintage", "rank": 0 },
+          { "id": "pcat_01K19KWQN4T4YFD4NRTS9CSEAN", "name": "Torebki i dodatki", "handle": "torebki-i-dodatki", "rank": 1 },
+          { "id": "pcat_01K19KX68AG947BYXTB9VZK984", "name": "Okulary i biżuteria", "handle": "okulary-i-bizuteria", "rank": 2 }
+        ]
+      },
+      {
+        "id": "pcat_01K19KXHFF2Y2RY1XGGQCDG5RD",
+        "name": "Dom vintage",
+        "handle": "dom-vintage",
+        "rank": 1,
+        "children": [
+          { "id": "pcat_01K19KXTAAE7RMP3QP2XVAT8AX", "name": "Ceramika", "handle": "ceramika", "rank": 0 },
+          { "id": "pcat_01K19KY42VFHBYNM6G5G9A8JM5", "name": "Ozdoby", "handle": "ozdoby", "rank": 1 },
+          { "id": "pcat_01K19KYJZP89QCYNFQDYR90AR8", "name": "Tkaniny i zasłony", "handle": "tkaniny-i-zaslony", "rank": 2 }
+        ]
+      },
+      {
+        "id": "pcat_01K19KZ1A6EP1QJ71N5VEGJP1C",
+        "name": "Biżuteria vintage",
+        "handle": "bizuteria-vintage",
+        "rank": 2,
+        "children": [
+          { "id": "pcat_01K19KZEF9ADWQJ7VWSBG0TPGQ", "name": "KolczykiKolczyki", "handle": "kolczyki-vintage", "rank": 0 },
+          { "id": "pcat_01K19KZSN645PRCAX33GKH6ERP", "name": "Naszyjniki", "handle": "naszyjniki-vintage", "rank": 1 },
+          { "id": "pcat_01K19M06F23K3RDXJGAHEVVMN2", "name": "Pierścionki", "handle": "pierscionki-vintage", "rank": 2 },
+          { "id": "pcat_01K19M0J7RA1VMQWZ4E48X6WX2", "name": "Broszki", "handle": "broszki-vintage", "rank": 3 },
+          { "id": "pcat_01K19M0VQP920EMXK3HNPH9W0B", "name": "Spinki", "handle": "spinki", "rank": 4 }
+        ]
+      },
+      { "id": "pcat_01K19M183KB6CAY7W5DHNYRS92", "name": "Zegarki", "handle": "zegarki-vintage", "rank": 3 },
+      { "id": "pcat_01K19M1P70H6DQAEPVHDPF44ZH", "name": "Kolekcje i antyki", "handle": "kolekcje-i-antyki", "rank": 4 },
+      { "id": "pcat_01K19M24W4WWGM5HA2KY0QCTSY", "name": "Pozostałe", "handle": "pozostale-vintage", "rank": 5 }
+    ]
+  }
+]

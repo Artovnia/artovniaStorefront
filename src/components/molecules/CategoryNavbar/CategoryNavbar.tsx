@@ -4,33 +4,37 @@ import { cn } from "@/lib/utils"
 import { HttpTypes } from "@medusajs/types"
 import { SafeI18nLink as Link } from "@/components/atoms/SafeI18nLink"
 import { useParams } from "next/navigation"
-import { useMemo } from "react"
-// TODO: Re-enable category icons later
-// import { getCategoryIcon } from '@/const/category-icons'
+import { useMemo, useCallback } from "react"
+import { getCategoryIcon } from "@/components/atoms/icons/subcategories/getCategoryIcon"
 
 interface CategoryNavbarProps {
   categories: HttpTypes.StoreProductCategory[]
+  activeCategory: HttpTypes.StoreProductCategory | null
   onClose?: () => void
   onDropdownStateChange?: (activeCategory: HttpTypes.StoreProductCategory | null, isVisible: boolean) => void
-  shouldResetDropdown?: boolean
 }
 
-interface CategoryDropdownProps {
-  category: HttpTypes.StoreProductCategory
-  onClose?: () => void
+// Check if the current route handle matches this category or any of its descendants
+const isHandleInCategory = (category: HttpTypes.StoreProductCategory, handle: string | string[] | undefined): boolean => {
+  if (!handle) return false
+  const h = Array.isArray(handle) ? handle[0] : handle
+  if (category.handle === h) return true
+  if (category.category_children) {
+    for (const child of category.category_children) {
+      if (isHandleInCategory(child, h)) return true
+    }
+  }
+  return false
 }
 
 // Parent Category Item - just the navbar button
-
-const CategoryNavItem = ({ category, isActive, onHover, onClose }: {
+const CategoryNavItem = ({ category, isActive, isCurrentRoute, onHover, onClose }: {
   category: HttpTypes.StoreProductCategory
   isActive: boolean
+  isCurrentRoute: boolean
   onHover: () => void
   onClose?: () => void
 }) => {
-  const { category: currentCategoryHandle } = useParams()
-  // Main categories don't have icons
-
   const handleCategoryClick = () => {
     if (onClose) {
       onClose()
@@ -43,11 +47,12 @@ const CategoryNavItem = ({ category, isActive, onHover, onClose }: {
         href={`/categories/${category.handle}`}
         onClick={handleCategoryClick}
         className={cn(
-          "uppercase px-4 py-2 hover:bg-primary/10 transition-colors text-lg block whitespace-nowrap font-normal",
-          "flex items-center my-3 md:my-0",
-          category.handle === currentCategoryHandle && "md:border-b-2 md:border-primary text-primary",
-          isActive && "bg-primary/5",
-          "font-instrument-sans" // Use CSS variable for self-hosted fonts
+          "uppercase px-4 py-2 text-lg block whitespace-nowrap font-normal transition-colors",
+          "flex items-center",
+          "font-instrument-sans",
+          isCurrentRoute && "border-b-2 border-[#3B3634]",
+          isActive && !isCurrentRoute && "border-b-2 border-[#3B3634]/40",
+          !isActive && !isCurrentRoute && "hover:border-b-2 hover:border-[#3B3634]/20"
         )}
       >
         <span>{category.name}</span>
@@ -80,71 +85,82 @@ export const FullWidthDropdown = ({
   if (!isVisible || !activeCategory) return null
 
   const children = activeCategory.category_children || []
+  if (children.length === 0) return null
 
   return (
     <div 
       className={cn(
         "w-full z-50",
-        "bg-primary border-t border-[#3B3634] shadow-lg ring-1 ring-[#BFB7AD]",
+        "bg-primary shadow-md",
         "max-h-[400px] overflow-y-auto",
-        "font-instrument-sans" // Use CSS variable for self-hosted fonts
+        "font-instrument-sans"
       )}
       onMouseEnter={onMouseEnter}
       onMouseLeave={onMouseLeave}
     >
-     <div className="max-w-[1920px] mx-auto p-6">
-  <div className="grid gap-x-6 gap-y-6 grid-cols-[repeat(auto-fit,minmax(180px,max-content))] auto-rows-min w-full">
-    {children.map((child, idx) => (
-      <div 
-        key={child.id} 
-        className={cn(
-          "space-y-4 pr-4",
-          idx !== children.length - 1 && "border-r border-gray-200"
-        )}
-      >
-        <Link
-          href={`/categories/${child.handle}`}
-          onClick={handleCategoryClick}
-          className={cn(
-            "flex items-center gap-2 text-lg font-normal text-black hover:text-primary transition-colors hover:underline uppercase",
-            child.handle === currentCategoryHandle && "text-primary"
-          )}
-        >
-          {/* TODO: Re-enable category icons later */}
-          {/* {(() => {
-            const IconComponent = getCategoryIcon(child.handle || '')
-            console.log('Category handle:', child.handle, 'Icon:', IconComponent ? 'Found' : 'Not found')
-            return IconComponent ? <IconComponent className="w-5 h-5 flex-shrink-0" /> : null
-          })()} */}
-          <span>{child.name}</span>
-        </Link>
+      <div className="max-w-[1920px] mx-auto px-6 py-5">
+        <div className="grid gap-x-6 gap-y-6 grid-cols-[repeat(auto-fit,minmax(180px,max-content))] auto-rows-min w-full">
+          {children.map((child, idx) => (
+            <div 
+              key={child.id} 
+              className={cn(
+                "space-y-3 pr-4",
+                idx !== children.length - 1 && "border-r border-gray-200"
+              )}
+            >
+              <div className="flex gap-2.5">
+                {/* Icon column — fixed width, vertically centered to first line of text */}
+                {(() => {
+                  const Icon = getCategoryIcon(child.handle || "")
+                  return Icon ? (
+                    <div className="flex-shrink-0 w-5 h-[1.75rem] flex items-center">
+                      <Icon className="w-5 h-5" />
+                    </div>
+                  ) : null
+                })()}
 
-        {child.category_children?.length > 0 && (
-          <div className="space-y-2">
-            {child.category_children.map((grandchild) => (
-              <Link
-                key={grandchild.id}
-                href={`/categories/${grandchild.handle}`}
-                onClick={handleCategoryClick}
-                className={cn(
-                  "block text-sm text-gray-700 hover:text-primary hover:underline transition-colors ",
-                  grandchild.handle === currentCategoryHandle && "text-primary font-normal"
-                )}
-              >
-                {grandchild.name}
-              </Link>
-            ))}
-          </div>
-        )}
+                {/* Content column — child name + grandchildren */}
+                <div className="space-y-2.5">
+                  <Link
+                    href={`/categories/${child.handle}`}
+                    onClick={handleCategoryClick}
+                    className={cn(
+                      "block text-lg leading-[1.75rem] font-normal text-black hover:text-primary transition-colors hover:underline uppercase",
+                      child.handle === currentCategoryHandle && "text-primary"
+                    )}
+                  >
+                    {child.name}
+                  </Link>
+
+                  {child.category_children && child.category_children.length > 0 && (
+                    <div className="space-y-2">
+                      {child.category_children.map((grandchild) => (
+                        <Link
+                          key={grandchild.id}
+                          href={`/categories/${grandchild.handle}`}
+                          onClick={handleCategoryClick}
+                          className={cn(
+                            "block text-sm text-gray-700 hover:text-primary hover:underline transition-colors",
+                            grandchild.handle === currentCategoryHandle && "text-primary font-normal"
+                          )}
+                        >
+                          {grandchild.name}
+                        </Link>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
-    ))}
-  </div>
-</div>
     </div>
   )
 }
 
-export const CategoryNavbar = ({ categories, onClose, onDropdownStateChange }: CategoryNavbarProps) => {
+export const CategoryNavbar = ({ categories, activeCategory, onClose, onDropdownStateChange }: CategoryNavbarProps) => {
+  const { category: currentCategoryHandle } = useParams()
 
   // Process categories to show only top-level categories with proper children
   const topLevelCategories = useMemo(() => {
@@ -153,7 +169,7 @@ export const CategoryNavbar = ({ categories, onClose, onDropdownStateChange }: C
     }
     
     // Filter to get only top-level categories (no parent_category_id)
-    const topLevel = categories.filter(cat => {
+    return categories.filter(cat => {
       const hasNoParentId = !cat.parent_category_id || cat.parent_category_id === null
       const hasNoParentObj = !cat.parent_category || 
                            cat.parent_category === null || 
@@ -161,66 +177,70 @@ export const CategoryNavbar = ({ categories, onClose, onDropdownStateChange }: C
       
       return hasNoParentId && hasNoParentObj
     })
-    
-    
-    
-    return topLevel
   }, [categories])
 
-  const handleCategoryHover = (category: HttpTypes.StoreProductCategory) => {
+  const handleCategoryHover = useCallback((category: HttpTypes.StoreProductCategory) => {
     const hasChildren = category.category_children && category.category_children.length > 0
-    if (hasChildren && onDropdownStateChange) {
-      onDropdownStateChange(category, true)
+    if (onDropdownStateChange) {
+      if (hasChildren) {
+        onDropdownStateChange(category, true)
+      } else {
+        // Close dropdown when hovering a category without children
+        onDropdownStateChange(null, false)
+      }
     }
-  }
-
-
+  }, [onDropdownStateChange])
 
   return (
     <nav 
       className={cn(
         "flex md:items-center flex-col md:flex-row relative",
-        "font-instrument-sans" // Use CSS variable for self-hosted fonts
+        "font-instrument-sans"
       )}
     >
       {/* All Products Link */}
-      <Link
-        href="/categories"
-        onClick={() => onClose?.()}
-        className={cn(
-          "uppercase my-3 md:my-0 flex items-center justify-between text-lg hover:bg-primary/10 transition-colors mr-2",
-          "px-4 py-2 font-normal",
-          "font-instrument-sans" // Use CSS variable for self-hosted fonts
-        )}
-      >
-        Wszystkie
-      </Link>
+      <div onMouseEnter={() => onDropdownStateChange?.(null, false)}>
+        <Link
+          href="/categories"
+          onClick={() => onClose?.()}
+          className={cn(
+            "uppercase flex items-center justify-between text-lg transition-colors",
+            "px-4 py-2 font-normal",
+            "font-instrument-sans",
+            "hover:border-b-2 hover:border-[#3B3634]/40"
+          )}
+        >
+          Wszystkie
+        </Link>
+      </div>
       
       {/* Parent Category Navigation Items */}
       {topLevelCategories.map((category) => (
         <CategoryNavItem
           key={category.id} 
           category={category}
-          isActive={false} // Simplified - no active state tracking in CategoryNavbar
+          isActive={activeCategory?.id === category.id}
+          isCurrentRoute={isHandleInCategory(category, currentCategoryHandle)}
           onHover={() => handleCategoryHover(category)}
           onClose={onClose}
         />
       ))}
 
       {/* Promotions Link - Always at the right */}
-      <Link
-        href="/promotions"
-        onClick={() => onClose?.()}
-        className={cn(
-          "uppercase my-3 md:my-0 flex items-center justify-between text-lg hover:bg-red-50 transition-colors ml-auto",
-          "px-4 py-2 font-normal text-red-600 hover:text-red-700",
-          "font-instrument-sans" // Use CSS variable for self-hosted fonts
-        )}
-      >
-        Promocje
-      </Link>
-
-      {/* Dropdown is now handled at the Navbar level */}
+      <div className="ml-auto" onMouseEnter={() => onDropdownStateChange?.(null, false)}>
+        <Link
+          href="/promotions"
+          onClick={() => onClose?.()}
+          className={cn(
+            "uppercase flex items-center justify-between text-lg transition-colors",
+            "px-4 py-2 font-normal text-red-600 hover:text-red-700",
+            "font-instrument-sans",
+            "hover:border-b-2 hover:border-red-600"
+          )}
+        >
+          Promocje
+        </Link>
+      </div>
     </nav>
   )
 }

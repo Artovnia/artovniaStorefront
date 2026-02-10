@@ -107,7 +107,7 @@ async function AllCategories({
       
     <PromotionDataProvider countryCode="PL" productIds={[]} limit={0}>
       <BatchPriceProvider currencyCode="PLN">
-        <main className="mx-auto max-w-[1920px] pt-2 xl:pt-24 pb-12 xl:pb-24">
+        <main className="container">
           {/* ✅ No Suspense needed - SmartProductsListing handles its own loading states */}
           <SmartProductsListing 
             locale={locale}
