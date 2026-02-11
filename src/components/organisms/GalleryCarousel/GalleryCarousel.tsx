@@ -25,11 +25,11 @@ export const GalleryCarousel = ({
   title?: string;
 }) => {
   return (
-    <div className='w-full max-w-full p-1 rounded-sm overflow-hidden' style={{ backgroundColor: '#F4F0EB' }}>
+    <div className='w-full max-w-full p-1 rounded-sm overflow-hidden' style={{ backgroundColor: '#F4F0EB' }} role="region" aria-label={`Galeria zdjęć: ${title}`}>
       {images?.length > 0 ? (
         <ProductCarousel slides={images} title={title} />
       ) : (
-        <div className="aspect-square w-full bg-gray-100 flex items-center justify-center rounded-xs">
+        <div className="aspect-square w-full bg-gray-100 flex items-center justify-center rounded-xs" role="img" aria-label="Brak zdjęć produktu">
           <span className="text-gray-400">Brak zdjęć</span>
         </div>
       )}

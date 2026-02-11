@@ -207,7 +207,7 @@ export const ProductCarousel = ({
       {/* After hydration, only render if actually on mobile. During SSR, render for CSS lg:hidden. */}
       {(!isHydrated || isMobile) && (
         <div className="lg:hidden w-full overflow-hidden bg-[#F4F0EB]" style={{ backgroundColor: '#F4F0EB' }}>
-          <div className="embla relative w-full">
+          <div className="embla relative w-full" role="region" aria-label="Galeria zdjęć produktu" aria-roledescription="karuzela">
             <div
               className="embla__viewport overflow-hidden rounded-xs"
               ref={emblaRef}
@@ -220,6 +220,9 @@ export const ProductCarousel = ({
                     className="embla__slide flex-[0_0_100%] min-w-0 h-[350px] cursor-zoom-in bg-[#F4F0EB]"
                     style={{ backgroundColor: '#F4F0EB' }}
                     onClick={() => openZoomModal(index)}
+                    role="group"
+                    aria-roledescription="slajd"
+                    aria-label={`Zdjęcie ${index + 1} z ${slides.length}`}
                   >
                     {index === 0 ? (
                       <LqipImage
@@ -259,6 +262,9 @@ export const ProductCarousel = ({
                     key="animated-slide"
                     className="embla__slide flex-[0_0_100%] min-w-0 h-[350px] relative bg-[#F4F0EB]"
                     style={{ backgroundColor: '#F4F0EB' }}
+                    role="group"
+                    aria-roledescription="slajd"
+                    aria-label="Podgląd animowany"
                   >
                     {mainImageLoaded && (
                       <KenBurnsSlide
@@ -317,6 +323,8 @@ export const ProductCarousel = ({
                     key={slide.id}
                     onClick={() => handleThumbnailClick(index)}
                     onMouseEnter={() => prefetchGalleryImage(slide.url)}
+                    aria-label={`Miniatura ${index + 1} z ${slides.length}`}
+                    aria-current={selectedImageIndex === index ? "true" : undefined}
                     className={`relative w-20 h-20 rounded-xs overflow-hidden border-2 transition-all duration-300 flex-shrink-0 bg-[#F4F0EB] ${
                       selectedImageIndex === index
                         ? "border-[#3B3634] ring-2 ring-[#3B3634] shadow-md"
@@ -342,6 +350,8 @@ export const ProductCarousel = ({
                   <button
                     onClick={handleAnimatedSlideClick}
                     onMouseEnter={() => prefetchAllForKenBurns(imageUrls)}
+                    aria-label="Podgląd animowany"
+                    aria-current={selectedImageIndex === animatedSlideIndex ? "true" : undefined}
                     className={`relative w-20 h-20 rounded-xs overflow-hidden border-2 transition-all duration-300 flex-shrink-0 bg-[#F4F0EB] ${
                       selectedImageIndex === animatedSlideIndex
                         ? "border-[#3B3634] ring-2 ring-[#3B3634] shadow-md"
@@ -361,7 +371,7 @@ export const ProductCarousel = ({
                       sizes="80px"
                     />
                     {/* Play icon overlay */}
-                    <div className="absolute inset-0 bg-black/30 flex items-center justify-center z-10">
+                    <div className="absolute inset-0 bg-black/30 flex items-center justify-center z-10" aria-hidden="true">
                       <div className="w-6 h-6 rounded-full bg-white/90 flex items-center justify-center">
                         <svg
                           className="w-3 h-3 text-[#3B3634] ml-0.5"
@@ -402,6 +412,7 @@ export const ProductCarousel = ({
                     onClick={goToPrevious}
                     className="absolute left-3 top-1/2 -translate-y-1/2 z-10 bg-white/90 hover:bg-white rounded-full p-3 shadow-lg transition-all duration-300 opacity-0 group-hover:opacity-100 hover:scale-110 backdrop-blur-sm"
                     disabled={isTransitioning}
+                    aria-label="Poprzednie zdjęcie"
                   >
                     <ArrowLeftIcon size={20} className="text-amber-700" />
                   </button>
@@ -409,6 +420,7 @@ export const ProductCarousel = ({
                     onClick={goToNext}
                     className="absolute right-3 top-1/2 -translate-y-1/2 z-10 bg-white/90 hover:bg-white rounded-full p-3 shadow-lg transition-all duration-300 opacity-0 group-hover:opacity-100 hover:scale-110 backdrop-blur-sm"
                     disabled={isTransitioning}
+                    aria-label="Następne zdjęcie"
                   >
                     <ArrowRightIcon size={20} className="text-amber-700" />
                   </button>
@@ -441,7 +453,7 @@ export const ProductCarousel = ({
                     />
 
                     {/* Elegant overlay gradient for premium feel */}
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/5 via-transparent to-transparent pointer-events-none" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/5 via-transparent to-transparent pointer-events-none" aria-hidden="true" />
                   </div>
                 )}
 
@@ -461,7 +473,7 @@ export const ProductCarousel = ({
 
               {/* Image counter for regular images only (Ken Burns has its own counter) */}
               {totalSlides > 1 && selectedImageIndex !== animatedSlideIndex && (
-                <div className="absolute bottom-3 right-3 bg-black/60 text-white text-sm px-3 py-1 rounded-full backdrop-blur-sm">
+                <div className="absolute bottom-3 right-3 bg-black/60 text-white text-sm px-3 py-1 rounded-full backdrop-blur-sm" aria-live="polite" aria-atomic="true">
                   {selectedImageIndex + 1} / {slides.length}
                 </div>
               )}

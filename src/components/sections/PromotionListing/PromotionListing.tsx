@@ -1,16 +1,22 @@
 "use client"
 
-import { useState, useEffect, useMemo, useRef } from "react"
+import { useState, useEffect, useRef, useCallback } from "react"
 import { HttpTypes } from "@medusajs/types"
 import { ProductCard } from "@/components/organisms"
 import { listProductsWithPromotions } from "@/lib/data/products"
-import { retrieveCustomer } from "@/lib/data/customer"
 import { getUserWishlists } from "@/lib/data/wishlist"
 import { SerializableWishlist } from "@/types/wishlist"
-import { Button } from "@/components/atoms"
 import { useSearchParams } from "next/navigation"
-import { SellerProps } from "@/types/seller"
 import { Pagination } from "@/components/cells/Pagination/Pagination"
+
+// Client-side page cache entry with TTL
+interface CachedPage {
+  products: HttpTypes.StoreProduct[]
+  count: number
+  timestamp: number
+}
+
+const PAGE_CACHE_TTL = 5 * 60 * 1000 // 5 minutes
 
 // Loading skeleton component
 const PromotionListingSkeleton = () => (
@@ -51,6 +57,7 @@ export const PromotionListing = ({
   const [count, setCount] = useState(initialCount)
   const [currentPage, setCurrentPage] = useState(initialPage)
   const [isLoading, setIsLoading] = useState(false)
+  const isLoadingRef = useRef(false)
   // ✅ OPTIMIZATION: Use props instead of fetching again
   const [user, setUser] = useState<HttpTypes.StoreCustomer | null>(initialUser)
   const [wishlist, setWishlist] = useState<SerializableWishlist[]>(initialWishlist)
@@ -67,6 +74,14 @@ export const PromotionListing = ({
   // Track previous filter values to detect changes
   const prevFiltersRef = useRef({ promotionFilter, sellerFilter, campaignFilter, categoryFilter, sortBy })
   const isInitialMount = useRef(true)
+
+  // ✅ PERFORMANCE: Client-side page cache — revisiting a page is instant
+  const pageCacheRef = useRef<Map<string, CachedPage>>(new Map())
+
+  // Build cache key from current filters + page
+  const buildCacheKey = useCallback((page: number) => {
+    return `${page}:${promotionFilter}:${sellerFilter}:${campaignFilter}:${categoryFilter}:${sortBy}`
+  }, [promotionFilter, sellerFilter, campaignFilter, categoryFilter, sortBy])
 
   // Backend handles filtering and sorting, so we just use products directly
   const filteredProducts = products
@@ -85,11 +100,24 @@ export const PromotionListing = ({
     }
   }
 
-  // Fetch products for a specific page
-  const fetchProductsForPage = async (page: number) => {
-    if (isLoading) return
+  // ✅ PERFORMANCE: Fetch with client-side cache — no skeleton on cached pages
+  const fetchProductsForPage = useCallback(async (page: number) => {
+    if (isLoadingRef.current) return
+
+    const cacheKey = buildCacheKey(page)
+
+    // ✅ Check client-side cache first — instant page switch
+    const cached = pageCacheRef.current.get(cacheKey)
+    if (cached && (Date.now() - cached.timestamp) < PAGE_CACHE_TTL) {
+      setProducts(cached.products)
+      setCount(cached.count)
+      setCurrentPage(page)
+      return
+    }
 
     try {
+      // ✅ OPTIMISTIC UI: Keep old products visible, just mark as loading
+      isLoadingRef.current = true
       setIsLoading(true)
       
       const { response } = await listProductsWithPromotions({
@@ -103,20 +131,40 @@ export const PromotionListing = ({
         category: categoryFilter || undefined,
       })
 
-      setProducts(response.products || [])
-      setCount(response.count || 0)
+      const newProducts = response.products || []
+      const newCount = response.count || 0
+
+      // ✅ Cache the result for instant revisits
+      pageCacheRef.current.set(cacheKey, {
+        products: newProducts,
+        count: newCount,
+        timestamp: Date.now(),
+      })
+
+      setProducts(newProducts)
+      setCount(newCount)
       setCurrentPage(page)
-      
-      // Scroll to top when changing pages
-      window.scrollTo({ top: 0, behavior: 'smooth' })
     } catch (error) {
       console.error('Error fetching products:', error)
       setProducts([])
       setCount(0)
     } finally {
+      isLoadingRef.current = false
       setIsLoading(false)
     }
-  }
+  }, [buildCacheKey, limit, countryCode, sortBy, promotionFilter, sellerFilter, campaignFilter, categoryFilter])
+
+  // Seed cache with initial server-rendered data
+  useEffect(() => {
+    if (initialProducts.length > 0) {
+      const cacheKey = buildCacheKey(initialPage)
+      pageCacheRef.current.set(cacheKey, {
+        products: initialProducts,
+        count: initialCount,
+        timestamp: Date.now(),
+      })
+    }
+  }, []) // Only on mount
 
   // Set initial products and count
   useEffect(() => {
@@ -125,7 +173,7 @@ export const PromotionListing = ({
     setCurrentPage(initialPage)
   }, [initialProducts, initialCount, initialPage])
 
-  // ✅ FIXED: Refetch when filters change
+  // ✅ FIXED: Refetch when filters change + clear stale cache
   useEffect(() => {
     // Skip on initial mount - use server-rendered data
     if (isInitialMount.current) {
@@ -145,6 +193,9 @@ export const PromotionListing = ({
       // Update ref with new filter values
       prevFiltersRef.current = { promotionFilter, sellerFilter, campaignFilter, categoryFilter, sortBy }
       
+      // ✅ Clear page cache when filters change (old data is stale)
+      pageCacheRef.current.clear()
+      
       // Reset to page 1 and fetch new data
       fetchProductsForPage(1)
     }
@@ -153,9 +204,10 @@ export const PromotionListing = ({
   // Calculate total pages
   const totalPages = Math.ceil(count / limit)
 
-  // Handle page change
+  // Handle page change — scroll immediately, then fetch
   const handlePageChange = (page: number) => {
     if (page >= 1 && page <= totalPages && page !== currentPage) {
+      window.scrollTo({ top: 0, behavior: 'smooth' })
       fetchProductsForPage(page)
     }
   }
@@ -176,9 +228,11 @@ export const PromotionListing = ({
       </div>
 
       {/* Content Area */}
-      {isLoading ? (
+      {/* ✅ PERFORMANCE: Skeleton only on true initial load (no products yet) */}
+      {/* On page switch, old products stay visible with loading overlay */}
+      {isLoading && products.length === 0 ? (
         <PromotionListingSkeleton />
-      ) : filteredProducts.length === 0 ? (
+      ) : filteredProducts.length === 0 && !isLoading ? (
         <div className="text-center py-12">
           <h2 className="text-xl text-gray-800 mb-2 font-instrument-serif">
             {products.length === 0 ? "Brak promocji" : "Brak wyników"}
@@ -193,7 +247,7 @@ export const PromotionListing = ({
         <>
           {/* ✅ OPTIMIZED: Removed nested BatchPriceProvider - uses parent provider from page.tsx */}
           {/* Parent provider already has initialPriceData from server, no need for duplicate provider */}
-          <div className="w-full flex justify-center ">
+          <div className={`w-full flex justify-center transition-opacity duration-200 ${isLoading ? 'opacity-50 pointer-events-none' : 'opacity-100'}`}>
             <ul className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4 sm:gap-12 w-fit mx-auto ">
               {filteredProducts.map((product) => (
                 <ProductCard

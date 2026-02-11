@@ -294,7 +294,7 @@ export const ProductDetailsHeader = ({
             {/* {product?.brand || "No brand"} */}
           </h2>
           <h1 className="heading-lg text-primary font-instrument-serif">{product.title}</h1>
-          <div className="mt-2 flex gap-2 items-center">
+          <div className="mt-2 flex gap-2 items-center" role="status" aria-live="polite" aria-label="Cena produktu">
             {hasAnyDiscount ? (
               <>
                 {/* Show promotional pricing when any discount is detected */}
@@ -380,6 +380,7 @@ export const ProductDetailsHeader = ({
           loading={isAdding}
           className="w-full uppercase mb-1 py-3 flex justify-center mt-6"
           size="large"
+          aria-label={`${!variantHasPrice ? 'Niedostępne' : !isAvailable ? 'Sprzedawca niedostępny' : managesInventory && variantStock <= 0 && !allowBackorder ? 'Brak w magazynie' : 'Dodaj do koszyka'}: ${product.title}`}
         >
           {!variantHasPrice
             ? "NIEDOSTĘPNE"
@@ -397,8 +398,9 @@ export const ProductDetailsHeader = ({
           <button 
             onClick={handleHolidayModeInfo}
             className="flex items-center text-xs text-blue-600 hover:text-blue-800 transition-colors"
+            aria-label="Informacje o trybie wakacyjnym sprzedawcy"
           >
-            <InformationCircleSolid className="w-4 h-4 mr-1" />
+            <InformationCircleSolid className="w-4 h-4 mr-1" aria-hidden="true" />
             View holiday information
           </button>
         )}

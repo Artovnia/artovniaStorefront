@@ -289,7 +289,7 @@ export const ProductDetailsPage = async ({
 
               {/* ✅ OPTIMIZATION: Defer below-fold content to prioritize gallery images */}
               <Suspense fallback={<div className="my-24 h-96 bg-gray-50 animate-pulse" />}>
-                <div className="my-24 xl:mt-40 text-black max-w-[1920px] mx-auto">
+                <div className="my-24 xl:mt-40 text-black max-w-[1920px] mx-auto" aria-label={`Więcej produktów od ${product.seller?.name || 'sprzedawcy'}`}>
                 {/* Custom heading with mixed styling and button */}
   <div className="mb-6 px-4 sm:px-6 lg:px-8">
     {/* Desktop Layout: Grid with centered heading and right-aligned button */}
@@ -306,8 +306,9 @@ export const ProductDetailsPage = async ({
           <Link 
             href={`/sellers/${product.seller.handle}`}
             className="group relative text-[#3B3634] font-instrument-sans font-medium px-4 py-2 overflow-hidden transition-all duration-300 hover:text-white"
+            aria-label={`Zobacz wszystkie produkty od ${product.seller.name}`}
           >
-            <span className="absolute inset-0 bg-[#3B3634] transform translate-x-[-100%] group-hover:translate-x-0 transition-transform duration-300 ease-out"></span>
+            <span className="absolute inset-0 bg-[#3B3634] transform translate-x-[-100%] group-hover:translate-x-0 transition-transform duration-300 ease-out" aria-hidden="true"></span>
             <span className="relative flex items-center gap-2">
               Zobacz wszystkie
               <span className="inline-block transition-transform duration-300 group-hover:translate-x-1">
@@ -343,6 +344,7 @@ export const ProductDetailsPage = async ({
               fill="none" 
               viewBox="0 0 24 24" 
               stroke="currentColor"
+              aria-hidden="true"
             >
               <path 
                 strokeLinecap="round" 

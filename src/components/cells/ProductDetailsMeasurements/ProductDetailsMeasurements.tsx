@@ -149,8 +149,8 @@ export const ProductDetailsMeasurements = ({
           heading={accordionTitle}
           defaultOpen={false}
         >
-          <div className="w-full py-8 flex flex-col items-center space-y-2">
-            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-ui-border-interactive"></div>
+          <div className="w-full py-8 flex flex-col items-center space-y-2" role="status">
+            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-ui-border-interactive" aria-hidden="true"></div>
             <p className="text-sm text-gray-500">
               {locale === 'pl' ? 'Ładowanie wymiarów...' : 'Loading measurements...'}
             </p>
@@ -168,7 +168,7 @@ export const ProductDetailsMeasurements = ({
           heading={accordionTitle}
           defaultOpen={false}
         >
-          <div className="w-full py-8 flex flex-col items-center space-y-2">
+          <div className="w-full py-8 flex flex-col items-center space-y-2" role="alert">
             <p className="text-sm text-gray-500">
               {locale === 'pl' 
                 ? 'Nie udało się załadować wymiarów' 
@@ -182,6 +182,7 @@ export const ProductDetailsMeasurements = ({
               }}
               className="text-xs px-3 py-1 border rounded hover:bg-gray-50 transition-colors"
               disabled={isLoading}
+              aria-label={locale === 'pl' ? 'Spróbuj ponownie załadować wymiary' : 'Try loading measurements again'}
             >
               {locale === 'pl' ? 'Spróbuj ponownie' : 'Try again'}
             </button>
@@ -233,11 +234,11 @@ export const ProductDetailsMeasurements = ({
         heading={accordionTitle}
         defaultOpen={false}
       >
-        <div className="relative">
+        <div className="relative" aria-busy={isLoading}>
           {/* Loading overlay for variant changes */}
           {isLoading && measurements.length > 0 && (
-            <div className="absolute inset-0 bg-white bg-opacity-75 flex items-center justify-center z-10">
-              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-ui-border-interactive"></div>
+            <div className="absolute inset-0 bg-white bg-opacity-75 flex items-center justify-center z-10" role="status" aria-label={locale === 'pl' ? 'Aktualizowanie wymiarów' : 'Updating measurements'}>
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-ui-border-interactive" aria-hidden="true"></div>
             </div>
           )}
           

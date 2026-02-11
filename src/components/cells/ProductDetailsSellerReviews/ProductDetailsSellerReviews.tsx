@@ -34,7 +34,7 @@ export const ProductDetailsSellerReviews = async ({ seller }: { seller: SellerPr
   return (
     <ProductPageAccordion heading="Sprzedawca" defaultOpen={true}>
       <div className='flex flex-col lg:flex-row justify-between gap-4 lg:items-start items-center mb-5'>
-        <Link href={`/sellers/${handle}`} className="flex gap-4">
+        <Link href={`/sellers/${handle}`} className="flex gap-4" aria-label={`Profil sprzedawcy: ${name}`}>
           <div className="relative h-12 w-12 overflow-hidden rounded-sm">
             <SellerAvatar photo={photo} size={56} alt={name} />
           </div>
@@ -47,7 +47,7 @@ export const ProductDetailsSellerReviews = async ({ seller }: { seller: SellerPr
           </div>
         </Link>
         <div className="flex flex-col lg:flex-col gap-3 w-full lg:w-auto">
-          <Link href={`${process.env.NEXT_PUBLIC_BASE_URL}/sellers/${handle}?tab=message`} className="w-full lg:w-auto">
+          <Link href={`${process.env.NEXT_PUBLIC_BASE_URL}/sellers/${handle}?tab=message`} className="w-full lg:w-auto" aria-label={`Skontaktuj się ze sprzedawcą ${name}`}>
             <Button
               variant='filled'
               className='uppercase label-md font-400 w-full lg:min-w-[11rem]'
@@ -55,7 +55,7 @@ export const ProductDetailsSellerReviews = async ({ seller }: { seller: SellerPr
               Kontakt
             </Button>
           </Link>
-          <Link href={`/sellers/${handle}?tab=reviews`} className="w-full lg:w-auto">
+          <Link href={`/sellers/${handle}?tab=reviews`} className="w-full lg:w-auto" aria-label={`Zobacz wszystkie recenzje sprzedawcy ${name} (${reviewCount})`}>
             <Button
               variant='tonal'
               className='uppercase label-md font-400 w-full lg:min-w-[11rem]'

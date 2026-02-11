@@ -93,11 +93,14 @@ const InteractiveStarRating = ({
   const inactiveColor = tailwindConfig.theme.extend.colors.action.on.primary
 
   return (
-    <div className="flex items-center gap-1">
+    <div className="flex items-center gap-1" role="radiogroup" aria-label="Wybierz ocenę">
       {[1, 2, 3, 4, 5].map((star) => (
         <button
           key={star}
           type="button"
+          role="radio"
+          aria-checked={rating === star}
+          aria-label={`${star} ${star === 1 ? 'gwiazdka' : star < 5 ? 'gwiazdki' : 'gwiazdek'}`}
           className="cursor-pointer hover:scale-110 transition-transform duration-150"
           onMouseEnter={() => setHoveredRating(star)}
           onMouseLeave={() => setHoveredRating(0)}
@@ -126,17 +129,17 @@ const RatingBar = ({
   const percentage = total > 0 ? (count / total) * 100 : 0
 
   return (
-    <div className="flex items-center gap-3">
-      <span className="text-xs font-instrument-sans text-plum-muted w-6">
+    <div className="flex items-center gap-3" aria-label={`${stars} ${stars === 1 ? 'gwiazdka' : stars < 5 ? 'gwiazdki' : 'gwiazdek'}: ${count} recenzji (${Math.round(percentage)}%)`}>
+      <span className="text-xs font-instrument-sans text-plum-muted w-6" aria-hidden="true">
         {stars}★
       </span>
-      <div className="flex-1 h-1.5 bg-cream-200 overflow-hidden">
+      <div className="flex-1 h-1.5 bg-cream-200 overflow-hidden" role="progressbar" aria-valuenow={Math.round(percentage)} aria-valuemin={0} aria-valuemax={100}>
         <div
           className="h-full bg-plum transition-all duration-300"
           style={{ width: `${percentage}%` }}
         />
       </div>
-      <span className="text-xs font-instrument-sans text-plum-muted w-8 text-right">
+      <span className="text-xs font-instrument-sans text-plum-muted w-8 text-right" aria-hidden="true">
         {count}
       </span>
     </div>
@@ -167,6 +170,8 @@ const ReviewCard = ({
       className={`border-b border-cream-200 last:border-b-0 py-5 ${
         isUserReview ? "bg-cream-100/50 -mx-6 px-6" : ""
       }`}
+      role="article"
+      aria-label={`Recenzja od ${customerName}: ${review.rating} ${review.rating === 1 ? 'gwiazdka' : review.rating < 5 ? 'gwiazdki' : 'gwiazdek'}`}
     >
       <div className="flex items-start justify-between mb-3">
         <div className="flex items-center gap-3">
@@ -295,7 +300,7 @@ const ReviewForm = ({
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
       <div>
         <label className="flex items-center gap-2 mb-3">
-          <Star size={14} className="text-plum-muted" />
+          <Star size={14} className="text-plum-muted" aria-hidden="true" />
           <span className="text-xs font-medium text-plum uppercase tracking-wider font-instrument-sans">
             Ocena
           </span>
@@ -305,7 +310,7 @@ const ReviewForm = ({
 
       <div>
         <label htmlFor="review" className="flex items-center gap-2 mb-3">
-          <MessageSquare size={14} className="text-plum-muted" />
+          <MessageSquare size={14} className="text-plum-muted" aria-hidden="true" />
           <span className="text-xs font-medium text-plum uppercase tracking-wider font-instrument-sans">
             Twoja opinia (opcjonalnie)
           </span>
@@ -356,7 +361,7 @@ const LoginPrompt = (): JSX.Element => {
 
   return (
     <div className="text-center py-6">
-      <User size={32} className="mx-auto text-plum-muted mb-3" />
+      <User size={32} className="mx-auto text-plum-muted mb-3" aria-hidden="true" />
       <h4 className="text-sm font-medium text-plum font-instrument-sans mb-1">
         Dodaj recenzję produktu
       </h4>
@@ -376,7 +381,7 @@ const LoginPrompt = (): JSX.Element => {
 const NotEligiblePrompt = (): JSX.Element => {
   return (
     <div className="flex items-start gap-3 p-4 bg-amber-50 border border-amber-200">
-      <AlertCircle size={16} className="text-amber-600 shrink-0 mt-0.5" />
+      <AlertCircle size={16} className="text-amber-600 shrink-0 mt-0.5" aria-hidden="true" />
       <div>
         <h4 className="text-sm font-medium text-amber-800 font-instrument-sans mb-1">
           Dodaj recenzję produktu
@@ -500,7 +505,7 @@ export const ProductReviews = ({
         {/* Review Form Section */}
         <div className="px-6 py-5 border-b border-cream-200">
           <div className="flex items-center gap-2 mb-4">
-            <Edit3 size={14} className="text-plum-muted" />
+            <Edit3 size={14} className="text-plum-muted" aria-hidden="true" />
             <span className="text-xs font-medium text-plum uppercase tracking-wider font-instrument-sans">
               {userReview ? "Edytuj swoją recenzję" : "Dodaj recenzję"}
             </span>
@@ -525,7 +530,7 @@ export const ProductReviews = ({
         {/* Reviews List */}
         <div className="px-6">
           <div className="flex items-center gap-2 py-4 border-b border-cream-200">
-            <MessageSquare size={14} className="text-plum-muted" />
+            <MessageSquare size={14} className="text-plum-muted" aria-hidden="true" />
             <span className="text-xs font-medium text-plum uppercase tracking-wider font-instrument-sans">
               Wszystkie recenzje ({reviews.length})
             </span>
@@ -549,6 +554,7 @@ export const ProductReviews = ({
               <MessageSquare
                 size={32}
                 className="mx-auto text-plum-muted/50 mb-3"
+                aria-hidden="true"
               />
               <p className="text-sm text-plum-muted font-instrument-sans">
                 Brak recenzji dla tego produktu.

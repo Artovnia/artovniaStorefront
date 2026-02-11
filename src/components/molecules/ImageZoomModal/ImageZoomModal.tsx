@@ -136,16 +136,16 @@ export const ImageZoomModal = ({
   
   // The modal content
   const modalContent = (
-    <div className="fixed inset-0 z-[9999] bg-black/95 backdrop-blur-sm min-h-screen" style={{ isolation: 'isolate' }}>
+    <div className="fixed inset-0 z-[9999] bg-black/95 backdrop-blur-sm min-h-screen" style={{ isolation: 'isolate' }} role="dialog" aria-modal="true" aria-label="Powiększenie zdjęcia produktu">
       {/* Header with close button and counter */}
       <div className="absolute top-0 left-0 right-0 z-10 flex justify-between items-center p-4 bg-gradient-to-b from-black/50 to-transparent">
-        <div className="text-white text-sm font-medium">
+        <div className="text-white text-sm font-medium" aria-live="polite" aria-atomic="true">
           {currentIndex + 1} / {images.length}
         </div>
         <button
           onClick={onClose}
           className="text-white hover:text-gray-300 transition-colors p-2 hover:bg-white/10 rounded-full"
-          aria-label="Close zoom modal"
+          aria-label="Zamknij powiększenie"
         >
           <XMarkIcon className="w-6 h-6" />
         </button>
@@ -157,14 +157,14 @@ export const ImageZoomModal = ({
           <button
             onClick={goToPrevious}
             className="absolute left-4 top-1/2 -translate-y-1/2 z-10 text-white hover:text-gray-300 transition-colors p-3 hover:bg-white/10 rounded-full"
-            aria-label="Previous image"
+            aria-label="Poprzednie zdjęcie"
           >
             <ChevronLeftIcon className="w-8 h-8" />
           </button>
           <button
             onClick={goToNext}
             className="absolute right-4 top-1/2 -translate-y-1/2 z-10 text-white hover:text-gray-300 transition-colors p-3 hover:bg-white/10 rounded-full"
-            aria-label="Next image"
+            aria-label="Następne zdjęcie"
           >
             <ChevronRightIcon className="w-8 h-8" />
           </button>
@@ -219,6 +219,8 @@ export const ImageZoomModal = ({
                 setCurrentIndex(index)
                 setIsZoomed(false)
               }}
+              aria-label={`Miniatura ${index + 1} z ${images.length}`}
+              aria-current={currentIndex === index ? "true" : undefined}
               className={`relative w-12 h-12 rounded-sm overflow-hidden border-2 transition-all ${
                 currentIndex === index
                   ? 'border-white ring-2 ring-white/50'

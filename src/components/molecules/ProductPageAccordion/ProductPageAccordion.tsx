@@ -1,7 +1,7 @@
 'use client';
 import { PlusIcon } from '@/icons';
 import { cn } from '@/lib/utils';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 
 export const ProductPageAccordion = ({
   children,
@@ -18,6 +18,9 @@ export const ProductPageAccordion = ({
   );
 
   const accordionRef = useRef(null);
+  const uniqueId = useId();
+  const headingId = `accordion-heading-${uniqueId}`;
+  const panelId = `accordion-panel-${uniqueId}`;
 
   useEffect(() => {
     if (accordionRef.current && open) {
@@ -33,16 +36,26 @@ export const ProductPageAccordion = ({
   
   return (
     <div className="border-t border-[#3B3634]/10">
-      <div
+      <button
+        type="button"
         onClick={openHandler}
-        className="flex justify-between items-center cursor-pointer xl:px-4 py-4 
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            openHandler();
+          }
+        }}
+        aria-expanded={open}
+        aria-controls={panelId}
+        id={headingId}
+        className="flex justify-between items-center cursor-pointer xl:px-4 py-4 w-full text-left
                    hover:bg-[#3B3634]/5 transition-all duration-200
                    active:scale-[0.99]"
       >
-        <h4 className="text-2xl font-instrument-serif text-[#3B3634] tracking-tight">
+        <span className="text-2xl font-instrument-serif text-[#3B3634] tracking-tight">
           {heading}
-        </h4>
-        <div className="relative w-6 h-6 flex items-center justify-center">
+        </span>
+        <div className="relative w-6 h-6 flex items-center justify-center" aria-hidden="true">
           <PlusIcon
             size={24}
             className={cn(
@@ -51,9 +64,12 @@ export const ProductPageAccordion = ({
             )}
           />
         </div>
-      </div>
+      </button>
       <div
         ref={accordionRef}
+        id={panelId}
+        role="region"
+        aria-labelledby={headingId}
         className={cn(
           'transition-all duration-300 overflow-hidden xl:px-4'
         )}
