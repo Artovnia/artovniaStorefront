@@ -23,7 +23,7 @@ import { getBatchLowestPrices } from "@/lib/data/price-history"
 
 // Loading skeletons for initial load - unified cache prevents these on navigation
 const BlogSkeleton = () => (
-  <div className="w-full bg-white py-2 md:py-8">
+  <div className="w-full bg-white py-2 md:py-8" role="status" aria-label="Ładowanie sekcji bloga">
     <div className="mx-auto max-w-[1920px] w-full px-4 sm:px-6 lg:px-8">
       <div className="animate-pulse">
         <div className="h-8 bg-gray-200 rounded w-48 mb-6"></div>
@@ -108,8 +108,44 @@ export const metadata: Metadata = {
 }
 
 
+const DesignerOfTheWeekSkeleton = () => (
+  <div className="w-full bg-[#F4F0EB] min-h-[400px] py-2 md:py-8" role="status" aria-label="Ładowanie sekcji projektant tygodnia">
+    <div className="mx-auto max-w-[1920px] w-full px-4 lg:px-8 py-6 md:py-8 font-instrument-sans">
+      {/* Mobile skeleton */}
+      <div className="block md:hidden">
+        <div className="relative w-full aspect-[3/4] max-h-[70vh] overflow-hidden shadow-xl bg-gray-300/40 animate-pulse rounded" />
+      </div>
+
+      {/* Desktop skeleton */}
+      <div className="hidden md:flex flex-col lg:flex-row items-center gap-8 lg:gap-12 xl:gap-16 2xl:gap-20">
+        {/* Text Content - Left */}
+        <div className="w-full lg:w-1/2 flex flex-col justify-center items-center space-y-4 lg:space-y-8 xl:space-y-10 text-center animate-pulse">
+          <div className="h-8 lg:h-10 bg-gray-300/50 rounded w-64" />
+          <div className="h-7 lg:h-8 bg-gray-300/50 rounded w-48" />
+          <div className="space-y-2 w-full max-w-md">
+            <div className="h-4 bg-gray-300/40 rounded w-full" />
+            <div className="h-4 bg-gray-300/40 rounded w-5/6 mx-auto" />
+            <div className="h-4 bg-gray-300/40 rounded w-4/6 mx-auto" />
+          </div>
+          <div className="h-12 bg-gray-300/50 rounded w-48" />
+        </div>
+
+        {/* Images - Right */}
+        <div className="w-full lg:w-1/2">
+          <div className="flex items-start justify-center lg:justify-start gap-4 md:gap-6 lg:gap-8 xl:gap-12 2xl:gap-16">
+            {/* Main Image placeholder */}
+            <div className="flex-shrink-0 w-56 h-72 md:w-64 md:h-80 lg:w-72 lg:h-88 xl:w-80 xl:h-96 2xl:w-[28rem] 2xl:h-[30rem] bg-gray-300/40 animate-pulse rounded shadow-lg" />
+            {/* Secondary Image placeholder */}
+            <div className="flex-shrink-0 w-32 h-40 lg:w-40 lg:h-48 xl:w-52 xl:h-60 2xl:w-60 2xl:h-72 bg-gray-300/40 animate-pulse rounded shadow-lg border-4 border-[#F4F0EB]" />
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+)
+
 const ProductsSkeleton = () => (
-  <div className="py-2 md:py-8 w-full">
+  <div className="py-2 md:py-8 w-full" role="status" aria-label="Ładowanie produktów">
     <div className="h-8 bg-gray-200 rounded w-48 mb-6 md:mb-12 ml-4 lg:ml-[68px] animate-pulse"></div>
     <div className="flex gap-4 overflow-hidden px-4">
       {[1, 2, 3, 4].map(i => (
@@ -205,7 +241,7 @@ export default async function Home({
         preloadVariantIds={variantIds}
         initialPriceData={priceData}
       >
-        <main className="flex flex-col text-primary">
+        <main className="flex flex-col text-primary" aria-label="Strona główna Artovnia">
           {/* ✅ Hero renders immediately - no async dependencies */}
           <div className="mx-auto max-w-[1920px] w-full">
             <Hero />
@@ -255,9 +291,11 @@ export default async function Home({
           
           {/* Designer of the Week Section - ✅ SERVER COMPONENT: Optimized for performance */}
           {/* Fetches Sanity data during server render with 10-min caching */}
+          <Suspense fallback={<DesignerOfTheWeekSkeleton />}>
           <div className="w-full bg-[#F4F0EB] min-h-[400px] py-2 md:py-8">
             <DesignerOfTheWeekSectionServer />
           </div>
+          </Suspense>
 
           {/* Blog Section - cached for 10 minutes with unified cache */}
           <div className="w-full bg-white py-2 md:py-8">

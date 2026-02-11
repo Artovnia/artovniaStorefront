@@ -256,6 +256,10 @@ const AlgoliaProductsListingWithConfig = (props: AlgoliaProductsListingProps) =>
     // attributesForFaceting is deprecated and causes 400 errors
   };
   
+  // DIAGNOSTIC: Log configureProps to see what's being sent
+  console.log('[Algolia DEBUG] configureProps:', JSON.stringify(configureProps, null, 2));
+  console.log('[Algolia DEBUG] category_ids:', category_ids, 'category_id:', category_id);
+  
   
   
   // Create a memoized search client with caching to prevent excessive queries
@@ -269,6 +273,9 @@ const AlgoliaProductsListingWithConfig = (props: AlgoliaProductsListingProps) =>
     const CACHE_TTL = 5 * 60 * 1000; // 5 minutes cache
     
     client.search = (requests) => {
+      // DIAGNOSTIC: Log every Algolia request to see what's sent
+      console.log('[Algolia DEBUG] Search requests:', JSON.stringify(requests, null, 2));
+      
       const cacheKey = JSON.stringify(requests);
       
       // Check cache first
@@ -285,6 +292,15 @@ const AlgoliaProductsListingWithConfig = (props: AlgoliaProductsListingProps) =>
       
       // Make new request
       const requestPromise = originalSearch.call(client, requests).then((result: any) => {
+        // DIAGNOSTIC: Log response summary including any error messages
+        if (result?.results) {
+          result.results.forEach((r: any, i: number) => {
+            console.log(`[Algolia DEBUG] Response[${i}]: index=${r.index}, nbHits=${r.nbHits}, query="${r.query}", appliedFilters=${r.params}`);
+            if (r.nbHits === 0) {
+              console.warn(`[Algolia DEBUG] ⚠️ 0 HITS on index=${r.index}. Full response:`, JSON.stringify(r, null, 2));
+            }
+          });
+        }
         // Cache the result
         cache.set(cacheKey, { result, timestamp: Date.now() });
         

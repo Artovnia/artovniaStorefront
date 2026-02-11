@@ -6,6 +6,7 @@ import Link from "next/link"
 import { Button } from "@/components/atoms"
 import { WishlistItem } from "@/components/cells"
 import { getUserWishlists } from "@/lib/data/wishlist"
+import { listRegions } from "@/lib/data/regions"
 import { HttpTypes } from "@medusajs/types"
 import { UserPageLayout } from "@/components/molecules"
 
@@ -14,7 +15,10 @@ export default async function Wishlist() {
 
   let wishlist: WishlistType[] = []
   if (user) {
-    const response = await getUserWishlists()
+    // Get region for price calculation
+    const regions = await listRegions()
+    const regionId = regions?.[0]?.id
+    const response = await getUserWishlists(regionId)
     wishlist = response.wishlists
   }
 

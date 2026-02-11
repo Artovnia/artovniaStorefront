@@ -56,7 +56,7 @@ export const ProductRatingFilter = ({ algoliaRatingItems = [], onClose, showButt
   return (
     <div className="p-4">
       
-      <ul className="space-y-1">
+      <ul className="space-y-1" role="radiogroup" aria-label="Filtr ocen">
         {allRatings.map(({ label, count, isRefined }) => (
           <li key={label}>
             <div className="flex items-center gap-2 py-2.5">
@@ -69,11 +69,11 @@ export const ProductRatingFilter = ({ algoliaRatingItems = [], onClose, showButt
               <StarRating
                 rate={+label}
               />
-              <span className="text-sm font-light text-[#3B3634]/70 font-instrument-sans">
+              <span className="text-sm font-light text-[#3B3634]/70 font-instrument-sans" aria-label={`${count} produktów`}>
                 ({count})
               </span>
             </div>
-            <div className="flex justify-center">
+            <div className="flex justify-center" aria-hidden="true">
               <div className="w-[99%] h-px bg-[#3B3634]/10" />
             </div>
           </li>

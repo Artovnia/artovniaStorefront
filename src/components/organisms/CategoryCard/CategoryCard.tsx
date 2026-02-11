@@ -33,6 +33,7 @@ export function CategoryCard({
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
       style={{ backfaceVisibility: "hidden", transform: "translateZ(0)" }}
+      aria-label={`Kategoria: ${category.name}`}
     >
       {/* Image Container - takes all remaining space */}
       <div
@@ -63,6 +64,7 @@ export function CategoryCard({
           className={`absolute inset-0 bg-gradient-to-t from-[#3B3634]/95 via-[#3B3634]/70 to-transparent transition-opacity duration-500 flex items-center justify-center ${
             isHovered ? "opacity-100" : "opacity-0"
           }`}
+          aria-hidden="true"
         >
           <div
             className="text-center px-4 transform transition-transform duration-500"
@@ -86,7 +88,7 @@ export function CategoryCard({
           <h3 className="text-[#3B3634] font-instrument-sans font-normal text-center text-sm sm:text-base md:text-lg lg:text-xl whitespace-nowrap uppercase">
             {category.name}
           </h3>
-          <ArrowRightIcon className="w-4 h-4 text-[#3B3634] flex-shrink-0" />
+          <ArrowRightIcon className="w-4 h-4 text-[#3B3634] flex-shrink-0" aria-hidden="true" />
         </div>
       </div>
     </Link>

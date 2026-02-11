@@ -4,7 +4,7 @@ import { getAuthHeaders } from "./cookies"
 import { revalidatePath } from "next/cache"
 import { Wishlist, SerializableWishlist, WishlistResponse } from "@/types/wishlist"
 
-export const getUserWishlists = async (): Promise<WishlistResponse> => {
+export const getUserWishlists = async (regionId?: string): Promise<WishlistResponse> => {
   const authHeaders = await getAuthHeaders()
   
   if (!('authorization' in authHeaders)) {
@@ -17,9 +17,14 @@ export const getUserWishlists = async (): Promise<WishlistResponse> => {
     "x-publishable-api-key": process.env
       .NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY as string,
   }
+
+  // Build URL with optional region_id for price calculation
+  const url = regionId 
+    ? `/store/wishlist?region_id=${encodeURIComponent(regionId)}`
+    : `/store/wishlist`
     
   return sdk.client
-    .fetch<{ wishlists: Wishlist[]; count: number }>(`/store/wishlist`, {
+    .fetch<{ wishlists: Wishlist[]; count: number }>(url, {
       cache: "no-cache",
       headers,
       method: "GET",

@@ -102,7 +102,7 @@ export const WishlistItem = ({
             >
               {/* Product Details on Hover */}
               <div className="text-white space-y-2">
-                <h4 className="font-instrument-serif text-xl font-semibold line-clamp-2">
+                <h4 className="font-instrument-serif text-xl font-medium line-clamp-2">
                   {product.title}
                 </h4>
                 
@@ -116,7 +116,7 @@ export const WishlistItem = ({
                 <div className="flex items-center justify-center gap-2">
                   {hasDiscount ? (
                     <>
-                      <p className="font-instrument-sans font-semibold text-lg">
+                      <p className="font-instrument-sans font-medium text-lg">
                         {displayPrice}
                       </p>
                       <p className="text-sm line-through opacity-70">

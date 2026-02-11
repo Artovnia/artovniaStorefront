@@ -49,7 +49,7 @@ export const PriceFilter = ({ onClose, showButton = true }: PriceFilterProps = {
   return (
     <div className="p-4">
      
-      <div className="flex gap-2 flex-col sm:flex-row">
+      <div className="flex gap-2 flex-col sm:flex-row" role="group" aria-label="Zakres cenowy">
         <div className="flex-1">
           <div className="relative">
             <input
@@ -59,6 +59,8 @@ export const PriceFilter = ({ onClose, showButton = true }: PriceFilterProps = {
               value={pendingMinPrice}
               name="min_price"
               onChange={handlePriceChange}
+              aria-label="Minimalna cena w złotych"
+              inputMode="numeric"
             />
             {pendingMinPrice && (
               <button
@@ -70,7 +72,7 @@ export const PriceFilter = ({ onClose, showButton = true }: PriceFilterProps = {
                 <CloseIcon className="w-3 h-3" />
               </button>
             )}
-            <span className="absolute right-2 top-2 text-xs font-medium text-[#3B3634]/60">zł</span>
+            <span className="absolute right-2 top-2 text-xs font-medium text-[#3B3634]/60" aria-hidden="true">zł</span>
           </div>
         </div>
         <div className="flex-1">
@@ -82,6 +84,8 @@ export const PriceFilter = ({ onClose, showButton = true }: PriceFilterProps = {
               value={pendingMaxPrice}
               name="max_price"
               onChange={handlePriceChange}
+              aria-label="Maksymalna cena w złotych"
+              inputMode="numeric"
             />
             {pendingMaxPrice && (
               <button
@@ -93,7 +97,7 @@ export const PriceFilter = ({ onClose, showButton = true }: PriceFilterProps = {
                 <CloseIcon className="w-3 h-3" />
               </button>
             )}
-            <span className="absolute right-2 top-2 text-xs font-medium text-[#3B3634]/60">zł</span>
+            <span className="absolute right-2 top-2 text-xs font-medium text-[#3B3634]/60" aria-hidden="true">zł</span>
           </div>
         </div>
       </div>

@@ -140,7 +140,7 @@ const Form = ({ compact, onSuccess }: { compact: boolean; onSuccess?: () => void
   }
 
   const formContent = (
-    <form onSubmit={handleSubmit(submit)}>
+    <form onSubmit={handleSubmit(submit)} aria-label="Formularz rejestracji">
       <div className={compact ? "space-y-4" : "w-96 max-w-full mx-auto space-y-4"}>
           <LabeledInput
             label="Imię"
@@ -180,7 +180,7 @@ const Form = ({ compact, onSuccess }: { compact: boolean; onSuccess?: () => void
             error={errors.phone as FieldError}
             {...register("phone")}
           />
-          {error && <p className="label-md text-negative">{error}</p>}
+          {error && <p className="label-md text-negative" role="alert">{error}</p>}
           <Button
             className="w-full flex justify-center"
             disabled={isSubmitting}
@@ -203,7 +203,7 @@ const Form = ({ compact, onSuccess }: { compact: boolean; onSuccess?: () => void
             className="w-full bg-white border border-[#3B3634] text-[#3B3634] hover:bg-[#3B3634] hover:text-white flex items-center justify-center gap-3"
             disabled={isSubmitting}
           >
-            <svg className="w-5 h-5" viewBox="0 0 24 24">
+            <svg className="w-5 h-5" viewBox="0 0 24 24" aria-hidden="true">
               <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
               <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
               <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
@@ -236,7 +236,7 @@ const Form = ({ compact, onSuccess }: { compact: boolean; onSuccess?: () => void
   }
 
   return (
-    <main className="container">
+    <main className="container" aria-label="Rejestracja">
       <h1 className="heading-xl text-center uppercase my-6">
         Dołącz do naszej społeczności
       </h1>

@@ -97,7 +97,7 @@ export const HierarchicalMobileMenu = ({
   if (!shouldRender) return null;
 
   return (
-    <div className="fixed inset-0 z-50 xl:hidden">
+    <div className="fixed inset-0 z-50 xl:hidden" role="dialog" aria-modal="true" aria-label="Menu kategorii">
       {/* Backdrop */}
       <div 
         className={cn(
@@ -105,6 +105,7 @@ export const HierarchicalMobileMenu = ({
           isAnimating ? "bg-opacity-0" : "bg-opacity-50"
         )}
         onClick={handleMenuClose}
+        aria-hidden="true"
       />
       
       {/* Menu Panel */}
@@ -112,7 +113,7 @@ export const HierarchicalMobileMenu = ({
         "fixed inset-y-0 left-0 w-full max-w-sm bg-primary shadow-xl",
         "transform transition-transform duration-300 ease-in-out",
         isAnimating ? "-translate-x-full" : "translate-x-0"
-      )}>
+      )} role="navigation" aria-label="Nawigacja po kategoriach">
         <div className="flex flex-col h-full">
           {/* Header */}
           <div className="flex items-center justify-between p-4 border-b border-[#BFB7AD] bg-primary">

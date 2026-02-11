@@ -40,6 +40,7 @@ export const MobileCategoryLevel = ({
             href="/categories" 
             className="block w-full"
             onClick={() => setTimeout(() => onClose(), 100)}
+            aria-label="Przeglądaj wszystkie produkty"
           >
             <div className="flex items-center justify-between w-full py-4 px-4 border-b border-gray-200  transition-colors">
               <span className="text-base font-instrument-sans font-medium text-[#3B3634] ">
@@ -55,6 +56,7 @@ export const MobileCategoryLevel = ({
             href={`/categories/${level.parentCategory.handle}`} 
             className="block w-full"
             onClick={() => setTimeout(() => onClose(), 100)}
+            aria-label={`Zobacz wszystkie produkty w kategorii ${level.parentCategory.name}`}
           >
             <div className="flex items-center justify-between w-full py-4 px-4 border-b-2 border-primary/20 bg-primary/5 hover:bg-primary/10 transition-colors">
               <span className="text-base font-semibold text-primary">
@@ -80,6 +82,7 @@ export const MobileCategoryLevel = ({
             href="/promotions" 
             className="block w-full"
             onClick={() => setTimeout(() => onClose(), 100)}
+            aria-label="Przeglądaj promocje"
           >
             <div className="flex items-center justify-between w-full py-4 px-4 border-t-2 border-red-100 bg-red-50 hover:bg-red-100 active:bg-red-200 transition-colors">
               <span className="text-base font-instrument-sans font-semibold text-red-600">
@@ -91,7 +94,7 @@ export const MobileCategoryLevel = ({
 
         {/* Empty state */}
         {level.categories.length === 0 && (
-          <div className="p-8 text-center text-gray-500">
+          <div className="p-8 text-center text-gray-500" role="status">
             <p>Brak podkategorii</p>
           </div>
         )}

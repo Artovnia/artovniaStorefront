@@ -224,7 +224,7 @@ export function CombinedDimensionFilter({ onClose, showButton = true }: Combined
     
       
       {/* Length section */}
-      <div className="mb-4">
+      <div className="mb-4" role="group" aria-label="Filtr długości">
         <div className="font-medium text-sm text-black font-instrument-sans mb-1">Długość</div>
         {dimensionRanges.length && (
           <div className="text-xs text-[#3B3634]/60 mb-2 font-instrument-sans">
@@ -241,8 +241,10 @@ export function CombinedDimensionFilter({ onClose, showButton = true }: Combined
                 value={minLength}
                 name="min_length"
                 onChange={handleDimensionChange}
+                aria-label="Minimalna długość w mm"
+                inputMode="numeric"
               />
-              <span className="absolute right-2 top-2 text-xs font-medium text-[#3B3634]/60">mm</span>
+              <span className="absolute right-2 top-2 text-xs font-medium text-[#3B3634]/60" aria-hidden="true">mm</span>
             </div>
           </div>
           <div className="flex-1">
@@ -254,15 +256,17 @@ export function CombinedDimensionFilter({ onClose, showButton = true }: Combined
                 value={maxLength}
                 name="max_length"
                 onChange={handleDimensionChange}
+                aria-label="Maksymalna długość w mm"
+                inputMode="numeric"
               />
-              <span className="absolute right-2 top-2 text-xs font-medium text-[#3B3634]/60">mm</span>
+              <span className="absolute right-2 top-2 text-xs font-medium text-[#3B3634]/60" aria-hidden="true">mm</span>
             </div>
           </div>
         </div>
       </div>
 
       {/* Width section */}
-      <div className="mb-4">
+      <div className="mb-4" role="group" aria-label="Filtr szerokości">
         <div className="font-medium text-sm text-black font-instrument-sans mb-1">Szerokość</div>
         {dimensionRanges.width && (
           <div className="text-xs text-[#3B3634]/60 mb-2 font-instrument-sans">
@@ -279,8 +283,10 @@ export function CombinedDimensionFilter({ onClose, showButton = true }: Combined
                 value={minWidth}
                 name="min_width"
                 onChange={handleDimensionChange}
+                aria-label="Minimalna szerokość w mm"
+                inputMode="numeric"
               />
-              <span className="absolute right-2 top-2 text-xs font-medium text-[#3B3634]/60">mm</span>
+              <span className="absolute right-2 top-2 text-xs font-medium text-[#3B3634]/60" aria-hidden="true">mm</span>
             </div>
           </div>
           <div className="flex-1">
@@ -292,15 +298,17 @@ export function CombinedDimensionFilter({ onClose, showButton = true }: Combined
                 value={maxWidth}
                 name="max_width"
                 onChange={handleDimensionChange}
+                aria-label="Maksymalna szerokość w mm"
+                inputMode="numeric"
               />
-              <span className="absolute right-2 top-2 text-xs font-medium text-[#3B3634]/60">mm</span>
+              <span className="absolute right-2 top-2 text-xs font-medium text-[#3B3634]/60" aria-hidden="true">mm</span>
             </div>
           </div>
         </div>
       </div>
 
       {/* Height section */}
-      <div className="mb-4">
+      <div className="mb-4" role="group" aria-label="Filtr wysokości">
         <div className="font-medium text-sm text-black font-instrument-sans mb-1">Wysokość</div>
         {dimensionRanges.height && (
           <div className="text-xs text-[#3B3634]/60 mb-2 font-instrument-sans">
@@ -317,8 +325,10 @@ export function CombinedDimensionFilter({ onClose, showButton = true }: Combined
                 value={minHeight}
                 name="min_height"
                 onChange={handleDimensionChange}
+                aria-label="Minimalna wysokość w mm"
+                inputMode="numeric"
               />
-              <span className="absolute right-2 top-2 text-xs font-medium text-[#3B3634]/60">mm</span>
+              <span className="absolute right-2 top-2 text-xs font-medium text-[#3B3634]/60" aria-hidden="true">mm</span>
             </div>
           </div>
           <div className="flex-1">
@@ -330,15 +340,17 @@ export function CombinedDimensionFilter({ onClose, showButton = true }: Combined
                 value={maxHeight}
                 name="max_height"
                 onChange={handleDimensionChange}
+                aria-label="Maksymalna wysokość w mm"
+                inputMode="numeric"
               />
-              <span className="absolute right-2 top-2 text-xs font-medium text-[#3B3634]/60">mm</span>
+              <span className="absolute right-2 top-2 text-xs font-medium text-[#3B3634]/60" aria-hidden="true">mm</span>
             </div>
           </div>
         </div>
       </div>
 
       {/* Weight section */}
-      <div>
+      <div role="group" aria-label="Filtr wagi">
         <div className="font-medium text-sm text-black font-instrument-sans mb-1">Waga</div>
         {dimensionRanges.weight && (
           <div className="text-xs text-[#3B3634]/60 mb-2 font-instrument-sans">
@@ -355,8 +367,10 @@ export function CombinedDimensionFilter({ onClose, showButton = true }: Combined
                 value={minWeight}
                 name="min_weight"
                 onChange={handleDimensionChange}
+                aria-label="Minimalna waga w gramach"
+                inputMode="numeric"
               />
-              <span className="absolute right-2 top-2 text-xs font-medium text-[#3B3634]/60">g</span>
+              <span className="absolute right-2 top-2 text-xs font-medium text-[#3B3634]/60" aria-hidden="true">g</span>
             </div>
           </div>
           <div className="flex-1">
@@ -368,8 +382,10 @@ export function CombinedDimensionFilter({ onClose, showButton = true }: Combined
                 value={maxWeight}
                 name="max_weight"
                 onChange={handleDimensionChange}
+                aria-label="Maksymalna waga w gramach"
+                inputMode="numeric"
               />
-              <span className="absolute right-2 top-2 text-xs font-medium text-[#3B3634]/60">g</span>
+              <span className="absolute right-2 top-2 text-xs font-medium text-[#3B3634]/60" aria-hidden="true">g</span>
             </div>
           </div>
         </div>

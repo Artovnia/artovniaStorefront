@@ -119,7 +119,7 @@ export const UserSettingsModal = ({
   if (!isOpen) return null
 
   return (
-    <div className="fixed inset-0 z-50 md:hidden">
+    <div className="fixed inset-0 z-50 md:hidden" role="dialog" aria-modal="true" aria-labelledby="user-settings-heading">
       {/* Full Screen Container */}
       <div className="relative h-full w-full bg-[#F4F0EB] overflow-hidden">
        
@@ -132,7 +132,7 @@ export const UserSettingsModal = ({
           {/* Header with Close Button */}
           <div className="sticky top-0 z-10 bg-[#F4F0EB] pt-4 pb-2">
             <div className="flex items-center justify-between">
-              <h1 className="text-2xl font-instrument serif tracking-tight text-[#3B3634] uppercase">
+              <h1 id="user-settings-heading" className="text-2xl font-instrument serif tracking-tight text-[#3B3634] uppercase">
                 {currentView === "login"
                   ? "Logowanie"
                   : currentView === "register"
@@ -143,6 +143,7 @@ export const UserSettingsModal = ({
                 onClick={handleClose}
                 className="w-10 h-10 flex items-center justify-center rounded-full 
                          bg-[#3B3634]/5 hover:bg-[#3B3634]/10 transition-colors"
+                aria-label="Zamknij"
               >
                 <CloseIcon className="w-5 h-5 text-[#3B3634]" />
               </button>
@@ -154,8 +155,9 @@ export const UserSettingsModal = ({
                 onClick={handleBackToSettings}
                 className="mt-2 text-sm text-[#3B3634]/60 hover:text-[#3B3634] 
                          flex items-center gap-1 transition-colors"
+                aria-label="Powrót do ustawień"
               >
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
                   <path
                     strokeLinecap="round"
                     strokeLinejoin="round"
@@ -197,7 +199,9 @@ export const UserSettingsModal = ({
                     alt="Artovnia"
                     width={190}
                     height={190}
-                    className="w-full h-full object-contain scale-[0.85]" 
+                    className="w-full h-full object-contain scale-[0.85]"
+                    aria-label="Logo Artovnii"
+                    priority={true}
                   />
                 </div>
               </div>
@@ -242,7 +246,7 @@ export const UserSettingsModal = ({
               </div>
 
               {/* Benefits */}
-              <div className="space-y-4">
+              <div role="list" aria-label="Korzyści" className="space-y-4">
                 {[
                   { text: "-Śledź swoje zamówienia i artystów" },
                   { text: "-Zapisuj ulubione dzieła" },
@@ -271,7 +275,8 @@ export const UserSettingsModal = ({
                     alt="Artovnia"
                     width={210}
                     height={210}
-                    className="w-full h-full object-fill scale-[0.85] "
+                    className="w-full h-full object-fill scale-[0.85]"
+                    aria-label="Logo Artovnii"
                   />
                 </div>
               </div>
@@ -290,6 +295,8 @@ export const UserSettingsModal = ({
                       key={item.href}
                       href={item.href}
                       onClick={handleClose}
+                      aria-current={isActive ? "page" : undefined}
+                      aria-label={item.label}
                       className={cn(
                         "relative flex-1 flex items-center justify-center gap-1.5",
                         "px-2 py-2.5 rounded-full",
@@ -326,6 +333,8 @@ export const UserSettingsModal = ({
                       href={item.href}
                       onClick={handleClose}
                       style={{ animationDelay: `${index * 50}ms` }}
+                      aria-current={isActive ? "page" : undefined}
+                      aria-label={item.label}
                       className={cn(
                         "flex items-center gap-4 px-4 py-3.5 ",
                         "transition-all duration-200 animate-in fade-in slide-in-from-bottom-2",
@@ -336,13 +345,14 @@ export const UserSettingsModal = ({
                       )}
                     >
                       <div
-                          className="relative w-10 h-10  flex items-center justify-center flex-shrink-0"
+                        className="relative w-10 h-10  flex items-center justify-center flex-shrink-0"
                       >
                         <IconComponent className="w-5 h-5" />
                         {showNotification && (
                           <span
                             className="absolute -top-1 -right-1 w-3 h-3 
                                        bg-red-500 rounded-full border-2 border-[#F4F0EB]"
+                            aria-hidden="true"
                           />
                         )}
                       </div>
@@ -352,6 +362,7 @@ export const UserSettingsModal = ({
                         fill="none"
                         viewBox="0 0 24 24"
                         stroke="currentColor"
+                        aria-hidden="true"
                       >
                         <path
                           strokeLinecap="round"
@@ -373,6 +384,7 @@ export const UserSettingsModal = ({
                          border border-red-200 
                          hover:bg-red-100/90 transition-all duration-200
                          font-medium"
+                aria-label="Wyloguj się z konta"
               >
                 <LogoutIcon className="w-5 h-5" />
                 <span>Wyloguj się</span>

@@ -64,7 +64,7 @@ const FilterDropdown = ({ label, children, isActive, className, onApply }: Filte
     }
   }, [isOpen, updatePosition])
 
-  // Close dropdown when clicking outside
+  // Close dropdown when clicking outside or pressing Escape
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node) &&
@@ -73,15 +73,28 @@ const FilterDropdown = ({ label, children, isActive, className, onApply }: Filte
       }
     }
 
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setIsOpen(false)
+        buttonRef.current?.focus()
+      }
+    }
+
     if (isOpen) {
       document.addEventListener('mousedown', handleClickOutside)
-      return () => document.removeEventListener('mousedown', handleClickOutside)
+      document.addEventListener('keydown', handleKeyDown)
+      return () => {
+        document.removeEventListener('mousedown', handleClickOutside)
+        document.removeEventListener('keydown', handleKeyDown)
+      }
     }
   }, [isOpen])
 
   const dropdownContent = isOpen && (
     <div 
       ref={dropdownRef}
+      role="dialog"
+      aria-label={`Filtr: ${label}`}
       className="fixed bg-primary border border-[#3B3634]/15 shadow-xl z-[9999] min-w-[260px] max-w-[320px] flex flex-col overflow-hidden"
       style={{
         top: `${dropdownPosition.top}px`,
@@ -102,6 +115,7 @@ const FilterDropdown = ({ label, children, isActive, className, onApply }: Filte
             setIsOpen(false)
           }}
           className="w-full bg-[#3B3634] text-white py-2.5 px-4 font-instrument-sans text-sm font-medium hover:bg-[#2a2523] active:scale-[0.98] transition-all duration-200"
+          aria-label={`Zastosuj filtr: ${label}`}
         >
           Zastosuj
         </button>
@@ -114,6 +128,9 @@ const FilterDropdown = ({ label, children, isActive, className, onApply }: Filte
       <button
         ref={buttonRef}
         onClick={() => setIsOpen(!isOpen)}
+        aria-expanded={isOpen}
+        aria-haspopup="dialog"
+        aria-label={`Filtr: ${label}`}
         className={cn(
           "flex items-center gap-2 px-3 py-2 sm:px-4 rounded-full border transition-all duration-200",
           "text-xs sm:text-sm font-medium whitespace-nowrap min-w-0 font-instrument-sans",
@@ -131,6 +148,7 @@ const FilterDropdown = ({ label, children, isActive, className, onApply }: Filte
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
+          aria-hidden="true"
         >
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
         </svg>
@@ -358,6 +376,7 @@ export const ProductFilterBar = ({
           <button
             onClick={handleClearAll}
             className="text-sm font-medium font-instrument-sans text-black underline hover:text-red-600 transition-colors"
+            aria-label="Wyczyść wszystkie filtry"
           >
             Wyczyść
           </button>
@@ -365,7 +384,7 @@ export const ProductFilterBar = ({
       </div>
 
       {/* Desktop: Individual Filter Dropdowns - Show only on screens >= 768px */}
-      <div className="hidden md:flex flex-wrap items-center gap-2 sm:gap-3  overflow-x-auto scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-gray-100 pb-2">
+      <div role="toolbar" aria-label="Filtry produktów" className="hidden md:flex flex-wrap items-center gap-2 sm:gap-3  overflow-x-auto scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-gray-100 pb-2">
         {/* Sort Filter */}
         <SortFilter onApply={applyFilters} />
         
@@ -390,6 +409,7 @@ export const ProductFilterBar = ({
         {hasActiveFilters && (
           <button
             onClick={handleClearAll}
+            aria-label="Wyczyść wszystkie filtry"
             style={{
               marginLeft: 'auto',
               padding: '4px 12px',
@@ -417,20 +437,21 @@ export const ProductFilterBar = ({
 
       {/* Active Filters Row */}
       {activeFilters.length > 0 && (
-        <div className="flex flex-wrap items-center gap-2">
+        <div role="list" aria-label="Aktywne filtry" className="flex flex-wrap items-center gap-2">
           <span className="text-sm text-black font-medium font-instrument-sans mr-2">Aktywne filtry:</span>
           {activeFilters.map((filter) => (
             <div
               key={filter.key}
+              role="listitem"
               className="flex items-center gap-2 px-3 py-1 bg-[#3B3634] text-white text-sm rounded-full border border-[#3B3634]"
             >
               <span>{filter.label}</span>
               <button
                 onClick={filter.onRemove}
                 className="ml-1 text-gray-500 hover:text-red-600 transition-colors"
-                aria-label={`Remove ${filter.label} filter`}
+                aria-label={`Usuń filtr: ${filter.label}`}
               >
-                <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
                   <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
                 </svg>
               </button>
@@ -460,11 +481,13 @@ const SortFilter = ({ onApply }: { onApply?: () => void }) => {
 
   return (
     <FilterDropdown label={`Sortuj: ${currentSortLabel}`} isActive={Boolean(currentSort)} onApply={onApply}>
-      <div className="p-4">
+      <div className="p-4" role="radiogroup" aria-label="Sortowanie produktów">
         {sortOptions.map((option) => (
           <div key={option.value} className="relative">
             <button
               type="button"
+              role="radio"
+              aria-checked={currentSort === option.value}
               onClick={() => updateSearchParams("sortBy", option.value)}
               className="w-full flex items-center justify-between py-2.5 text-left transition-colors cursor-pointer hover:bg-[#3B3634]/5"
             >
@@ -479,10 +502,11 @@ const SortFilter = ({ onApply }: { onApply?: () => void }) => {
                   "w-4 h-4 text-[#3B3634] transition-opacity duration-150",
                   currentSort === option.value ? "opacity-100" : "opacity-0"
                 )}
-                strokeWidth={2.5} 
+                strokeWidth={2.5}
+                aria-hidden="true"
               />
             </button>
-            <div className="flex justify-center">
+            <div className="flex justify-center" aria-hidden="true">
               <div className="w-[99%] h-px bg-[#3B3634]/10" />
             </div>
           </div>

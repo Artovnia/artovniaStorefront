@@ -40,7 +40,16 @@ export function Chip({
         className
       )}
       onClick={!disabled ? onSelect : undefined}
-      role='button'
+      onKeyDown={!disabled ? (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault()
+          onSelect?.()
+        }
+      } : undefined}
+      role='option'
+      aria-selected={selected}
+      aria-disabled={disabled}
+      aria-label={typeof value === 'string' ? value : undefined}
       tabIndex={disabled ? -1 : 0}
     >
       {color ? (

@@ -82,7 +82,7 @@ export const MobileRegionModal = ({
   if (!isOpen) return null
 
   return (
-    <div className="fixed inset-0 z-50 md:hidden">
+    <div className="fixed inset-0 z-50 md:hidden" role="dialog" aria-modal="true" aria-labelledby="region-modal-heading">
       {/* Full Screen Container */}
       <div className="relative h-full w-full bg-[#F4F0EB] overflow-hidden">
         {/* Scrollable Content */}
@@ -93,7 +93,7 @@ export const MobileRegionModal = ({
           {/* Header with Close Button */}
           <div className="sticky top-0 z-10 bg-[#F4F0EB] pt-4 pb-2">
             <div className="flex items-center justify-between">
-              <h1 className="text-2xl font-instrument serif tracking-tight text-[#3B3634] uppercase">
+              <h1 id="region-modal-heading" className="text-2xl font-instrument serif tracking-tight text-[#3B3634] uppercase">
                 Wybierz Region
               </h1>
               <button
@@ -122,7 +122,7 @@ export const MobileRegionModal = ({
             <div className="h-px bg-[#3B3634]/10" />
 
             {/* Region List */}
-            <div className="space-y-2">
+            <div className="space-y-2" role="radiogroup" aria-label="Dostępne regiony">
               {regionDisplays.map((region, index) => {
                 const isActive = region.id === currentRegion?.id
 
@@ -132,6 +132,9 @@ export const MobileRegionModal = ({
                     onClick={() => handleRegionChange(region.id)}
                     disabled={isPending}
                     style={{ animationDelay: `${index * 50}ms` }}
+                    role="radio"
+                    aria-checked={isActive}
+                    aria-label={`Region: ${region.name}`}
                     className={cn(
                       "w-full flex items-center gap-4 px-4 py-3.5",
                       "transition-all duration-200 animate-in fade-in slide-in-from-bottom-2",
@@ -151,6 +154,7 @@ export const MobileRegionModal = ({
                         className="w-5 h-5 flex-shrink-0"
                         fill="currentColor"
                         viewBox="0 0 20 20"
+                        aria-hidden="true"
                       >
                         <path
                           fillRule="evenodd"
@@ -164,6 +168,7 @@ export const MobileRegionModal = ({
                         fill="none"
                         viewBox="0 0 24 24"
                         stroke="currentColor"
+                        aria-hidden="true"
                       >
                         <path
                           strokeLinecap="round"

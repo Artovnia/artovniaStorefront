@@ -42,12 +42,14 @@ export async function DesignerOfTheWeekSectionServer({
   return (
     <section
       className={`mx-auto max-w-[1920px] w-full px-4 lg:px-8 py-6 md:py-8 font-instrument-sans ${className}`}
+      aria-labelledby="designer-of-week-heading"
     >
       {/* ========== MOBILE LAYOUT (below md) ========== */}
       <div className="block md:hidden">
         <Link
           href={`/blog/seller/${featuredPost.slug.current}`}
           className="group block"
+          aria-label={`Poznaj ${featuredPost.sellerName} – projektant tygodnia`}
         >
           {/* Hero Card with Overlay */}
           <div className="relative w-full aspect-[3/4] max-h-[70vh] overflow-hidden shadow-xl">
@@ -80,10 +82,10 @@ export async function DesignerOfTheWeekSectionServer({
             )}
 
             {/* Gradient Overlay */}
-            <div className="absolute inset-0 bg-gradient-to-t from-[#3B3634]/90 via-[#3B3634]/50 to-transparent" />
+            <div className="absolute inset-0 bg-gradient-to-t from-[#3B3634]/90 via-[#3B3634]/50 to-transparent" aria-hidden="true" />
 
             {/* Content Overlay - Bottom */}
-            <div className="absolute bottom-0 left-0 right-0 p-5 z-10 bg-gradient-to-b from-transparent via-[#3B3634]/80 to-transparent">
+            <div className="absolute bottom-0 left-0 right-0 p-5 z-10 bg-gradient-to-b from-transparent via-[#3B3634]/80 to-transparent" aria-hidden="true">
               {/* Seller Name with decorative line */}
               <div className="mb-3">
                 <div className="flex items-center gap-3 mb-2">
@@ -110,6 +112,7 @@ export async function DesignerOfTheWeekSectionServer({
                   fill="none"
                   viewBox="0 0 24 24"
                   stroke="currentColor"
+                  aria-hidden="true"
                 >
                   <path
                     strokeLinecap="round"
@@ -187,7 +190,7 @@ export async function DesignerOfTheWeekSectionServer({
         {/* Text Content - CENTERED */}
         <div className="w-full lg:w-1/2 order-2 lg:order-1 flex flex-col justify-center items-center space-y-4 lg:space-y-8 xl:space-y-10 2xl:space-y-12 text-center">
           {/* Header */}
-          <h2 className="text-2xl lg:text-3xl xl:text-4xl font-instrument-serif text-[#3B3634] tracking-wide">
+          <h2 id="designer-of-week-heading" className="text-2xl lg:text-3xl xl:text-4xl font-instrument-serif text-[#3B3634] tracking-wide">
             <span className="font-instrument-serif">Projektant</span>{" "}
             <span className="font-instrument-serif italic">tygodnia</span>
           </h2>
@@ -209,6 +212,7 @@ export async function DesignerOfTheWeekSectionServer({
           <Link
             href={`/blog/seller/${featuredPost.slug.current}`}
             className="inline-flex items-center justify-center px-8 py-3 ring-1 ring-[#3B3634] text-[#3B3634] font-medium text-sm lg:text-base hover:bg-[#3B3634] hover:text-white transition-colors duration-300 w-fit"
+            aria-label={`Zobacz post o ${featuredPost.sellerName}`}
           >
             ZOBACZ POST
           </Link>

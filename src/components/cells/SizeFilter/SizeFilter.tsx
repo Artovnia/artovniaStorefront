@@ -100,7 +100,7 @@ export const SizeFilter = ({ onClose, showButton = true }: SizeFilterProps = {})
   if (loading) {
     return (
       <Accordion heading="Rozmiar">
-        <p className="text-sm text-gray-500">Ładowanie...</p>
+        <p className="text-sm text-gray-500" role="status">Ładowanie...</p>
       </Accordion>
     )
   }
@@ -108,7 +108,7 @@ export const SizeFilter = ({ onClose, showButton = true }: SizeFilterProps = {})
   if (error) {
     return (
       <Accordion heading="Rozmiar">
-        <p className="text-sm text-gray-500">Błąd podczas ładowania danych o rozmiarach</p>
+        <p className="text-sm text-gray-500" role="alert">Błąd podczas ładowania danych o rozmiarach</p>
       </Accordion>
     )
   }
@@ -120,7 +120,7 @@ export const SizeFilter = ({ onClose, showButton = true }: SizeFilterProps = {})
   return (
     <div className="p-4">
       
-      <div className="flex flex-wrap gap-2">
+      <div className="flex flex-wrap gap-2" role="group" aria-label="Filtr rozmiarów">
         {allSizes.map((size) => (
           <Chip
             key={`size-${size}`}

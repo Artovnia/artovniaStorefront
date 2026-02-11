@@ -1,11 +1,11 @@
 import { cn } from '@/lib/utils';
 
-interface BadgeProps {
+interface BadgeProps extends React.HTMLAttributes<HTMLSpanElement> {
   children: React.ReactNode;
   className?: string;
 }
 
-export function Badge({ children, className }: BadgeProps) {
+export function Badge({ children, className, ...rest }: BadgeProps) {
   return (
     <span
       className={cn(
@@ -16,6 +16,7 @@ export function Badge({ children, className }: BadgeProps) {
         'text-action-on-primary bg-action rounded-xs',
         className
       )}
+      {...rest}
     >
       {children}
     </span>

@@ -45,8 +45,8 @@ export const HomeNewestProductsSection = async ({
     const products = await getCachedProducts()
     
     return (
-      <section className="py-2 md:py-8 w-full">
-        <h2 className="mb-6 md:mb-12 heading-lg  tracking-tight font-instrument-serif italic text-white text-center">
+      <section className="py-2 md:py-8 w-full" aria-labelledby="newest-products-heading">
+        <h2 id="newest-products-heading" className="mb-6 md:mb-12 heading-lg  tracking-tight font-instrument-serif italic text-white text-center">
           {heading}
         </h2>
 
@@ -63,11 +63,11 @@ export const HomeNewestProductsSection = async ({
   } catch (error) {
     console.error("Error in HomeNewestProductsSection:", error)
     return (
-      <section className="py-2 md:py-8 w-full">
-        <h2 className="mb-6 heading-lg  tracking-tight uppercase font-instrument-serif">
+      <section className="py-2 md:py-8 w-full" aria-labelledby="newest-products-heading-error">
+        <h2 id="newest-products-heading-error" className="mb-6 heading-lg  tracking-tight uppercase font-instrument-serif">
           {heading}
         </h2>
-        <div className="flex justify-center w-full py-8">
+        <div className="flex justify-center w-full py-8" role="alert">
           <p className="text-red-500">Unable to load newest products. Please try again later.</p>
         </div>
       </section>

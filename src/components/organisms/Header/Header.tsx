@@ -116,7 +116,7 @@ useEffect(() => {
   const allCategoriesWithTree: HttpTypes.StoreProductCategory[] = categories || []
 
   return (
-    <header className="sticky top-0 z-50 bg-primary shadow-sm">
+    <header className="sticky top-0 z-50 bg-primary shadow-sm" aria-label="Nagłówek strony">
       <div className="flex  lg:py-2 max-w-[1920px] mx-auto">
         <div className="flex items-center gap-2 lg:gap-4 lg:w-1/3 py-1 ml-4">
           {/* Country Selector - Left side - Hide on mobile, show on xl and up */}
@@ -134,7 +134,7 @@ useEffect(() => {
               src="/Logo.svg"
               width={163}
               height={52}
-              alt="Logo"
+              alt="Artovnia - strona główna"
               priority
             />
           </Link>
@@ -144,7 +144,9 @@ useEffect(() => {
           <a 
             href="https://artovniapanel.netlify.app/login" 
             className="hidden xl:inline text-lg font-medium hover:text-action transition-colors hover:underline  items-center"
-            aria-label="Załóż sklep"
+            aria-label="Twój sklep – otwiera się w nowym oknie"
+            target="_blank"
+            rel="noopener noreferrer"
           >
           
             <span className="mr-4">TWÓJ SKLEP</span>

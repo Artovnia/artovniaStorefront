@@ -38,6 +38,8 @@ export const NavbarSearch = () => {
    return (
   <form
     className="flex items-center w-full"
+    role="search"
+    aria-label="Wyszukiwarka produktów"
     method="POST"
     onSubmit={submitHandler}
   >
@@ -50,7 +52,7 @@ export const NavbarSearch = () => {
       onClear={handleClear}
       className="py-2 text-md min-w-[350px] "
     />
-    <input type="submit" className="hidden" />
+    <input type="submit" className="hidden" aria-label="Szukaj" />
   </form>
 
   )

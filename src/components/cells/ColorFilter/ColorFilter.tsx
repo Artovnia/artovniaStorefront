@@ -123,7 +123,7 @@ export const ColorFilter = ({ algoliaFacetItems = [], onClose, showButton = true
   if (isLoading && colorFilters.length === 0) {
     return (
       <Accordion heading='Kolor'>
-        <div className="px-4 py-2 text-sm text-gray-500">Ładowanie kolorów...</div>
+        <div className="px-4 py-2 text-sm text-gray-500" role="status">Ładowanie kolorów...</div>
       </Accordion>
     );
   }
@@ -132,7 +132,7 @@ export const ColorFilter = ({ algoliaFacetItems = [], onClose, showButton = true
   if (error && colorFilters.length === 0) {
     return (
       <Accordion heading='Kolor'>
-        <div className="px-4 py-2 text-sm text-red-500">Błąd ładowania kolorów: {error.message}</div>
+        <div className="px-4 py-2 text-sm text-red-500" role="alert">Błąd ładowania kolorów: {error.message}</div>
       </Accordion>
     );
   }
@@ -140,7 +140,7 @@ export const ColorFilter = ({ algoliaFacetItems = [], onClose, showButton = true
   return (
     <div className="p-4">
       
-      <ul className="space-y-1">
+      <ul className="space-y-1" role="group" aria-label="Filtr kolorów">
         {colorFilters.length > 0 ? (
           colorFilters.map(({ label, amount, colorStyle, value, tooltip, isRefined }) => (
             <li key={value}>
@@ -160,9 +160,10 @@ export const ColorFilter = ({ algoliaFacetItems = [], onClose, showButton = true
                   )}
                   style={colorStyle}
                   title={tooltip}
+                  aria-hidden="true"
                 />
               </div>
-              <div className="flex justify-center">
+              <div className="flex justify-center" aria-hidden="true">
                 <div className="w-[99%] h-px bg-[#3B3634]/10" />
               </div>
             </li>

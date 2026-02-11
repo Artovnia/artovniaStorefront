@@ -148,7 +148,7 @@ export const CategorySidebar = ({
         )}
 
         {/* Navigation */}
-        <nav className="space-y-1">
+        <nav className="space-y-1" aria-label="Kategorie produktów">
           {/* All Products Link */}
           <Link
             href={buildCategoryUrl('')}
@@ -172,7 +172,7 @@ export const CategorySidebar = ({
               currentParentCategoryTree={currentParentCategoryTree}
             />
           ) : (
-            // When viewing "Wszystkie produkty", show all parent categories
+            // When viewing "Wszystkie produkty", show parent categories with direct children only (no grandchildren)
             !currentCategoryHandle && categories && categories.length > 0 && (
               <>
                 {categories
@@ -190,7 +190,8 @@ export const CategorySidebar = ({
                       currentCategoryHandle={currentCategoryHandle as string}
                       buildCategoryUrl={buildCategoryUrl}
                       currentParentCategoryTree={null}
-                      showChildrenByDefault={false}
+                      showChildrenByDefault={true}
+                      maxDepth={1}
                     />
                   ))}
               </>
@@ -218,6 +219,7 @@ interface CategorySidebarItemProps {
   buildCategoryUrl: (categoryHandle: string) => string
   currentParentCategoryTree?: HttpTypes.StoreProductCategory | null
   showChildrenByDefault?: boolean
+  maxDepth?: number // Maximum depth of children to render (undefined = unlimited)
 }
 
 const CategorySidebarItem = ({ 
@@ -226,9 +228,12 @@ const CategorySidebarItem = ({
   level = 0,
   buildCategoryUrl,
   currentParentCategoryTree,
-  showChildrenByDefault = true
+  showChildrenByDefault = true,
+  maxDepth
 }: CategorySidebarItemProps) => {
-  const hasChildren = category.category_children && category.category_children.length > 0
+  // Respect maxDepth: if defined and current level has reached the limit, don't render children
+  const canShowChildren = maxDepth === undefined || level < maxDepth
+  const hasChildren = canShowChildren && category.category_children && category.category_children.length > 0
   const isActive = category.handle === currentCategoryHandle
   const isParentOfActive = category.category_children?.some((child: HttpTypes.StoreProductCategory) => 
     child.handle === currentCategoryHandle
@@ -277,6 +282,7 @@ const CategorySidebarItem = ({
     <div>
       <Link
         href={buildCategoryUrl(category.handle)}
+        aria-current={isActive ? "page" : undefined}
         className={cn(
           "flex items-center justify-between px-3 py-2 text-md font-medium font-instrument-sans rounded-md transition-colors group",
           isActive 
@@ -303,6 +309,7 @@ const CategorySidebarItem = ({
               buildCategoryUrl={buildCategoryUrl}
               currentParentCategoryTree={currentParentCategoryTree}
               showChildrenByDefault={showChildrenByDefault}
+              maxDepth={maxDepth}
             />
           ))}
         </div>

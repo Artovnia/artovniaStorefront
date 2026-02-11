@@ -33,10 +33,17 @@ export const FilterCheckboxOption = ({
         !disabled && 'cursor-pointer'
       )}
       onClick={handleClick}
-      role="button" // Add proper accessibility role
-      tabIndex={disabled ? -1 : 0} // Make it focusable unless disabled
+      onKeyDown={(e) => {
+        if ((e.key === 'Enter' || e.key === ' ') && !disabled) {
+          e.preventDefault()
+          onCheck(value ?? label)
+        }
+      }}
+      role="checkbox"
+      tabIndex={disabled ? -1 : 0}
       aria-disabled={disabled}
       aria-checked={checked}
+      aria-label={amount !== undefined ? `${label} (${amount})` : label}
     >
       <span 
         className={cn(
@@ -45,7 +52,7 @@ export const FilterCheckboxOption = ({
           disabled && "!bg-disabled !border-disabled !cursor-default"
         )}
       >
-        {checked && !disabled && <span className="text-white text-sm absolute">✓</span>}
+        {checked && !disabled && <span className="text-white text-sm absolute" aria-hidden="true">✓</span>}
         <input
           type="checkbox"
           className={cn(

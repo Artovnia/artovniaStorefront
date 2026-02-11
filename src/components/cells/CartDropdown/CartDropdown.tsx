@@ -87,11 +87,19 @@ export const CartDropdown = ({
       className="relative"
       onMouseOver={() => setOpen(true)}
       onMouseLeave={() => setOpen(false)}
+      onFocus={() => setOpen(true)}
+      onBlur={(e) => {
+        if (!e.currentTarget.contains(e.relatedTarget)) {
+          setOpen(false)
+        }
+      }}
     >
       <Link 
   href="/cart" 
-  className="relative " // ← Add inline-flex here
+  className="relative "
   aria-label={`Koszyk${cartItemsCount ? ` - ${cartItemsCount} ${cartItemsCount === 1 ? 'produkt' : 'produkty'}` : ' - pusty'}`}
+  aria-haspopup="true"
+  aria-expanded={open}
 >
   <CartIcon size={20} />
   {Boolean(cartItemsCount) && (
@@ -101,7 +109,7 @@ export const CartDropdown = ({
   )}
 </Link>
       <Dropdown show={open}>
-        <div className="lg:w-[460px] shadow-lg">
+        <div className="lg:w-[460px] shadow-lg" role="region" aria-label="Podgląd koszyka" aria-live="polite">
           <h3 className="uppercase heading-md border-b p-4">Koszyk</h3>
           <div className="p-4">
             {Boolean(cartItemsCount) ? (
@@ -136,7 +144,7 @@ export const CartDropdown = ({
                 <p className="text-lg text-center py-4">
                  Szukasz inspiracji?
                 </p>
-                <Link href="/categories">
+                <Link href="/categories" aria-label="Przeglądaj produkty">
                   <Button className="w-full py-3">Przejdź do strony głównej</Button>
                 </Link>
               </div>

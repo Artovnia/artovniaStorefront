@@ -79,8 +79,9 @@ export const Navbar = ({
       {/* Desktop Navbar */}
       <div 
         className="hidden xl:block w-full bg-primary relative border-t border-[#BFB7AD]/50"
+        role="navigation"
         onMouseLeave={handleNavbarMouseLeave}
-        aria-label="Main navigation bar with categories"
+        aria-label="Nawigacja po kategoriach"
       >
         <div className="flex py-1  justify-between max-w-[1920px] mx-auto">
           <div className="hidden xl:flex w-full">
@@ -100,6 +101,8 @@ export const Navbar = ({
         {isDropdownVisible && dropdownActiveCategory && (
           <div 
             className="absolute left-0 right-0 top-full w-full z-40"
+            role="region"
+            aria-label={`Podkategorie: ${dropdownActiveCategory?.name || ''}`}
             onMouseEnter={handleDropdownMouseEnter}
             onMouseLeave={handleDropdownMouseLeave}
           >

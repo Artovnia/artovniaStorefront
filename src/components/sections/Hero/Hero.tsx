@@ -41,7 +41,7 @@ export const Hero = ({
 
   if (banners.length === 1) {
     return (
-      <section className={`relative w-full h-[20vh] sm:h-[40vh] lg:h-[50vh] min-h-[300px] sm:min-h-[350px] lg:min-h-[400px] overflow-hidden ${className}`}>
+      <section className={`relative w-full h-[20vh] sm:h-[40vh] lg:h-[50vh] min-h-[300px] sm:min-h-[350px] lg:min-h-[400px] overflow-hidden ${className}`} aria-label="Baner główny">
         <div className="relative w-full h-full">
           <Image
             src={firstBanner.image}
@@ -55,7 +55,7 @@ export const Hero = ({
             sizes="100vw"
           />
           
-          <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" aria-hidden="true" />
           
           {firstBanner.content && (
             <div className={`absolute inset-0 z-10 flex items-${firstBanner.content.verticalAlignment || 'center'} justify-${firstBanner.content.alignment || 'center'} px-4 sm:px-6 lg:px-8`}>
@@ -84,6 +84,7 @@ export const Hero = ({
                   <a
                     href={firstBanner.url}
                     className="inline-block px-6 sm:px-8 py-3 sm:py-4 font-instrument-sans font-semibold text-sm sm:text-base lg:text-lg transition-all duration-300 transform hover:scale-105  bg-transparent border-2 border-white text-white hover:bg-white hover:text-[#3B3634] uppercase"
+                    aria-label={firstBanner.content.cta}
                   >
                     {firstBanner.content.cta}
                   </a>
@@ -97,7 +98,7 @@ export const Hero = ({
   }
 
   return (
-    <section className={`relative w-full h-[20vh] sm:h-[40vh] lg:h-[50vh] min-h-[300px] sm:min-h-[350px] lg:min-h-[400px] overflow-hidden ${className}`}>
+    <section className={`relative w-full h-[20vh] sm:h-[40vh] lg:h-[50vh] min-h-[300px] sm:min-h-[350px] lg:min-h-[400px] overflow-hidden ${className}`} aria-label="Baner główny">
       <HeroClient 
         banners={banners}
         className=""

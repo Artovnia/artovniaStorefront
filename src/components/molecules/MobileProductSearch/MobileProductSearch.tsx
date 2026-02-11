@@ -36,7 +36,7 @@ export const MobileProductSearch = () => {
 
   return (
     <div className="xl:hidden w-full px-4 mb-1">
-      <form className="flex items-center w-full" method="POST" onSubmit={submitHandler}>
+      <form className="flex items-center w-full" method="POST" onSubmit={submitHandler} role="search" aria-label="Wyszukiwarka produktów">
         <div className="w-full">
           <Input
             icon={<SearchIcon />}
@@ -47,7 +47,7 @@ export const MobileProductSearch = () => {
             onClear={handleClear}
           />
         </div>
-        <input type="submit" className="hidden" />
+        <input type="submit" className="hidden" aria-label="Szukaj" />
       </form>
     </div>
   )

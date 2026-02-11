@@ -46,6 +46,7 @@ const CategoryNavItem = ({ category, isActive, isCurrentRoute, onHover, onClose 
       <Link
         href={`/categories/${category.handle}`}
         onClick={handleCategoryClick}
+        aria-current={isCurrentRoute ? "page" : undefined}
         className={cn(
           "uppercase px-4 py-1 text-lg block whitespace-nowrap font-normal transition-colors",
           "flex items-center",
@@ -113,7 +114,7 @@ export const FullWidthDropdown = ({
                 {(() => {
                   const Icon = getCategoryIcon(child.handle || "")
                   return Icon ? (
-                    <div className="flex-shrink-0 w-5 h-[1.75rem] flex items-center">
+                    <div className="flex-shrink-0 w-5 h-[1.75rem] flex items-center" aria-hidden="true">
                       <Icon className="w-5 h-5" />
                     </div>
                   ) : null
@@ -197,6 +198,7 @@ export const CategoryNavbar = ({ categories, activeCategory, onClose, onDropdown
         "flex md:items-center flex-col md:flex-row relative",
         "font-instrument-sans"
       )}
+      aria-label="Kategorie produktów"
     >
       {/* All Products Link */}
       <div onMouseEnter={() => onDropdownStateChange?.(null, false)}>

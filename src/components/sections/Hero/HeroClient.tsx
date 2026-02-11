@@ -138,11 +138,15 @@ export const HeroClient = ({
   return (
     <div 
       className={`absolute inset-0 w-full h-full ${className}`}
+      role="region"
+      aria-roledescription="karuzela"
+      aria-label="Baner główny"
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
       onTouchStart={onTouchStart}
       onTouchMove={onTouchMove}
       onTouchEnd={onTouchEnd}
+      aria-live="polite"
     >
       {extendedBanners.map((banner, index) => {
         const isActive = index === currentIndex
@@ -163,7 +167,16 @@ export const HeroClient = ({
               className={`relative w-full h-full group ${
                 banner.url ? 'cursor-pointer' : ''
               }`}
+              role={banner.url ? 'link' : undefined}
+              tabIndex={banner.url && isActive ? 0 : -1}
+              aria-label={banner.url ? banner.alt : undefined}
               onClick={() => banner.url && (window.location.href = banner.url)}
+              onKeyDown={(e) => {
+                if (banner.url && (e.key === 'Enter' || e.key === ' ')) {
+                  e.preventDefault()
+                  window.location.href = banner.url
+                }
+              }}
             >
               {/* Single image for all screen sizes */}
               <Image
@@ -194,7 +207,7 @@ export const HeroClient = ({
                 }}
               />
               
-              <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" aria-hidden="true" />
               
               {banner.content && (
                 <div className={`absolute inset-0 z-10 flex items-${banner.content.verticalAlignment || 'center'} justify-${banner.content.alignment || 'center'} px-4 sm:px-6 lg:px-8`}>
@@ -248,7 +261,7 @@ export const HeroClient = ({
               )}
               
               {banner.url && (
-                <div className="absolute inset-0 bg-black/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                <div className="absolute inset-0 bg-black/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" aria-hidden="true" />
               )}
           </div>
         </div>
@@ -262,7 +275,7 @@ export const HeroClient = ({
           className={`hidden md:flex absolute left-4 top-1/2 -translate-y-1/2 z-20 items-center justify-center w-12 h-12 rounded-full bg-white/20 backdrop-blur-sm hover:bg-white/30 transition-all duration-300 ${
             isHovered ? 'opacity-100' : 'opacity-0'
           }`}
-          aria-label="Previous slide"
+          aria-label="Poprzedni slajd"
         >
           <ArrowLeftIcon color="white" size={25} />
         </button>
@@ -272,7 +285,7 @@ export const HeroClient = ({
           className={`hidden md:flex absolute right-4 top-1/2 -translate-y-1/2 z-20 items-center justify-center w-12 h-12 rounded-full bg-white/20 backdrop-blur-sm hover:bg-white/30 transition-all duration-300 ${
             isHovered ? 'opacity-100' : 'opacity-0'
           }`}
-          aria-label="Next slide"
+          aria-label="Następny slajd"
         >
           <ArrowRightIcon color="white" size={25} />
         </button>
@@ -280,7 +293,7 @@ export const HeroClient = ({
     )}
 
     {banners.length > 1 && (
-      <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 z-20">
+      <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 z-20" role="tablist" aria-label="Slajdy banera">
         <div className="flex space-x-3">
           {banners.map((_, index) => {
             // Calculate actual current slide (accounting for cloned slides)
@@ -297,7 +310,9 @@ export const HeroClient = ({
                     ? 'bg-white shadow-lg'
                     : 'bg-white/50 hover:bg-white/75'
                 }`}
-                aria-label={`Go to slide ${index + 1}`}
+                role="tab"
+                aria-selected={index === actualIndex}
+                aria-label={`Slajd ${index + 1} z ${banners.length}`}
               />
             )
           })}

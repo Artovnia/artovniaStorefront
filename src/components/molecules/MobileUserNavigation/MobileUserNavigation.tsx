@@ -190,7 +190,7 @@ export const MobileUserNavigation = () => {
       )}
 
       {/* Bottom Navigation Dock */}
-      <div className="fixed bottom-0 left-0 right-0 z-30 md:hidden ">
+      <div className="fixed bottom-0 left-0 right-0 z-30 md:hidden" role="navigation" aria-label="Nawigacja mobilna">
         <div className="bg-transparent">
           <div className="flex items-end justify-center w-full">
             {/* Navigation Dock Container - 3 items only */}
@@ -199,6 +199,7 @@ export const MobileUserNavigation = () => {
               <button
                 onClick={() => setIsRegionModalOpen(true)}
                 className="flex flex-col items-center justify-center mb-1 flex-1 group"
+                aria-label="Wybierz region"
               >
                 <div className="w-10 h-6 rounded-full flex items-center justify-center text-gray-600 transition-all duration-200 group-hover:text-[#3B3634]">
                   <GlobeIcon className="w-5 h-5" />
@@ -210,6 +211,7 @@ export const MobileUserNavigation = () => {
               <a
                 href="https://artovniapanel.netlify.app/login" 
                 className="flex flex-col items-center justify-center gap-1 -mt-8 flex-1 group"
+                aria-label="Twój sklep – panel sprzedawcy"
               >
                 <div className="relative">
                   <div className="w-14 h-14 rounded-full flex items-center justify-center transition-all duration-200 shadow-lg ring-4 ring-white bg-[#3B3634] group-hover:scale-105">
@@ -225,6 +227,8 @@ export const MobileUserNavigation = () => {
               <button
                 onClick={toggleMenu}
                 className="flex flex-col items-center justify-center mb-1 flex-1 group relative"
+                aria-label={isMenuOpen ? "Zamknij profil" : "Otwórz profil"}
+                aria-expanded={isMenuOpen}
               >
                 <div className={cn(
                   "w-10 h-6 rounded-full flex items-center justify-center transition-all duration-200",
@@ -238,7 +242,7 @@ export const MobileUserNavigation = () => {
                     <MenuIcon className="w-5 h-5" />
                   )}
                   {hasUnreadMessages && !isMenuOpen && (
-                    <div className="absolute top-0 right-2 w-2 h-2 bg-red-500 rounded-full border border-white" />
+                    <div className="absolute top-0 right-2 w-2 h-2 bg-red-500 rounded-full border border-white" aria-hidden="true" />
                   )}
                 </div>
                 <span className={cn(

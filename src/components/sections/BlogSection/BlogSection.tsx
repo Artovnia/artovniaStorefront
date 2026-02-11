@@ -24,14 +24,15 @@ export async function BlogSection() {
   }
 
   return (
-    <section className='bg-white w-full py-2 md:py-8 overflow-hidden'>
+    <section className='bg-white w-full py-2 md:py-8 overflow-hidden' aria-labelledby='blog-section-heading'>
       <div className='flex items-center justify-between mb-6 md:mb-12 px-4 sm:px-6 lg:px-8'>
-        <h2 className='heading-lg text-black font-instrument-serif italic'>
+        <h2 id='blog-section-heading' className='heading-lg text-black font-instrument-serif italic'>
           Bądź na czasie
         </h2>
         <Link 
           href='/blog'
           className='group relative text-[#3B3634] font-instrument-sans font-medium px-4 py-2  overflow-hidden transition-all duration-300 hover:text-white'
+          aria-label='Zobacz wszystkie wpisy na blogu'
         >
           <span className='absolute inset-0 bg-[#3B3634] transform translate-x-[-100%] group-hover:translate-x-0 transition-transform duration-300 ease-out'></span>
           <span className='relative flex items-center gap-2'>

@@ -152,15 +152,16 @@ export function Footer({ categories = [] }: FooterProps) {
           <nav className="flex justify-center space-x-6" aria-label="Media społecznościowe">
             {/* Social media icons - hardcoded for now */}
 
-          {/*  <Link
-              href="https://facebook.com"
-              className="text-white hover:text-primary transition-all duration-200 p-2 rounded-full hover:bg-white/10"
+          <Link
+              href="https://www.facebook.com/profile.php?id=61587380410504"
+              className="text-white hover:text-primary focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-tertiary transition-all duration-200 p-2 rounded-full hover:bg-white/10"
               target="_blank"
               rel="noopener noreferrer"
-              aria-label="Facebook - Media społecznościowe"
+              aria-label="Odwiedź nasz profil na Facebook (otwiera się w nowej karcie)"
             > 
               {getIcon('Facebook')}
-            </Link> */}
+              <span className="sr-only">Facebook</span>
+            </Link> 
             <Link
               href="https://www.instagram.com/artovnia__com/?igsh=N3hlN2g4aXdjMWs4#"
               className="text-white hover:text-underline focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-tertiary transition-all duration-200 p-2 rounded-full hover:bg-white/10"
@@ -205,7 +206,7 @@ export function Footer({ categories = [] }: FooterProps) {
       </div>
 
       {/* Trademark/Copyright Section */}
-      <div className="bg-primary" style={{ backgroundColor: '#F4F0EB' }} role="contentinfo" aria-label="Informacje o prawach autorskich">
+      <div className="bg-primary" style={{ backgroundColor: '#F4F0EB' }} aria-label="Informacje o prawach autorskich">
         <div className="max-w-[1920px] mx-auto px-6 py-2 flex flex-col sm:flex-row justify-between items-center gap-2">
           <p className="font-instrument-sans text-black text-sm">
             <span aria-label="Copyright">&copy;</span> ARTOVNIA <time dateTime="2025">2025</time>

@@ -111,7 +111,7 @@ export const CustomCarousel = ({
             className={`${arrowStyles.buttonClass} rounded-full p-3 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed`}
             onClick={scrollPrev}
             disabled={scrollPosition <= 0}
-            aria-label="Previous slide"
+            aria-label="Poprzednie produkty"
           >
             <ArrowLeftIcon color={arrowStyles.iconColor} size={25} />
           </button>
@@ -122,6 +122,8 @@ export const CustomCarousel = ({
           className={`overflow-x-auto scrollbar-hide ${noMobileMargin ? '' : 'mx-4'}`}
           ref={scrollContainerRef}
           onScroll={handleScroll}
+          role="list"
+          aria-label="Lista produktów"
           style={{
             scrollbarWidth: 'none', /* Firefox */
             msOverflowStyle: 'none', /* IE/Edge */
@@ -147,7 +149,7 @@ export const CustomCarousel = ({
             className={`${arrowStyles.buttonClass} rounded-full p-3 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed`}
             onClick={scrollNext}
             disabled={scrollPosition >= maxScroll}
-            aria-label="Next slide"
+            aria-label="Następne produkty"
           >
             <ArrowRightIcon color={arrowStyles.iconColor} size={25} />
           </button>
@@ -155,7 +157,7 @@ export const CustomCarousel = ({
       </div>
 
       {/* Mobile Navigation - Only visible on mobile */}
-      <div className='flex justify-between items-center mt-4 lg:hidden'>
+      <div className='flex justify-between items-center mt-4 lg:hidden' aria-hidden="true">
         <div className='flex-1'>
           <Indicator
             variant={variant}
@@ -168,7 +170,7 @@ export const CustomCarousel = ({
             className=' hover:bg-[#BFB7AD] rounded-full p-2  transition-all duration-200 disabled:opacity-50'
             onClick={scrollPrev}
             disabled={scrollPosition <= 0}
-            aria-label="Previous slide"
+            aria-label="Poprzednie produkty"
           >
            
           </button>

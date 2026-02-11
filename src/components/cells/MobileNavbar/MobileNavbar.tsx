@@ -25,7 +25,9 @@ export const MobileNavbar = ({
       <button 
         onClick={handleOpenMenu}
         className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-        aria-label="Otwórz menu"
+        aria-label="Otwórz menu kategorii"
+        aria-expanded={isMenuOpen}
+        aria-haspopup="dialog"
       >
         <HamburgerMenuIcon />
       </button>

@@ -35,7 +35,7 @@ export const HomeProductsCarousel = ({
     
     if (!displayProducts.length) {
       return (
-        <div className="flex justify-center w-full py-8">
+        <div className="flex justify-center w-full py-8" role="status">
           <p className={theme === 'light' ? 'text-gray-300' : 'text-gray-500'}>No products available</p>
         </div>
       );
@@ -71,14 +71,14 @@ export const HomeProductsCarousel = ({
     
     if (!productCards.length) {
       return (
-        <div className="flex justify-center w-full py-8">
+        <div className="flex justify-center w-full py-8" role="status">
           <p className={theme === 'light' ? 'text-gray-300' : 'text-gray-500'}>No valid products to display</p>
         </div>
       );
     }
     
     return (
-      <div className="w-full max-w-full">
+      <div className="w-full max-w-full" role="region" aria-label="Karuzela produktów">
         <Carousel
           align="start"
           items={productCards}
