@@ -172,17 +172,31 @@ export const CategorySidebar = ({
               currentParentCategoryTree={currentParentCategoryTree}
             />
           ) : (
-            // When viewing "Wszystkie produkty", show parent categories with direct children only (no grandchildren)
+            // When viewing "Wszystkie produkty", show only root parent categories with direct children (no grandchildren)
+            // NOTE: categories array may be flattened (all items lack parent_category_id),
+            // so we identify true roots by excluding any ID that appears as a child of another category.
             !currentCategoryHandle && categories && categories.length > 0 && (
               <>
-                {categories
-                  .filter(cat => {
-                    const hasNoParentId = !cat.parent_category_id || cat.parent_category_id === null
-                    const hasNoParentObj = !cat.parent_category || 
-                                         cat.parent_category === null || 
-                                         (typeof cat.parent_category === 'object' && !cat.parent_category.id)
-                    return hasNoParentId && hasNoParentObj
-                  })
+                {(() => {
+                  // Build set of all IDs that are referenced as children of other categories
+                  const childIds = new Set<string>()
+                  const collectChildIds = (cats: HttpTypes.StoreProductCategory[]) => {
+                    for (const cat of cats) {
+                      if (cat.category_children?.length) {
+                        for (const child of cat.category_children) {
+                          childIds.add(child.id)
+                          // Recurse to catch grandchildren etc.
+                          collectChildIds([child])
+                        }
+                      }
+                    }
+                  }
+                  collectChildIds(categories)
+                  
+                  // True root parents = categories whose ID is NOT in the childIds set
+                  return categories
+                    .filter(cat => !childIds.has(cat.id))
+                })()
                   .map((category) => (
                     <CategorySidebarItem
                       key={category.id}

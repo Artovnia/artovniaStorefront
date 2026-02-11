@@ -83,7 +83,7 @@ export const Navbar = ({
         onMouseLeave={handleNavbarMouseLeave}
         aria-label="Nawigacja po kategoriach"
       >
-        <div className="flex py-1  justify-between max-w-[1920px] mx-auto">
+        <div className="flex py-2  justify-between max-w-[1920px] mx-auto">
           <div className="hidden xl:flex w-full">
             <CategoryNavbar 
               categories={categories}
