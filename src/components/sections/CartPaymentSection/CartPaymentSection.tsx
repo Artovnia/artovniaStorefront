@@ -93,13 +93,14 @@ const CartPaymentSection = ({
 
     if (isStripeFunc(method)) {
       try {
-        // CRITICAL FIX: Refresh cart before initiating payment session
-        // This ensures we have the latest cart data with shipping_total included
+        // Refresh cart to get latest data with shipping_total
         await refreshCart('payment')
         
-        // Use the fresh cart from context (will be updated after refreshCart)
-        const freshCart = contextCart || propCart
-        await initiatePaymentSession(freshCart, { provider_id: method })
+        // Use cart (contextCart || propCart from render) — not a stale closure
+        await initiatePaymentSession(cart, { provider_id: method })
+        
+        // Refresh after payment session creation to update context
+        await refreshCart('payment')
       } catch (error: any) {
         console.error("❌ Error setting payment method:", error)
       }
@@ -119,15 +120,17 @@ const CartPaymentSection = ({
         activeSession?.provider_id === selectedPaymentMethod
 
       if (!checkActiveSession) {
-        // CRITICAL FIX: Refresh cart before initiating payment session
-        // This ensures we have the latest cart data with shipping_total included
+        // Refresh cart to get latest data with shipping_total before initiating payment
         await refreshCart('payment')
         
-        // Use the fresh cart from context (will be updated after refreshCart)
-        const freshCart = contextCart || propCart
-        await initiatePaymentSession(freshCart, {
+        // Use cart prop as base — contextCart is a stale closure here
+        await initiatePaymentSession(cart, {
           provider_id: selectedPaymentMethod,
         })
+        
+        // Refresh cart AFTER initiating payment session to get payment_collection
+        // into context before navigating to review step
+        await refreshCart('payment')
       }
 
       router.push(pathname + "?" + createQueryString("step", "review"), {

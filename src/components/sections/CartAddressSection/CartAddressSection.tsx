@@ -182,16 +182,9 @@ export const CartAddressSection = ({
           throw new Error("Proszę wypełnić wszystkie wymagane pola")
         }
 
+        // OPTIMIZATION: setAddress() now updates cart context directly from the API response
+        // No separate refreshCart('address') call needed — saves one full retrieveCart round-trip
         await setAddress(addressData)
-        await refreshCart("address")
-        await new Promise((resolve) => setTimeout(resolve, 100))
-
-        const updatedCart = await import("@/lib/data/cart").then((m) =>
-          m.retrieveCart(activeCart.id)
-        )
-        if (!updatedCart?.shipping_address?.first_name) {
-          throw new Error("Adres nie został zapisany")
-        }
 
         setFormResetKey((prev) => prev + 1)
         router.replace(`/checkout?step=delivery`)

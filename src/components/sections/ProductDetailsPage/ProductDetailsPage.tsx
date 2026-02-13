@@ -4,7 +4,7 @@ import { ProductReviews } from "@/components/organisms/ProductReviews/ProductRev
 import { VendorAvailabilityProvider } from "../../../components/organisms/VendorAvailabilityProvider/vendor-availability-provider"
 import { BatchPriceProvider } from "@/components/context/BatchPriceProvider"
 import { PromotionDataProvider } from "@/components/context/PromotionDataProvider"
-import { listProducts, batchFetchProductsByHandles, listProductsWithPromotions } from "../../../lib/data/products"
+import { listProducts, batchFetchProductsByHandles, listProductsWithPromotions, listSuggestedProducts } from "../../../lib/data/products"
 import { getVendorCompleteStatus } from "../../../lib/data/vendor-availability"
 import { HomeProductSection } from "../HomeProductSection/HomeProductSection"
 import ProductErrorBoundary from "@/components/molecules/ProductErrorBoundary/ProductErrorBoundary"
@@ -19,6 +19,7 @@ import { getBatchLowestPrices } from "@/lib/data/price-history"
 import { HttpTypes } from "@medusajs/types"
 import { Suspense } from "react"
 import { unstable_noStore as noStore } from "next/cache"
+import { SuggestedProductsGallery } from "../SuggestedProductsGallery/SuggestedProductsGallery"
 
 export const ProductDetailsPage = async ({
   handle,
@@ -50,6 +51,7 @@ export const ProductDetailsPage = async ({
     eligibilityResult,
     promotionalProductsResult,
     variantAttributesResult,
+    categoryProductsResult,
   ] = await Promise.allSettled([
     // Seller products - fetch ALL 8 products by seller_id
     // Uses custom endpoint /store/seller/{id}/products (not standard /store/products)
@@ -122,6 +124,13 @@ export const ProductDetailsPage = async ({
           return getVariantAttributes(product.id, initialVariantId)
         })().catch(() => ({ attribute_values: [] }))
       : Promise.resolve({ attribute_values: [] }),
+
+    // ✅ Suggested products: "Może Ci się spodobać" section
+    // Category products first, then general products as fallback to always fill 8 spots
+    region
+      ? listSuggestedProducts({ product, regionId: region.id, limit: 8 })
+          .catch(() => ({ products: [], categoryName: '', categoryHandle: '' }))
+      : Promise.resolve({ products: [], categoryName: '', categoryHandle: '' }),
   ])
 
   // Extract results with fallbacks
@@ -171,12 +180,20 @@ export const ProductDetailsPage = async ({
       ? variantAttributesResult.value
       : { attribute_values: [] }
 
+  const suggestedProductsData =
+    categoryProductsResult.status === "fulfilled"
+      ? categoryProductsResult.value as { products: any[]; categoryName: string; categoryHandle: string }
+      : { products: [], categoryName: '', categoryHandle: '' }
+
+  const suggestedProducts = suggestedProductsData.products
+
   // ✅ NEW: Pre-fetch ALL variant prices on server (product + seller products)
   let initialPriceData = {}
   try {
     const allVariantIds = [
       ...(product.variants?.map((v: any) => v.id) || []),
-      ...sellerProducts.flatMap((p: any) => p.variants?.map((v: any) => v.id) || [])
+      ...sellerProducts.flatMap((p: any) => p.variants?.map((v: any) => v.id) || []),
+      ...suggestedProducts.flatMap((p: any) => p.variants?.map((v: any) => v.id) || [])
     ].filter(Boolean)
 
     // ✅ OPTIMIZATION: Deduplicate variant IDs to reduce batch request size
@@ -232,7 +249,7 @@ export const ProductDetailsPage = async ({
 
       <ProductErrorBoundary>
         {/* Breadcrumbs */}
-        <div className="max-w-[1920px] mx-auto  py-2 lg:py-6 mb-4 text-xl">
+        <div className="max-w-[1920px] mx-auto  py-2 lg:py-6  text-xl">
           <Breadcrumbs items={breadcrumbs} />
         </div>
 
@@ -372,6 +389,21 @@ export const ProductDetailsPage = async ({
                   />
                 </div>
               </Suspense>
+
+              {/* ✅ Suggested products: "Może Ci się spodobać" section */}
+              {suggestedProducts.length > 0 && (
+                <Suspense fallback={<div className="my-24 h-96 bg-gray-50 animate-pulse" />}>
+                  <div className="my-24 text-black max-w-[1920px] mx-auto">
+                    <SuggestedProductsGallery
+                      products={suggestedProducts as any}
+                      categoryName={suggestedProductsData.categoryName}
+                      categoryHandle={suggestedProductsData.categoryHandle}
+                      user={customer}
+                      wishlist={wishlist}
+                    />
+                  </div>
+                </Suspense>
+              )}
 
               {/* ✅ OPTIMIZATION: Defer reviews to prioritize gallery images */}
               <Suspense fallback={<div className="max-w-[1920px] mx-auto h-96 bg-gray-50 animate-pulse" />}>

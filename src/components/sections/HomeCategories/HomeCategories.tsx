@@ -12,10 +12,10 @@ export const categories: {
 }[] = [
   {
     id: "1",
-    name: "Zwierzęta",
-    handle: "zwierzeta", // Lowercase to match database
-    image: "/images/categories/Zwierzeta.webp",
-    imagePosition: "center 50%", // Adjust per image: 'center 40%' (top), 'center 50%' (center), 'center 90%' (bottom)
+    name: "Biżuteria",
+    handle: "bizuteria",
+    image: "/images/categories/Bizuteria.webp",
+    imagePosition: "center 50%",
     featured: true, // Large featured category
   },
   {
@@ -27,10 +27,10 @@ export const categories: {
   },
   {
     id: "3",
-    name: "Figury i rzeźby",
-    handle: "figury-i-rzezby",
-    image: "/images/categories/Figury-i-rzezby.webp",
-    imagePosition: "center 80%",
+    name: "Dziecko",
+    handle: "dziecko",
+    image: "/images/categories/Dziecko.webp",
+    imagePosition: "center 50%",
   },
   {
     id: "4",

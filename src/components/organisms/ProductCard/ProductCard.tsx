@@ -55,8 +55,6 @@
 import Image from "next/image"
 import { useEffect, useState, useMemo, memo, useRef } from "react"
 import { LqipImage } from "@/components/cells/LqipImage/LqipImage"
-
-import { Button } from "@/components/atoms"
 import { HttpTypes } from "@medusajs/types"
 import { Link } from "@/i18n/routing"
 import { getSellerProductPrice } from "@/lib/helpers/get-seller-product-price"
@@ -67,7 +65,7 @@ import { BaseHit, Hit } from "instantsearch.js"
 import { useProductImagePrefetch } from "@/hooks/useProductImagePrefetch"
 import clsx from "clsx"
 import { WishlistButton } from "@/components/cells/WishlistButton/WishlistButton"
-import { BatchLowestPriceDisplay } from "@/components/cells/LowestPriceDisplay/BatchLowestPriceDisplay"
+import { CompactLowestPriceDisplay } from "@/components/cells/LowestPriceDisplay/CompactLowestPriceDisplay"
 import { SerializableWishlist } from "@/types/wishlist"
 import { useRouter } from "next/navigation"
 import { PromotionBadge } from "@/components/cells/PromotionBadge/PromotionBadge"
@@ -202,7 +200,7 @@ const ProductCardComponent = ({
   }
 
   return (
-    <div
+    <article
       className={clsx(
         "relative group flex flex-col h-full",
         "w-[160px] sm:w-[252px]", // RESPONSIVE: 160px on mobile (fits 2-col grid), 252px on desktop (600px+)
@@ -214,6 +212,8 @@ const ProductCardComponent = ({
       ref={cardRef}
       onMouseEnter={handlePrefetch}
       onTouchStart={handlePrefetch}
+      onFocus={handlePrefetch}
+      aria-label={`${product.title}`}
     >
       {/* RESPONSIVE CARD SIZE: Mobile optimized for 2-column grid */}
       {/* Mobile (<640px): h-[200px] w-[160px] | Desktop (640px+): h-[315px] w-[252px] */}
@@ -252,22 +252,22 @@ const ProductCardComponent = ({
             ) : (
               <Image
                 src="/images/placeholder.svg"
-                alt="Product placeholder"
+                alt=""
                 width={100}
                 height={100}
-                quality={65}  // ✅ Lower quality for placeholder is fine
+                quality={65}
                 className="flex margin-auto w-[100px] h-auto"
+                aria-hidden="true"
               />
             )}
           </div>
-        </Link>
-        <Link href={productUrl} prefetch={true} aria-label={`Zobacz więcej o produkcie: ${product.title}`}>
-          <Button className="absolute bg-[#3B3634] opacity-90    text-white h-auto lg:h-[48px] lg:group-hover:block hidden w-full uppercase bottom-0 z-10 overflow-hidden">
+          {/* Hover overlay — inside the same Link to avoid nested interactive elements */}
+          <span className="absolute bg-[#3B3634] opacity-90 text-white h-auto lg:h-[48px] lg:group-hover:flex hidden w-full uppercase bottom-0 z-10 overflow-hidden items-center justify-center font-medium text-sm" aria-hidden="true">
             Zobacz więcej
-          </Button>
+          </span>
         </Link>
       </div>
-      <Link href={`/products/${product.handle}`} aria-label={`Szczegóły produktu: ${product.title}`}>
+      <Link href={productUrl} tabIndex={-1} aria-hidden="true">
         <div className="flex justify-between flex-grow mt-2">
           <div className="w-full font-instrument-sans">
             {/* 📝 PRODUCT TITLE: font-medium (weight: 500) - Medium prominence, less bold than current price */}
@@ -308,6 +308,7 @@ const ProductCardComponent = ({
                       </p>
                       {/* 📊 ORIGINAL PRICE: Strikethrough, smaller, gray - de-emphasized */}
                       <p className="text-xs text-gray-500 line-through">
+                        <span className="sr-only">Cena przed promocją: </span>
                         {promotionalPricing.originalPrice}
                       </p>
                     </>
@@ -323,12 +324,14 @@ const ProductCardComponent = ({
                         ? sellerCheapestPrice?.calculated_price !==
                             sellerCheapestPrice?.original_price && (
                             <p className="text-xs text-gray-500 line-through">
+                              <span className="sr-only">Cena przed promocją: </span>
                               {sellerCheapestPrice?.original_price?.replace(/PLN\s+([\d,.]+)/, '$1 zł')}
                             </p>
                           )
                         : cheapestPrice?.calculated_price !==
                             cheapestPrice?.original_price && (
                             <p className="text-xs text-gray-500 line-through">
+                              <span className="sr-only">Cena przed promocją: </span>
                               {cheapestPrice?.original_price?.replace(/PLN\s+([\d,.]+)/, '$1 zł')}
                             </p>
                           )}
@@ -346,10 +349,10 @@ const ProductCardComponent = ({
               )}
             </div>
             
-            {/* Lowest Price Display - only show if there are active promotions or price list discounts */}
+            {/* Lowest Price Display - compact version with info icon tooltip for ProductCard */}
             {product.variants && product.variants.length > 0 && hasAnyDiscount && (
               <div className="mt-0">
-                <BatchLowestPriceDisplay
+                <CompactLowestPriceDisplay
                   variantId={product.variants[0].id}
                   currencyCode="PLN"
                   className="text-xs"
@@ -366,7 +369,7 @@ const ProductCardComponent = ({
           </div>
         </div>
       </Link>
-    </div>
+    </article>
   )
 }
 

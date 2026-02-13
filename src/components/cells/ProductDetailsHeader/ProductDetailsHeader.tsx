@@ -19,6 +19,7 @@ import { BatchLowestPriceDisplay } from "@/components/cells/LowestPriceDisplay/B
 import { usePromotionData } from "@/components/context/PromotionDataProvider"
 import { ProductShareButton } from "@/components/cells/ProductShareButton/ProductShareButton"
 import { PromotionBadge } from "@/components/cells/PromotionBadge/PromotionBadge"
+import { trackProductView } from "@/lib/utils/browsing-history"
 
 // Define extended types for product and variants
 type ExtendedStoreProduct = HttpTypes.StoreProduct & {
@@ -99,10 +100,18 @@ export const ProductDetailsHeader = ({
   const { getProductWithPromotions, isLoading } = usePromotionData()
 
   // Ensure component is mounted on client-side to prevent hydration mismatch
+  // Also track product view for browsing history (used in empty cart)
   useEffect(() => {
-   
     setIsMounted(true)
-  }, [])
+    trackProductView({
+      id: product.id,
+      title: product.title,
+      handle: product.handle || '',
+      thumbnail: product.thumbnail || undefined,
+      seller_id: product.seller?.id,
+      seller_name: product.seller?.name,
+    })
+  }, [product.id]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // ✅ Update optimistic wishlist when prop changes (from server refresh)
   // BUT only if we're not in the middle of a pending update
@@ -372,6 +381,7 @@ export const ProductDetailsHeader = ({
       </div>
       {/* Product Variants */}
       <ProductVariants product={product} selectedVariant={selectedVariantOptions} />
+
       {/* Add to Cart */}
       <div className="space-y-2">
         <Button

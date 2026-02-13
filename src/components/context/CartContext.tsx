@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useReducer, useCallback, useEffect, useMemo, useRef } from 'react'
 import { HttpTypes } from '@medusajs/types'
-import { retrieveCart, retrieveCartForAddress, retrieveCartForShipping, retrieveCartForPayment, addToCart, updateLineItem, deleteLineItem, setAddresses, setShippingMethod, selectPaymentSession, initiatePaymentSession } from '@/lib/data/cart'
+import { retrieveCart, retrieveCartForAddress, retrieveCartForShipping, retrieveCartForPayment, addToCart, updateLineItem, deleteLineItem, setAddresses, setShippingMethod, selectPaymentSession, initiatePaymentSession, fetchCartItemsInventory } from '@/lib/data/cart'
 import { unifiedCache } from "@/lib/utils/unified-cache"
 
 interface ExtendedCart extends HttpTypes.StoreCart {
@@ -14,11 +14,18 @@ interface ExtendedCart extends HttpTypes.StoreCart {
   customer?: HttpTypes.StoreCustomer | null
 }
 
+export interface VariantInventory {
+  inventory_quantity: number
+  manage_inventory: boolean
+  allow_backorder: boolean
+}
+
 interface CartState {
   cart: ExtendedCart | null
   isLoading: boolean
   error: string | null
   lastUpdated: number
+  variantInventory: Record<string, VariantInventory>
 }
 
 type CartAction = 
@@ -27,6 +34,7 @@ type CartAction =
   | { type: 'SET_ERROR'; payload: string | null }
   | { type: 'UPDATE_CART'; payload: Partial<ExtendedCart> }
   | { type: 'CLEAR_CART' }
+  | { type: 'SET_INVENTORY'; payload: Record<string, VariantInventory> }
 
 const cartReducer = (state: CartState, action: CartAction): CartState => {
   switch (action.type) {
@@ -49,7 +57,9 @@ const cartReducer = (state: CartState, action: CartAction): CartState => {
         lastUpdated: Date.now()
       }
     case 'CLEAR_CART':
-      return { cart: null, isLoading: false, error: null, lastUpdated: Date.now() }
+      return { cart: null, isLoading: false, error: null, lastUpdated: Date.now(), variantInventory: {} }
+    case 'SET_INVENTORY':
+      return { ...state, variantInventory: action.payload }
     default:
       return state
   }
@@ -61,9 +71,11 @@ export interface CartContextType {
   isLoading: boolean
   error: string | null
   lastUpdated: number
+  variantInventory: Record<string, VariantInventory>
   
   // Actions
   refreshCart: (context?: 'address' | 'shipping' | 'payment') => Promise<void>
+  refreshInventory: () => Promise<Record<string, VariantInventory>>
   addItem: (variantId: string, quantity: number, metadata?: any) => Promise<void>
   updateItem: (itemId: string, quantity: number) => Promise<void>
   removeItem: (itemId: string) => Promise<void>
@@ -107,7 +119,8 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children, initialCar
     cart: initialCart || null,
     isLoading: false,
     error: null,
-    lastUpdated: 0
+    lastUpdated: 0,
+    variantInventory: {}
   })
 
   // Simple operation locking
@@ -141,7 +154,7 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children, initialCar
   
   // Simplified cart refresh
   const refreshCart = useCallback(async (context?: 'address' | 'shipping' | 'payment') => {
-    if (state.isLoading || operationInProgress.current) return
+    if (operationInProgress.current) return
     
     operationInProgress.current = true
     
@@ -173,7 +186,14 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children, initialCar
         return
       }
       
-      dispatch({ type: 'SET_CART', payload: updatedCart })
+      // When using context-specific fields, merge into existing state to avoid
+      // wiping out data not included in the partial field set
+      if (context && state.cart && updatedCart) {
+        const mergedCart = { ...state.cart, ...updatedCart } as ExtendedCart
+        dispatch({ type: 'SET_CART', payload: mergedCart })
+      } else {
+        dispatch({ type: 'SET_CART', payload: updatedCart })
+      }
       
       // Simple cache invalidation
       if (updatedCart?.id) {
@@ -187,7 +207,39 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children, initialCar
       dispatch({ type: 'SET_LOADING', payload: false })
       operationInProgress.current = false
     }
-  }, [state.isLoading])
+  }, [state.cart])
+
+  // Fetch inventory for all cart item variants
+  // Returns the inventory map so callers can use it immediately (before state update)
+  const refreshInventory = useCallback(async (): Promise<Record<string, VariantInventory>> => {
+    const cart = state.cart
+    if (!cart?.items?.length || !cart.region_id) return {}
+
+    const items = cart.items
+      .filter(item => item.variant_id && item.product_id)
+      .map(item => ({ product_id: item.product_id!, variant_id: item.variant_id! }))
+
+    if (!items.length) return {}
+
+    try {
+      const inventory = await fetchCartItemsInventory(items, cart.region_id)
+      dispatch({ type: 'SET_INVENTORY', payload: inventory })
+      return inventory
+    } catch (error) {
+      console.error('Error fetching inventory:', error)
+      return {}
+    }
+  }, [state.cart?.items, state.cart?.region_id])
+
+  // Auto-fetch inventory when cart items change
+  const prevItemsRef = useRef<string>('')
+  useEffect(() => {
+    const itemsKey = state.cart?.items?.map(i => `${i.variant_id}:${i.quantity}`).join(',') || ''
+    if (itemsKey && itemsKey !== prevItemsRef.current) {
+      prevItemsRef.current = itemsKey
+      refreshInventory()
+    }
+  }, [state.cart?.items, refreshInventory])
 
   // Helper function to clear cart storage
   const clearCartStorage = () => {
@@ -231,11 +283,15 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children, initialCar
     }
   }, [refreshCart])
 
-  // Update item - simplified with optimistic updates
+  // Update item - with optimistic updates and inventory error handling
   const updateItem = useCallback(async (itemId: string, quantity: number) => {
     if (!state.cart || operationInProgress.current) return
     
     operationInProgress.current = true
+    
+    // Save previous quantity for revert
+    const previousItem = state.cart.items?.find(item => item.id === itemId)
+    const previousQuantity = previousItem?.quantity || 1
     
     // Optimistic update
     const optimisticCart = {
@@ -261,13 +317,31 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children, initialCar
         await refreshCart()
       }
     } catch (error) {
-      console.error('Error updating item:', error)
-      dispatch({ type: 'SET_ERROR', payload: error instanceof Error ? error.message : 'Failed to update item' })
-      await refreshCart() // Revert optimistic update
+      const errorMessage = error instanceof Error ? error.message : 'Failed to update item'
+      const isInsufficientInventory = errorMessage.includes('insufficient_inventory') || 
+        errorMessage.includes('does not have the required inventory')
+      
+      if (isInsufficientInventory) {
+        // Revert to previous quantity immediately
+        const revertedCart = {
+          ...state.cart,
+          items: state.cart.items?.map(item => 
+            item.id === itemId ? { ...item, quantity: previousQuantity } : item
+          )
+        }
+        dispatch({ type: 'UPDATE_CART', payload: revertedCart })
+        dispatch({ type: 'SET_ERROR', payload: 'Niewystarczająca ilość w magazynie. Odśwież stronę, aby zobaczyć aktualny stan.' })
+        // Refresh inventory to get current stock levels
+        await refreshInventory()
+      } else {
+        console.error('Error updating item:', error)
+        dispatch({ type: 'SET_ERROR', payload: errorMessage })
+        await refreshCart() // Revert optimistic update
+      }
     } finally {
       operationInProgress.current = false
     }
-  }, [state.cart, refreshCart])
+  }, [state.cart, refreshCart, refreshInventory])
 
   // Clear cart function
   const clearCart = useCallback(() => {
@@ -399,11 +473,23 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children, initialCar
       
       const result = await setAddresses(null, formData)
       
-      if (result === 'success') {
-        await refreshCart('address')
+      // OPTIMIZATION: setAddresses returns { success: true, cart } with CART_ADDRESS_FIELDS.
+      // Merge into existing state — the partial cart is missing payment_collection,
+      // shipping_methods, promotions etc. A full replace would wipe those out.
+      if (result && typeof result === 'object' && result.success && result.cart) {
+        // Filter out undefined values from partial cart to avoid overwriting existing data
+        const partialCart = Object.fromEntries(
+          Object.entries(result.cart).filter(([_, v]) => v !== undefined)
+        )
+        const mergedCart = { ...state.cart, ...partialCart } as ExtendedCart
+        dispatch({ type: 'SET_CART', payload: mergedCart })
         unifiedCache.invalidateAfterCartChange()
-      } else {
+      } else if (typeof result === 'string' && result !== 'success') {
+        // Error message returned as string (legacy error path)
         dispatch({ type: 'SET_ERROR', payload: result || 'Failed to set address' })
+      } else {
+        // Fallback: if result format is unexpected, refresh cart
+        await refreshCart('address')
       }
     } catch (error) {
       console.error('Error setting address:', error)
@@ -469,9 +555,11 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children, initialCar
     isLoading: state.isLoading,
     error: state.error,
     lastUpdated: state.lastUpdated,
+    variantInventory: state.variantInventory,
     
     // Actions
     refreshCart,
+    refreshInventory,
     addItem,
     updateItem,
     removeItem,

@@ -9,6 +9,8 @@ import { DeleteCartItemButton } from "@/components/molecules"
 import { Link } from "@/i18n/routing"
 import { QuantityChanger } from "@/components/cells"
 import { retrieveCart } from "@/lib/data/cart"
+import { useCart } from "@/components/context/CartContext"
+import type { VariantInventory } from "@/components/context/CartContext"
 
 
 export const CartItemsProducts = ({
@@ -26,6 +28,19 @@ export const CartItemsProducts = ({
   cartId?: string
   onCartUpdate?: (updatedCart: HttpTypes.StoreCart) => void
 }) => {
+  const { variantInventory } = useCart()
+
+  // Compute maxQuantity for a cart item based on fetched inventory data
+  const getMaxQuantity = (product: any): number => {
+    const variantId = product.variant_id || product.variant?.id
+    if (!variantId) return 999
+
+    const inv = variantInventory[variantId] as VariantInventory | undefined
+    if (!inv) return 999 // Inventory not yet loaded — don't limit
+    if (!inv.manage_inventory) return 999 // Unmanaged inventory (digital products)
+    if (inv.allow_backorder) return 999 // Backorders allowed
+    return inv.inventory_quantity
+  }
 
   const handleQuantityChange = (itemId: string, newQuantity: number, newTotal: number) => {
     
@@ -39,6 +54,7 @@ export const CartItemsProducts = ({
       setTimeout(async () => {
         try {
          
+          // OPTIMIZATION: retrieveCart with default fields is fine here — this is a delayed background refresh for the cart page
           const updatedCart = await retrieveCart(cartId)
           if (updatedCart) {
             onCartUpdate(updatedCart)
@@ -130,21 +146,35 @@ export const CartItemsProducts = ({
               <Link href={`/products/${productHandle}`}>
                 <div className="lg:flex justify-between -mt-4 lg:mt-0">
                   <div className="label-md text-secondary">
-                    
-                    <div className="flex items-center gap-2">
-                      <span className="text-secondary">Ilość:</span>
-                      {show_quantity_changer ? (
-                        <QuantityChanger
-                          itemId={product.id}
-                          cartId={cartId || product.cart_id || ''}
-                          initialQuantity={product.quantity}
-                          maxQuantity={product.variant?.inventory_quantity || 999}
-                          unitPrice={product.unit_price}
-                          onQuantityChange={(newQuantity, newTotal) => handleQuantityChange(product.id, newQuantity, newTotal)}
-                        />
-                      ) : (
-                        <span className="text-primary font-medium">{product.quantity}</span>
-                      )}
+                    <div className="flex flex-col gap-1">
+                      <div className="flex items-center gap-2">
+                        <span className="text-secondary">Ilość:</span>
+                        {show_quantity_changer ? (
+                          <QuantityChanger
+                            itemId={product.id}
+                            cartId={cartId || product.cart_id || ''}
+                            initialQuantity={product.quantity}
+                            maxQuantity={getMaxQuantity(product)}
+                            unitPrice={product.unit_price}
+                            onQuantityChange={(newQuantity, newTotal) => handleQuantityChange(product.id, newQuantity, newTotal)}
+                          />
+                        ) : (
+                          <span className="text-primary font-medium">{product.quantity}</span>
+                        )}
+                      </div>
+                      {/* Low stock info at cart item level */}
+                      {(() => {
+                        const max = getMaxQuantity(product)
+                        if (max >= 999) return null
+                        if (max <= 3) {
+                          return (
+                            <span className="text-[11px] text-amber-600">
+                              {max === 1 ? 'Ostatnia sztuka!' : `Ostatnie ${max} szt.`}
+                            </span>
+                          )
+                        }
+                        return null
+                      })()}
                     </div>
                   </div>
                   <div className="lg:text-right flex lg:block items-center gap-2 mt-4 lg:mt-0">

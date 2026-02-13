@@ -302,12 +302,12 @@ export const ProductCarousel = ({
               {canScrollUp && (
                 <button
                   onClick={() => scrollThumbnails("up")}
-                  className="absolute -top-[2px] left-1/2 -translate-x-1/2 z-10 bg-white/95 hover:bg-[#3B3634] rounded-full p-2  transition-all duration-300 hover:scale-110   backdrop-blur-sm border border-[#3B3634]"
+                  className="absolute -top-[2px] left-1/2 -translate-x-1/2 z-10  rounded-full p-2  transition-all duration-300 hover:scale-110   backdrop-blur-sm border border-[#3B3634]"
                   aria-label="Scroll thumbnails up"
                 >
                   <ArrowUpIcon
                     size={16}
-                    className="text-[#3B3634] hover:text-white"
+                    className="text-[#3B3634] "
                   />
                 </button>
               )}
@@ -390,12 +390,12 @@ export const ProductCarousel = ({
               {canScrollDown && (
                 <button
                   onClick={() => scrollThumbnails("down")}
-                  className="absolute -bottom-[2px] left-1/2 -translate-x-1/2 z-10 bg-white/95 hover:bg-[#3B3634] rounded-full p-2 transition-all duration-300 hover:scale-110 backdrop-blur-sm border border-[#3B3634]"
+                  className="absolute -bottom-[2px] left-1/2 -translate-x-1/2 z-10  rounded-full p-2 transition-all duration-300 hover:scale-110 backdrop-blur-sm border border-[#3B3634]"
                   aria-label="Scroll thumbnails down"
                 >
                   <ArrowDownIcon
                     size={16}
-                    className="text-[#3B3634] hover:text-white"
+                    className="text-[#3B3634] "
                   />
                 </button>
               )}
@@ -410,7 +410,7 @@ export const ProductCarousel = ({
                 <>
                   <button
                     onClick={goToPrevious}
-                    className="absolute left-3 top-1/2 -translate-y-1/2 z-10 bg-white/90 hover:bg-white rounded-full p-3 shadow-lg transition-all duration-300 opacity-0 group-hover:opacity-100 hover:scale-110 backdrop-blur-sm"
+                    className="absolute left-3 top-1/2 -translate-y-1/2 z-10 bg-white/20 hover:bg-white rounded-full p-3 shadow-lg transition-all duration-300 opacity-0 group-hover:opacity-100 hover:scale-110 backdrop-blur-sm"
                     disabled={isTransitioning}
                     aria-label="Poprzednie zdjęcie"
                   >
@@ -418,7 +418,7 @@ export const ProductCarousel = ({
                   </button>
                   <button
                     onClick={goToNext}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 z-10 bg-white/90 hover:bg-white rounded-full p-3 shadow-lg transition-all duration-300 opacity-0 group-hover:opacity-100 hover:scale-110 backdrop-blur-sm"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 z-10 bg-white/20 hover:bg-white rounded-full p-3 shadow-lg transition-all duration-300 opacity-0 group-hover:opacity-100 hover:scale-110 backdrop-blur-sm"
                     disabled={isTransitioning}
                     aria-label="Następne zdjęcie"
                   >

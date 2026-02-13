@@ -51,7 +51,10 @@ const LIMITS = {
 } as const
 
 /**
- * Check if user has consented to functional cookies
+ * Check if user has consented to functional cookies.
+ * Browsing history requires functional cookie consent.
+ * CookieConsent.tsx stores preferences in localStorage as:
+ * { necessary: true, functional: true, analytics: true, ... }
  */
 function hasConsentForTracking(): boolean {
   if (typeof window === 'undefined') return false

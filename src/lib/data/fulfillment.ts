@@ -42,6 +42,16 @@ type SimpleShippingOption = {
   provider: string
 }
 
+// Request deduplication for listCartShippingMethods
+// TTL-based to cover sequential Next.js server renders within the same page load
+const inflightShippingRequests = new Map<string, { promise: Promise<any>; timestamp: number }>()
+const SHIPPING_DEDUP_TTL_MS = 2000
+
+/** Clear shipping dedup cache — call before shipping mutations */
+export async function invalidateShippingDedup() {
+  inflightShippingRequests.clear()
+}
+
 /**
  * Fetches shipping methods available for a cart with capacity aggregation
  * This function uses the aggregated endpoint that filters options based on cart item capacities
@@ -55,6 +65,26 @@ export const listCartShippingMethods = async (
     return [];
   }
   
+  const now = Date.now()
+  const existing = inflightShippingRequests.get(cartId)
+  if (existing && (now - existing.timestamp) < SHIPPING_DEDUP_TTL_MS) {
+    return existing.promise
+  }
+  
+  const promise = _fetchShippingMethods(cartId, headers, next)
+  inflightShippingRequests.set(cartId, { promise, timestamp: now })
+  promise.finally(() => {
+    setTimeout(() => inflightShippingRequests.delete(cartId), SHIPPING_DEDUP_TTL_MS)
+  })
+  
+  return promise
+}
+
+async function _fetchShippingMethods(
+  cartId: string,
+  headers: { [key: string]: string } = {},
+  next?: any
+): Promise<ExtendedShippingMethod[]> {
   const authHeaders = {
     ...(await getAuthHeaders()),
     ...headers

@@ -17,7 +17,8 @@ import {
 
 import { getRegion } from "./regions"
 import { getPublishableApiKey } from "../get-publishable-key"
-import { unifiedCache } from "../utils/unified-cache" 
+import { unifiedCache } from "../utils/unified-cache"
+import { invalidateShippingDedup } from "./fulfillment"
 
 interface ExtendedStoreCart extends Omit<HttpTypes.StoreCart, 'promotions'> {
   completed_at?: string;
@@ -27,9 +28,34 @@ interface ExtendedStoreCart extends Omit<HttpTypes.StoreCart, 'promotions'> {
   promotions?: HttpTypes.StoreCartPromotion[];
 }
 
-// Consolidated field list to avoid duplication
+// ============================================================================
+// CONTEXT-SPECIFIC FIELD CONSTANTS
+// Each constant contains only the fields needed for that specific operation.
+// This avoids forcing Medusa to resolve deep relations unnecessarily.
+// ============================================================================
+
+// Full field list for cart page display and checkout review (needs everything)
 // CRITICAL: Include shipping_methods.adjustments to fetch capacity overage adjustments
 const CART_FIELDS = "*items,*region,*region.countries,*items.product,*items.variant,*items.variant.options,items.variant.options.option.title,*items.thumbnail,*items.metadata,+items.total,+items.unit_price,+items.original_total,+items.original_unit_price,*promotions,*promotions.application_method,*shipping_methods,*shipping_methods.adjustments,*items.product.seller,*payment_collection,*payment_collection.payment_sessions,email,*shipping_address,*billing_address,*customer,subtotal,total,tax_total,item_total,shipping_total,currency_code"
+
+// Minimal fields for cart creation — empty cart has no items/shipping/payments
+const CART_CREATE_FIELDS = "id,region_id,currency_code"
+
+// Minimal fields just to check if cart exists and get its region
+const CART_EXISTENCE_FIELDS = "id,region_id,currency_code,items.id,items.variant_id,items.quantity"
+
+// Fields needed after adding/updating/removing line items
+// Covers: CartItems, CartItemsProducts, CartItemsHeader, CartItemsFooter, CartSummary, CartClient
+const CART_LINE_ITEM_FIELDS = "id,region_id,*items,*items.product,*items.variant,*items.variant.options,items.variant.options.option.title,*items.thumbnail,*items.metadata,+items.total,+items.unit_price,+items.original_total,+items.original_unit_price,*items.product.seller,*shipping_methods,*shipping_methods.adjustments,*promotions,*promotions.application_method,email,*customer,subtotal,total,tax_total,item_total,shipping_total,currency_code"
+
+// Fields for address step
+const CART_ADDRESS_FIELDS = "id,region_id,*items,*items.product,*items.variant,*items.thumbnail,+items.total,+items.unit_price,+items.original_total,+items.original_unit_price,*items.product.seller,email,*shipping_address,*billing_address,*customer,subtotal,total,tax_total,item_total,shipping_total,currency_code"
+
+// Fields for shipping step
+const CART_SHIPPING_FIELDS = "id,region_id,*items,*items.product,*items.variant,*items.thumbnail,+items.total,+items.unit_price,+items.original_total,+items.original_unit_price,*items.product.seller,*shipping_methods,*shipping_methods.adjustments,*region,*region.countries,email,*shipping_address,*billing_address,*customer,subtotal,total,tax_total,item_total,shipping_total,currency_code"
+
+// Fields for payment step
+const CART_PAYMENT_FIELDS = "id,region_id,*items,*items.product,*items.variant,*items.thumbnail,+items.total,+items.unit_price,+items.original_total,+items.original_unit_price,*items.product.seller,*shipping_methods,*shipping_methods.adjustments,*payment_collection,*payment_collection.payment_sessions,*promotions,*promotions.application_method,email,*shipping_address,*billing_address,*customer,subtotal,total,tax_total,item_total,shipping_total,currency_code"
 
 async function getPaymentHeaders() {
   return {
@@ -38,12 +64,42 @@ async function getPaymentHeaders() {
   }
 }
 
+// ============================================================================
+// REQUEST DEDUPLICATION
+// Next.js with force-dynamic + Suspense can render server components multiple
+// times in parallel (prefetch + render + revalidate). This map ensures that
+// concurrent identical retrieveCart calls share the same in-flight promise
+// instead of hitting the backend N times.
+// ============================================================================
+const inflightCartRequests = new Map<string, { promise: Promise<any>; timestamp: number }>()
+const DEDUP_TTL_MS = 2000 // 2s window covers sequential Next.js renders
+
+/** Clear dedup cache — call before any cart mutation to ensure fresh reads after */
+export async function invalidateCartDedup() {
+  inflightCartRequests.clear()
+}
+
 /**
- * Core cart retrieval function - handles completed cart cleanup and errors
+ * Hybrid dedup: reuses a cached promise within TTL (handles 3 sequential
+ * Next.js server renders), but callers must call invalidateCartDedup()
+ * before mutations so post-mutation reads are always fresh.
  */
-/**
- * Core cart retrieval function - handles completed cart cleanup and errors
- */
+function getDeduplicatedCart(key: string, fetcher: () => Promise<any>): Promise<any> {
+  const now = Date.now()
+  const existing = inflightCartRequests.get(key)
+  
+  if (existing && (now - existing.timestamp) < DEDUP_TTL_MS) {
+    return existing.promise
+  }
+  
+  const promise = fetcher().finally(() => {
+    setTimeout(() => inflightCartRequests.delete(key), DEDUP_TTL_MS)
+  })
+  
+  inflightCartRequests.set(key, { promise, timestamp: now })
+  return promise
+}
+
 /**
  * Core cart retrieval function - handles completed cart cleanup and errors
  */
@@ -54,18 +110,22 @@ export async function retrieveCart(cartId?: string, fields?: string) {
     return null
   }
 
-  const headers = await getAuthHeaders()
+  const effectiveFields = fields || CART_FIELDS
+  const dedupKey = `cart:${id}:${effectiveFields}`
+  
+  return getDeduplicatedCart(dedupKey, async () => {
+    const headers = await getAuthHeaders()
 
-  try {
-    const result = await sdk.client
-      .fetch<{ cart: ExtendedStoreCart }>(`/store/carts/${id}`, {
-        method: "GET",
-        query: {
-          fields: fields || CART_FIELDS,
-        },
-        headers,
-        cache: "no-cache",
-      });
+    try {
+      const result = await sdk.client
+        .fetch<{ cart: ExtendedStoreCart }>(`/store/carts/${id}`, {
+          method: "GET",
+          query: {
+            fields: effectiveFields,
+          },
+          headers,
+          cache: "no-cache",
+        });
       
       
     const cart = result.cart;
@@ -110,11 +170,9 @@ export async function retrieveCart(cartId?: string, fields?: string) {
     console.error('🛒 Unexpected error, rethrowing:', error)
     throw error
   }
+  }) // end getDeduplicatedCart callback
 }
 
-/**
- * Gets the cart from the API based on the cart ID in cookies
- */
 /**
  * Gets the cart from the API based on the cart ID in cookies
  */
@@ -127,21 +185,21 @@ export async function getCart() {
  * Retrieves cart with fields optimized for the address section
  */
 export async function retrieveCartForAddress(cartId?: string) {
-  return retrieveCart(cartId)
+  return retrieveCart(cartId, CART_ADDRESS_FIELDS)
 }
 
 /**
  * Retrieves cart with fields optimized for the shipping section
  */
 export async function retrieveCartForShipping(cartId?: string) {
-  return retrieveCart(cartId)
+  return retrieveCart(cartId, CART_SHIPPING_FIELDS)
 }
 
 /**
  * Retrieves cart with fields optimized for the payment section
  */
 export async function retrieveCartForPayment(cartId?: string) {
-  return retrieveCart(cartId)
+  return retrieveCart(cartId, CART_PAYMENT_FIELDS)
 }
 
 /**
@@ -165,10 +223,11 @@ export async function ensureCartRegionMatches(cart: HttpTypes.StoreCart, country
     
 
     const headers = await getAuthHeaders()
+    // OPTIMIZATION: Use CART_SHIPPING_FIELDS for region update (typically during checkout)
     const response = await sdk.store.cart.update(
       cart.id,
       { region_id: region.id },
-      { fields: CART_FIELDS },
+      { fields: CART_SHIPPING_FIELDS },
       headers
     )
 
@@ -204,13 +263,15 @@ export async function getOrSetCart(countryCode: string) {
     throw new Error(`Region not found for country code: ${countryCode}`)
   }
 
-  let cart = await retrieveCart()
+  // OPTIMIZATION: Use minimal fields for existence check — we only need id, region_id, and items.variant_id
+  let cart = await retrieveCart(undefined, CART_EXISTENCE_FIELDS)
   const headers = await getAuthHeaders()
 
   if (!cart) {
+    // OPTIMIZATION: Use minimal fields for creation — empty cart has no items/shipping/payments
     const cartResp = await sdk.store.cart.create(
       { region_id: region.id },
-      { fields: CART_FIELDS },
+      { fields: CART_CREATE_FIELDS },
       headers
     )
     cart = cartResp.cart
@@ -220,14 +281,16 @@ export async function getOrSetCart(countryCode: string) {
 
   // Only update region if it's actually different to prevent promotion loss
   if (cart && cart?.region_id && cart.region_id !== region.id) {
-    await sdk.store.cart.update(cart.id, { region_id: region.id }, { fields: CART_FIELDS }, headers)
-    return await retrieveCart(cart.id)
+    // OPTIMIZATION: Use minimal fields for region update — we just need the cart back for the next step
+    await sdk.store.cart.update(cart.id, { region_id: region.id }, { fields: CART_EXISTENCE_FIELDS }, headers)
+    return await retrieveCart(cart.id, CART_EXISTENCE_FIELDS)
   }
 
   return cart
 }
 
-export async function updateCart(data: HttpTypes.StoreUpdateCart) {
+export async function updateCart(data: HttpTypes.StoreUpdateCart, fields?: string) {
+  invalidateCartDedup()
   const cartId = await getCartId()
   if (!cartId) {
     throw new Error("No existing cart found, please create one before updating")
@@ -236,7 +299,7 @@ export async function updateCart(data: HttpTypes.StoreUpdateCart) {
   const headers = await getAuthHeaders()
 
   return await sdk.store.cart
-    .update(cartId, data, { fields: CART_FIELDS }, headers)
+    .update(cartId, data, { fields: fields || CART_FIELDS }, headers)
     .then(async ({ cart }) => {
       const cartCacheTag = await getCacheTag("carts")
       await revalidateTag(cartCacheTag)
@@ -262,6 +325,7 @@ export async function addToCart({
  quantity: number
  countryCode: string
 }) {
+ invalidateCartDedup()
  if (!variantId) {
    throw new Error("Missing variant ID when adding to cart")
  }
@@ -277,25 +341,27 @@ export async function addToCart({
  let updatedCart: HttpTypes.StoreCart | null = null
 
  try {
-   const currentItem = cart.items?.find((item) => item.variant_id === variantId)
+   const currentItem = cart.items?.find((item: any) => item.variant_id === variantId)
 
    if (currentItem) {
+    // OPTIMIZATION: Use CART_LINE_ITEM_FIELDS — no need for region/payment/address data when adding items
     const response = await sdk.store.cart.updateLineItem(
       cart.id,
       currentItem.id,
       { quantity: currentItem.quantity + quantity },
-      { fields: CART_FIELDS },
+      { fields: CART_LINE_ITEM_FIELDS },
       headers
     )
     updatedCart = response.cart
   } else {
+    // OPTIMIZATION: Use CART_LINE_ITEM_FIELDS — no need for region/payment/address data when adding items
     const response = await sdk.store.cart.createLineItem(
       cart.id,
        {
          variant_id: variantId,
          quantity,
        },
-       { fields: CART_FIELDS },
+       { fields: CART_LINE_ITEM_FIELDS },
        headers
      )
     updatedCart = response.cart
@@ -318,6 +384,7 @@ export async function updateLineItem({
   lineId: string
   quantity: number
 }) {
+  invalidateCartDedup()
   if (!lineId) {
     throw new Error("Missing lineItem ID when updating line item")
   }
@@ -330,18 +397,20 @@ export async function updateLineItem({
 
   const headers = await getAuthHeaders()
 
+  // OPTIMIZATION: Use CART_LINE_ITEM_FIELDS — no need for region/payment/address data when updating items
   await sdk.store.cart
-    .updateLineItem(cartId, lineId, { quantity }, { fields: CART_FIELDS }, headers)
+    .updateLineItem(cartId, lineId, { quantity }, { fields: CART_LINE_ITEM_FIELDS }, headers)
     .then(async () => {
       // ✅ Targeted cache invalidation after cart change
       unifiedCache.invalidateAfterCartChange()
     })
     .catch(medusaError)
 
-  return await retrieveCart()
+  return await retrieveCart(undefined, CART_LINE_ITEM_FIELDS)
 }
 
 export async function deleteLineItem(lineId: string) {
+  invalidateCartDedup()
   if (!lineId) {
     throw new Error("Missing lineItem ID when deleting line item")
   }
@@ -361,14 +430,67 @@ export async function deleteLineItem(lineId: string) {
     const cartCacheTag = await getCacheTag("carts")
     revalidateTag(cartCacheTag)
     
-    return await retrieveCart(cartId)
+    // OPTIMIZATION: Use CART_LINE_ITEM_FIELDS after deletion
+    return await retrieveCart(cartId, CART_LINE_ITEM_FIELDS)
   } catch (error) {
     try {
-      return await retrieveCart(cartId)
+      return await retrieveCart(cartId, CART_LINE_ITEM_FIELDS)
     } catch (retrieveError) {
       throw medusaError(error)
     }
   }
+}
+
+/**
+ * Fetch inventory data for all cart item variants.
+ * Uses product IDs (supported by Medusa Store API) to fetch products,
+ * then extracts inventory data for the matching variant IDs.
+ * Returns a map of variantId -> { inventory_quantity, manage_inventory, allow_backorder }
+ */
+export async function fetchCartItemsInventory(
+  items: Array<{ product_id: string; variant_id: string }>,
+  regionId: string
+): Promise<Record<string, { inventory_quantity: number; manage_inventory: boolean; allow_backorder: boolean }>> {
+  if (!items.length || !regionId) return {}
+
+  const headers = await getAuthHeaders()
+  const inventory: Record<string, { inventory_quantity: number; manage_inventory: boolean; allow_backorder: boolean }> = {}
+
+  // Deduplicate product IDs
+  const productIds = [...new Set(items.map(i => i.product_id))]
+  const variantIdSet = new Set(items.map(i => i.variant_id))
+
+  try {
+    // Fetch products by ID (supported filter), with inventory fields on variants
+    const { products } = await sdk.client.fetch<{ products: any[] }>("/store/products", {
+      method: "GET",
+      query: {
+        id: productIds,
+        region_id: regionId,
+        fields: "variants.id,variants.inventory_quantity,variants.manage_inventory,variants.allow_backorder",
+        limit: 100,
+      },
+      headers,
+      cache: "no-cache",
+    })
+
+    // Build the inventory map from returned products
+    for (const product of products || []) {
+      for (const variant of product.variants || []) {
+        if (variantIdSet.has(variant.id)) {
+          inventory[variant.id] = {
+            inventory_quantity: variant.inventory_quantity ?? 0,
+            manage_inventory: variant.manage_inventory ?? true,
+            allow_backorder: variant.allow_backorder ?? false,
+          }
+        }
+      }
+    }
+  } catch (error) {
+    console.error("Failed to fetch cart items inventory:", error)
+  }
+
+  return inventory
 }
 
 export async function setShippingMethod({
@@ -380,6 +502,8 @@ export async function setShippingMethod({
   shippingMethodId: string
   data?: Record<string, any>
 }) {
+  invalidateCartDedup()
+  invalidateShippingDedup()
   // ✅ SECURITY: Validate cart ownership before modification
   const { validateCartOwnership } = await import('./cookies');
   await validateCartOwnership(cartId);
@@ -434,6 +558,7 @@ export async function updateShippingMethodData({
   shippingMethodId: string
   data: Record<string, any>
 }) {
+  invalidateCartDedup()
   const headers = await getAuthHeaders()
 
   try {
@@ -467,6 +592,7 @@ export async function initiatePaymentSession(
     context?: Record<string, unknown>
   }
 ) {
+  invalidateCartDedup()
   // ✅ SECURITY: Validate cart ownership before initiating payment
   const { validateCartOwnership } = await import('./cookies');
   await validateCartOwnership(cart.id);
@@ -547,6 +673,7 @@ export async function selectPaymentSession(
   cartId: string,
   providerId: string
 ) {
+  invalidateCartDedup()
   // ✅ SECURITY: Validate cart ownership before selecting payment
   const { validateCartOwnership } = await import('./cookies');
   await validateCartOwnership(cartId);
@@ -624,6 +751,7 @@ export async function selectPaymentSession(
  * Simplified promotion application
  */
 export async function applyPromotions(codes: string[]) {
+  invalidateCartDedup()
   const cartId = await getCartId()
 
   if (!cartId) {
@@ -659,6 +787,8 @@ export async function applyPromotions(codes: string[]) {
  * Removes a shipping method from a cart
  */
 export async function removeShippingMethod(shippingMethodId: string, sellerId?: string) {
+  invalidateCartDedup()
+  invalidateShippingDedup()
   const cartId = await getCartId()
 
   if (!cartId) {
@@ -763,6 +893,7 @@ export async function removeShippingMethod(shippingMethodId: string, sellerId?: 
  * Deletes a promotion code from a cart
  */
 export async function deletePromotionCode(promoId: string) {
+  invalidateCartDedup()
   const cartId = await getCartId()
 
   if (!cartId) {
@@ -794,6 +925,7 @@ export async function deletePromotionCode(promoId: string) {
 }
 
 export async function setAddresses(currentState: unknown, formData: FormData) {
+  invalidateCartDedup()
   // ✅ Generate unique request ID for tracking
   const requestId = `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
   
@@ -816,8 +948,8 @@ export async function setAddresses(currentState: unknown, formData: FormData) {
     // ✅ Get auth headers first (needed for ownership validation)
     const headers = await getAuthHeaders();
     
-    // ✅ Verify cart exists
-    const existingCart = await retrieveCart(cartId)
+    // ✅ Verify cart exists — OPTIMIZATION: use minimal fields for existence check
+    const existingCart = await retrieveCart(cartId, CART_EXISTENCE_FIELDS)
     if (!existingCart) {
       console.error('❌ [setAddresses] Cart not found:', cartId);
       throw new Error("Cart not found or has been completed")
@@ -912,8 +1044,8 @@ export async function setAddresses(currentState: unknown, formData: FormData) {
     
    
     try {
-      // Use SDK updateCart for proper handling
-      await sdk.store.cart.update(cartId, cartUpdateData, { fields: CART_FIELDS }, headers)
+      // OPTIMIZATION: Use CART_ADDRESS_FIELDS for address update and return the updated cart
+      const { cart: updatedCart } = await sdk.store.cart.update(cartId, cartUpdateData, { fields: CART_ADDRESS_FIELDS }, headers)
       
       // Invalidate caches
       const cartCacheTag = await getCacheTag("carts")
@@ -924,6 +1056,8 @@ export async function setAddresses(currentState: unknown, formData: FormData) {
       await revalidatePath("/cart", "page")
       await revalidatePath("/checkout", "page")
       
+      // Return the updated cart so callers can use it directly without another fetch
+      return { success: true, cart: updatedCart }
     } catch (updateError: any) {
       console.error("❌ [setAddresses] Update error:", {
         requestId,
@@ -933,8 +1067,6 @@ export async function setAddresses(currentState: unknown, formData: FormData) {
       })
       throw updateError
     }
-    
-    return "success"
   } catch (e: any) {
     console.error("❌ [setAddresses] Fatal error:", {
       requestId,
@@ -1064,8 +1196,18 @@ export async function placeOrder(cartId?: string, skipRedirectCheck: boolean = f
     const completionResponse = await fetch(completionUrl, options)
     
     if (!completionResponse.ok) {
-      const errorText = await completionResponse.text()
-      throw new Error(`Failed to complete cart: ${completionResponse.statusText}`)
+      let errorData: any = {}
+      try {
+        errorData = await completionResponse.json()
+      } catch {
+        errorData = { error: 'unknown', details: completionResponse.statusText }
+      }
+      
+      // Create error with type info so callers can distinguish recoverable vs non-recoverable
+      const error = new Error(errorData.details || errorData.message || `Failed to complete cart: ${completionResponse.statusText}`)
+      ;(error as any).errorType = errorData.error // 'out_of_stock', 'payment_failed', etc.
+      ;(error as any).statusCode = completionResponse.status
+      throw error
     }
     
     const result = await completionResponse.json()
@@ -1131,9 +1273,10 @@ export async function updateCartRegion(regionId: string) {
       await updateCart({ region_id: regionId })
     } else {
       // No cart exists yet - create a new one with the selected region
+      // OPTIMIZATION: Use CART_CREATE_FIELDS — empty cart has no items/shipping/payments
       const cartResp = await sdk.store.cart.create(
         { region_id: regionId },
-        { fields: CART_FIELDS },
+        { fields: CART_CREATE_FIELDS },
         headers
       )
       

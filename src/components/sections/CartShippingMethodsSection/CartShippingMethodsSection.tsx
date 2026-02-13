@@ -88,7 +88,11 @@ const CartShippingMethodsSection: React.FC<ShippingProps> = ({
   const [missingShippingSellers, setMissingShippingSellers] = useState<string[]>([])
 
   // Refs for tracking changes and preventing race conditions
-  const lastAddressRef = useRef<string>("")
+  // OPTIMIZATION: Initialize with current address to prevent unnecessary re-fetch on first render
+  // when server-side methods are already provided via props
+  const lastAddressRef = useRef<string>(
+    activeCart?.shipping_address ? JSON.stringify(activeCart.shipping_address) : ""
+  )
   const lastCartShippingMethodsRef = useRef<string>("")
   const isMountedRef = useRef(true)
   const abortControllerRef = useRef<AbortController | null>(null)
@@ -117,46 +121,55 @@ const CartShippingMethodsSection: React.FC<ShippingProps> = ({
     const currentAddressKey = JSON.stringify(activeCart.shipping_address || {})
     const addressChanged = lastAddressRef.current !== currentAddressKey
 
-    if (addressChanged || (!shippingMethods.length && !hasLoadedMethods)) {
+    // OPTIMIZATION: Only re-fetch if address actually changed AND we need new methods,
+    // or if we have no methods at all and haven't loaded any yet
+    if (addressChanged && hasLoadedMethods) {
+      // Address changed after initial load — need fresh methods
       lastAddressRef.current = currentAddressKey
-
-      // Cancel previous request
-      if (abortControllerRef.current) {
-        abortControllerRef.current.abort()
-      }
-
-      abortControllerRef.current = new AbortController()
-      const signal = abortControllerRef.current.signal
-
-      const fetchShippingMethods = async () => {
-        try {
-          const freshMethods = await listCartShippingMethods(
-            activeCart.id,
-            {},
-            { cache: 'no-store' }
-          )
-
-          // Check if component is still mounted and request wasn't aborted
-          if (!isMountedRef.current || signal.aborted) return
-
-          if (!Array.isArray(freshMethods)) {
-            console.error('[CartShipping] freshMethods is not an array:', typeof freshMethods)
-            setShippingMethods([])
-            setHasLoadedMethods(true)
-            return
-          }
-
-          setShippingMethods(freshMethods)
-          setHasLoadedMethods(true)
-        } catch (error: any) {
-          if (error.name === 'AbortError') return
-          if (!isMountedRef.current) return
-          console.error('[CartShipping] Error fetching shipping methods:', error)
-        }
-      }
-
-      fetchShippingMethods()
+    } else if (!shippingMethods.length && !hasLoadedMethods) {
+      // No methods at all — need to fetch
+      lastAddressRef.current = currentAddressKey
+    } else {
+      // Already have methods and address hasn't changed — skip fetch
+      return
     }
+
+    // Cancel previous request
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort()
+    }
+
+    abortControllerRef.current = new AbortController()
+    const signal = abortControllerRef.current.signal
+
+    const fetchShippingMethods = async () => {
+      try {
+        const freshMethods = await listCartShippingMethods(
+          activeCart.id,
+          {},
+          { cache: 'no-store' }
+        )
+
+        // Check if component is still mounted and request wasn't aborted
+        if (!isMountedRef.current || signal.aborted) return
+
+        if (!Array.isArray(freshMethods)) {
+          console.error('[CartShipping] freshMethods is not an array:', typeof freshMethods)
+          setShippingMethods([])
+          setHasLoadedMethods(true)
+          return
+        }
+
+        setShippingMethods(freshMethods)
+        setHasLoadedMethods(true)
+      } catch (error: any) {
+        if (error.name === 'AbortError') return
+        if (!isMountedRef.current) return
+        console.error('[CartShipping] Error fetching shipping methods:', error)
+      }
+    }
+
+    fetchShippingMethods()
 
     // Cleanup function
     return () => {

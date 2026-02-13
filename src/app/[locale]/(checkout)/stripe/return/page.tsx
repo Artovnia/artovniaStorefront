@@ -58,6 +58,29 @@ const StripeReturnPageContent: React.FC = () => {
             } catch (placeOrderError: any) {
               lastError = placeOrderError
               
+              // NON-RECOVERABLE ERRORS: Do not retry these
+              const errorType = placeOrderError.errorType
+              const statusCode = placeOrderError.statusCode
+              
+              if (errorType === 'out_of_stock' || statusCode === 409) {
+                // Stock insufficient — retrying won't help
+                console.error('Out of stock error, not retrying:', placeOrderError.message)
+                setError(
+                  locale === 'pl'
+                    ? `Niestety, niektóre produkty z Twojego koszyka są już niedostępne w wybranej ilości. Płatność nie została pobrana. Zaktualizuj koszyk i spróbuj ponownie.`
+                    : `Unfortunately, some items in your cart are no longer available in the requested quantity. Your payment was not charged. Please update your cart and try again.`
+                )
+                setIsProcessing(false)
+                return
+              }
+              
+              if (errorType === 'payment_failed' || statusCode === 402) {
+                // Payment error — retrying would make it worse
+                console.error('Payment error, not retrying:', placeOrderError.message)
+                result = undefined
+                break
+              }
+              
               if (attempt < maxRetries) {
                 // Exponential backoff: 1s, 2s, 4s
                 const delay = 1000 * Math.pow(2, attempt - 1)

@@ -550,7 +550,7 @@ export const listProductsWithSort = async ({
  */
 export const listProductsWithPromotions = async ({
   page = 1,
-  limit = 12,
+  limit = 14,
   countryCode = "PL",
   sortBy,
   promotion,
@@ -699,6 +699,117 @@ export const getProductShippingOptions = async (
       return []
     }
   }, CACHE_TTL.PRODUCT)
+}
+
+/**
+ * Fetch suggested products for the product detail page ("Może Ci się spodobać")
+ * Always returns up to `limit` products using a tiered fallback strategy:
+ * 
+ * 1. Deepest category products (e.g., "Olejne")
+ * 2. Parent category products (e.g., "Obrazy") — fills remaining spots
+ * 3. Grandparent category products — fills remaining spots
+ * 4. General/random products (no category filter) — final fallback to always fill spots
+ * 
+ * Excludes the current product from results. Shuffles for variety.
+ */
+export const listSuggestedProducts = async ({
+  product,
+  regionId,
+  limit = 8,
+}: {
+  product: HttpTypes.StoreProduct
+  regionId: string
+  limit?: number
+}): Promise<{
+  products: (HttpTypes.StoreProduct & { seller?: SellerProps })[]
+  categoryName: string
+  categoryHandle: string
+}> => {
+  const seenProductIds = new Set<string>([product.id]) // Exclude current product
+  let collectedProducts: (HttpTypes.StoreProduct & { seller?: SellerProps })[] = []
+  let categoryName = ''
+  let categoryHandle = ''
+
+  const categories = (product as any).categories as HttpTypes.StoreProductCategory[] | undefined
+
+  // Step 1: Try category chain (deepest → parent → grandparent)
+  if (categories?.length) {
+    const deepestCategory = categories[0]
+
+    if (deepestCategory?.id) {
+      // Store deepest category info for the "see more" link
+      categoryName = deepestCategory.name || ''
+      categoryHandle = deepestCategory.handle || ''
+      // Build category chain: deepest → parent → grandparent
+      const categoryChain: { id: string; name: string }[] = [
+        { id: deepestCategory.id, name: deepestCategory.name || '' }
+      ]
+
+      if (deepestCategory.parent_category_id) {
+        const parentInProduct = categories.find(c => c.id === deepestCategory.parent_category_id)
+        if (parentInProduct) {
+          categoryChain.push({ id: parentInProduct.id, name: parentInProduct.name || '' })
+          if (parentInProduct.parent_category_id) {
+            const grandparentInProduct = categories.find(c => c.id === parentInProduct.parent_category_id)
+            if (grandparentInProduct) {
+              categoryChain.push({ id: grandparentInProduct.id, name: grandparentInProduct.name || '' })
+            }
+          }
+        }
+      }
+
+      // Fetch from each category level until we have enough
+      for (const cat of categoryChain) {
+        if (collectedProducts.length >= limit) break
+
+        try {
+          const fetchLimit = (limit - collectedProducts.length) + seenProductIds.size + 4
+
+          const { response } = await listProductsLean({
+            category_id: cat.id,
+            regionId,
+            queryParams: { limit: fetchLimit },
+          })
+
+          const newProducts = (response.products || []).filter(p => !seenProductIds.has(p.id))
+          newProducts.forEach(p => seenProductIds.add(p.id))
+          collectedProducts.push(...newProducts)
+        } catch (error) {
+          console.error(`❌ listSuggestedProducts: Failed to fetch from category "${cat.name}":`, error)
+        }
+      }
+    }
+  }
+
+  // Step 2: Final fallback — fetch general products (no category filter) to fill remaining spots
+  if (collectedProducts.length < limit) {
+    try {
+      const fetchLimit = (limit - collectedProducts.length) + seenProductIds.size + 4
+
+      const { response } = await listProductsLean({
+        regionId,
+        queryParams: { limit: fetchLimit },
+      })
+
+      const newProducts = (response.products || []).filter(p => !seenProductIds.has(p.id))
+      newProducts.forEach(p => seenProductIds.add(p.id))
+      collectedProducts.push(...newProducts)
+    } catch (error) {
+      console.error('❌ listSuggestedProducts: Failed to fetch general fallback products:', error)
+    }
+  }
+
+  // Shuffle for variety (Fisher-Yates)
+  for (let i = collectedProducts.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [collectedProducts[i], collectedProducts[j]] = [collectedProducts[j], collectedProducts[i]]
+  }
+
+  return {
+    products: collectedProducts.slice(0, limit),
+    categoryName,
+    categoryHandle,
+  }
 }
 
 /**

@@ -1,14 +1,13 @@
 "use client"
 
-import React, { useState, useCallback, useRef } from "react"
-import { HttpTypes } from "@medusajs/types"
+import React, { useState, useCallback, useRef, useEffect } from "react"
 import { useCart } from "@/components/context/CartContext"
 
 interface QuantityChangerProps {
   itemId: string
   cartId: string
   initialQuantity: number
-  maxQuantity?: number // Stock limit
+  maxQuantity?: number // Stock limit from inventory
   minQuantity?: number
   unitPrice: number
   onQuantityChange?: (newQuantity: number, newTotal: number) => void
@@ -28,36 +27,83 @@ export const QuantityChanger = ({
   const [quantity, setQuantity] = useState(initialQuantity)
   const [isUpdating, setIsUpdating] = useState(false)
   const [lastSyncedQuantity, setLastSyncedQuantity] = useState(initialQuantity)
+  const [warningMessage, setWarningMessage] = useState<string | null>(null)
+  const warningTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const syncTimeoutRef = useRef<NodeJS.Timeout | null>(null)
-  const { updateItem } = useCart()
+  const { updateItem, cart, error: cartError } = useCart()
 
-  // Use CartContext for server sync to ensure state consistency
+  // Track if inventory is managed (maxQuantity < 999 means real stock limit)
+  const hasStockLimit = maxQuantity < 999
+
+  // When maxQuantity changes (e.g. inventory refreshed after error), clamp current quantity
+  useEffect(() => {
+    if (hasStockLimit && quantity > maxQuantity) {
+      setQuantity(maxQuantity)
+      setLastSyncedQuantity(maxQuantity)
+    }
+  }, [maxQuantity]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Sync quantity from cart state when server responds with a different quantity
+  useEffect(() => {
+    if (!cart?.items) return
+    const serverItem = cart.items.find((item) => item.id === itemId)
+    if (serverItem && serverItem.quantity !== quantity && !isUpdating) {
+      setQuantity(serverItem.quantity)
+      setLastSyncedQuantity(serverItem.quantity)
+    }
+  }, [cart?.items, itemId]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Show warning briefly then auto-hide
+  const showWarning = useCallback((msg: string) => {
+    setWarningMessage(msg)
+    if (warningTimeoutRef.current) clearTimeout(warningTimeoutRef.current)
+    warningTimeoutRef.current = setTimeout(() => setWarningMessage(null), 4000)
+  }, [])
+
+  // Detect insufficient inventory error from CartContext and show inline warning
+  useEffect(() => {
+    if (cartError && (
+      cartError.includes('Niewystarczająca ilość') || 
+      cartError.includes('insufficient_inventory') ||
+      cartError.includes('does not have the required inventory')
+    )) {
+      showWarning('Brak wystarczającej ilości w magazynie')
+    }
+  }, [cartError, showWarning])
+
+  // Use CartContext for server sync
   const syncToServer = useCallback(async (newQuantity: number) => {
     try {
       setIsUpdating(true)
-      
-   
-      
+      setWarningMessage(null)
       await updateItem(itemId, newQuantity)
       setLastSyncedQuantity(newQuantity)
-      
     } catch (error) {
-      console.warn('⚠️ CartContext sync error:', error)
-      // Keep UI state - don't revert on network errors
+      // Revert to last known good quantity on error
+      setQuantity(lastSyncedQuantity)
+      showWarning('Nie udało się zaktualizować ilości')
     } finally {
       setIsUpdating(false)
     }
-  }, [itemId, lastSyncedQuantity, updateItem])
+  }, [itemId, lastSyncedQuantity, updateItem, showWarning])
 
   // Handle quantity changes with debouncing
   const handleQuantityChange = useCallback((newQuantity: number) => {
+    // Check if user tried to exceed max
+    if (newQuantity > maxQuantity && hasStockLimit) {
+      showWarning(`Maksymalna dostępna ilość: ${maxQuantity}`)
+    }
+
     // Validate bounds
     const clampedQuantity = Math.max(minQuantity, Math.min(maxQuantity, newQuantity))
     
-    if (clampedQuantity === quantity) return // No change needed
-    
+    if (clampedQuantity === quantity) {
+      if (newQuantity > maxQuantity && hasStockLimit) {
+        showWarning(`Maksymalna dostępna ilość: ${maxQuantity}`)
+      }
+      return
+    }
 
-    
     // Update UI immediately
     setQuantity(clampedQuantity)
     
@@ -72,18 +118,19 @@ export const QuantityChanger = ({
       clearTimeout(syncTimeoutRef.current)
     }
     
-    // Debounce server sync (wait for user to stop clicking)
+    // Debounce server sync
     syncTimeoutRef.current = setTimeout(() => {
       if (clampedQuantity !== lastSyncedQuantity) {
         syncToServer(clampedQuantity)
       }
-    }, 300) // Reduced to 300ms for faster response
+    }, 400)
     
-  }, [quantity, maxQuantity, minQuantity, unitPrice, onQuantityChange, syncToServer, lastSyncedQuantity, itemId])
+  }, [quantity, maxQuantity, minQuantity, unitPrice, onQuantityChange, syncToServer, lastSyncedQuantity, hasStockLimit, showWarning])
 
   const handleDecrease = useCallback((e: React.MouseEvent) => {
     e.preventDefault()
     e.stopPropagation()
+    setWarningMessage(null)
     handleQuantityChange(quantity - 1)
   }, [quantity, handleQuantityChange])
 
@@ -94,58 +141,89 @@ export const QuantityChanger = ({
   }, [quantity, handleQuantityChange])
 
   const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    e.preventDefault()
+    e.stopPropagation()
     const value = parseInt(e.target.value) || minQuantity
     handleQuantityChange(value)
   }, [handleQuantityChange, minQuantity])
 
-  // Cleanup timeout on unmount
-  React.useEffect(() => {
+  // Prevent click on input from navigating (it's inside a Link)
+  const handleInputClick = useCallback((e: React.MouseEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+  }, [])
+
+  // Cleanup timeouts on unmount
+  useEffect(() => {
     return () => {
-      if (syncTimeoutRef.current) {
-        clearTimeout(syncTimeoutRef.current)
-      }
+      if (syncTimeoutRef.current) clearTimeout(syncTimeoutRef.current)
+      if (warningTimeoutRef.current) clearTimeout(warningTimeoutRef.current)
     }
   }, [])
 
-  const canDecrease = quantity > minQuantity && !disabled
-  const canIncrease = quantity < maxQuantity && !disabled
-  const showSyncIndicator = isUpdating || (quantity !== lastSyncedQuantity)
+  const canDecrease = quantity > minQuantity && !disabled && !isUpdating
+  const canIncrease = quantity < maxQuantity && !disabled && !isUpdating
+  const isAtMax = quantity >= maxQuantity && hasStockLimit
+  const showSyncIndicator = isUpdating
 
   return (
-    <div className="flex items-center gap-1 border rounded bg-white">
-      <button
-        onClick={handleDecrease}
-        disabled={!canDecrease}
-        className="px-3 py-2 text-sm font-medium hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-        aria-label="Decrease quantity"
-      >
-        −
-      </button>
-      
-      <input
-        type="number"
-        value={quantity}
-        onChange={handleInputChange}
-        min={minQuantity}
-        max={maxQuantity}
-        disabled={disabled}
-        className="w-16 px-2 py-2 text-center text-sm font-medium border-0 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-inset disabled:bg-gray-50"
-        aria-label="Quantity"
-      />
-      
-      <button
-        onClick={handleIncrease}
-        disabled={!canIncrease}
-        className="px-3 py-2 text-sm font-medium hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-        aria-label="Increase quantity"
-      >
-        +
-      </button>
-      
-      {showSyncIndicator && (
-        <div className="px-2">
-          <div className="w-2 h-2 bg-orange-400 rounded-full animate-pulse" title="Syncing to server..." />
+    <div className="flex flex-col gap-1" onClick={(e) => e.stopPropagation()}>
+      <div className="flex items-center gap-1.5">
+        <div className={`flex items-center gap-0 border rounded bg-white ${isAtMax ? 'border-amber-400' : ''}`}>
+          <button
+            onClick={handleDecrease}
+            disabled={!canDecrease}
+            className="px-2.5 py-1.5 text-sm font-medium hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+            aria-label="Zmniejsz ilość"
+          >
+            −
+          </button>
+          
+          <input
+            type="number"
+            value={quantity}
+            onChange={handleInputChange}
+            onClick={handleInputClick}
+            min={minQuantity}
+            max={maxQuantity}
+            disabled={disabled || isUpdating}
+            className="w-10 px-0 py-1.5 text-center text-sm font-medium border-0 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:ring-inset disabled:bg-gray-50 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+            aria-label="Ilość"
+          />
+          
+          <button
+            onClick={handleIncrease}
+            disabled={!canIncrease}
+            className="px-2.5 py-1.5 text-sm font-medium hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+            aria-label="Zwiększ ilość"
+          >
+            +
+          </button>
         </div>
+
+        {/* Stock fraction: quantity/available (e.g. 1/4, 3/6) */}
+        {hasStockLimit && (
+          <span className={`text-xs tabular-nums whitespace-nowrap ${isAtMax ? 'text-amber-600 font-medium' : 'text-gray-500'}`}>
+            {quantity}/{maxQuantity}
+          </span>
+        )}
+        
+        {showSyncIndicator && (
+          <div className="px-0.5">
+            <div className="w-2 h-2 bg-amber-400 rounded-full animate-pulse" title="Aktualizacja..." />
+          </div>
+        )}
+      </div>
+
+      {/* Warning / error message */}
+      {warningMessage && (
+        <p className="text-[11px] text-amber-600 flex items-center gap-1 mt-0.5" role="alert">
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true" className="flex-shrink-0">
+            <path d="M6 1L11 10H1L6 1Z" stroke="currentColor" strokeWidth="1" strokeLinejoin="round" fill="none" />
+            <path d="M6 4.5V6.5M6 8V8.01" stroke="currentColor" strokeWidth="1" strokeLinecap="round" />
+          </svg>
+          {warningMessage}
+        </p>
       )}
     </div>
   )
