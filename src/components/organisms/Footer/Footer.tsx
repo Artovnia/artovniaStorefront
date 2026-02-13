@@ -124,9 +124,20 @@ export function Footer({ categories = [] }: FooterProps) {
                 rel="noopener noreferrer"
                 aria-label="Poradnik (otwiera się w nowej karcie)"
               >
-                Poradnik
+                Poradnik panelu sprzedawcy
                 <span className="sr-only"> (otwiera się w nowej karcie)</span>
               </Link>
+              <Link 
+                href="https://annawawrzyniak.my.canva.site/integracja-baselinker" 
+                className="block text-white hover:underline transition-colors duration-200 text-sm "
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="Przewodnik baselinker (otwiera się w nowej karcie)"
+              >
+                Przewodnik baselinker
+                <span className="sr-only"> (otwiera się w nowej karcie)</span>
+              </Link>
+
               <Link href="/faq-sprzedawcy" className="block text-white hover:underline transition-colors duration-200 text-sm ">
                 FAQ
               </Link>

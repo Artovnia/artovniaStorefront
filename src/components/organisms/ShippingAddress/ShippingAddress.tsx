@@ -386,6 +386,7 @@ const ShippingAddress = forwardRef<
               handleInputChange("shipping_address.phone", value)
             }
             ref={registerInputRef("shipping_address.phone")}
+            required
           />
         </div>
       </div>

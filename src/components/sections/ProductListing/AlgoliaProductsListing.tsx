@@ -256,11 +256,7 @@ const AlgoliaProductsListingWithConfig = (props: AlgoliaProductsListingProps) =>
     // attributesForFaceting is deprecated and causes 400 errors
   };
   
-  // DIAGNOSTIC: Log configureProps to see what's being sent
-  console.log('[Algolia DEBUG] configureProps:', JSON.stringify(configureProps, null, 2));
-  console.log('[Algolia DEBUG] category_ids:', category_ids, 'category_id:', category_id);
-  
-  
+
   
   // Create a memoized search client with caching to prevent excessive queries
   const searchClient = useMemo(() => {
@@ -273,9 +269,7 @@ const AlgoliaProductsListingWithConfig = (props: AlgoliaProductsListingProps) =>
     const CACHE_TTL = 5 * 60 * 1000; // 5 minutes cache
     
     client.search = (requests) => {
-      // DIAGNOSTIC: Log every Algolia request to see what's sent
-      console.log('[Algolia DEBUG] Search requests:', JSON.stringify(requests, null, 2));
-      
+     
       const cacheKey = JSON.stringify(requests);
       
       // Check cache first

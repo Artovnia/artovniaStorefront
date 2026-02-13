@@ -50,25 +50,20 @@ export const TekstyliaDomIcon: React.FC<IconProps> = ({ className = "w-5 h-5" })
 
 /** Meble — elegant armchair */
 export const MebleIcon: React.FC<IconProps> = ({ className = "w-5 h-5" }) => (
-  <svg
-    className={className}
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="1.2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-  >
-    {/* Backrest */}
-    <path d="M7 6C7 4.5 8.5 3 12 3C15.5 3 17 4.5 17 6V11" />
-
-    {/* Seat + arms */}
-    <path d="M5 11C4.5 11 4 12 4 13.5V16H20V13.5C20 12 19.5 11 19 11" />
-
-    {/* Base line */}
-    <path d="M6 16C6 18 18 18 18 16" />
+  <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M7 4C7 3 8 2 9 2H15C16 2 17 3 17 4V10" />
+    <path d="M5 10C4 10 3 11 3 12V16H21V12C21 11 20 10 19 10" />
+    <path d="M7 10H17" />
+    <path d="M5 10V16" />
+    <path d="M19 10V16" />
+    <path d="M4 16V20" />
+    <path d="M20 16V20" />
+    <path d="M3 16H21" />
+    <path d="M8 10V7" />
+    <path d="M16 10V7" />
   </svg>
 )
+
 
 
 /** Lampy — pendant lamp with shade */
@@ -82,17 +77,20 @@ export const LampyIcon: React.FC<IconProps> = ({ className = "w-5 h-5" }) => (
     strokeLinecap="round"
     strokeLinejoin="round"
   >
-    {/* Cord */}
-    <path d="M12 2V5" />
-
     {/* Shade */}
-    <path d="M6 5C6 5 7.5 13 12 13C16.5 13 18 5 18 5Z" />
-
-    {/* Bottom curve */}
-    <path d="M7 13C8.5 14 15.5 14 17 13" />
+    <path d="M7 9H17L15.5 14H8.5L7 9Z" />
+    
+    {/* Bulb hint */}
+    <path d="M12 10.5V12.5" />
+    
+    {/* Stem */}
+    <path d="M12 14V18" />
+    
+    {/* Base */}
+    <path d="M9 18H15" />
+    <path d="M8 20H16" />
   </svg>
 )
-
 
 /** Kuchnia i jadalnia — steaming teacup on saucer */
 export const KuchniaIcon: React.FC<IconProps> = ({ className = "w-5 h-5" }) => (
