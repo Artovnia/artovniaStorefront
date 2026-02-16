@@ -20,6 +20,8 @@ import { usePromotionData } from "@/components/context/PromotionDataProvider"
 import { ProductShareButton } from "@/components/cells/ProductShareButton/ProductShareButton"
 import { PromotionBadge } from "@/components/cells/PromotionBadge/PromotionBadge"
 import { trackProductView } from "@/lib/utils/browsing-history"
+import { DeliveryTimeframeDisplay } from "@/components/cells/DeliveryTimeframeDisplay/DeliveryTimeframeDisplay"
+import { DeliveryTimeframe } from "@/lib/data/delivery-timeframe"
 
 // Define extended types for product and variants
 type ExtendedStoreProduct = HttpTypes.StoreProduct & {
@@ -83,11 +85,13 @@ export const ProductDetailsHeader = ({
   locale,
   user,
   wishlist,
+  deliveryTimeframe,
 }: {
   product: ExtendedStoreProduct
   locale: string
   user: HttpTypes.StoreCustomer | null
   wishlist?: SerializableWishlist[]
+  deliveryTimeframe?: DeliveryTimeframe | null
 }) => {
   // Get vendor availability status if the product has a seller
   const { isAvailable, availability, holidayMode, openHolidayModal } = useVendorAvailability();
@@ -359,6 +363,9 @@ export const ProductDetailsHeader = ({
               />
             </div>
           )}
+          
+         
+          
         </div>
         
         {/* Action Buttons: Wishlist and Share */}
@@ -402,7 +409,7 @@ export const ProductDetailsHeader = ({
             ? "BRAK W MAGAZYNIE"
             : "DODAJ DO KOSZYKA"}
         </Button>
-        
+         
         {/* Show info button for holiday mode */}
         {!isAvailable && availability?.onHoliday && (
           <button 
@@ -411,9 +418,13 @@ export const ProductDetailsHeader = ({
             aria-label="Informacje o trybie wakacyjnym sprzedawcy"
           >
             <InformationCircleSolid className="w-4 h-4 mr-1" aria-hidden="true" />
-            View holiday information
+            Wyświetl informacje o wakacjach
           </button>
         )}
+      </div>
+      {/* Delivery Timeframe Display */}
+      <div className="mt-3 mb-2 ">
+        <DeliveryTimeframeDisplay timeframe={deliveryTimeframe ?? null} />
       </div>
     </div>
   )

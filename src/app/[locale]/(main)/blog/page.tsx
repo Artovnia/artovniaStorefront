@@ -1,6 +1,6 @@
 import { Suspense } from 'react'
 import { Metadata } from 'next'
-import { generateBreadcrumbJsonLd } from '@/lib/helpers/seo'
+import { generateBreadcrumbJsonLd, generateCollectionPageJsonLd } from '@/lib/helpers/seo'
 import {
   getBlogPosts,
   getFeaturedPosts,
@@ -16,11 +16,30 @@ import PaginatedSellerPosts from './components/PaginatedSellerPosts'
 export const revalidate = 60
 
 export const metadata: Metadata = {
-  title: 'Blog - Artovnia | Inspiracje, Porady i Nowości ze Świata Sztuki',
+  title: 'Blog o Rękodziele i Sztuce Handmade | Artovnia',
   description:
-    'Odkryj najnowsze wpisy blogowe, inspiracje artystyczne, porady dla twórców i poznaj naszych utalentowanych artystów. Blog Artovnia to źródło wiedzy o sztuce współczesnej.',
-  keywords:
-    'blog artystyczny, inspiracje artystyczne, porady dla artystów, sztuka współczesna, artyści, galeria',
+    'Blog o rękodziele, biżuterii handmade, ceramice, malarstwie i sztuce. Inspiracje, porady dla artystów i twórców. Poznaj polskich artystów i ich unikalne dzieła.',
+  keywords: [
+    // Primary blog keywords
+    'blog o rękodziele',
+    'blog artystyczny',
+    'blog handmade',
+    'inspiracje rękodzieło',
+    // Category-related keywords
+    'biżuteria handmade porady',
+    'jak robić biżuterię',
+    'ceramika artystyczna tutorial',
+    'malarstwo porady',
+    'rękodzieło DIY',
+    // Artist keywords
+    'polscy artyści',
+    'twórcy handmade',
+    'projektanci rękodzieła',
+    // Marketplace keywords
+    'marketplace rękodzieła blog',
+    'sztuka współczesna',
+    'unikalne dzieła sztuki',
+  ].join(', '),
   authors: [{ name: 'Artovnia' }],
   alternates: {
     canonical: `${process.env.NEXT_PUBLIC_BASE_URL}/blog`,
@@ -30,25 +49,41 @@ export const metadata: Metadata = {
     },
   },
   openGraph: {
-    title: 'Blog - Artovnia | Inspiracje, Porady i Nowości ze Świata Sztuki',
+    title: 'Blog o Rękodziele i Sztuce Handmade | Artovnia',
     description:
-      'Odkryj najnowsze wpisy blogowe, inspiracje artystyczne, porady dla twórców i poznaj naszych utalentowanych artystów.',
+      'Blog o rękodziele, biżuterii handmade, ceramice i sztuce. Inspiracje, porady dla artystów. Poznaj polskich twórców.',
     type: 'website',
     locale: 'pl_PL',
     siteName: 'Artovnia',
     url: `${process.env.NEXT_PUBLIC_BASE_URL}/blog`,
+    images: [
+      {
+        url: `${process.env.NEXT_PUBLIC_BASE_URL}/images/blog/blogHeader.webp`,
+        width: 1200,
+        height: 630,
+        alt: 'Blog Artovnia - Rękodzieło i Sztuka Handmade',
+      },
+    ],
   },
   twitter: {
     card: 'summary_large_image',
     site: '@artovnia',
     creator: '@artovnia',
-    title: 'Blog - Artovnia',
+    title: 'Blog o Rękodziele i Sztuce Handmade | Artovnia',
     description:
-      'Odkryj najnowsze wpisy blogowe, inspiracje artystyczne i poznaj naszych artystów.',
+      'Blog o rękodziele, biżuterii handmade, ceramice i sztuce. Inspiracje i porady dla artystów.',
+    images: [`${process.env.NEXT_PUBLIC_BASE_URL}/images/blog/blogHeader.webp`],
   },
   robots: {
     index: true,
     follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-video-preview': -1,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+    },
   },
 }
 
@@ -138,6 +173,38 @@ async function AllSellerPosts() {
   return <PaginatedSellerPosts posts={posts} />
 }
 
+// Generate Blog JSON-LD structured data
+function generateBlogJsonLd() {
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://artovnia.com'
+  
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'Blog',
+    name: 'Blog Artovnia - Rękodzieło i Sztuka Handmade',
+    description: 'Blog o rękodziele, biżuterii handmade, ceramice, malarstwie i sztuce. Inspiracje, porady dla artystów i twórców.',
+    url: `${baseUrl}/blog`,
+    inLanguage: 'pl-PL',
+    publisher: {
+      '@type': 'Organization',
+      name: 'Artovnia',
+      url: baseUrl,
+      logo: {
+        '@type': 'ImageObject',
+        url: `${baseUrl}/Logo.png`,
+      },
+    },
+    // Keywords for better SEO signals
+    keywords: 'rękodzieło, handmade, biżuteria handmade, ceramika, sztuka, polscy artyści',
+    about: [
+      { '@type': 'Thing', name: 'Rękodzieło' },
+      { '@type': 'Thing', name: 'Biżuteria handmade' },
+      { '@type': 'Thing', name: 'Ceramika artystyczna' },
+      { '@type': 'Thing', name: 'Sztuka współczesna' },
+      { '@type': 'Thing', name: 'Polscy artyści' },
+    ],
+  }
+}
+
 export default async function BlogPage() {
   const categories = await getBlogCategories()
 
@@ -145,12 +212,18 @@ export default async function BlogPage() {
     { label: 'Strona główna', path: '/' },
     { label: 'Blog', path: '/blog' },
   ])
+  
+  const blogJsonLd = generateBlogJsonLd()
 
   return (
     <>
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(blogJsonLd) }}
       />
 
       <BlogLayout

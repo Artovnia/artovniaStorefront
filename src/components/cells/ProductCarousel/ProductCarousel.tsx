@@ -212,7 +212,7 @@ export const ProductCarousel = ({
               className="embla__viewport overflow-hidden rounded-xs"
               ref={emblaRef}
             >
-              <div className="embla__container h-[350px] flex w-full">
+              <div className="embla__container h-[250px] flex w-full">
                 {/* Regular image slides */}
                 {(slides || []).map((slide, index) => (
                   <div

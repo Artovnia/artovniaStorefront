@@ -1,7 +1,7 @@
 // src/app/[locale]/(main)/categories/[category]/page.tsx
 
 import { Metadata } from "next"
-import { getCategoryByHandle, listCategoriesWithProducts, getAllDescendantCategoryIds } from "@/lib/data/categories"
+import { getCategoryByHandle, listCategoriesWithProducts, getAllDescendantCategoryIds, getCategoriesWithProductsFromDatabase } from "@/lib/data/categories"
 import { isServerSideBot } from "@/lib/utils/server-bot-detection"
 import { retrieveCustomer } from "@/lib/data/customer"
 import { getUserWishlists } from "@/lib/data/wishlist"
@@ -57,6 +57,27 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       title: `Kategoria nie znaleziona`,
       description: `Kategoria nie znaleziona - ${process.env.NEXT_PUBLIC_SITE_NAME}`,
       robots: "noindex",
+    }
+  }
+
+  // ✅ SEO FIX: Check if category has products - noindex empty categories
+  // This prevents empty category pages from being indexed by Google
+  const categoriesWithProducts = await getCategoriesWithProductsFromDatabase()
+  const hasProducts = categoriesWithProducts.has(cat.id)
+  
+  if (!hasProducts) {
+    // Category exists but has no products - noindex to prevent thin content
+    return {
+      title: `${cat.name} - Artovnia`,
+      description: `Przeglądaj produkty z kategorii ${cat.name} na Artovnia.`,
+      robots: {
+        index: false,
+        follow: true, // Still follow links to other pages
+        googleBot: {
+          index: false,
+          follow: true,
+        },
+      },
     }
   }
 

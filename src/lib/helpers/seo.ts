@@ -1119,17 +1119,78 @@ export const generateOrganizationJsonLd = (): JsonLdBase &
     "@context": "https://schema.org",
     "@type": "Organization",
     name: "Artovnia",
+    alternateName: "Artovnia Marketplace Rękodzieła",
     url: baseUrl,
     logo: `${baseUrl}/Logo.png`,
     description:
-      "Marketplace sztuki i rękodzieła artystycznego - łączymy artystów z miłośnikami sztuki",
+      "Rękodzieło i sztuka handmade od polskich artystów. Biżuteria handmade, obrazy, ceramika, rzeźby, meble i dekoracje. Polski marketplace łączący artystów z miłośnikami sztuki.",
     sameAs: ["https://facebook.com/artovnia", "https://instagram.com/artovnia"],
+    // Keywords for rich snippets
+    keywords: "rękodzieło, handmade, sztuka, biżuteria handmade, obrazy, ceramika, rzeźby, meble ręcznie robione, polscy artyści",
     contactPoint: {
       "@type": "ContactPoint",
       contactType: "Customer Service",
       email: "kontakt@artovnia.com",
       availableLanguage: ["Polish", "English"],
     },
+    // Additional SEO signals
+    areaServed: {
+      "@type": "Country",
+      name: "Poland",
+    },
+    knowsAbout: [
+      // Primary categories
+      "Rękodzieło",
+      "Sztuka handmade",
+      "Handmade",
+      // Biżuteria
+      "Biżuteria handmade",
+      "Naszyjniki",
+      "Kolczyki",
+      "Bransoletki",
+      "Pierścionki",
+      "Broszki",
+      "Biżuteria personalizowana",
+      // Ubrania i moda
+      "Ubrania handmade",
+      "Sukienki",
+      "Swetry ręcznie robione",
+      "Torebki handmade",
+      "Plecaki",
+      // Dom i dekoracje
+      "Dekoracje do domu",
+      "Obrazy",
+      "Ceramika artystyczna",
+      "Ceramika dekoracyjna",
+      "Świece",
+      "Wazony",
+      "Rzeźby",
+      "Makramy",
+      "Poduszki dekoracyjne",
+      "Lampy",
+      // Meble
+      "Meble ręcznie robione",
+      "Meble drewniane",
+      "Krzesła",
+      "Stoły",
+      // Dzieci
+      "Zabawki handmade",
+      "Ubranka dla dzieci",
+      "Maskotki",
+      "Dekoracje do pokoju dziecięcego",
+      // Prezenty
+      "Prezenty handmade",
+      "Kartki okolicznościowe",
+      "Dekoracje ślubne",
+      // Vintage
+      "Vintage",
+      "Antyki",
+      "Biżuteria vintage",
+      // Zwierzęta
+      "Akcesoria dla zwierząt",
+      "Smycze handmade",
+      "Legowiska",
+    ],
   }
 }
 
@@ -1140,8 +1201,10 @@ export const generateWebsiteJsonLd = (): JsonLdBase & Record<string, any> => {
     "@context": "https://schema.org",
     "@type": "WebSite",
     name: "Artovnia",
-    description: "Marketplace sztuki i rękodzieła artystycznego",
+    alternateName: "Artovnia - Rękodzieło i Sztuka Handmade",
+    description: "Rękodzieło, biżuteria handmade, obrazy, ceramika, rzeźby i meble od polskich artystów. Polski marketplace sztuki i rękodzieła.",
     url: baseUrl,
+    inLanguage: "pl-PL",
     potentialAction: {
       "@type": "SearchAction",
       target: {

@@ -181,7 +181,7 @@ export const ProductVariants = ({
               <span className="label-md text-primary">
                 {selectedVariant[title.toLowerCase()] || 'Not selected'}
               </span>
-              <div className="flex gap-2 mt-2 relative z-[5]">
+              <div className="space-x-1 ">
                 {(values || []).map(
                   ({
                     id,

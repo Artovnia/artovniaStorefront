@@ -9,17 +9,50 @@ import type { Metadata } from "next"
 import { generateBreadcrumbJsonLd, generateCollectionPageJsonLd } from "@/lib/helpers/seo"
 
 export const metadata: Metadata = {
-  title: "Wszystkie Kategorie - Artovnia | Przeglądaj Sztukę i Rękodzieło",
+  title: "Rękodzieło i Sztuka - Wszystkie Kategorie | Artovnia",
   description:
-    "Przeglądaj wszystkie kategorie sztuki i rękodzieła na Artovnia. Znajdź unikalne dzieła w kategoriach: ceramika, malarstwo, rzeźba, biżuteria i więcej.",
+    "Przeglądaj kategorie rękodzieła i sztuki handmade: biżuteria, obrazy, ceramika, rzeźby, meble, dekoracje, ubrania. Unikalne dzieła od polskich artystów.",
   keywords: [
-    'kategorie sztuki',
-    'przeglądaj sztukę',
+    // Primary keywords
+    'rękodzieło',
+    'handmade',
+    'sztuka',
+    'polskie rękodzieło',
+    // Biżuteria
+    'biżuteria handmade',
+    'naszyjniki',
+    'kolczyki',
+    'bransoletki',
+    'pierścionki',
+    // Ubrania i moda
+    'ubrania handmade',
+    'sukienki',
+    'torebki handmade',
+    // Dom i dekoracje
+    'dekoracje do domu',
+    'obrazy na sprzedaż',
+    'ceramika artystyczna',
+    'świece',
+    'wazony',
+    'rzeźby',
+    'makramy',
+    'lampy',
+    // Meble
+    'meble ręcznie robione',
+    'meble drewniane',
+    // Dzieci
+    'zabawki handmade',
+    'ubranka dla dzieci',
+    // Prezenty
+    'prezenty handmade',
+    'kartki okolicznościowe',
+    // Vintage
+    'vintage',
+    'antyki',
+    // Marketplace keywords
     'kategorie rękodzieła',
-    'ceramika',
-    'malarstwo',
-    'rzeźba',
-    'biżuteria artystyczna',
+    'kategorie sztuki',
+    'polscy artyści',
   ].join(', '),
   alternates: {
     canonical: `${process.env.NEXT_PUBLIC_BASE_URL}/categories`,
@@ -30,9 +63,9 @@ export const metadata: Metadata = {
     },
   },
   openGraph: {
-    title: "Wszystkie Kategorie - Artovnia",
+    title: "Rękodzieło i Sztuka - Wszystkie Kategorie | Artovnia",
     description:
-      "Przeglądaj wszystkie kategorie sztuki i rękodzieła. Znajdź unikalne dzieła od polskich artystów.",
+      "Przeglądaj kategorie rękodzieła i sztuki handmade: biżuteria, obrazy, ceramika, rzeźby, meble, dekoracje. Unikalne dzieła od polskich artystów.",
     url: `${process.env.NEXT_PUBLIC_BASE_URL}/categories`,
     siteName: "Artovnia",
     type: "website",
@@ -42,8 +75,8 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     site: "@artovnia",
     creator: "@artovnia",
-    title: "Wszystkie Kategorie - Artovnia",
-    description: "Przeglądaj wszystkie kategorie sztuki i rękodzieła",
+    title: "Rękodzieło i Sztuka - Wszystkie Kategorie | Artovnia",
+    description: "Przeglądaj kategorie rękodzieła i sztuki handmade: biżuteria, obrazy, ceramika, rzeźby, meble, dekoracje.",
   },
   robots: {
     index: true,

@@ -20,6 +20,8 @@ import type { Metadata } from "next"
 import { generateOrganizationJsonLd, generateWebsiteJsonLd } from "@/lib/helpers/seo"
 import { JsonLd } from "@/components/JsonLd"
 import { getBatchLowestPrices } from "@/lib/data/price-history"
+import { HttpTypes } from "@medusajs/types"
+import { SerializableWishlist } from "@/types/wishlist"
 
 // Loading skeletons for initial load - unified cache prevents these on navigation
 const BlogSkeleton = () => (
@@ -45,22 +47,69 @@ const BlogSkeleton = () => (
 
 export const metadata: Metadata = {
   title: {
-    absolute: "Artovnia - Marketplace Sztuki i Rękodzieła Handmade"
+    absolute: "Rękodzieło i Sztuka Handmade | Artovnia - Polski Marketplace"
   },
   description:
-    "Zobacz unikalne dzieła sztuki handmade od polskich artystów. Kup więcej oryginalnej sztuki lub sprzedawać swoje prace. Ceramika, malarstwo, rzeźba i więcej.",
+    "Rękodzieło, biżuteria handmade, obrazy, ceramika, rzeźby i meble od polskich artystów. Kup unikalne dzieła sztuki lub sprzedawaj swoje prace na Artovnia.",
   keywords: [
-    'marketplace sztuki',
-    'rękodzieło artystyczne',
+    // Primary keywords (highest search volume)
+    'rękodzieło',
     'handmade',
-    'polska sztuka',
+    'sztuka',
+    'rękodzieło artystyczne',
+    'polskie rękodzieło',
+    // Biżuteria (jewelry - high search volume)
+    'biżuteria handmade',
+    'naszyjniki handmade',
+    'kolczyki handmade',
+    'bransoletki',
+    'pierścionki',
+    'broszki',
+    'biżuteria personalizowana',
+    // Ubrania i moda (clothing)
+    'ubrania handmade',
+    'sukienki handmade',
+    'swetry ręcznie robione',
+    'torebki handmade',
+    'plecaki handmade',
+    // Dom i dekoracje (home & decor)
+    'dekoracje do domu',
+    'obrazy na sprzedaż',
+    'obrazy polskich artystów',
     'ceramika artystyczna',
-    'unikalne dzieła sztuki',
-    'polscy artyści',
-    'oryginalna sztuka',
+    'ceramika dekoracyjna',
+    'świece handmade',
+    'wazony',
+    'rzeźby',
+    'makramy',
+    'poduszki dekoracyjne',
+    // Meble (furniture)
+    'meble ręcznie robione',
+    'meble drewniane',
+    'krzesła handmade',
+    'stoły drewniane',
+    // Dzieci (children)
+    'zabawki handmade',
+    'ubranka dla dzieci',
+    'maskotki handmade',
+    'dekoracje do pokoju dziecięcego',
+    // Prezenty (gifts)
+    'prezenty handmade',
+    'prezenty personalizowane',
+    'prezent na urodziny',
+    'prezent ślubny',
+    'kartki okolicznościowe',
+    // Vintage
+    'vintage',
+    'antyki',
+    'biżuteria vintage',
+    // Marketplace keywords
     'marketplace rękodzieła',
-    'sprzedawać sztukę',
-    'zobacz sztukę',
+    'marketplace sztuki',
+    'polska sztuka',
+    'polscy artyści',
+    'kupić rękodzieło',
+    'sprzedawać rękodzieło',
   ].join(', '),
   alternates: {
     canonical: process.env.NEXT_PUBLIC_BASE_URL,
@@ -70,9 +119,9 @@ export const metadata: Metadata = {
     },
   },
   openGraph: {
-    title: "Artovnia - Marketplace Sztuki i Rękodzieła Handmade",
+    title: "Rękodzieło i Sztuka Handmade | Artovnia",
     description:
-      "Zobacz unikalne dzieła sztuki handmade od polskich artystów. Kup więcej oryginalnej sztuki lub sprzedawać swoje prace.",
+      "Rękodzieło, biżuteria handmade, obrazy, ceramika, rzeźby i meble od polskich artystów. Kup unikalne dzieła sztuki lub sprzedawaj swoje prace.",
     url: process.env.NEXT_PUBLIC_BASE_URL,
     siteName: "Artovnia",
     type: "website",
@@ -90,8 +139,8 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     site: '@artovnia',
     creator: '@artovnia',
-    title: 'Artovnia - Marketplace Sztuki Handmade',
-    description: 'Zobacz unikalne dzieła sztuki handmade. Kup więcej lub sprzedawać swoje prace',
+    title: 'Rękodzieło i Sztuka Handmade | Artovnia',
+    description: 'Rękodzieło, biżuteria handmade, obrazy, ceramika i meble od polskich artystów. Kup unikalne dzieła sztuki.',
     images: [`${process.env.NEXT_PUBLIC_BASE_URL}/ArtovniaOgImage.png`],
   },
   robots: {
@@ -159,6 +208,81 @@ const ProductsSkeleton = () => (
   </div>
 )
 
+const CategoriesSkeleton = () => (
+  <div className="w-full bg-primary py-2 md:py-8" role="status" aria-label="Ładowanie kategorii">
+    <div className="mx-auto max-w-[1920px] w-full px-4 lg:px-8">
+      <div className="h-8 bg-gray-200 rounded w-48 mb-6 lg:mb-12 animate-pulse"></div>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6 xl:gap-8">
+        <div className="h-[300px] lg:h-[400px] bg-gray-200 rounded animate-pulse"></div>
+        <div className="grid grid-cols-2 gap-4 lg:gap-6 xl:gap-8">
+          {[1, 2, 3, 4].map(i => (
+            <div key={i} className="h-[140px] lg:h-[190px] bg-gray-200 rounded animate-pulse"></div>
+          ))}
+        </div>
+      </div>
+    </div>
+  </div>
+)
+
+/**
+ * ✅ OPTIMIZATION: Async wrapper for SmartBestProductsSection
+ * Fetches user data in parallel with rendering, doesn't block LCP
+ */
+async function SmartBestProductsSectionWithUser({ locale }: { locale: string }) {
+  // Fetch user data - this doesn't block Hero rendering due to Suspense
+  let user: HttpTypes.StoreCustomer | null = null
+  let wishlist: SerializableWishlist[] = []
+  
+  try {
+    const userData = await retrieveCustomer().catch(() => null)
+    if (userData) {
+      user = userData
+      const wishlistData = await getUserWishlists().catch(() => ({ wishlists: [] }))
+      wishlist = wishlistData.wishlists || []
+    }
+  } catch {
+    // Silent fail - user not authenticated
+  }
+  
+  return (
+    <SmartBestProductsSection 
+      user={user} 
+      wishlist={wishlist} 
+    />
+  )
+}
+
+/**
+ * ✅ OPTIMIZATION: Async wrapper for HomeNewestProductsSection
+ * Fetches user data in parallel, doesn't block above-the-fold content
+ */
+async function HomeNewestProductsSectionWithUser({ locale }: { locale: string }) {
+  let user: HttpTypes.StoreCustomer | null = null
+  let wishlist: SerializableWishlist[] = []
+  
+  try {
+    const userData = await retrieveCustomer().catch(() => null)
+    if (userData) {
+      user = userData
+      const wishlistData = await getUserWishlists().catch(() => ({ wishlists: [] }))
+      wishlist = wishlistData.wishlists || []
+    }
+  } catch {
+    // Silent fail
+  }
+  
+  return (
+    <HomeNewestProductsSection 
+      heading="Nowości" 
+      locale={locale}
+      limit={8}
+      home={true}
+      user={user}
+      wishlist={wishlist}
+    />
+  )
+}
+
 export default async function Home({
   params,
 }: {
@@ -170,46 +294,23 @@ export default async function Home({
   const organizationJsonLd = generateOrganizationJsonLd()
   const websiteJsonLd = generateWebsiteJsonLd()
 
-
-  // ✅ OPTIMIZATION: PARALLEL DATA FETCHING ON SERVER
-  // Fetch user data and promotional products simultaneously to eliminate waterfall
-  const [userResult, promotionalDataResult] = await Promise.allSettled([
-    // Fetch user and wishlist
-    retrieveCustomer()
-      .then(async (user) => {
-        if (user) {
-          const wishlistData = await getUserWishlists()
-          return { user, wishlist: wishlistData.wishlists || [] }
-        }
-        return { user: null, wishlist: [] }
-      })
-      .catch((error) => {
-        // User not authenticated - this is normal
-        if ((error as any)?.status !== 401) {
-          console.error("❌ [PAGE DEBUG] Error fetching user data:", error)
-        }
-        return { user: null, wishlist: [] }
-      }),
-    
-    // ✅ Fetch promotional products on server (eliminates client-side delay)
-    listProductsWithPromotions({
-      page: 1,
-      limit: 30,
-      countryCode: 'PL'
-    }).catch((error) => {
-      console.error("Error fetching promotional data:", error)
-      return { response: { products: [], count: 0 }, nextPage: null }
-    })
-  ])
-
-  // Extract results
-  const { user, wishlist } = userResult.status === 'fulfilled' 
-    ? userResult.value 
-    : { user: null, wishlist: [] }
+  // ✅ CRITICAL LCP OPTIMIZATION: Don't block initial render with data fetching
+  // User data is now fetched inside Suspense-wrapped components
+  // Promotional data is fetched in parallel but doesn't block Hero
   
-  const promotionalData = promotionalDataResult.status === 'fulfilled'
-    ? promotionalDataResult.value
-    : { response: { products: [], count: 0 }, nextPage: null }
+  // Fetch promotional products - this runs in parallel with rendering
+  // but doesn't block the initial HTML response
+  const promotionalDataPromise = listProductsWithPromotions({
+    page: 1,
+    limit: 30,
+    countryCode: 'PL'
+  }).catch((error) => {
+    console.error("Error fetching promotional data:", error)
+    return { response: { products: [], count: 0 }, nextPage: null }
+  })
+  
+  // Await promotional data (this is needed for BatchPriceProvider)
+  const promotionalData = await promotionalDataPromise
 
   // ✅ Convert products array to Map for PromotionDataProvider
   const promotionalProductsMap = new Map(
@@ -242,14 +343,17 @@ export default async function Home({
         initialPriceData={priceData}
       >
         <main className="flex flex-col text-primary" aria-label="Strona główna Artovnia">
-          {/* ✅ Hero renders immediately - no async dependencies */}
+          {/* ✅ CRITICAL: Hero renders FIRST - no async dependencies, no Suspense */}
           <div className="mx-auto max-w-[1920px] w-full">
             <Hero />
           </div>
           
-          {/* Smart Best Products - cached, renders immediately on navigation */}
+          {/* ✅ OPTIMIZATION: SmartBestProducts in Suspense - doesn't block Hero LCP */}
+          {/* User data fetched inside component, not blocking page render */}
           <div className="mx-auto max-w-[1920px] w-full mb-8 min-h-[400px] py-2 md:py-8">
-            <SmartBestProductsSection user={user} wishlist={wishlist} />
+            <Suspense fallback={<ProductsSkeleton />}>
+              <SmartBestProductsSectionWithUser locale={locale} />
+            </Suspense>
           </div>
 
           {/* Best Sellers - based on actual sales data */}
@@ -272,22 +376,17 @@ export default async function Home({
             {/* Content container inside full-width section */}
             <div className="mx-auto max-w-[1920px] w-full min-h-[400px] py-2 md:py-8 font-instrument-sans">
               <Suspense fallback={<ProductsSkeleton />}>
-                <HomeNewestProductsSection 
-                  heading="Nowości" 
-                  locale={locale}
-                  limit={8}
-                  home={true}
-                  user={user}
-                  wishlist={wishlist}
-                />
+                <HomeNewestProductsSectionWithUser locale={locale} />
               </Suspense>
             </div>
           </div>
 
-          {/* Categories Section - Static, no Suspense needed */}
-          <div className="w-full bg-primary py-2 md:py-8">
-            <HomeCategories heading="Wybrane" headingItalic="kategorie" />
-          </div>
+          {/* Categories Section - wrapped in Suspense for streaming */}
+          <Suspense fallback={<CategoriesSkeleton />}>
+            <div className="w-full bg-primary py-2 md:py-8">
+              <HomeCategories heading="Wybrane" headingItalic="kategorie" />
+            </div>
+          </Suspense>
           
           {/* Designer of the Week Section - ✅ SERVER COMPONENT: Optimized for performance */}
           {/* Fetches Sanity data during server render with 10-min caching */}

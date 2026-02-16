@@ -43,7 +43,7 @@ export const ProductCarouselIndicator = ({
   return (
     <div className="embla__dots relative lg:absolute lg:top-3 lg:bottom-auto w-full lg:w-auto lg:max-w-[calc(100%-24px)] py-3 lg:py-0 lg:block">
       {/* Mobile indicator - needs explicit width for Indicator to work */}
-      <div className="lg:hidden w-full px-4">
+      <div className="lg:hidden w-full ">
         <Indicator
           step={selectedIndex + 1}
           size="large"
@@ -57,7 +57,7 @@ export const ProductCarouselIndicator = ({
           className="embla__viewport overflow-hidden rounded-xs"
           ref={emblaRef}
         >
-          <div className="embla__container h-[350px] lg:h-[680px] flex lg:block">
+          <div className="embla__container h-[250px] lg:h-[680px] flex lg:block">
             {(slides || []).map((slide, index) => (
               <div
                 key={slide.id}

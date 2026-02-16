@@ -286,6 +286,123 @@ export const getFeaturedPosts = cache(async (): Promise<BlogPost[]> => {
 })
 
 /**
+ * Get adjacent posts (previous and next) for navigation
+ * Based on publishedAt date ordering
+ */
+export const getAdjacentPosts = cache(async (currentSlug: string): Promise<{
+  previousPost: BlogPost | null
+  nextPost: BlogPost | null
+}> => {
+  const query = `
+    {
+      "previous": *[_type == "blogPost" && !(_id in path("drafts.**")) && publishedAt < *[_type == "blogPost" && slug.current == $currentSlug][0].publishedAt] | order(publishedAt desc)[0] {
+        _id,
+        title,
+        slug,
+        excerpt,
+        publishedAt,
+        mainImage
+      },
+      "next": *[_type == "blogPost" && !(_id in path("drafts.**")) && publishedAt > *[_type == "blogPost" && slug.current == $currentSlug][0].publishedAt] | order(publishedAt asc)[0] {
+        _id,
+        title,
+        slug,
+        excerpt,
+        publishedAt,
+        mainImage
+      }
+    }
+  `
+  const result = await safeFetch<{ previous: BlogPost | null; next: BlogPost | null }>(
+    query,
+    { currentSlug },
+    {
+      context: `getAdjacentPosts-${currentSlug}`,
+      fallback: { previous: null, next: null },
+      revalidate: 1800,
+    }
+  )
+  return {
+    previousPost: result?.previous || null,
+    nextPost: result?.next || null,
+  }
+})
+
+/**
+ * Get related posts based on categories or tags
+ * Falls back to latest posts if no matches
+ */
+export const getRelatedPosts = cache(async (
+  currentPostId: string,
+  categoryIds: string[] = [],
+  tags: string[] = [],
+  limit: number = 4
+): Promise<BlogPost[]> => {
+  // First try to get posts from same categories
+  const query = `
+    *[_type == "blogPost" && !(_id in path("drafts.**")) && _id != $currentPostId && (
+      count((categories[]->_id)[@ in $categoryIds]) > 0 ||
+      count((tags)[@ in $tags]) > 0
+    )] | order(publishedAt desc)[0...$limit] {
+      _id,
+      title,
+      slug,
+      excerpt,
+      publishedAt,
+      "authorName": author->name,
+      mainImage,
+      "categoryTitles": categories[]->title,
+      "categorySlugs": categories[]->slug.current,
+      tags
+    }
+  `
+  
+  let posts = await safeFetch<any[]>(
+    query,
+    { currentPostId, categoryIds, tags, limit },
+    {
+      context: `getRelatedPosts-${currentPostId}`,
+      fallback: [],
+      revalidate: 1800,
+    }
+  )
+
+  // If not enough related posts, fill with latest posts
+  if (!posts || posts.length < limit) {
+    const latestQuery = `
+      *[_type == "blogPost" && !(_id in path("drafts.**")) && _id != $currentPostId] | order(publishedAt desc)[0...$limit] {
+        _id,
+        title,
+        slug,
+        excerpt,
+        publishedAt,
+        "authorName": author->name,
+        mainImage,
+        "categoryTitles": categories[]->title,
+        "categorySlugs": categories[]->slug.current,
+        tags
+      }
+    `
+    const latestPosts = await safeFetch<any[]>(
+      latestQuery,
+      { currentPostId, limit },
+      {
+        context: `getLatestPostsFallback-${currentPostId}`,
+        fallback: [],
+        revalidate: 1800,
+      }
+    )
+    
+    // Merge and deduplicate
+    const existingIds = new Set((posts || []).map(p => p._id))
+    const additionalPosts = (latestPosts || []).filter(p => !existingIds.has(p._id))
+    posts = [...(posts || []), ...additionalPosts].slice(0, limit)
+  }
+
+  return (posts || []).map(transformBlogPost)
+})
+
+/**
  * Get latest 3 blog posts with caching
  */
 export const getLatestBlogPosts = cache(async (): Promise<BlogPost[]> => {

@@ -4,11 +4,12 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { format } from 'date-fns'
 import { pl } from 'date-fns/locale'
-import { getSellerPost, getSellerPostSlugs, getBlogCategories } from '../../lib/data'
+import { getSellerPost, getSellerPostSlugs, getBlogCategories, getSellerPosts } from '../../lib/data'
 import { urlFor } from '../../lib/sanity'
 import { ArrowRightIcon } from '@/icons'
 import PortableText from '../../components/PortableText'
 import BlogLayout from '../../components/BlogLayout'
+import { generateBreadcrumbJsonLd } from '@/lib/helpers/seo'
 
 // ✅ ISR - revalidate every 30 minutes
 export const revalidate = 1800
@@ -52,10 +53,20 @@ export async function generateMetadata({ params }: SellerPostPageProps): Promise
     // Ignore
   }
 
+  // Build comprehensive keywords
+  const sellerKeywords = [
+    ...(post.seo?.keywords || []),
+    'polscy artyści',
+    'projektant handmade',
+    'rękodzieło',
+    'twórca',
+    post.sellerName,
+  ].filter(Boolean).join(', ')
+
   return {
-    title: `${title} - Artovnia`,
+    title: `${title} | Poznaj Artystę - Artovnia`,
     description,
-    keywords: post.seo?.keywords?.join(', ') || undefined,
+    keywords: sellerKeywords || undefined,
     authors: [{ name: post.sellerName }],
     openGraph: {
       title,
@@ -72,9 +83,22 @@ export async function generateMetadata({ params }: SellerPostPageProps): Promise
       title,
       description,
       images: imageUrl ? [imageUrl] : undefined,
+      site: '@artovnia',
+      creator: '@artovnia',
     },
     alternates: {
-      canonical: `/blog/seller/${slug}`,
+      canonical: `${process.env.NEXT_PUBLIC_BASE_URL}/blog/seller/${slug}`,
+    },
+    robots: {
+      index: true,
+      follow: true,
+      googleBot: {
+        index: true,
+        follow: true,
+        'max-video-preview': -1,
+        'max-image-preview': 'large',
+        'max-snippet': -1,
+      },
     },
   }
 }
@@ -133,6 +157,14 @@ export default async function SellerPostPage({ params }: SellerPostPageProps) {
   }
 
   const structuredData = generateStructuredData(post, mainImageUrl)
+  
+  // Generate breadcrumb JSON-LD
+  const breadcrumbJsonLd = generateBreadcrumbJsonLd([
+    { label: 'Strona główna', path: '/' },
+    { label: 'Blog', path: '/blog' },
+    { label: 'Poznaj artystów', path: '/blog#artists' },
+    { label: post.sellerName, path: `/blog/seller/${post.slug.current}` },
+  ])
 
   return (
     <BlogLayout
@@ -148,6 +180,10 @@ export default async function SellerPostPage({ params }: SellerPostPageProps) {
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
       />
 
       <article className="bg-[#F4F0EB]" itemScope itemType="https://schema.org/ProfilePage">

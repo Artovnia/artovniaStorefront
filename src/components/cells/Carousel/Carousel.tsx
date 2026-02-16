@@ -158,7 +158,7 @@ export const CustomCarousel = ({
 
       {/* Mobile Navigation - Only visible on mobile */}
       <div className='flex justify-between items-center mt-4 lg:hidden' aria-hidden="true">
-        <div className='flex-1'>
+        <div className='flex-1 pl-4'>
           <Indicator
             variant={variant}
             maxStep={100}

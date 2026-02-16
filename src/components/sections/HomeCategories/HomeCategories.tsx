@@ -34,16 +34,16 @@ export const categories: {
   },
   {
     id: "4",
-    name: "Obrazy",
-    handle: "obrazy",
-    image: "/images/categories/Obrazy.webp",
+    name: "Dekoracje",
+    handle: "dekoracje",
+    image: "/images/categories/Dekoracje.webp",
     imagePosition: "center 50%",
   },
   {
     id: "5",
-    name: "Prezent dla niego",
-    handle: "prezent-dla-niego",
-    image: "/images/categories/Prezent-dla-niego.webp",
+    name: "Kuchnia i jadalnia",
+    handle: "kuchnia-i-jadalnia",
+    image: "/images/categories/Kubki.webp",
     imagePosition: "center 60%", // Shows more of the bottom of this image
   },
 ]

@@ -46,7 +46,7 @@ export default function HolidayModeModal({
       
       {/* Modal position */}
       <div className="fixed inset-0 flex items-center justify-center p-4">
-        <Dialog.Panel className="w-full max-w-md rounded-lg bg-white p-6">
+        <Dialog.Panel className="w-full max-w-md rounded-lg bg-primary p-6">
           {/* Close button */}
           <button
             onClick={onClose}
@@ -89,9 +89,9 @@ export default function HolidayModeModal({
           {/* Action button */}
           <div className="mt-6">
             <Button
-              variant="secondary"
+              variant="primary"
               size="base"
-              className="w-full"
+              className="w-full bg-[#3B3634] rounded-none hover:bg-[#3B3634]/90 text-white"
               onClick={onClose}
             >
               Rozumiem

@@ -306,7 +306,7 @@ export const ProductDetailsPage = async ({
 
               {/* ✅ OPTIMIZATION: Defer below-fold content to prioritize gallery images */}
               <Suspense fallback={<div className="my-24 h-96 bg-gray-50 animate-pulse" />}>
-                <div className="my-24 xl:mt-40 text-black max-w-[1920px] mx-auto" aria-label={`Więcej produktów od ${product.seller?.name || 'sprzedawcy'}`}>
+                <div className="my-12 xl:mt-40 text-black max-w-[1920px] mx-auto" aria-label={`Więcej produktów od ${product.seller?.name || 'sprzedawcy'}`}>
                 {/* Custom heading with mixed styling and button */}
   <div className="mb-6 px-4 sm:px-6 lg:px-8">
     {/* Desktop Layout: Grid with centered heading and right-aligned button */}
@@ -393,7 +393,7 @@ export const ProductDetailsPage = async ({
               {/* ✅ Suggested products: "Może Ci się spodobać" section */}
               {suggestedProducts.length > 0 && (
                 <Suspense fallback={<div className="my-24 h-96 bg-gray-50 animate-pulse" />}>
-                  <div className="my-24 text-black max-w-[1920px] mx-auto">
+                  <div className="my-12 xl:my-24 text-black max-w-[1920px] mx-auto">
                     <SuggestedProductsGallery
                       products={suggestedProducts as any}
                       categoryName={suggestedProductsData.categoryName}

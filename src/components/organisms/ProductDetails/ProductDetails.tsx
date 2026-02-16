@@ -7,6 +7,7 @@ import {
 } from "@/components/cells"
 import { ProductDetailsShippingWrapper } from "@/components/cells/ProductDetailsShipping/ProductDetailsShippingWrapper"
 import { getProductMeasurements } from "@/lib/data/measurements"
+import { getProductDeliveryTimeframe, DeliveryTimeframe } from "@/lib/data/delivery-timeframe"
 // ✅ REMOVED: retrieveCustomer, isAuthenticated, getUserWishlists - now passed from parent
 import { unifiedCache } from "@/lib/utils/unified-cache"
 import { SellerProps } from "@/types/seller"
@@ -57,6 +58,14 @@ export const ProductDetails = async ({
   const customer = user || null
   const wishlist = wishlistProp || []
 
+  // Fetch delivery timeframe for the product
+  let deliveryTimeframe: DeliveryTimeframe | null = null
+  try {
+    deliveryTimeframe = await getProductDeliveryTimeframe(product.id)
+  } catch (error) {
+    // Delivery timeframe is optional, don't block page render
+  }
+
   // Try to load measurements quickly, but don't block page render
   let initialMeasurements: SingleProductMeasurement[] | undefined = undefined
   try {
@@ -96,6 +105,7 @@ export const ProductDetails = async ({
           locale={locale}
           user={customer}
           wishlist={wishlist}
+          deliveryTimeframe={deliveryTimeframe}
         />
         <ProductAdditionalAttributes
           product={product}

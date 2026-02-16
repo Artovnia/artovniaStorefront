@@ -137,9 +137,10 @@ export default function SellerPostCard({
           </p>
         )}
 
+        {/* mt-auto pushes the button to the bottom regardless of text length */}
         <Link
           href={post.sellerUrl}
-          className="group relative inline-block text-[#3B3634] font-instrument-sans font-medium px-3 py-1.5 overflow-hidden transition-all duration-300 hover:text-white text-sm border border-[#3B3634] mx-auto"
+          className="mt-auto group relative inline-block text-[#3B3634] font-instrument-sans font-medium px-3 py-1.5 overflow-hidden transition-all duration-300 hover:text-white text-sm border border-[#3B3634] mx-auto"
         >
           <span className="absolute inset-0 bg-[#3B3634] transform translate-x-[-100%] group-hover:translate-x-0 transition-transform duration-300 ease-out"></span>
           <span className="relative flex items-center gap-2">
@@ -149,8 +150,6 @@ export default function SellerPostCard({
             </span>
           </span>
         </Link>
-
-        
       </div>
 
       {/* Fixed datetime in bottom-right corner of entire card */}

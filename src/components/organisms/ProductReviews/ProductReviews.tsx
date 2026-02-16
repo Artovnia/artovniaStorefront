@@ -502,31 +502,6 @@ export const ProductReviews = ({
           </div>
         </div>
 
-        {/* Review Form Section */}
-        <div className="px-6 py-5 border-b border-cream-200">
-          <div className="flex items-center gap-2 mb-4">
-            <Edit3 size={14} className="text-plum-muted" aria-hidden="true" />
-            <span className="text-xs font-medium text-plum uppercase tracking-wider font-instrument-sans">
-              {userReview ? "Edytuj swoją recenzję" : "Dodaj recenzję"}
-            </span>
-          </div>
-
-          {!isAuthenticated ? (
-            <LoginPrompt />
-          ) : !isEligible || !hasPurchased ? (
-            <NotEligiblePrompt />
-          ) : customer ? (
-            <ReviewForm
-              productId={productId}
-              customer={customer}
-              existingReview={userReview}
-              onSuccess={handleReviewSuccess}
-              isSubmitting={isSubmitting}
-              setIsSubmitting={setIsSubmitting}
-            />
-          ) : null}
-        </div>
-
         {/* Reviews List */}
         <div className="px-6">
           <div className="flex items-center gap-2 py-4 border-b border-cream-200">
@@ -567,6 +542,33 @@ export const ProductReviews = ({
             </div>
           )}
         </div>
+
+        {/* Review Form Section */}
+        <div className="px-6 py-5 border-b border-cream-200">
+          <div className="flex items-center gap-2 mb-4">
+            <Edit3 size={14} className="text-plum-muted" aria-hidden="true" />
+            <span className="text-xs font-medium text-plum uppercase tracking-wider font-instrument-sans">
+              {userReview ? "Edytuj swoją recenzję" : "Dodaj recenzję"}
+            </span>
+          </div>
+
+          {!isAuthenticated ? (
+            <LoginPrompt />
+          ) : !isEligible || !hasPurchased ? (
+            <NotEligiblePrompt />
+          ) : customer ? (
+            <ReviewForm
+              productId={productId}
+              customer={customer}
+              existingReview={userReview}
+              onSuccess={handleReviewSuccess}
+              isSubmitting={isSubmitting}
+              setIsSubmitting={setIsSubmitting}
+            />
+          ) : null}
+        </div>
+
+        
       </div>
     </div>
   )

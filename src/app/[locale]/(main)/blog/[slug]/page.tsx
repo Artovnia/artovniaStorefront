@@ -4,10 +4,14 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { format } from 'date-fns'
 import { pl } from 'date-fns/locale'
-import { getBlogPost, getBlogPostSlugs, getBlogCategories } from '../lib/data'
+import { getBlogPost, getBlogPostSlugs, getBlogCategories, getAdjacentPosts, getRelatedPosts } from '../lib/data'
 import { urlFor } from '../lib/sanity'
 import BlogLayout from '../components/BlogLayout'
 import PortableText from '../components/PortableText'
+import PostNavigation from '../components/PostNavigation'
+import RelatedPosts from '../components/RelatedPosts'
+import ShopCategoriesLink from '../components/ShopCategoriesLink'
+import { generateBreadcrumbJsonLd } from '@/lib/helpers/seo'
 
 // ✅ ISR - revalidate every 30 minutes
 export const revalidate = 1800
@@ -58,29 +62,54 @@ export async function generateMetadata({ params }: BlogPostPageProps): Promise<M
     // Ignore image processing errors
   }
 
+  // Build comprehensive keywords from post categories and tags
+  const postKeywords = [
+    ...(post.seo?.keywords || []),
+    ...(post.tags || []),
+    'rękodzieło',
+    'handmade',
+    'blog artystyczny',
+  ].filter(Boolean).join(', ')
+
   return {
-    title: `${title} - Artovnia Blog`,
+    title: `${title} | Blog Artovnia`,
     description,
-    keywords: post.seo?.keywords?.join(', ') || undefined,
+    keywords: postKeywords || undefined,
     authors: post.author?.name ? [{ name: post.author.name }] : undefined,
     openGraph: {
       title,
       description,
       type: 'article',
       publishedTime: post.publishedAt,
+      modifiedTime: (post as any)._updatedAt || post.publishedAt,
       authors: post.author?.name ? [post.author.name] : undefined,
       images: imageUrl ? [{ url: imageUrl, width: 1200, height: 630, alt: title }] : undefined,
       locale: 'pl_PL',
       siteName: 'Artovnia',
+      section: post.categories?.[0]?.title || 'Blog',
+      tags: post.tags || [],
     },
     twitter: {
       card: 'summary_large_image',
       title,
       description,
       images: imageUrl ? [imageUrl] : undefined,
+      site: '@artovnia',
+      creator: '@artovnia',
     },
     alternates: {
-      canonical: `/blog/${slug}`,
+      canonical: `${process.env.NEXT_PUBLIC_BASE_URL}/blog/${slug}`,
+    },
+    robots: {
+      index: true,
+      follow: true,
+      googleBot: {
+        index: true,
+        follow: true,
+        'max-video-preview': -1,
+        'max-image-preview': 'large',
+        'max-snippet': -1,
+      },
     },
   }
 }
@@ -119,11 +148,23 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
     notFound()
   }
 
+  // Fetch blog post and categories first
   const [blogPost, categories] = await Promise.all([getBlogPost(slug), getBlogCategories()])
 
   if (!blogPost) {
     notFound()
   }
+
+  // Fetch navigation and related posts in parallel (after we have the post)
+  const [adjacentPosts, relatedPosts] = await Promise.all([
+    getAdjacentPosts(slug),
+    getRelatedPosts(
+      blogPost._id,
+      blogPost.categories?.map(c => c.slug.current) || [],
+      blogPost.tags || [],
+      4
+    ),
+  ])
 
   let imageUrl: string | null = null
   try {
@@ -133,6 +174,13 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
   }
 
   const structuredData = generateStructuredData(blogPost, imageUrl)
+  
+  // Generate breadcrumb JSON-LD
+  const breadcrumbJsonLd = generateBreadcrumbJsonLd([
+    { label: 'Strona główna', path: '/' },
+    { label: 'Blog', path: '/blog' },
+    { label: blogPost.title, path: `/blog/${blogPost.slug.current}` },
+  ])
 
   return (
     <BlogLayout
@@ -148,6 +196,10 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
       />
 
       <article className="max-w-4xl mx-auto bg-[#F4F0EB]" itemScope itemType="https://schema.org/BlogPosting">
@@ -185,9 +237,9 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
             </p>
           )}
 
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 text-[#3B3634] border-b border-[#BFB7AD]/30 pb-6">
+          <div className="flex flex-col  sm:justify-between gap-4 text-[#3B3634] border-b border-[#BFB7AD]/30 pb-6">
             <div
-              className="flex items-center space-x-4"
+              className="flex items-left space-x-4"
               itemProp="author"
               itemScope
               itemType="https://schema.org/Person"
@@ -294,6 +346,21 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
             </div>
           </aside>
         )}
+
+        {/* Post Navigation - Previous/Next */}
+        <PostNavigation 
+          previousPost={adjacentPosts.previousPost} 
+          nextPost={adjacentPosts.nextPost} 
+        />
+
+        {/* Related Posts for better internal linking */}
+        <RelatedPosts 
+          posts={relatedPosts} 
+          currentPostId={blogPost._id} 
+        />
+
+        {/* Shop Categories Link - SEO internal linking to products */}
+        <ShopCategoriesLink />
       </article>
     </BlogLayout>
   )
