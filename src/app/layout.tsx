@@ -54,7 +54,7 @@ const instrumentSans = localFont({
   ],
   variable: "--font-instrument-sans",
   display: "swap",
-  preload: false, // ✅ Disabled - Next.js will only preload weights actually used above-the-fold
+  preload: true, // ✅ Re-enabled - fonts were loading in 6s waterfall without preload
   adjustFontFallback: 'Arial', // ✅ Reduces CLS by matching fallback metrics
   fallback: ['system-ui', '-apple-system', 'sans-serif'],
 })
@@ -74,7 +74,7 @@ const instrumentSerif = localFont({
   ],
   variable: "--font-instrument-serif",
   display: "swap",
-  preload: false, // ✅ Disabled - serif font not critical for initial LCP
+  preload: true, // ✅ Re-enabled - serif used in Hero heading, was causing 6s delay
   adjustFontFallback: 'Times New Roman', // ✅ Reduces CLS (closest to serif)
   fallback: ['Georgia', 'serif'],
 })
@@ -128,9 +128,6 @@ export default async function RootLayout({
   // Root layout doesn't have locale param - it's in [locale] segment
   const locale = 'pl' // Default locale
   
-  // Get backend URL for preconnect
-  const backendUrl = process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || 'http://localhost:9000'
-  
   return (
     <html lang={locale} className={`${instrumentSans.variable} ${instrumentSerif.variable}`}>
       <head>
@@ -140,12 +137,13 @@ export default async function RootLayout({
           <meta property="fb:app_id" content={process.env.NEXT_PUBLIC_FB_APP_ID} />
         )}
         
-        {/* ✅ PRECONNECT: Saves 100-300ms RTT per origin on mobile (actual link tags) */}
-        <link rel="preconnect" href="https://artovnia-medusa.s3.eu-north-1.amazonaws.com" />
-        <link rel="preconnect" href={backendUrl} />
+        {/* ✅ DNS-PREFETCH only - preconnect was flagged as unused by Lighthouse
+            SSR fetches happen server-side, so client doesn't need preconnect to backend
+            S3/CDN images load after initial render, dns-prefetch is sufficient */}
+        <link rel="dns-prefetch" href="https://artovnia-medusa.s3.eu-north-1.amazonaws.com" />
         <link rel="dns-prefetch" href="https://o56rau04.apicdn.sanity.io" />
-        {/* Vercel CDN for hero images */}
-        <link rel="preconnect" href="https://artovnia.pl" />
+        {/* ✅ PRECONNECT for same-origin - helps with API calls and CDN requests */}
+        <link rel="preconnect" href="https://artovnia.com" />
       </head>
       <NextIntlClientProvider messages={messages}>
         <body
