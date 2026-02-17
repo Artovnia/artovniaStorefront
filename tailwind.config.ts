@@ -8,6 +8,15 @@ export default {
     "./src/app/**/*.{js,ts,jsx,tsx,mdx}",
   ],
   theme: {
+    screens: {
+      'xs': '470px',  // Custom breakpoint for small mobile devices
+      'xs2': '580px',  // Custom breakpoint for small mobile devices
+      'sm': '610px',
+      'md': '768px',
+      'lg': '1024px',
+      'xl': '1280px',
+      '2xl': '1536px',
+    },
     extend: {
       fontSize: {
         '10xl': '10rem',    // 160px - Extra large for hero banners

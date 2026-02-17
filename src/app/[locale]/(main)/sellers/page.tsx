@@ -168,7 +168,7 @@ export default async function SellersPage({
         <div className="max-w-[1920px] mx-auto" id="sellers-content">
           {/* ✅ PERFORMANCE: Suspense streams hero immediately, data loads in background */}
           {/* On cached navigations (ISR warm), this resolves instantly — no fallback shown */}
-          <div className="px-4 sm:px-6 lg:px-8 py-6">
+          <div className="px-4  py-6">
             <Suspense fallback={<SellersContentFallback />}>
               <SellersContent
                 page={page}

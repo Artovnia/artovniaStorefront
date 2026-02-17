@@ -1,0 +1,32 @@
+# robots.txt
+User-agent: *
+Allow: /
+Disallow: /account/
+Disallow: /user/
+Disallow: /cart
+Disallow: /checkout/
+Disallow: /api/
+Disallow: /stripe/
+Disallow: /payu/
+Disallow: /_next/
+Disallow: /admin/
+
+User-agent: Googlebot
+Allow: /
+Disallow: /account/
+Disallow: /user/
+Disallow: /cart
+Disallow: /checkout/
+Disallow: /api/
+
+User-agent: Bingbot
+Allow: /
+Disallow: /account/
+Disallow: /user/
+Disallow: /cart
+Disallow: /checkout/
+Disallow: /api/
+
+
+
+Sitemap: https://artovnia.com/sitemap.xml

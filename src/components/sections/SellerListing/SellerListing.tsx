@@ -154,7 +154,7 @@ export const SellerListing = ({
     <SellerFilterBar />
 
     {/* Content Area */}
-    <div className="px-4 sm:px-6 max-w-[1200px] mx-auto pt-2 xl:pt-24 pb-12 xl:pb-24">
+    <div className="max-w-[1200px] mx-auto pt-2 xl:pt-24 pb-12 xl:pb-24">
       {/* Results Info */}
       <div className="flex items-center justify-between mb-6">
         <p className="text-sm text-gray-600 font-instrument-sans">
@@ -192,7 +192,7 @@ export const SellerListing = ({
       ) : (
         <>
           {/* Sellers Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-4 gap-6 justify-items-center mb-8">
+          <div className="grid grid-cols-2 xs:grid-cols-3 xs2:grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-4 gap-2 xs:gap-6 justify-items-center mb-8">
             {sellers.map((seller) => (
               <SellerCard key={seller.id} seller={seller} />
             ))}

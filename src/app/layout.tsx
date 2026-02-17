@@ -137,6 +137,14 @@ export default async function RootLayout({
           <meta property="fb:app_id" content={process.env.NEXT_PUBLIC_FB_APP_ID} />
         )}
         
+        {/* ✅ CRITICAL LCP: Preload hero image for mobile - reduces render delay */}
+        <link 
+          rel="preload" 
+          as="image" 
+          href="/images/hero/Hero21.webp"
+          fetchPriority="high"
+        />
+        
         {/* ✅ DNS-PREFETCH only - preconnect was flagged as unused by Lighthouse
             SSR fetches happen server-side, so client doesn't need preconnect to backend
             S3/CDN images load after initial render, dns-prefetch is sufficient */}

@@ -1,6 +1,7 @@
 import { PortableText as BasePortableText } from '@portabletext/react'
 import Image from 'next/image'
 import { urlFor } from '../lib/sanity'
+import BlogProductCarouselWrapper from './BlogProductCarouselWrapper'
 
 const components = {
   types: {
@@ -37,6 +38,20 @@ const components = {
         </pre>
       </div>
     ),
+    productCarousel: ({ value }: any) => {
+      if (!value?.products || value.products.length === 0) {
+        return null
+      }
+
+      return (
+        <BlogProductCarouselWrapper
+          title={value.title}
+          productItems={value.products}
+          showPrices={value.showPrices !== false}
+          showSellerName={value.showSellerName !== false}
+        />
+      )
+    },
   },
   block: {
     h1: ({ children }: any) => (

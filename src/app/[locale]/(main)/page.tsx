@@ -1,25 +1,19 @@
 import {
-  BannerSection,
   BlogSection,
   Hero,
-  HomePopularBrandsSection,
-  ShopByStyleSection,
   HomeNewestProductsSection,
   SmartBestProductsSection,
   HomeCategories,
 } from "@/components/sections"
-import { BestSellersSection } from "@/components/sections/HomeProductSection/BestSellersSection"
 import { DesignerOfTheWeekSectionServer } from "@/components/sections/DesignerOfTheWeekSection/DesignerOfTheWeekSectionServer"
 import { Suspense } from "react"
 import { PromotionDataProvider } from "@/components/context/PromotionDataProvider"
 import { BatchPriceProvider } from "@/components/context/BatchPriceProvider"
 import { retrieveCustomer } from "@/lib/data/customer"
 import { getUserWishlists } from "@/lib/data/wishlist"
-import { listProductsWithPromotions } from "@/lib/data/products"
 import type { Metadata } from "next"
 import { generateOrganizationJsonLd, generateWebsiteJsonLd } from "@/lib/helpers/seo"
 import { JsonLd } from "@/components/JsonLd"
-import { getBatchLowestPrices } from "@/lib/data/price-history"
 import { HttpTypes } from "@medusajs/types"
 import { SerializableWishlist } from "@/types/wishlist"
 
@@ -47,7 +41,7 @@ const BlogSkeleton = () => (
 
 export const metadata: Metadata = {
   title: {
-    absolute: "Rękodzieło i Sztuka Handmade | Artovnia - Polski Marketplace"
+    absolute: "Artovnia.com - Rękodzieło i Sztuka polskich twórców | Polski Marketplace"
   },
   description:
     "Rękodzieło, biżuteria handmade, obrazy, ceramika, rzeźby i meble od polskich artystów. Kup unikalne dzieła sztuki lub sprzedawaj swoje prace na Artovnia.",
@@ -294,37 +288,9 @@ export default async function Home({
   const organizationJsonLd = generateOrganizationJsonLd()
   const websiteJsonLd = generateWebsiteJsonLd()
 
-  // ✅ CRITICAL LCP OPTIMIZATION: Don't block initial render with data fetching
-  // User data is now fetched inside Suspense-wrapped components
-  // Promotional data is fetched in parallel but doesn't block Hero
-  
-  // Fetch promotional products - this runs in parallel with rendering
-  // but doesn't block the initial HTML response
-  const promotionalDataPromise = listProductsWithPromotions({
-    page: 1,
-    limit: 30,
-    countryCode: 'PL'
-  }).catch((error) => {
-    console.error("Error fetching promotional data:", error)
-    return { response: { products: [], count: 0 }, nextPage: null }
-  })
-  
-  // Await promotional data (this is needed for BatchPriceProvider)
-  const promotionalData = await promotionalDataPromise
-
-  // ✅ Convert products array to Map for PromotionDataProvider
-  const promotionalProductsMap = new Map(
-    promotionalData.response.products.map(p => [p.id, p])
-  )
-
-  // ✅ OPTIMIZATION: Server-side price fetching for instant rendering
-  // Extract all variant IDs from promotional products
-  const variantIds = promotionalData.response.products
-    .flatMap(p => p.variants?.map(v => v.id) || [])
-    .filter(Boolean)
-  
-  // Fetch price data on server (eliminates client-side loading delay)
-  const priceData = await getBatchLowestPrices(variantIds, 'PLN', undefined, 30)
+  // ✅ CRITICAL LCP OPTIMIZATION: Don't block Hero render with data fetching
+  // Promotional data is fetched AFTER Hero renders via streaming
+  // Hero is pure server component with no async dependencies
 
   return (
     <>
@@ -335,12 +301,9 @@ export default async function Home({
       <PromotionDataProvider 
       countryCode="PL" 
       limit={30}
-      initialData={promotionalProductsMap}
     >
       <BatchPriceProvider 
         currencyCode="PLN"
-        preloadVariantIds={variantIds}
-        initialPriceData={priceData}
       >
         <main className="flex flex-col text-primary" aria-label="Strona główna Artovnia">
           {/* ✅ CRITICAL: Hero renders FIRST - no async dependencies, no Suspense */}

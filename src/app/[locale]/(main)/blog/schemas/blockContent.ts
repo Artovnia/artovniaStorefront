@@ -104,5 +104,88 @@ export default defineType({
         },
       },
     }),
+    // Product Carousel - displays products from the shop within blog posts
+    defineArrayMember({
+      type: 'object',
+      name: 'productCarousel',
+      title: 'Product Carousel',
+      fields: [
+        {
+          name: 'title',
+          title: 'Carousel Title',
+          type: 'string',
+          description: 'Optional title displayed above the carousel (e.g., "Polecane produkty")',
+        },
+        {
+          name: 'products',
+          title: 'Products',
+          type: 'array',
+          of: [
+            {
+              type: 'object',
+              name: 'productItem',
+              title: 'Product',
+              fields: [
+                {
+                  name: 'productHandle',
+                  title: 'Product Handle (URL slug)',
+                  type: 'string',
+                  description: 'The product handle from your shop URL (e.g., "handmade-ceramic-vase")',
+                  validation: (Rule: any) => Rule.required(),
+                },
+                {
+                  name: 'customTitle',
+                  title: 'Custom Title (optional)',
+                  type: 'string',
+                  description: 'Override the product title if needed',
+                },
+              ],
+              preview: {
+                select: {
+                  title: 'productHandle',
+                  subtitle: 'customTitle',
+                },
+                prepare(selection) {
+                  const { title, subtitle } = selection as { title: string; subtitle?: string }
+                  return {
+                    title: subtitle || title,
+                    subtitle: subtitle ? `Handle: ${title}` : 'Product from shop',
+                  }
+                },
+              },
+            },
+          ],
+          validation: (Rule: any) => Rule.min(1).max(12).error('Add between 1 and 12 products'),
+        },
+        {
+          name: 'showPrices',
+          title: 'Show Prices',
+          type: 'boolean',
+          initialValue: true,
+          description: 'Display product prices in the carousel',
+        },
+        {
+          name: 'showSellerName',
+          title: 'Show Seller Name',
+          type: 'boolean',
+          initialValue: true,
+          description: 'Display seller/artist name below product title',
+        },
+      ],
+      preview: {
+        select: {
+          title: 'title',
+          products: 'products',
+        },
+        prepare(selection) {
+          const { title, products } = selection as { title?: string; products?: any[] }
+          const productCount = products?.length || 0
+          return {
+            title: title || 'Product Carousel',
+            subtitle: `${productCount} product${productCount !== 1 ? 's' : ''}`,
+          }
+        },
+      },
+    }),
   ],
 })
