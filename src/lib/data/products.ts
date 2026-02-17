@@ -202,7 +202,9 @@ export const listProductsForDetail = async ({
   handle: string
   regionId: string
 }): Promise<HttpTypes.StoreProduct | null> => {
-  const headers = { ...(await getAuthHeaders()) }
+  const headers = {
+    ...(await getAuthHeaders()),
+  }
   
   try {
     
