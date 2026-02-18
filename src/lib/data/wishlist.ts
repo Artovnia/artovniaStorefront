@@ -108,20 +108,18 @@ export const addWishlistItem = async ({
       
       // Check if the error is because item is already in wishlist
       if (response.status === 400 && errorText.includes('Cannot create multiple links')) {
-        // Item already in wishlist - this is not an error, just revalidate and return success
-        revalidatePath("/", "layout")
-        revalidatePath("/wishlist")
-        revalidatePath("/products", "page")
+        // Item already in wishlist - this is not an error
+        // ✅ REMOVED: revalidatePath calls - WishlistButton uses optimistic updates
+        // Revalidating causes server re-render which shuffles suggested products
         return { success: true, alreadyExists: true }
       }
       
       throw new Error(`Failed to add item to wishlist: ${response.status} ${response.statusText}`)
     }
     
-    // Revalidate all pages that might display wishlist data
-    revalidatePath("/", "layout") // Revalidate entire site (Header is in layout)
-    revalidatePath("/wishlist")
-    revalidatePath("/products", "page") // Revalidate all product pages
+    // ✅ REMOVED: revalidatePath calls - WishlistButton uses optimistic updates
+    // Revalidating causes server re-render which shuffles suggested products
+    // Header counter updates via wishlist:change event listener
     return { success: true, alreadyExists: false }
   } catch (error) {
     throw error
@@ -171,10 +169,9 @@ export const removeWishlistItem = async ({
       throw new Error(`Failed to remove item from wishlist: ${response.status} ${response.statusText}`)
     }
     
-    // Revalidate all pages that might display wishlist data
-    revalidatePath("/", "layout") // Revalidate entire site (Header is in layout)
-    revalidatePath("/wishlist")
-    revalidatePath("/products", "page") // Revalidate all product pages
+    // ✅ REMOVED: revalidatePath calls - WishlistButton uses optimistic updates
+    // Revalidating causes server re-render which shuffles suggested products
+    // Header counter updates via wishlist:change event listener
     return { success: true }
   } catch (error) {
     console.error('❌ Error removing item from wishlist:', error)

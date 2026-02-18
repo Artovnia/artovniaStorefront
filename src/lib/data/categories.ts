@@ -18,43 +18,29 @@ interface CategoryWithMpath extends HttpTypes.StoreProductCategory {
 }
 
 /**
- * ✅ OPTIMIZED: Get categories that have products with SINGLE efficient query
+ * ✅ OPTIMIZED: Get categories that have products using dedicated backend endpoint
  * Uses React cache() for request deduplication + Next.js fetch cache for persistence
+ * 
+ * Backend endpoint: GET /store/product-categories/categories-with-products
+ * Returns: { category_ids: string[], count: number }
+ * 
+ * This is much more efficient than fetching 1000 products just to extract category IDs.
  */
 const getCategoriesWithProductsFromDatabaseImpl = async (): Promise<Set<string>> => {
   try {
-    // ✅ Single request: fetch all products with category info
+    // ✅ OPTIMIZED: Use dedicated backend endpoint instead of fetching 1000 products
     const response = await sdk.client.fetch<{
-      products: Array<{ 
-        id: string
-        categories?: Array<{ id: string }> 
-      }>
-    }>("/store/products", {
-      query: {
-        fields: "id,categories.id",
-        limit: 1000,
-      },
+      category_ids: string[]
+      count: number
+    }>("/store/product-categories/categories-with-products", {
       next: { 
         revalidate: 86400, // 24h Next.js cache
         tags: ['categories', 'products']
       },
     })
 
-    const products = response?.products || []
-    const categoriesWithProducts = new Set<string>()
-
-    // Extract unique category IDs from products
-    products.forEach(product => {
-      if (product.categories && Array.isArray(product.categories)) {
-        product.categories.forEach(category => {
-          if (category.id) {
-            categoriesWithProducts.add(category.id)
-          }
-        })
-      }
-    })
-
-    return categoriesWithProducts
+    const categoryIds = response?.category_ids || []
+    return new Set(categoryIds)
   } catch (error) {
     console.error("Error fetching categories with products:", error)
     return new Set()

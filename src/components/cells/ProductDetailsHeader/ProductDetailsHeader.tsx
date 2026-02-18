@@ -11,7 +11,6 @@ import { SellerProps } from "@/types/seller"
 import { getProductPrice } from "@/lib/helpers/get-product-price"
 import { getPromotionalPrice } from "@/lib/helpers/get-promotional-price"
 import { WishlistButton } from "@/components/cells/WishlistButton/WishlistButton"
-import { Wishlist, SerializableWishlist } from "@/types/wishlist"
 import { useVendorAvailability } from "@/components/organisms/VendorAvailabilityProvider/vendor-availability-provider"
 import { InformationCircleSolid } from "@medusajs/icons"
 import { useVariantSelection } from "@/components/context/VariantSelectionContext"
@@ -22,6 +21,7 @@ import { PromotionBadge } from "@/components/cells/PromotionBadge/PromotionBadge
 import { trackProductView } from "@/lib/utils/browsing-history"
 import { DeliveryTimeframeDisplay } from "@/components/cells/DeliveryTimeframeDisplay/DeliveryTimeframeDisplay"
 import { DeliveryTimeframe } from "@/lib/data/delivery-timeframe"
+import { useProductUserData } from "@/components/context/ProductUserDataProvider"
 
 // Define extended types for product and variants
 type ExtendedStoreProduct = HttpTypes.StoreProduct & {
@@ -83,16 +83,15 @@ const optionsAsKeymap = (
 export const ProductDetailsHeader = ({
   product,
   locale,
-  user,
-  wishlist,
   deliveryTimeframe,
 }: {
   product: ExtendedStoreProduct
   locale: string
-  user: HttpTypes.StoreCustomer | null
-  wishlist?: SerializableWishlist[]
   deliveryTimeframe?: DeliveryTimeframe | null
 }) => {
+  // ✅ OPTIMIZATION: Get user data from client-side context (enables ISR caching)
+  const { customer: user, wishlist, isLoading: isUserLoading } = useProductUserData()
+  
   // Get vendor availability status if the product has a seller
   const { isAvailable, availability, holidayMode, openHolidayModal } = useVendorAvailability();
   const [isAdding, setIsAdding] = useState(false)
@@ -100,7 +99,7 @@ export const ProductDetailsHeader = ({
   const [optimisticWishlist, setOptimisticWishlist] = useState(wishlist)
   const [pendingUpdate, setPendingUpdate] = useState(false)
   const { allSearchParams } = useGetAllSearchParams()
-  const { selectedVariantId, setSelectedVariantId } = useVariantSelection() // Removed updateUrlWithVariant to prevent direct usage
+  const { selectedVariantId, setSelectedVariantId } = useVariantSelection()
   const { getProductWithPromotions, isLoading } = usePromotionData()
 
   // Ensure component is mounted on client-side to prevent hydration mismatch
@@ -117,12 +116,12 @@ export const ProductDetailsHeader = ({
     })
   }, [product.id]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // ✅ Update optimistic wishlist when prop changes (from server refresh)
-  // BUT only if we're not in the middle of a pending update
+  // ✅ Update optimistic wishlist when context changes (from client-side fetch)
   useEffect(() => {
+    if (isUserLoading) return // Don't update while loading
+    
     const serverHasProduct = wishlist?.[0]?.products?.some(p => p.id === product.id)
     const optimisticHasProduct = optimisticWishlist?.[0]?.products?.some(p => p.id === product.id)
-    
     
     if (!pendingUpdate) {
       // No pending update - safe to sync with server
@@ -135,7 +134,7 @@ export const ProductDetailsHeader = ({
         setPendingUpdate(false)
       } 
     }
-  }, [wishlist, product.id]) // Removed pendingUpdate and optimisticWishlist to prevent loops
+  }, [wishlist, product.id, isUserLoading]) // Added isUserLoading dependency
 
   // ✅ Listen for wishlist changes and update optimistically
   useEffect(() => {

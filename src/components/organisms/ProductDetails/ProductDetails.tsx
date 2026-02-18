@@ -8,10 +8,9 @@ import {
 import { ProductDetailsShippingWrapper } from "@/components/cells/ProductDetailsShipping/ProductDetailsShippingWrapper"
 import { getProductMeasurements } from "@/lib/data/measurements"
 import { getProductDeliveryTimeframe, DeliveryTimeframe } from "@/lib/data/delivery-timeframe"
-// ✅ REMOVED: retrieveCustomer, isAuthenticated, getUserWishlists - now passed from parent
+// ✅ REMOVED: retrieveCustomer, isAuthenticated, getUserWishlists - now fetched client-side via ProductUserDataProvider
 import { unifiedCache } from "@/lib/utils/unified-cache"
 import { SellerProps } from "@/types/seller"
-import { SerializableWishlist } from "@/types/wishlist"
 import { SingleProductMeasurement } from "@/types/product"
 import { HttpTypes } from "@medusajs/types"
 import "@/types/medusa"
@@ -33,8 +32,6 @@ export const ProductDetails = async ({
   locale,
   region,
   initialVariantAttributes,
-  user,
-  wishlist: wishlistProp,
 }: {
   product: HttpTypes.StoreProduct & { 
     seller: SellerProps
@@ -42,8 +39,6 @@ export const ProductDetails = async ({
   locale: string
   region?: HttpTypes.StoreRegion | null
   initialVariantAttributes?: { attribute_values: any[] }
-  user?: HttpTypes.StoreCustomer | null
-  wishlist?: SerializableWishlist[]
 }) => {
   // Pre-calculate variant and locale data
   const selectedVariantId = Array.isArray(product.variants) && product.variants.length > 0 && product.variants[0]?.id 
@@ -52,11 +47,6 @@ export const ProductDetails = async ({
   
   const supportedLocales = ['en', 'pl']
   const currentLocale = supportedLocales.includes(locale) ? locale : 'en'
-  
-  // ✅ OPTIMIZED: Use user and wishlist from props (passed from ProductDetailsPage)
-  // This ensures fresh data on router.refresh() instead of stale cached data
-  const customer = user || null
-  const wishlist = wishlistProp || []
 
   // Fetch delivery timeframe for the product
   let deliveryTimeframe: DeliveryTimeframe | null = null
@@ -103,8 +93,6 @@ export const ProductDetails = async ({
         <ProductDetailsHeader
           product={product as any}
           locale={locale}
-          user={customer}
-          wishlist={wishlist}
           deliveryTimeframe={deliveryTimeframe}
         />
         <ProductAdditionalAttributes

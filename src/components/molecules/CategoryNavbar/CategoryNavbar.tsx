@@ -93,14 +93,14 @@ export const FullWidthDropdown = ({
       className={cn(
         "w-full z-50",
         "bg-primary shadow-md",
-        "max-h-[400px] overflow-y-auto",
+        "max-h-[500px] overflow-y-auto",
         "font-instrument-sans"
       )}
       onMouseEnter={onMouseEnter}
       onMouseLeave={onMouseLeave}
     >
       <div className="max-w-[1920px] mx-auto px-6 py-5">
-        <div className="grid gap-x-6 gap-y-6 grid-cols-[repeat(auto-fit,minmax(180px,max-content))] auto-rows-min w-full">
+        <div className="grid gap-x-6 gap-y-6 grid-cols-[repeat(8,minmax(0,1fr))] auto-rows-min w-full">
           {children.map((child, idx) => (
             <div 
               key={child.id} 
@@ -114,8 +114,8 @@ export const FullWidthDropdown = ({
                 {(() => {
                   const Icon = getCategoryIcon(child.handle || "")
                   return Icon ? (
-                    <div className="flex-shrink-0 w-5 h-[1.75rem] flex items-center" aria-hidden="true">
-                      <Icon className="w-5 h-5" />
+                    <div className="flex-shrink-0 w-7 h-[2rem] flex items-center" aria-hidden="true">
+                      <Icon className="w-6 h-6" />
                     </div>
                   ) : null
                 })()}

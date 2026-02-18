@@ -4,9 +4,8 @@ import { Button } from "@/components/atoms"
 import { HeartFilledIcon, HeartIcon } from "@/icons"
 import { addWishlistItem, removeWishlistItem } from "@/lib/data/wishlist"
 import { SerializableWishlist } from "@/types/wishlist"
-import { useEffect, useState } from "react"
+import { useEffect, useState, useRef } from "react"
 import { HttpTypes } from "@medusajs/types"
-import { useRouter } from "next/navigation"
 import { useGuestWishlist } from "@/components/context/GuestWishlistContext"
 
 export const WishlistButton = ({
@@ -20,7 +19,6 @@ export const WishlistButton = ({
   user?: HttpTypes.StoreCustomer | null
   onWishlistChange?: () => void
 }) => {
-  const router = useRouter()
   const { 
     isInGuestWishlist, 
     addToGuestWishlist, 
@@ -29,28 +27,55 @@ export const WishlistButton = ({
   
   const [isWishlistAdding, setIsWishlistAdding] = useState(false)
   
-  // Determine if product is wishlisted (check both database and local storage)
-  const isInDatabaseWishlist = wishlist?.[0]?.products?.some((item) => item.id === productId)
+  // ✅ OPTIMIZATION: Use local optimistic state to prevent parent re-renders from resetting UI
+  const isInDatabaseWishlist = wishlist?.[0]?.products?.some((item) => item.id === productId) ?? false
   const isInLocalWishlist = isInGuestWishlist(productId)
-  const isWishlisted = user ? isInDatabaseWishlist : isInLocalWishlist
+  const initialWishlisted = user ? isInDatabaseWishlist : isInLocalWishlist
+  
+  // Track if we've made a local change that shouldn't be overwritten by props
+  const hasLocalChange = useRef(false)
+  const [localWishlisted, setLocalWishlisted] = useState(initialWishlisted)
+  
+  // Use local state for display, but sync with props only on initial mount or when no local change pending
+  const isWishlisted = hasLocalChange.current ? localWishlisted : initialWishlisted
 
+  // Sync with props only when they change AND we don't have a pending local change
   useEffect(() => {
-    // Update local state when database wishlist changes (for authenticated users)
-    if (user) {
-      const newIsWishlisted = wishlist?.[0]?.products?.some((item) => item.id === productId)
-      if (newIsWishlisted !== isInDatabaseWishlist) {
-        // State will be updated via isWishlisted calculation
+    if (!hasLocalChange.current) {
+      setLocalWishlisted(initialWishlisted)
+    }
+  }, [initialWishlisted])
+
+  // ✅ SYNC: Listen for wishlist:change events from OTHER WishlistButton instances
+  // This ensures all buttons for the same product stay in sync across the page
+  useEffect(() => {
+    const handleWishlistChange = (event: CustomEvent<{ productId: string; action: 'add' | 'remove' }>) => {
+      const { productId: changedProductId, action } = event.detail || {}
+      
+      // Only update if this event is for THIS product
+      if (changedProductId === productId) {
+        hasLocalChange.current = true
+        setLocalWishlisted(action === 'add')
       }
     }
-  }, [wishlist, productId, user, isInDatabaseWishlist])
+
+    window.addEventListener('wishlist:change', handleWishlistChange as EventListener)
+    return () => {
+      window.removeEventListener('wishlist:change', handleWishlistChange as EventListener)
+    }
+  }, [productId])
 
   const handleAddToWishlist = async () => {
     try {
       setIsWishlistAdding(true)
       
+      // ✅ OPTIMISTIC UPDATE: Update local state immediately
+      hasLocalChange.current = true
+      setLocalWishlisted(true)
+      
       if (user) {
         // Authenticated user: Add to database
-        const result = await addWishlistItem({
+        await addWishlistItem({
           reference_id: productId,
           reference: "product",
         })
@@ -60,23 +85,21 @@ export const WishlistButton = ({
           onWishlistChange()
         }
         
-        // ✅ Dispatch custom event with product details for optimistic updates
-        console.log(`📢 [WishlistButton] Dispatching wishlist:change event`, { productId, action: 'add' })
+        // Dispatch custom event for other components (e.g., header counter)
         window.dispatchEvent(new CustomEvent('wishlist:change', {
           detail: { productId, action: 'add' }
         }))
-        console.log(`✅ [WishlistButton] Event dispatched successfully`)
         
-        // Force router refresh to update server components
-        setTimeout(() => {
-          router.refresh()
-        }, 100)
+        // ✅ REMOVED: router.refresh() - causes full page re-render and product shuffle
+        // The optimistic local state handles UI update, header listens to event
       } else {
         // Guest user: Add to local storage
         addToGuestWishlist(productId)
       }
     } catch (error) {
       console.error('❌ Error adding to wishlist:', error)
+      // Revert optimistic update on error
+      setLocalWishlisted(false)
     } finally {
       setIsWishlistAdding(false)
     }
@@ -85,6 +108,10 @@ export const WishlistButton = ({
   const handleRemoveFromWishlist = async () => {
     try {
       setIsWishlistAdding(true)
+
+      // ✅ OPTIMISTIC UPDATE: Update local state immediately
+      hasLocalChange.current = true
+      setLocalWishlisted(false)
 
       if (user) {
         // Authenticated user: Remove from database
@@ -98,29 +125,26 @@ export const WishlistButton = ({
           onWishlistChange()
         }
         
-        // ✅ Dispatch custom event with product details for optimistic updates
-        console.log(`📢 [WishlistButton] Dispatching wishlist:change event`, { productId, action: 'remove' })
+        // Dispatch custom event for other components (e.g., header counter)
         window.dispatchEvent(new CustomEvent('wishlist:change', {
           detail: { productId, action: 'remove' }
         }))
-        console.log(`✅ [WishlistButton] Event dispatched successfully`)
         
-        // Force router refresh to update server components
-        setTimeout(() => {
-          router.refresh()
-        }, 100)
+        // ✅ REMOVED: router.refresh() - causes full page re-render and product shuffle
+        // The optimistic local state handles UI update, header listens to event
       } else {
         // Guest user: Remove from local storage
         removeFromGuestWishlist(productId)
       }
     } catch (error) {
       console.error('Error removing from wishlist:', error)
+      // Revert optimistic update on error
+      setLocalWishlisted(true)
     } finally {
       setIsWishlistAdding(false)
     }
   }
   const handleClick = () => {
-    console.log(`🖱️ [WishlistButton] Button clicked`, { productId, isWishlisted })
     if (isWishlisted) {
       handleRemoveFromWishlist()
     } else {

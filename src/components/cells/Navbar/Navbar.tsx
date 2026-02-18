@@ -5,6 +5,9 @@ import { CategoryNavbar, NavbarSearch } from "@/components/molecules"
 import { MobileProductSearch } from "@/components/molecules/MobileProductSearch"
 import { FullWidthDropdown } from "@/components/molecules/CategoryNavbar/CategoryNavbar"
 import { useState, useRef, useCallback } from "react"
+import { mockCategoryData } from "@/components/molecules/CategoryNavbar/mockCategoryData"
+
+const USE_MOCK_DATA = false
 
 export const Navbar = ({
   categories: propCategories,
@@ -15,7 +18,7 @@ export const Navbar = ({
   const [isDropdownVisible, setIsDropdownVisible] = useState(false)
   const closeTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
-  const categories = propCategories || []
+  const categories = USE_MOCK_DATA ? mockCategoryData : (propCategories || [])
 
   // Cancel any pending close timeout
   const cancelClose = useCallback(() => {

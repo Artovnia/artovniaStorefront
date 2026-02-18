@@ -1,27 +1,32 @@
-import { z } from "zod"
+import { z } from "zod";
 
 export const registerFormSchema = z
   .object({
-    firstName: z.string().nonempty("Please enter first name"),
-    lastName: z.string().nonempty("Please enter last name"),
-    email: z.string().nonempty("Please enter email").email("Invalid email"),
-    confirmPassword: z.string().nonempty("Please confirm password"),
+    firstName: z.string().nonempty("Proszę podać imię"),
+    lastName: z.string().nonempty("Proszę podać nazwisko"),
+    email: z
+      .string()
+      .nonempty("Proszę podać adres email")
+      .email("Nieprawidłowy adres email"),
+    confirmPassword: z.string().nonempty("Proszę potwierdzić hasło"),
     password: z
       .string()
-      .nonempty("Please enter password")
-      .min(8, "Password must be at least 8 characters long")
+      .nonempty("Proszę podać hasło")
+      .min(8, "Hasło musi mieć co najmniej 8 znaków")
       .regex(/^(?=.*[A-Z])(?=.*[!@#$%^&*])/, {
         message:
-          "Password must contain at least one uppercase letter and one special character",
+          "Hasło musi zawierać co najmniej jedną wielką literę i jeden znak specjalny",
       }),
     phone: z
       .string()
-      .min(6, "Please enter phone number")
-      .regex(/^\+?\d+$/, { message: "Mobile phone must contain digits only" }),
+      .min(6, "Proszę podać numer telefonu")
+      .regex(/^\+?\d+$/, {
+        message: "Numer telefonu może zawierać tylko cyfry",
+      }),
   })
   .refine((data) => data.password === data.confirmPassword, {
-    message: "Passwords do not match",
-    path: ["confirmPassword"], // This specifies the field where the error will appear
-  })
+    message: "Hasła nie są takie same",
+    path: ["confirmPassword"],
+  });
 
-export type RegisterFormData = z.infer<typeof registerFormSchema>
+export type RegisterFormData = z.infer<typeof registerFormSchema>;

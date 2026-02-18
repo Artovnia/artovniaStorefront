@@ -30,6 +30,8 @@ import {
   RekomendacjeIcon,
   // Ona / On
   TorebkiPlecakiIcon,
+  AkcesoriaMęskieIcon,
+  DodatkiMęskieIcon,
   // Zwierzęta
   SmyczeIcon,
   SzelkiIcon,
@@ -38,6 +40,7 @@ import {
   ZawieszkiIdIcon,
   MiskiIcon,
   LegowiskaIcon,
+  PozostałeZwierzetaIcon,
   // Dom
   DekoracjeIcon,
   TekstyliaDomIcon,
@@ -71,9 +74,12 @@ import {
   BiżuteriaVintageIcon,
   ZegarkiIcon,
   KolekcjeAntyikiIcon,
+  PozostałeVintageIcon,
   // Dziecko
   DekoracjePokojuIcon,
   AkcesoriaDziecięceIcon,
+  UbrankaDziecięceIcon,
+  ZabawkiDziecięceIcon,
 } from "./icons"
 
 interface IconProps {
@@ -102,12 +108,12 @@ const handleToIcon: Record<string, IconComponent> = {
   // ── On ──
   "bizuteria-meska": BiżuteriaIcon,       // reuse
   "ubrania-leskie": UbraniaMęskieIcon,     // t-shirt for On
-  "dodatki-meskie": DodatkiIcon,           // reuse
-  "akcesoria-meskie": AkcesoriaIcon,
+  "dodatki-meskie": DodatkiMęskieIcon,
+  "akcesoria-meskie": AkcesoriaMęskieIcon,
 
   // ── Dziecko ──
-  "ubranka": UbrankaIcon,
-  "zabawki": ZabawkiIcon,
+  "ubranka": UbrankaDziecięceIcon,
+  "zabawki": ZabawkiDziecięceIcon,
   "dekoracje-do-pokoju-dzieciecego": DekoracjePokojuIcon,
   "akcesoria-dzieciece": AkcesoriaDziecięceIcon,
 
@@ -121,7 +127,7 @@ const handleToIcon: Record<string, IconComponent> = {
   "zawieszki-i-indentyfikatory": ZawieszkiIdIcon,
   "miski": MiskiIcon,
   "legowiska": LegowiskaIcon,
-  "pozostale-zwierzeta": PozostałeIcon,
+  "pozostale-zwierzeta": PozostałeZwierzetaIcon,
 
   // ── Dom ──
   "dekoracje": DekoracjeIcon,
@@ -162,7 +168,7 @@ const handleToIcon: Record<string, IconComponent> = {
   "bizuteria-vintage": BiżuteriaVintageIcon,
   "zegarki-vintage": ZegarkiIcon,
   "kolekcje-i-antyki": KolekcjeAntyikiIcon,
-  "pozostale-vintage": PozostałeIcon,      // reuse
+  "pozostale-vintage": PozostałeVintageIcon,
 
   // ── Generic "Pozostałe" handles ──
   "dzieci-pozostale": PozostałeIcon,

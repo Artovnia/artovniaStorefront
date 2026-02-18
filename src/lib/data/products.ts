@@ -705,14 +705,17 @@ export const getProductShippingOptions = async (
 
 /**
  * Fetch suggested products for the product detail page ("Może Ci się spodobać")
- * Always returns up to `limit` products using a tiered fallback strategy:
  * 
- * 1. Deepest category products (e.g., "Olejne")
- * 2. Parent category products (e.g., "Obrazy") — fills remaining spots
- * 3. Grandparent category products — fills remaining spots
- * 4. General/random products (no category filter) — final fallback to always fill spots
+ * ✅ OPTIMIZED: Uses PARALLEL fetching instead of sequential
+ * Fetches all category levels + fallback in parallel, then merges/dedupes
  * 
- * Excludes the current product from results. Shuffles for variety.
+ * Strategy:
+ * 1. Fetch from all category levels IN PARALLEL (deepest, parent, grandparent, general)
+ * 2. Merge results with priority: deepest > parent > grandparent > general
+ * 3. Deduplicate and exclude current product
+ * 4. Shuffle for variety
+ * 
+ * Excludes the current product from results.
  */
 export const listSuggestedProducts = async ({
   product,
@@ -728,13 +731,14 @@ export const listSuggestedProducts = async ({
   categoryHandle: string
 }> => {
   const seenProductIds = new Set<string>([product.id]) // Exclude current product
-  let collectedProducts: (HttpTypes.StoreProduct & { seller?: SellerProps })[] = []
   let categoryName = ''
   let categoryHandle = ''
 
   const categories = (product as any).categories as HttpTypes.StoreProductCategory[] | undefined
 
-  // Step 1: Try category chain (deepest → parent → grandparent)
+  // Build category chain for parallel fetching
+  const categoryChain: { id: string; name: string; handle: string }[] = []
+  
   if (categories?.length) {
     const deepestCategory = categories[0]
 
@@ -742,62 +746,75 @@ export const listSuggestedProducts = async ({
       // Store deepest category info for the "see more" link
       categoryName = deepestCategory.name || ''
       categoryHandle = deepestCategory.handle || ''
-      // Build category chain: deepest → parent → grandparent
-      const categoryChain: { id: string; name: string }[] = [
-        { id: deepestCategory.id, name: deepestCategory.name || '' }
-      ]
+      
+      categoryChain.push({ 
+        id: deepestCategory.id, 
+        name: deepestCategory.name || '',
+        handle: deepestCategory.handle || ''
+      })
 
       if (deepestCategory.parent_category_id) {
         const parentInProduct = categories.find(c => c.id === deepestCategory.parent_category_id)
         if (parentInProduct) {
-          categoryChain.push({ id: parentInProduct.id, name: parentInProduct.name || '' })
+          categoryChain.push({ 
+            id: parentInProduct.id, 
+            name: parentInProduct.name || '',
+            handle: parentInProduct.handle || ''
+          })
           if (parentInProduct.parent_category_id) {
             const grandparentInProduct = categories.find(c => c.id === parentInProduct.parent_category_id)
             if (grandparentInProduct) {
-              categoryChain.push({ id: grandparentInProduct.id, name: grandparentInProduct.name || '' })
+              categoryChain.push({ 
+                id: grandparentInProduct.id, 
+                name: grandparentInProduct.name || '',
+                handle: grandparentInProduct.handle || ''
+              })
             }
           }
-        }
-      }
-
-      // Fetch from each category level until we have enough
-      for (const cat of categoryChain) {
-        if (collectedProducts.length >= limit) break
-
-        try {
-          const fetchLimit = (limit - collectedProducts.length) + seenProductIds.size + 4
-
-          const { response } = await listProductsLean({
-            category_id: cat.id,
-            regionId,
-            queryParams: { limit: fetchLimit },
-          })
-
-          const newProducts = (response.products || []).filter(p => !seenProductIds.has(p.id))
-          newProducts.forEach(p => seenProductIds.add(p.id))
-          collectedProducts.push(...newProducts)
-        } catch (error) {
-          console.error(`❌ listSuggestedProducts: Failed to fetch from category "${cat.name}":`, error)
         }
       }
     }
   }
 
-  // Step 2: Final fallback — fetch general products (no category filter) to fill remaining spots
-  if (collectedProducts.length < limit) {
-    try {
-      const fetchLimit = (limit - collectedProducts.length) + seenProductIds.size + 4
-
-      const { response } = await listProductsLean({
+  // ✅ OPTIMIZATION: Fetch ALL category levels + fallback IN PARALLEL
+  const fetchPromises = [
+    // Category-based fetches
+    ...categoryChain.map(cat => 
+      listProductsLean({
+        category_id: cat.id,
         regionId,
-        queryParams: { limit: fetchLimit },
-      })
+        queryParams: { limit: limit + 4 }, // Fetch extra to account for duplicates
+      }).then(r => ({ 
+        products: r.response.products || [], 
+        priority: categoryChain.indexOf(cat) // Lower = higher priority
+      })).catch(() => ({ products: [], priority: 999 }))
+    ),
+    // General fallback (lowest priority)
+    listProductsLean({
+      regionId,
+      queryParams: { limit: limit + 4 },
+    }).then(r => ({ 
+      products: r.response.products || [], 
+      priority: 100 // Lower priority than categories
+    })).catch(() => ({ products: [], priority: 999 }))
+  ]
 
-      const newProducts = (response.products || []).filter(p => !seenProductIds.has(p.id))
-      newProducts.forEach(p => seenProductIds.add(p.id))
-      collectedProducts.push(...newProducts)
-    } catch (error) {
-      console.error('❌ listSuggestedProducts: Failed to fetch general fallback products:', error)
+  // Wait for all fetches to complete in parallel
+  const results = await Promise.all(fetchPromises)
+
+  // Sort by priority (deepest category first) and merge
+  results.sort((a, b) => a.priority - b.priority)
+
+  const collectedProducts: (HttpTypes.StoreProduct & { seller?: SellerProps })[] = []
+  
+  for (const result of results) {
+    if (collectedProducts.length >= limit) break
+    
+    const newProducts = result.products.filter(p => !seenProductIds.has(p.id))
+    for (const p of newProducts) {
+      if (collectedProducts.length >= limit) break
+      seenProductIds.add(p.id)
+      collectedProducts.push(p)
     }
   }
 

@@ -202,9 +202,7 @@ export const HeroClient = ({
                     })
                   }
                 }}
-                onLoad={() => {
-                  console.log(`[Hero] ✅ Image loaded successfully: ${banner.id} (index: ${index})`, banner.image)
-                }}
+               
               />
               
               <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" aria-hidden="true" />
