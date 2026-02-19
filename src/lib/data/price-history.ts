@@ -1,6 +1,6 @@
 import { LowestPriceData } from "@/types/price-history"
 
-const MEDUSA_BACKEND_URL = process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || 'http://localhost:9000'
+const MEDUSA_BACKEND_URL = process.env.MEDUSA_BACKEND_URL || process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || 'http://localhost:9000'
 
 /**
  * Server-side function to fetch batch lowest prices

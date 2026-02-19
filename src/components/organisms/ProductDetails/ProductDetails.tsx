@@ -9,7 +9,6 @@ import { ProductDetailsShippingWrapper } from "@/components/cells/ProductDetails
 import { getProductMeasurements } from "@/lib/data/measurements"
 import { getProductDeliveryTimeframe, DeliveryTimeframe } from "@/lib/data/delivery-timeframe"
 // ✅ REMOVED: retrieveCustomer, isAuthenticated, getUserWishlists - now fetched client-side via ProductUserDataProvider
-import { unifiedCache } from "@/lib/utils/unified-cache"
 import { SellerProps } from "@/types/seller"
 import { SingleProductMeasurement } from "@/types/product"
 import { HttpTypes } from "@medusajs/types"
@@ -32,6 +31,7 @@ export const ProductDetails = async ({
   locale,
   region,
   initialVariantAttributes,
+  initialShippingOptions,
 }: {
   product: HttpTypes.StoreProduct & { 
     seller: SellerProps
@@ -39,6 +39,7 @@ export const ProductDetails = async ({
   locale: string
   region?: HttpTypes.StoreRegion | null
   initialVariantAttributes?: { attribute_values: any[] }
+  initialShippingOptions?: any[]
 }) => {
   // Pre-calculate variant and locale data
   const selectedVariantId = Array.isArray(product.variants) && product.variants.length > 0 && product.variants[0]?.id 
@@ -59,30 +60,10 @@ export const ProductDetails = async ({
   // Try to load measurements quickly, but don't block page render
   let initialMeasurements: SingleProductMeasurement[] | undefined = undefined
   try {
-    // Set a very short timeout for initial measurements load
-    const measurementsPromise = unifiedCache.get(
-      `measurements:${product.id}:${selectedVariantId || 'no-variant'}:${currentLocale}`,
-      () => getProductMeasurements(product.id, selectedVariantId, currentLocale)
-    )
-    
-    // Race against a reasonable timeout with proper cleanup
-    let timeoutId: NodeJS.Timeout
-    const timeoutPromise = new Promise<null>((_, reject) => {
-      timeoutId = setTimeout(() => reject(new Error('Initial measurements timeout')), 3000) // 3 seconds max
-    })
-
-    const measurementsResult = await Promise.race([
-      measurementsPromise,
-      timeoutPromise
-    ]).finally(() => {
-      // Always clear timeout to prevent memory leaks
-      if (timeoutId) clearTimeout(timeoutId)
-    })
-    
-    // Validate the result is the correct type
+    const measurementsResult = await getProductMeasurements(product.id, selectedVariantId, currentLocale)
     if (isValidMeasurementsArray(measurementsResult)) {
       initialMeasurements = measurementsResult
-    } 
+    }
   } catch (error) {
     // Measurements will be loaded client-side
   }
@@ -113,8 +94,13 @@ export const ProductDetails = async ({
         />
         </MeasurementsErrorBoundary>
       </ProductDetailsClient>
-      {/* ✅ OPTIMIZED: ProductDetailsShippingWrapper uses CartContext for region, with server region as fallback */}
-      <ProductDetailsShippingWrapper product={product} locale={locale} region={region} />
+      {/* Shipping options pre-fetched server-side (revalidate:300) — no client-side fetch needed */}
+      <ProductDetailsShippingWrapper
+        product={product}
+        locale={locale}
+        region={region}
+        initialShippingOptions={initialShippingOptions}
+      />
       <ProductDetailsFooter
         tags={product?.tags || []}
         posted={product?.created_at || null}

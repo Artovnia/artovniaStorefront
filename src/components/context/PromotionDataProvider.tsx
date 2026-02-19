@@ -20,6 +20,7 @@ interface PromotionDataProviderProps {
   productIds?: string[]  // ✅ Optional: Fetch only specific products. If undefined, fetch based on limit.
   limit?: number  // ✅ NEW: How many promotional products to fetch (default: 50)
   initialData?: HttpTypes.StoreProduct[] | Map<string, HttpTypes.StoreProduct> | null  // ✅ NEW: Server-fetched data (array or Map)
+  serverDataProvided?: boolean  // ✅ NEW: When true, server already ran — skip client fetch even if initialData is empty
 }
 
 export const PromotionDataProvider: React.FC<PromotionDataProviderProps> = ({
@@ -27,7 +28,8 @@ export const PromotionDataProvider: React.FC<PromotionDataProviderProps> = ({
   countryCode = "PL",
   productIds,  // ✅ undefined = fetch based on limit, [] = fetch none, [ids] = fetch specific
   limit = 50,  // ✅ Default to 50 promotional products (reasonable for most pages)
-  initialData = null  // ✅ NEW: Accept server-fetched data (array or Map)
+  initialData = null,  // ✅ NEW: Accept server-fetched data (array or Map)
+  serverDataProvided = false  // ✅ NEW: When true, server already ran — skip client fetch even if empty
 }) => {
   // ✅ FIX: Convert initialData to Map if it's an array
   // IMPORTANT: Products with has_promotions flag take priority over those without
@@ -68,6 +70,14 @@ export const PromotionDataProvider: React.FC<PromotionDataProviderProps> = ({
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
+    // ✅ Skip fetch if server already ran (even if it found 0 promotional products)
+    // This prevents double-fetch when there are no active promotions
+    if (serverDataProvided) {
+      setPromotionalProducts(initialProductMap)
+      setIsLoading(false)
+      return
+    }
+
     // ✅ CRITICAL FIX: Skip fetch if we already have server data
     if (initialProductMap && initialProductMap.size > 0) {
       if (process.env.NODE_ENV === 'development') {

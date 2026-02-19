@@ -4,19 +4,38 @@ import { SingleProductReview } from '@/types/product';
 import { SellerProps } from "@/types/seller"
 import { StarRating } from "@/components/atoms"
 import { SellerAvatar } from "@/components/cells/SellerAvatar/SellerAvatar"
-import { getSellerReviews, Review } from '@/lib/data/reviews';
-import { unifiedCache, CACHE_TTL } from '@/lib/utils/unified-cache';
+import { Review } from '@/lib/data/reviews';
 import Link from 'next/link';
+
+// ✅ Use native fetch (no Authorization header) so Next.js Data Cache works.
+// getSellerReviews called getAuthHeaders() → cookies() which forced the entire page dynamic.
+const BACKEND_URL = process.env.MEDUSA_BACKEND_URL || process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || 'http://localhost:9000'
+const PUB_KEY = process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || ''
+
+async function fetchSellerReviews(handle: string): Promise<{ reviews: Review[]; count: number }> {
+  try {
+    const encodedHandle = encodeURIComponent(handle)
+    const res = await fetch(
+      `${BACKEND_URL}/store/seller/${encodedHandle}/reviews?limit=100`,
+      {
+        headers: {
+          'accept': 'application/json',
+          'x-publishable-api-key': PUB_KEY,
+        },
+        next: { revalidate: 300, tags: [`seller-reviews-${handle}`] },
+      }
+    )
+    if (!res.ok) return { reviews: [], count: 0 }
+    return res.json() as Promise<{ reviews: Review[]; count: number }>
+  } catch {
+    return { reviews: [], count: 0 }
+  }
+}
 
 export const ProductDetailsSellerReviews = async ({ seller }: { seller: SellerProps }) => {
   const { photo, name, handle } = seller
   
-  // ✅ FIXED: Fetch seller reviews with unified cache
-  const { reviews, count } = await unifiedCache.get(
-    `seller:reviews:${handle}`,
-    () => getSellerReviews(handle),
-    CACHE_TTL.PRODUCT
-  )
+  const { reviews, count } = await fetchSellerReviews(handle)
   
   // Filter out any null reviews
   const filteredReviews = reviews?.filter((r: Review | null): r is Review => r !== null) || []

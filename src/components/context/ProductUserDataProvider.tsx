@@ -56,36 +56,53 @@ export function ProductUserDataProvider({
 
     const fetchUserData = async () => {
       try {
-        // Fetch customer and wishlist in parallel
-        const [customerResponse, wishlistResponse, eligibilityResponse] = await Promise.allSettled([
-          fetch("/api/customer", { 
+        // Step 1: Check authentication first — skip all other calls for guests
+        const customerResult = await fetch("/api/customer", {
+          credentials: "include",
+          cache: "no-store",
+        }).then(r => r.ok ? r.json() : null).catch(() => null)
+
+        if (!isMounted) return
+
+        const customer = customerResult || null
+
+        if (!customer) {
+          // Guest user — no need to fetch wishlist or review eligibility
+          setUserData({
+            customer: null,
+            wishlist: [],
+            isAuthenticated: false,
+            isEligibleForReview: false,
+            hasPurchased: false,
+            isLoading: false,
+          })
+          return
+        }
+
+        // Step 2: Authenticated user — fetch wishlist and eligibility in parallel
+        const [wishlistResponse, eligibilityResponse] = await Promise.allSettled([
+          fetch("/api/wishlists", {
             credentials: "include",
-            cache: "no-store" 
-          }).then(r => r.ok ? r.json() : null),
-          
-          fetch("/api/wishlists", { 
-            credentials: "include",
-            cache: "no-store" 
+            cache: "no-store",
           }).then(r => r.ok ? r.json() : { wishlists: [] }),
-          
-          fetch(`/api/review-eligibility/${productId}`, { 
+
+          fetch(`/api/review-eligibility/${productId}`, {
             credentials: "include",
-            cache: "no-store" 
+            cache: "no-store",
           }).then(r => r.ok ? r.json() : { isEligible: false, hasPurchased: false }),
         ])
 
         if (!isMounted) return
 
-        const customer = customerResponse.status === "fulfilled" ? customerResponse.value : null
         const wishlistData = wishlistResponse.status === "fulfilled" ? wishlistResponse.value : { wishlists: [] }
-        const eligibility = eligibilityResponse.status === "fulfilled" 
-          ? eligibilityResponse.value 
+        const eligibility = eligibilityResponse.status === "fulfilled"
+          ? eligibilityResponse.value
           : { isEligible: false, hasPurchased: false }
 
         setUserData({
           customer,
           wishlist: wishlistData?.wishlists || [],
-          isAuthenticated: !!customer,
+          isAuthenticated: true,
           isEligibleForReview: eligibility?.isEligible || false,
           hasPurchased: eligibility?.hasPurchased || false,
           isLoading: false,

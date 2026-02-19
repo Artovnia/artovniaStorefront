@@ -9,6 +9,7 @@ interface ProductDetailsShippingWrapperProps {
   product: HttpTypes.StoreProduct
   locale: string
   region?: HttpTypes.StoreRegion | null
+  initialShippingOptions?: any[]
 }
 
 /**
@@ -19,7 +20,8 @@ interface ProductDetailsShippingWrapperProps {
 export function ProductDetailsShippingWrapper({ 
   product, 
   locale,
-  region: serverRegion
+  region: serverRegion,
+  initialShippingOptions
 }: ProductDetailsShippingWrapperProps) {
   const { cart } = useCart()
   
@@ -27,5 +29,11 @@ export function ProductDetailsShippingWrapper({
   // No client-side fetch needed - region is passed from ProductDetailsPage
   const region = cart?.region || serverRegion
   
-  return <ProductDetailsShipping product={product} region={region} />
+  return (
+    <ProductDetailsShipping
+      product={product}
+      region={region}
+      initialShippingOptions={initialShippingOptions}
+    />
+  )
 }

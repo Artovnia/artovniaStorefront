@@ -1,11 +1,11 @@
 "use client"
 
-import React, { createContext, useContext, useMemo } from "react"
-import { useRouter } from 'next/navigation'
+import React, { createContext, useContext, useMemo, useState, useCallback } from "react"
 import { useSearchParams } from 'next/navigation'
 
-// URL-First Variant Selection with Client-Side Navigation
-// Updates URL without full page reload, preserving React state and caches
+// URL-First Variant Selection — updates URL bar without triggering Next.js navigation.
+// router.replace() on a dynamic (ƒ) page causes a full server re-render on every variant
+// change. window.history.replaceState() updates the URL silently with zero network cost.
 
 type VariantSelectionContextType = {
   selectedVariantId: string
@@ -22,25 +22,29 @@ export const VariantSelectionProvider = ({
   children: React.ReactNode
   initialVariantId?: string
 }) => {
-  const router = useRouter()
   const searchParams = useSearchParams()
-  
-  // Read variant from URL only - no client state
-  const selectedVariantId = searchParams.get('variant') || initialVariantId
-  
-  // ✅ Client-side navigation - updates URL without page reload
-  // Preserves React state, caches, and prevents unnecessary refetches
-  const setSelectedVariantId = (id: string) => {
-    if (!id || id === selectedVariantId || !id.trim()) return
-    
-    // Build new URL with updated variant parameter
+
+  // Local state mirrors the URL — avoids re-reading searchParams on every render
+  const [localVariantId, setLocalVariantId] = useState<string>(
+    () => searchParams.get('variant') || initialVariantId
+  )
+
+  const selectedVariantId = localVariantId || initialVariantId
+
+  // Update URL bar silently — no Next.js navigation, no server re-render
+  const setSelectedVariantId = useCallback((id: string) => {
+    if (!id || id === localVariantId || !id.trim()) return
+
     const params = new URLSearchParams(searchParams.toString())
     params.set('variant', id)
-    
-    // ✅ Use Next.js router for client-side navigation (no page reload)
-    // scroll: false prevents scrolling to top on variant change
-    router.push(`?${params.toString()}`, { scroll: false })
-  }
+
+    // Use native History API — zero cost, no router involvement
+    if (typeof window !== 'undefined') {
+      window.history.replaceState(null, '', `?${params.toString()}`)
+    }
+
+    setLocalVariantId(id)
+  }, [localVariantId, searchParams])
   
   const contextValue = useMemo(() => ({
     selectedVariantId,

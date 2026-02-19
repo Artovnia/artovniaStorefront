@@ -3,7 +3,7 @@
 import { cache } from "react"
 import { revalidatePath } from "next/cache"
 import { sdk } from "../config"
-import { getAuthHeaders } from "./cookies" // Reverted to correct import path
+import { getAuthHeaders } from "./cookies" 
 import { HttpTypes } from "@medusajs/types"
 
 export type Review = {
@@ -71,10 +71,7 @@ const getReviews = async () => {
  */
 const getProductReviews = cache(async (productId: string) => {  
   try {
-    const headers = await getAuthHeaders()
-    
     const commonHeaders: Record<string, string> = {
-      ...headers,
       'Content-Type': 'application/json',
       'x-publishable-api-key': `${process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || ''}`
     }

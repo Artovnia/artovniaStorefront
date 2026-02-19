@@ -1,29 +1,36 @@
 "use server"
 
-import { sdk } from "../config"
-import medusaError from "@/lib/helpers/medusa-error"
 import { HttpTypes } from "@medusajs/types"
-import { getCacheOptions } from "./cookies"
 import { cache } from "react"
 
+// ✅ Use native fetch (no Authorization header) so Next.js Data Cache works.
+// sdk.client.fetch injects the JWT globally which busts next:{revalidate:3600}.
+const BACKEND_URL = process.env.MEDUSA_BACKEND_URL || process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || 'http://localhost:9000'
+const PUB_KEY = process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || ''
+
+const PUBLIC_HEADERS = {
+  'accept': 'application/json',
+  'x-publishable-api-key': PUB_KEY,
+}
+
 export const listRegions = async () => {
-  return sdk.client
-    .fetch<{ regions: HttpTypes.StoreRegion[] }>(`/store/regions`, {
-      method: "GET",
-      next: { revalidate: 3600 }, // Cache for 1 hour - regions rarely change
-    })
-    .then(({ regions }) => regions)
-    .catch(medusaError)
+  const res = await fetch(`${BACKEND_URL}/store/regions`, {
+    headers: PUBLIC_HEADERS,
+    next: { revalidate: 3600 },
+  })
+  if (!res.ok) throw new Error(`listRegions → ${res.status}`)
+  const { regions } = await res.json() as { regions: HttpTypes.StoreRegion[] }
+  return regions
 }
 
 export const retrieveRegion = async (id: string) => {
-  return sdk.client
-    .fetch<{ region: HttpTypes.StoreRegion }>(`/store/regions/${id}`, {
-      method: "GET",
-      next: { revalidate: 3600 }, // Cache for 1 hour
-    })
-    .then(({ region }) => region)
-    .catch(medusaError)
+  const res = await fetch(`${BACKEND_URL}/store/regions/${id}`, {
+    headers: PUBLIC_HEADERS,
+    next: { revalidate: 3600 },
+  })
+  if (!res.ok) throw new Error(`retrieveRegion → ${res.status}`)
+  const { region } = await res.json() as { region: HttpTypes.StoreRegion }
+  return region
 }
 
 // ⚠️ NOTE: Region selection is PER-USER (client-side selection in CountrySelector)

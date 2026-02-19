@@ -7,6 +7,7 @@ import { generateProductMetadata } from "@/lib/helpers/seo"
 import { ScrollToTop } from "@/components/utils/ScrollToTop"
 import type { Metadata } from "next"
 import { cache } from 'react'
+import { setRequestLocale } from 'next-intl/server'
 
 export const revalidate = 300
 
@@ -63,6 +64,11 @@ export default async function ProductPage({
   params: Promise<{ handle: string; locale: string }>
 }) {
   const { handle, locale } = await params
+  
+  // ✅ CRITICAL: Enable static rendering for next-intl
+  // This must be called BEFORE any next-intl APIs
+  // Without this, next-intl reads locale from headers() which sets cache-control: no-store
+  setRequestLocale(locale);
   
   // ✅ OPTIMIZATION: Get region first (cached by React cache())
   const region = await getRegion(locale)

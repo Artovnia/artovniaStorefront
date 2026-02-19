@@ -59,6 +59,39 @@ export async function buildProductBreadcrumbs(
 }
 
 /**
+ * Build breadcrumbs locally from already-fetched product.categories data.
+ * No network call — uses parent_category chain fetched by listProductsForDetail.
+ * This replaces buildProductBreadcrumbs for the product detail page SSR path.
+ */
+export function buildProductBreadcrumbsLocal(
+  product: ProductWithCategories,
+  locale: string = 'pl'
+): BreadcrumbItem[] {
+  const breadcrumbs: BreadcrumbItem[] = [
+    { label: 'Strona główna', path: '/' }
+  ]
+
+  const primaryCategory = product.categories?.[0]
+  if (!primaryCategory) return breadcrumbs
+
+  // Walk the parent_category chain from the fetched data (no network call)
+  const chain: Array<{ name: string; handle: string }> = []
+  let current: any = primaryCategory
+  while (current) {
+    if (current.name && current.handle) {
+      chain.unshift({ name: current.name, handle: current.handle })
+    }
+    current = current.parent_category || null
+  }
+
+  chain.forEach(cat => {
+    breadcrumbs.push({ label: cat.name, path: `/categories/${cat.handle}` })
+  })
+
+  return breadcrumbs
+}
+
+/**
  * Build category hierarchy from a category, including all parent categories
  * Returns categories in order from root to leaf
  */

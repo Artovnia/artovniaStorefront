@@ -11,6 +11,44 @@ import { fetchWithRetry } from "@/lib/utils/fetch-with-timeout"
 // Type for allowed sort keys in server-side product listing
 type SortOptions = "created_at" | "created_at_desc" | "created_at_asc" | "title" | "price" | "price_asc" | "price_desc" | "updated_at"
 
+// ─── Public fetch helper ────────────────────────────────────────────────────
+// Next.js Data Cache (next: { revalidate }) ONLY works when the fetch has NO
+// Authorization header. The Medusa SDK injects the JWT token globally on every
+// sdk.client.fetch() call, which busts the cache for every public request.
+// Use this helper for all public (unauthenticated) cacheable fetches.
+const BACKEND_URL = process.env.MEDUSA_BACKEND_URL || process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || 'http://localhost:9000'
+const PUB_KEY = process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || ''
+
+async function publicFetch<T>(
+  path: string,
+  params: Record<string, any>,
+  nextOptions: NextFetchRequestConfig,
+  sourceFunction?: string
+): Promise<T> {
+  const url = new URL(`${BACKEND_URL}${path}`)
+  Object.entries(params).forEach(([k, v]) => {
+    if (v === undefined || v === null) return
+    if (Array.isArray(v)) {
+      v.forEach(item => url.searchParams.append(k, String(item)))
+    } else {
+      url.searchParams.set(k, String(v))
+    }
+  })
+
+  const headers: Record<string, string> = {
+    'accept': 'application/json',
+    'x-publishable-api-key': PUB_KEY,
+  }
+  if (sourceFunction) headers['x-source-function'] = sourceFunction
+
+  const res = await fetch(url.toString(), { headers, next: nextOptions })
+  if (!res.ok) {
+    const body = await res.text().catch(() => '')
+    throw new Error(`publicFetch ${path} → ${res.status}: ${body}`)
+  }
+  return res.json() as Promise<T>
+}
+
 /**
  * Performs client-side ordering of product arrays when server sorting isn't applied.
  * Invoked in listProductsWithSort for non-created_at sorts.
@@ -118,13 +156,9 @@ export const listProductsLean = async ({
     }
   }
 
-  const headers = {
-    ...(await getAuthHeaders()),
-  }
-
   try {
     // ✅ OPTIMIZED: Minimal fields for homepage - stays under 2MB cache limit
-    const queryObject: any = {
+    const queryObject: Record<string, any> = {
       category_id,
       collection_id,
       limit,
@@ -132,37 +166,26 @@ export const listProductsLean = async ({
       region_id: region?.id,
       // ✅ LEAN FIELDS: Only essential data for display
       fields: "id,title,handle,thumbnail,description,created_at,status," +
-              "images.url," + // ✅ Added for thumbnail fallback
+              "images.url," +
               "variants.id,variants.title,variants.calculated_price," +
-              "seller.id,seller.handle,seller.store_name,seller.name," + // ✅ Added seller.name for ProductCard
+              "seller.id,seller.handle,seller.store_name,seller.name," +
               "categories.id,categories.name,categories.handle," +
               "collection.id,collection.handle,collection.title," +
-              "metadata.featured,metadata.seller_id,metadata.shipping_profile_name," + // ✅ Added for Google Merchant weight
-              "shipping_profile.name", // ✅ Added for Google Merchant weight calculation
+              "metadata.featured,metadata.seller_id,metadata.shipping_profile_name," +
+              "shipping_profile.name",
       ...queryParams,
     }
-    
-    if (seller_id) {
-      queryObject.seller_id = seller_id
-    }
-    
-    const { products, count } = await fetchWithRetry(
-      () => sdk.client.fetch<{
-        products: HttpTypes.StoreProduct[]
-        count: number
-      }>(`/store/products`, {
-        method: "GET",
-        query: queryObject,
-        headers,
-        next: { revalidate: 300, tags: ['products'] },
-      }),
-      {
-        timeout: process.env.NODE_ENV === 'development' ? 30000 : 15000,
-        maxRetries: 3,
-        onRetry: (attempt, error) => {
-          console.warn(`🔄 Retrying listProductsLean (attempt ${attempt}):`, error.message)
-        }
-      }
+
+    // seller_id is not a valid param on /store/products — use the seller-specific endpoint
+    const endpoint = seller_id ? `/store/seller/${seller_id}/products` : `/store/products`
+    const tags = seller_id ? ['products', `seller-${seller_id}`] : ['products']
+
+    // ✅ Use publicFetch (no Authorization header) so Next.js Data Cache works
+    const { products, count } = await publicFetch<{ products: HttpTypes.StoreProduct[]; count: number }>(
+      endpoint,
+      queryObject,
+      { revalidate: 300, tags },
+      'listProductsLean'
     )
 
     const nextPage = count > offset + limit ? pageParam + 1 : null
@@ -202,51 +225,35 @@ export const listProductsForDetail = async ({
   handle: string
   regionId: string
 }): Promise<HttpTypes.StoreProduct | null> => {
-  const headers = {
-    ...(await getAuthHeaders()),
-  }
-  
   try {
-    
-    const { products } = await sdk.client.fetch<{
-      products: HttpTypes.StoreProduct[]
-      count: number
-    }>(`/store/products`, {
-      method: "GET",
-      query: {
+    // ✅ Use publicFetch (no Authorization header) so Next.js Data Cache works
+    const { products } = await publicFetch<{ products: HttpTypes.StoreProduct[]; count: number }>(
+      '/store/products',
+      {
         handle,
         region_id: regionId,
         limit: 1,
-        // ✅ OPTIMIZED: Only fields actually needed for detail page
-        fields: 
-          // Basic product info
+        fields:
           "id,title,handle,description,thumbnail,created_at,status," +
-          // Images for gallery
           "images.id,images.url," +
-          // Metadata
           "metadata," +
-          // Product options (REQUIRED for ProductVariants component)
           "options.id,options.title,options.values.id,options.values.value," +
-          // Variants - SPECIFIC fields only (not *variants which fetches everything)
           "variants.id,variants.title," +
           "variants.calculated_price.calculated_amount,variants.calculated_price.currency_code," +
           "variants.inventory_quantity,variants.manage_inventory,variants.allow_backorder," +
           "variants.metadata," +
-          // Variant options with option details (REQUIRED for variant selection)
           "variants.options.id,variants.options.value,variants.options.option_id," +
           "variants.options.option.id,variants.options.option.title," +
-          // Seller - include photo/logo for display
           "seller.id,seller.handle,seller.name,seller.store_name,seller.photo,seller.logo_url," +
-          // Categories for breadcrumbs
           "categories.id,categories.name,categories.handle,categories.parent_category_id," +
-          // Collection (optional)
+          "categories.parent_category.id,categories.parent_category.name,categories.parent_category.handle,categories.parent_category.parent_category_id," +
+          "categories.parent_category.parent_category.id,categories.parent_category.parent_category.name,categories.parent_category.parent_category.handle," +
           "collection.id,collection.title,collection.handle," +
-          // Shipping profile name (for weight calculation)
           "shipping_profile.name"
       },
-      headers,
-      next: { revalidate: 300, tags: ['products'] },
-    })
+      { revalidate: 300, tags: ['products'] },
+      'listProductsForDetail'
+    )
     
     return products[0] || null
   } catch (error) {
@@ -331,6 +338,7 @@ export const listProducts = async ({
 
   const headers = {
     ...(await getAuthHeaders()),
+    'x-source-function': 'listProducts',
   }
 
   try {
@@ -575,10 +583,7 @@ export const listProductsWithPromotions = async ({
   }
   nextPage: number | null
 }> => {
-  const cacheKey = `products:promotions:${countryCode}:${page}:${limit}:${sortBy}:${promotion}:${seller}:${campaign}:${category}`
-  
-  return unifiedCache.get(cacheKey, async () => {
-    try {
+  try {
       // Get region for price calculation
       let region = await getRegion(countryCode.toLowerCase())
       if (!region) {
@@ -588,42 +593,26 @@ export const listProductsWithPromotions = async ({
         region = await getRegion("pl")
       }
 
-      const headers = { ...(await getAuthHeaders()) }
-
       // Build query parameters for custom promotions endpoint
-      const queryParams: any = {
+      const queryParams: Record<string, any> = {
         limit: limit || 50,
         offset: (page - 1) * (limit || 50),
         region_id: region?.id,
       }
 
-      if (sortBy) {
-        queryParams.sortBy = sortBy
-      }
-      if (promotion) {
-        queryParams.promotion = promotion
-      }
-      if (seller) {
-        queryParams.seller = seller
-      }
-      if (campaign) {
-        queryParams.campaign = campaign
-      }
-      if (category) {
-        queryParams.category = category
-      }
+      if (sortBy) queryParams.sortBy = sortBy
+      if (promotion) queryParams.promotion = promotion
+      if (seller) queryParams.seller = seller
+      if (campaign) queryParams.campaign = campaign
+      if (category) queryParams.category = category
 
-      // Use custom backend endpoint that returns products WITH promotions
-      const productsResponse = await sdk.client.fetch<{
+      // ✅ Use publicFetch (no Authorization header) so Next.js Data Cache works
+      const productsResponse = await publicFetch<{
         products: (HttpTypes.StoreProduct & { seller?: SellerProps, promotions?: any[], has_promotions?: boolean })[]
         count: number
         promotions_found?: number
         applicable_product_ids?: number
-      }>(`/store/products/promotions`, {
-        query: queryParams,
-        headers,
-        next: { revalidate: 300 },
-      })
+      }>('/store/products/promotions', queryParams, { revalidate: 300 })
 
       const products = productsResponse?.products || []
       const count = productsResponse?.count || 0
@@ -638,19 +627,16 @@ export const listProductsWithPromotions = async ({
         },
         nextPage,
       }
-    } catch (error) {
-      console.error('Error in listProductsWithPromotions:', error)
-      
-      // Fallback: return empty results
-      return {
-        response: {
-          products: [],
-          count: 0,
-        },
-        nextPage: null,
-      }
+  } catch (error) {
+    console.error('Error in listProductsWithPromotions:', error)
+    return {
+      response: {
+        products: [],
+        count: 0,
+      },
+      nextPage: null,
     }
-  }, CACHE_TTL.PROMOTIONS) // Use shorter TTL for promotional data
+  }
 }
 
 /**
@@ -663,44 +649,20 @@ export const listProductsWithPromotions = async ({
  */
 export const getProductShippingOptions = async (
   productId: string,
-  regionId: string,
-  headers: { [key: string]: string } = {},
-  next?: any
+  regionId: string
 ) => {
-  const cacheKey = `shipping:options:${productId}:${regionId}`
-  
-
-  return unifiedCache.get(cacheKey, async () => {
-    try {
-      const authHeaders = {
-        ...(await getAuthHeaders()),
-        ...headers
-      }
-
-      const cacheOptions = {
-        cache: "no-cache", // Always fresh for shipping options
-        ...next
-      }
-
-
-      const response = await sdk.client.fetch<{
-        shipping_options: any[]
-      }>(`/store/product-shipping-options`, {
-        method: "GET",
-        headers: authHeaders,
-        next: cacheOptions,
-        query: {
-          product_id: productId,
-          region_id: regionId
-        }
-      })
-
-      return response.shipping_options || []
-    } catch (error) {
-      console.error(`❌ Frontend: Error fetching shipping options for product ${productId}:`, error)
-      return []
-    }
-  }, CACHE_TTL.PRODUCT)
+  try {
+    // ✅ Use publicFetch (no Authorization header) so Next.js Data Cache works
+    const response = await publicFetch<{ shipping_options: any[] }>(
+      '/store/product-shipping-options',
+      { product_id: productId, region_id: regionId },
+      { revalidate: 300, tags: [`shipping-${productId}`] }
+    )
+    return response.shipping_options || []
+  } catch (error) {
+    console.error(`❌ Frontend: Error fetching shipping options for product ${productId}:`, error)
+    return []
+  }
 }
 
 /**
@@ -776,28 +738,30 @@ export const listSuggestedProducts = async ({
     }
   }
 
-  // ✅ OPTIMIZATION: Fetch ALL category levels + fallback IN PARALLEL
-  const fetchPromises = [
-    // Category-based fetches
-    ...categoryChain.map(cat => 
-      listProductsLean({
-        category_id: cat.id,
-        regionId,
-        queryParams: { limit: limit + 4 }, // Fetch extra to account for duplicates
-      }).then(r => ({ 
-        products: r.response.products || [], 
-        priority: categoryChain.indexOf(cat) // Lower = higher priority
-      })).catch(() => ({ products: [], priority: 999 }))
-    ),
-    // General fallback (lowest priority)
-    listProductsLean({
-      regionId,
-      queryParams: { limit: limit + 4 },
-    }).then(r => ({ 
-      products: r.response.products || [], 
-      priority: 100 // Lower priority than categories
-    })).catch(() => ({ products: [], priority: 999 }))
-  ]
+  // ✅ OPTIMIZATION: Fetch category levels in parallel.
+  // Only use the bare fallback when the product has NO categories at all.
+  // Firing it unconditionally adds a wasted /store/products?limit=12 on every product page.
+  const fetchPromises = categoryChain.length > 0
+    ? categoryChain.map(cat =>
+        listProductsLean({
+          category_id: cat.id,
+          regionId,
+          queryParams: { limit: limit + 4 }, // Fetch extra to account for duplicates
+        }).then(r => ({
+          products: r.response.products || [],
+          priority: categoryChain.indexOf(cat) // Lower = higher priority
+        })).catch(() => ({ products: [], priority: 999 }))
+      )
+    : [
+        // No categories — use general fallback as the only source
+        listProductsLean({
+          regionId,
+          queryParams: { limit: limit + 4 },
+        }).then(r => ({
+          products: r.response.products || [],
+          priority: 100
+        })).catch(() => ({ products: [], priority: 999 }))
+      ]
 
   // Wait for all fetches to complete in parallel
   const results = await Promise.all(fetchPromises)

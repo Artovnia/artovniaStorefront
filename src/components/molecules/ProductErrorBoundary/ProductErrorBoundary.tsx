@@ -112,27 +112,20 @@ export class ProductErrorBoundary extends Component<Props, State> {
 
   private async logToExternalService(errorDetails: any) {
     try {
-      // In a real app, you'd send to your error tracking service
-      // For now, we'll use a simple endpoint or localStorage backup
-      if (typeof window !== 'undefined') {
-        const existingErrors = JSON.parse(localStorage.getItem('productPageErrors') || '[]')
-        existingErrors.push(errorDetails)
-        
-        // Keep only last 10 errors to prevent localStorage bloat
-        if (existingErrors.length > 10) {
-          existingErrors.splice(0, existingErrors.length - 10)
-        }
-        
-        localStorage.setItem('productPageErrors', JSON.stringify(existingErrors))
+      // Log to console only — no localStorage accumulation to prevent memory bloat
+      if (process.env.NODE_ENV === 'development') {
+        console.debug('[ProductErrorBoundary] Error logged:', errorDetails.errorId)
       }
     } catch (logError) {
-      console.error('Failed to log error externally:', logError)
+      // Ignore logging errors
     }
   }
 
   private handleRetry = () => {
     if (this.retryCount < this.maxRetries) {
       this.retryCount++
+      // Reset error state so children re-render on retry
+      this.setState({ hasError: false, error: undefined, errorInfo: undefined })
     }
   }
 

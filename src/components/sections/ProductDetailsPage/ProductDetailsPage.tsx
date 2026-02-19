@@ -4,11 +4,11 @@ import { VendorAvailabilityProvider } from "../../../components/organisms/Vendor
 import { BatchPriceProvider } from "@/components/context/BatchPriceProvider"
 import { PromotionDataProvider } from "@/components/context/PromotionDataProvider"
 import { ProductUserDataProvider } from "@/components/context/ProductUserDataProvider"
-import { listProducts, listProductsWithPromotions, listSuggestedProducts } from "../../../lib/data/products"
+import { listProductsLean, listProductsWithPromotions, listSuggestedProducts, getProductShippingOptions } from "../../../lib/data/products"
 import { getVendorCompleteStatus } from "../../../lib/data/vendor-availability"
 import ProductErrorBoundary from "@/components/molecules/ProductErrorBoundary/ProductErrorBoundary"
 import { Breadcrumbs } from "@/components/atoms/Breadcrumbs/Breadcrumbs"
-import { buildProductBreadcrumbs } from "@/lib/utils/breadcrumbs"
+import { buildProductBreadcrumbsLocal } from "@/lib/utils/breadcrumbs"
 import { getProductReviews } from "@/lib/data/reviews"
 import { generateProductJsonLd, generateBreadcrumbJsonLd } from "@/lib/helpers/seo"
 import { Link } from "@/i18n/routing"
@@ -50,33 +50,27 @@ export const ProductDetailsPage = async ({
     vendorStatusResult,
     breadcrumbsResult,
     promotionalProductsResult,
+    shippingOptionsResult,
     variantAttributesResult,
     categoryProductsResult,
     productPricesResult,
   ] = await Promise.allSettled([
-    // Seller products - fetch ALL 8 products by seller_id
+    // Seller products — lean fields only (cards don't need full product payload)
     product.seller?.id && region
-      ? (async () => {
-          const { response } = await listProducts({
-            seller_id: product.seller!.id,
-            regionId: region.id,
-            queryParams: { limit: 8 },
-          })
-          return response.products
-        })()
+      ? listProductsLean({
+          seller_id: product.seller!.id,
+          regionId: region.id,
+          queryParams: { limit: 8 },
+        }).then(r => r.response.products).catch(() => [])
       : Promise.resolve([]),
 
     // Reviews (public data, can be cached)
     getProductReviews(product.id).catch(() => ({ reviews: [] })),
 
-    // ✅ OPTIMIZED: Batched vendor status (3 requests → 1 request)
+    // Vendor status — no Promise.race wrapper (causes memory leaks/unhandled rejections)
+    // getVendorCompleteStatus has its own AbortSignal.timeout(10000) internally
     product.seller?.id
-      ? Promise.race([
-          getVendorCompleteStatus(product.seller.id),
-          new Promise((_, reject) =>
-            setTimeout(() => reject(new Error("Timeout")), 500)
-          ),
-        ]).catch(() => ({
+      ? getVendorCompleteStatus(product.seller.id).catch(() => ({
           availability: undefined,
           holiday: undefined,
           suspension: undefined,
@@ -87,14 +81,19 @@ export const ProductDetailsPage = async ({
           suspension: undefined,
         }),
 
-    // Breadcrumbs (local computation, fast)
-    buildProductBreadcrumbs(product, locale),
+    // Breadcrumbs — built locally from product.categories (no network call)
+    Promise.resolve(buildProductBreadcrumbsLocal(product, locale)),
 
-    // ✅ OPTIMIZED: Reduced limit from 50 to 20 for promotional products
+    // Promotional products — limit 50 to match client default (prevents flash of content change)
     listProductsWithPromotions({
       countryCode: locale,
-      limit: 20
+      limit: 50
     }).then(r => r.response.products).catch(() => []),
+
+    // Shipping options — server-side fetch with revalidate:300 (no client-side fetch needed)
+    product.id && region?.id
+      ? getProductShippingOptions(product.id, region.id).catch(() => [])
+      : Promise.resolve([]),
 
     // ✅ OPTIMIZATION: Prefetch initial variant attributes on server
     initialVariantId
@@ -142,12 +141,17 @@ export const ProductDetailsPage = async ({
  
   const promotionalProducts =
     promotionalProductsResult.status === "fulfilled"
-      ? promotionalProductsResult.value
+      ? (promotionalProductsResult.value as any[])
+      : []
+
+  const initialShippingOptions =
+    shippingOptionsResult.status === "fulfilled"
+      ? (shippingOptionsResult.value as any[])
       : []
 
   const initialVariantAttributes =
     variantAttributesResult.status === "fulfilled"
-      ? variantAttributesResult.value
+      ? (variantAttributesResult.value as { attribute_values: any[] })
       : { attribute_values: [] }
 
   const suggestedProductsData =
@@ -157,7 +161,6 @@ export const ProductDetailsPage = async ({
 
   const suggestedProducts = suggestedProductsData.products
 
-  // ✅ OPTIMIZATION: Product prices fetched in parallel, now merge with seller/suggested prices
   const productPrices = productPricesResult.status === "fulfilled"
     ? productPricesResult.value as Record<string, any>
     : {}
@@ -228,11 +231,12 @@ export const ProductDetailsPage = async ({
           <Breadcrumbs items={breadcrumbs} />
         </div>
 
-        {/* ✅ OPTIMIZED: Seller products first, then promotional products (promotional override seller) */}
+        {/* Promotion data — serverDataProvided=true prevents client re-fetch even when no active promotions */}
         <PromotionDataProvider 
           countryCode={locale} 
-          limit={20}
+          limit={50}
           initialData={[...sellerProducts, ...promotionalProducts]}
+          serverDataProvided={true}
         >
           <BatchPriceProvider 
             currencyCode="PLN"
@@ -268,6 +272,7 @@ export const ProductDetailsPage = async ({
                         locale={locale}
                         region={region}
                         initialVariantAttributes={initialVariantAttributes}
+                        initialShippingOptions={initialShippingOptions}
                       />
                     ) : (
                       <div className="p-4 bg-red-50 text-red-800 rounded">

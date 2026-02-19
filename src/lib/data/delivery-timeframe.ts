@@ -1,7 +1,9 @@
 "use server"
 
-import { sdk } from "../config"
-import { unifiedCache, CACHE_TTL } from "@/lib/utils/unified-cache"
+// ✅ Use native fetch (no Authorization header) so Next.js Data Cache works.
+// sdk.client.fetch injects the JWT globally which busts next:{revalidate:300}.
+const BACKEND_URL = process.env.MEDUSA_BACKEND_URL || process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || 'http://localhost:9000'
+const PUB_KEY = process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || ''
 
 /**
  * Delivery Timeframe Types
@@ -26,30 +28,24 @@ export const getProductDeliveryTimeframe = async (
 ): Promise<DeliveryTimeframe | null> => {
   if (!productId) return null
 
-  const cacheKey = `delivery-timeframe:${productId}`
-
-  return unifiedCache.get(
-    cacheKey,
-    async () => {
-      try {
-        const response = await sdk.client.fetch<{
-          delivery_timeframe: DeliveryTimeframe | null
-        }>(`/store/products/${productId}/delivery-timeframe`, {
-          method: "GET",
-          next: { revalidate: 300, tags: ["delivery-timeframe", `product-${productId}`] },
-        })
-
-        return response.delivery_timeframe
-      } catch (error) {
-        console.error(
-          `❌ getProductDeliveryTimeframe: Failed to fetch for product ${productId}:`,
-          error
-        )
-        return null
+  try {
+    const res = await fetch(
+      `${BACKEND_URL}/store/products/${productId}/delivery-timeframe`,
+      {
+        headers: {
+          'accept': 'application/json',
+          'x-publishable-api-key': PUB_KEY,
+        },
+        next: { revalidate: 300, tags: ['delivery-timeframe', `product-${productId}`] },
       }
-    },
-    CACHE_TTL.PRODUCT
-  )
+    )
+    if (!res.ok) return null
+    const data = await res.json() as { delivery_timeframe: DeliveryTimeframe | null }
+    return data.delivery_timeframe
+  } catch (error) {
+    console.error(`❌ getProductDeliveryTimeframe: Failed to fetch for product ${productId}:`, error)
+    return null
+  }
 }
 
 /**

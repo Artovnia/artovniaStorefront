@@ -1,5 +1,6 @@
 // src/lib/data/cookies.ts
 // Universal cookie implementation that works in both client and server contexts
+import { cache } from 'react';
 import { getPublishableApiKey } from '../get-publishable-key';
 import { sdk } from '../config';
 import { HttpTypes } from "@medusajs/types"
@@ -77,42 +78,53 @@ const removeBrowserCookie = (name: string) => {
   document.cookie = `${name}=; Max-Age=-1; Path=/`;
 };
 
+// Server-side getAuthHeaders deduplicated per request via React.cache().
+// On the client side React.cache() is a no-op, so the function runs normally.
+const _getAuthHeadersServer = cache(async (): Promise<
+  { authorization: string; 'x-publishable-api-key': string } | { 'x-publishable-api-key': string }
+> => {
+  const publishableKey = process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || '';
+
+  if (process.env.NEXT_PHASE === 'phase-production-build' ||
+      process.env.NEXT_PHASE === 'phase-export') {
+    return { 'x-publishable-api-key': publishableKey };
+  }
+
+  try {
+    const serverCookies = await getServerCookies();
+    const token = serverCookies?.get('_medusa_jwt')?.value || null;
+    const isValidToken = token && token.split('.').length === 3 && token.length > 50;
+    return isValidToken
+      ? { authorization: `Bearer ${token}`, 'x-publishable-api-key': publishableKey }
+      : { 'x-publishable-api-key': publishableKey };
+  } catch {
+    return { 'x-publishable-api-key': publishableKey };
+  }
+});
+
 // Simple auth headers - no complex caching
 export const getAuthHeaders = async (): Promise<
   { authorization: string; 'x-publishable-api-key': string } | { 'x-publishable-api-key': string }
 > => {
-  // Get publishable key
   const publishableKey = process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || '';
-  
+
   // Skip during static generation
-  if (process.env.NEXT_PHASE === 'phase-production-build' || 
+  if (process.env.NEXT_PHASE === 'phase-production-build' ||
       process.env.NEXT_PHASE === 'phase-export') {
     return { 'x-publishable-api-key': publishableKey };
   }
-  
-  // Get token
-  let token: string | null = null;
-  
+
+  // Client-side: read directly from browser cookie (React.cache is no-op on client)
   if (isBrowser) {
-    token = getBrowserCookie('_medusa_jwt');
-  } else {
-    try {
-      const serverCookies = await getServerCookies();
-      token = serverCookies?.get('_medusa_jwt')?.value || null;
-    } catch {
-      token = null;
-    }
+    const token = getBrowserCookie('_medusa_jwt');
+    const isValidToken = token && token.split('.').length === 3 && token.length > 50;
+    return isValidToken
+      ? { authorization: `Bearer ${token}`, 'x-publishable-api-key': publishableKey }
+      : { 'x-publishable-api-key': publishableKey };
   }
 
-  // Validate token format
-  const isValidToken = token && token.split('.').length === 3 && token.length > 50;
-
-  return isValidToken ? {
-    authorization: `Bearer ${token}`,
-    'x-publishable-api-key': publishableKey
-  } : {
-    'x-publishable-api-key': publishableKey
-  };
+  // Server-side: deduplicated via React.cache() — one cookie read per request
+  return _getAuthHeadersServer();
 };
 
 // ✅ FIXED: Client-only request deduplication for retrieveCustomer

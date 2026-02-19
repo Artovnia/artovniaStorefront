@@ -33,7 +33,9 @@ export const ProductDetailsMeasurements = ({
   const [isLoading, setIsLoading] = useState(false);
   const [hasError, setHasError] = useState(false);
   const [isPending, startTransition] = useTransition();
-  const [hasFetchedInitial, setHasFetchedInitial] = useState(safeInitialMeasurements.length > 0);
+  // hasFetchedInitial is true when the server already attempted a fetch (prop was passed, even if empty).
+  // Using prop presence (initialMeasurements !== undefined) prevents a redundant client re-fetch.
+  const [hasFetchedInitial, setHasFetchedInitial] = useState(initialMeasurements !== undefined);
   
   // Track request cache to avoid duplicate requests
   const requestCacheRef = useRef(new Map<string, Promise<SingleProductMeasurement[]>>());

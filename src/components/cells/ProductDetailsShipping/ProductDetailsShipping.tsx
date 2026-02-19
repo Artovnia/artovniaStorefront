@@ -1,7 +1,6 @@
 "use client"
 
 import { ProductPageAccordion } from '@/components/molecules';
-import { calculatePriceForShippingOption } from "@/lib/data/fulfillment"
 import { convertToLocale } from "@/lib/helpers/money"
 import { getProductShippingOptions } from "@/lib/data/products"
 import { HttpTypes } from "@medusajs/types"
@@ -12,19 +11,29 @@ import { LoaderWrapper } from "@/components/atoms/icons/IconWrappers"
 type ProductDetailsShippingProps = {
   product: HttpTypes.StoreProduct
   region: HttpTypes.StoreRegion | null | undefined
+  initialShippingOptions?: any[]
 }
 
 export const ProductDetailsShipping = ({
   product,
   region,
+  initialShippingOptions,
 }: ProductDetailsShippingProps) => {
-  const [shippingMethods, setShippingMethods] = useState<any[]>([])
-  const [loading, setLoading] = useState(true)
+  // When server-fetched options are provided, use them directly (no client fetch)
+  const [shippingMethods, setShippingMethods] = useState<any[]>(
+    initialShippingOptions ?? []
+  )
+  const [loading, setLoading] = useState(!initialShippingOptions)
   const [error, setError] = useState<string | null>(null)
-  const [calculatedPricesMap, setCalculatedPricesMap] = useState<Record<string, number>>({})
-  const [isLoadingPrices, setIsLoadingPrices] = useState(false)
 
   useEffect(() => {
+    // Skip client-side fetch if server already provided shipping options
+    if (initialShippingOptions) {
+      setShippingMethods(initialShippingOptions)
+      setLoading(false)
+      return
+    }
+
     const fetchShippingMethods = async () => {
       if (!product?.id || !region?.id) {
         setLoading(false)
@@ -35,15 +44,8 @@ export const ProductDetailsShipping = ({
       try {
         setLoading(true)
         setError(null)
-        
-        // Call getProductShippingOptions directly - it has its own caching
         const shippingOptions = await getProductShippingOptions(product.id, region.id)
-
-     
-
-        // Don't filter by seller - show all shipping options for the product's shipping profile
-        let filteredMethods = shippingOptions
-        setShippingMethods(filteredMethods)
+        setShippingMethods(shippingOptions)
       } catch (err) {
         console.error("ProductDetailsShipping: Error fetching shipping methods:", err)
         setError("Failed to load shipping methods")
@@ -54,38 +56,7 @@ export const ProductDetailsShipping = ({
     }
 
     fetchShippingMethods()
-  }, [product?.id, region?.id, product?.seller?.id])
-
-  // Calculate prices for calculated shipping methods
-  useEffect(() => {
-    if (!shippingMethods?.length) return
-
-    const calculatedMethods = shippingMethods.filter((method) => method.price_type === "calculated")
-    if (!calculatedMethods.length) return
-
-    setIsLoadingPrices(true)
-
-    const promises = calculatedMethods.map((method) => 
-      calculatePriceForShippingOption(method.id, 'temp')
-    )
-
-    Promise.allSettled(promises).then((results) => {
-      const pricesMap: Record<string, number> = {}
-      results
-        .filter((result) => result.status === "fulfilled")
-        .forEach((result) => {
-          const data = (result as PromiseFulfilledResult<any>).value
-          if (data?.id && data?.amount) {
-            pricesMap[data.id] = data.amount
-          }
-        })
-
-      setCalculatedPricesMap(pricesMap)
-      setIsLoadingPrices(false)
-    }).catch(() => {
-      setIsLoadingPrices(false)
-    })
-  }, [shippingMethods])
+  }, [product?.id, region?.id, initialShippingOptions])
 
   return (
     <ProductPageAccordion
@@ -123,25 +94,17 @@ export const ProductDetailsShipping = ({
                       )}
                     </div>
                     <div className="text-right ml-4">
-                      {method.price_type === "flat" && method.prices?.[0]?.amount ? (
+                      {method.amount != null ? (
                         <Text className="font-semibold text-ui-fg-base font-instrument-sans text-sm tracking-tight">
                           {convertToLocale({
-                            amount: method.prices[0].amount,
-                            currency_code: method.prices[0].currency_code || region?.currency_code || 'PLN',
+                            amount: method.amount,
+                            currency_code: method.prices?.[0]?.currency_code || region?.currency_code || 'PLN',
                           })}
                         </Text>
-                      ) : calculatedPricesMap[method.id] ? (
-                        <Text className="font-semibold text-ui-fg-base font-instrument-sans text-sm tracking-tight">
-                          {convertToLocale({
-                            amount: calculatedPricesMap[method.id],
-                            currency_code: region?.currency_code || 'PLN',
-                          })}
+                      ) : method.price_type === "calculated" ? (
+                        <Text className="text-xs text-ui-fg-muted font-instrument-sans opacity-75">
+                          Cena do ustalenia
                         </Text>
-                      ) : isLoadingPrices ? (
-                        <div className="flex items-center gap-1.5">
-                          <LoaderWrapper className="w-3 h-3" />
-                          <Text className="text-xs text-ui-fg-muted font-instrument-sans">Obliczanie...</Text>
-                        </div>
                       ) : (
                         <Text className="text-xs text-ui-fg-muted font-instrument-sans opacity-75">
                           Cena do ustalenia

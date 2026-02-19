@@ -42,20 +42,19 @@ export const BatchPriceProvider: React.FC<BatchPriceProviderProps> = ({
   // Cleanup mechanism to prevent memory leaks
   useEffect(() => {
     return () => {
-      // Clear all registered variants on unmount
+      // Clear registered variants on unmount (local state only)
+      // NOTE: Do NOT invalidate unifiedCache here — price data should persist
+      // across navigation to avoid re-fetching on back/forward navigation.
       setRegisteredVariants(new Set())
-      
-      // 🧹 Clear related cache entries to prevent memory leaks
-      if (process.env.NODE_ENV === 'development') {
-     
-      }
-      unifiedCache.invalidate('price:')
     }
   }, [])
   
-  // ✅ OPTIMIZATION: Merge preloaded and registered variants
+  // ✅ OPTIMIZATION: Merge preloaded and registered variants, filtering out empty/blank IDs
   const variantIds = useMemo(() => {
-    const merged = new Set([...preloadVariantIds.filter(Boolean), ...registeredVariants])
+    const merged = new Set([
+      ...preloadVariantIds.filter(id => id && id.trim().length > 0),
+      ...[...registeredVariants].filter(id => id && id.trim().length > 0)
+    ])
     return Array.from(merged)
   }, [registeredVariants, preloadVariantIds])
 

@@ -58,46 +58,62 @@ export function useBatchLowestPrices({
   const hasCachedDataRef = useRef<boolean>(initialData !== null)
 
   const fetchBatchLowestPrices = useCallback(async (): Promise<Record<string, LowestPriceData | null>> => {
-    if (variantIds.length === 0) {
+    // Filter out any empty/blank IDs before proceeding
+    const validIds = variantIds.filter(id => id && id.trim().length > 0)
+    if (validIds.length === 0) {
       return {}
+    }
+
+    const CHUNK_SIZE = 50
+
+    const fetchChunk = async (
+      chunkIds: string[],
+      baseUrl: string,
+      publishableKey: string
+    ): Promise<Record<string, LowestPriceData | null>> => {
+      const url = new URL(`${baseUrl}/store/variants/lowest-prices-batch`)
+      url.searchParams.set('variant_ids', chunkIds.join(','))
+      url.searchParams.set('currency_code', currencyCode)
+      if (regionId) {
+        url.searchParams.set('region_id', regionId)
+      }
+      url.searchParams.set('days', days.toString())
+
+      const response = await fetch(url.toString(), {
+        method: 'GET',
+        headers: {
+          'x-publishable-api-key': publishableKey,
+          'x-source-function': 'useBatchLowestPrices',
+        },
+      })
+
+      if (!response.ok) {
+        const errorText = await response.text()
+        console.error('[useBatchLowestPrices] Response error:', errorText)
+        throw new Error(`Failed to fetch batch lowest prices: ${response.statusText}`)
+      }
+
+      const result = await response.json()
+      return result.results || {}
     }
 
     const fetchFn = async (): Promise<Record<string, LowestPriceData | null>> => {
       try {
         const baseUrl = process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || 'http://localhost:9000'
-        
-        // Get the publishable API key
         const publishableKey = await getPublishableApiKey()
-        
-        // Build URL with query parameters for GET request
-        const url = new URL(`${baseUrl}/store/variants/lowest-prices-batch`)
-        url.searchParams.set('variant_ids', Array.from(variantIds).join(','))
-        url.searchParams.set('currency_code', currencyCode)
-        if (regionId) {
-          url.searchParams.set('region_id', regionId)
-        }
-        url.searchParams.set('days', days.toString())
 
-        const response = await fetch(url.toString(), {
-          method: 'GET',
-          headers: {
-            'x-publishable-api-key': publishableKey,
-          },
-        })
-
-  
-
-        if (!response.ok) {
-          const errorText = await response.text()
-          console.error('[useBatchLowestPrices] Response error:', errorText)
-          throw new Error(`Failed to fetch batch lowest prices: ${response.statusText}`)
+        // Split into chunks of CHUNK_SIZE and fetch in parallel
+        const chunks: string[][] = []
+        for (let i = 0; i < validIds.length; i += CHUNK_SIZE) {
+          chunks.push(validIds.slice(i, i + CHUNK_SIZE))
         }
 
-        const result = await response.json()
-        
-        const data = result.results || {}
-        
-        return data
+        const chunkResults = await Promise.all(
+          chunks.map(chunk => fetchChunk(chunk, baseUrl, publishableKey))
+        )
+
+        // Merge all chunk results into a single record
+        return Object.assign({}, ...chunkResults)
       } catch (error) {
         console.error('[useBatchLowestPrices] Error fetching batch lowest prices:', error)
         throw error

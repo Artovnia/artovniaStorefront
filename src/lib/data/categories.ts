@@ -1,8 +1,24 @@
-import { sdk } from "@/lib/config"
 import { HttpTypes } from "@medusajs/types"
 import { cache } from "react"
 // unstable_cache breaks when called from client components (Header.tsx)
 // Using React cache() for request deduplication instead
+
+// ✅ Use native fetch (no Authorization header) so Next.js Data Cache works.
+// sdk.client.fetch injects the JWT globally which busts next:{revalidate} on every request.
+const BACKEND_URL = process.env.MEDUSA_BACKEND_URL || process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || 'http://localhost:9000'
+const PUB_KEY = process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || ''
+const PUBLIC_HEADERS = { 'accept': 'application/json', 'x-publishable-api-key': PUB_KEY }
+
+async function categoryFetch<T>(path: string, params: Record<string, any>, nextOpts: NextFetchRequestConfig): Promise<T> {
+  const url = new URL(`${BACKEND_URL}${path}`)
+  Object.entries(params).forEach(([k, v]) => {
+    if (v === undefined || v === null) return
+    url.searchParams.set(k, String(v))
+  })
+  const res = await fetch(url.toString(), { headers: PUBLIC_HEADERS, next: nextOpts })
+  if (!res.ok) throw new Error(`categoryFetch ${path} → ${res.status}`)
+  return res.json() as Promise<T>
+}
 
 interface CategoriesProps {
   query?: {
@@ -28,17 +44,11 @@ interface CategoryWithMpath extends HttpTypes.StoreProductCategory {
  */
 const getCategoriesWithProductsFromDatabaseImpl = async (): Promise<Set<string>> => {
   try {
-    // ✅ OPTIMIZED: Use dedicated backend endpoint instead of fetching 1000 products
-    const response = await sdk.client.fetch<{
-      category_ids: string[]
-      count: number
-    }>("/store/product-categories/categories-with-products", {
-      next: { 
-        revalidate: 86400, // 24h Next.js cache
-        tags: ['categories', 'products']
-      },
-    })
-
+    const response = await categoryFetch<{ category_ids: string[]; count: number }>(
+      '/store/product-categories/categories-with-products',
+      {},
+      { revalidate: 86400, tags: ['categories', 'products'] }
+    )
     const categoryIds = response?.category_ids || []
     return new Set(categoryIds)
   } catch (error) {
@@ -59,18 +69,11 @@ const listCategoriesImpl = async (): Promise<{
   categories: HttpTypes.StoreProductCategory[]
 }> => {
   try {
-    const response = await sdk.client.fetch<
-      HttpTypes.StoreProductCategoryListResponse
-    >("/store/product-categories", {
-      query: {
-        fields: "id, handle, name, rank, parent_category_id, mpath",
-        limit: 1000,
-      },
-      next: { 
-        revalidate: 3600, // 1h Next.js cache
-        tags: ['categories']
-      },
-    })
+    const response = await categoryFetch<HttpTypes.StoreProductCategoryListResponse>(
+      '/store/product-categories',
+      { fields: 'id,handle,name,rank,parent_category_id,mpath', limit: 1000 },
+      { revalidate: 3600, tags: ['categories'] }
+    )
   
     const allCategories = response?.product_categories || []
     const hierarchicalCategories = buildCategoryTree(allCategories)
@@ -171,17 +174,16 @@ export const listCategoriesWithProducts = async (): Promise<{
 }> => {
   try {
     // Step 1: Fetch ONLY parent categories with full descendants tree
-    const parentResponse = await sdk.client.fetch<
-      HttpTypes.StoreProductCategoryListResponse
-    >("/store/product-categories", {
-      query: {
-        fields: "+category_children.id,+category_children.name,+category_children.handle,+category_children.rank,+category_children.category_children.id,+category_children.category_children.name,+category_children.category_children.handle,+category_children.category_children.rank",
-        parent_category_id: "null", // Only root categories
+    const parentResponse = await categoryFetch<HttpTypes.StoreProductCategoryListResponse>(
+      '/store/product-categories',
+      {
+        fields: '+category_children.id,+category_children.name,+category_children.handle,+category_children.rank,+category_children.category_children.id,+category_children.category_children.name,+category_children.category_children.handle,+category_children.category_children.rank',
+        parent_category_id: 'null',
         include_descendants_tree: true,
         limit: 50,
       },
-      next: { revalidate: 3600 },
-    })
+      { revalidate: 3600 }
+    )
 
     const parentCategories = parentResponse?.product_categories || []
 
@@ -315,16 +317,10 @@ async function getEssentialCategories(): Promise<{
   categories: HttpTypes.StoreProductCategory[]
 }> {
   try {
-    const response = await sdk.client.fetch<HttpTypes.StoreProductCategoryListResponse>(
-      `/store/product-categories`,
-      {
-        query: {
-          fields: "id, handle, name, rank, parent_category_id",
-          limit: 50, // Only fetch top-level categories
-        },
-        cache: "force-cache",
-        next: { revalidate: 300 }
-      }
+    const response = await categoryFetch<HttpTypes.StoreProductCategoryListResponse>(
+      '/store/product-categories',
+      { fields: 'id,handle,name,rank,parent_category_id', limit: 50 },
+      { revalidate: 300 }
     )
     
     const allCategories = response?.product_categories || []
@@ -357,16 +353,12 @@ async function getEssentialCategories(): Promise<{
 export const getCategoryHierarchy = async (categoryHandle: string): Promise<HttpTypes.StoreProductCategory[]> => {
   try {
     // Step 1: Fetch only the target category with mpath field
-    const { product_categories: targetCategories } = await sdk.client.fetch<{
+    const { product_categories: targetCategories } = await categoryFetch<{
       product_categories: CategoryWithMpath[]
-    }>("/store/product-categories", {
-      query: {
-        fields: "id, handle, name, rank, parent_category_id, mpath",
-        handle: categoryHandle,
-      },
-      cache: "force-cache",
-      next: { revalidate: 3600 }
-    })
+    }>('/store/product-categories', {
+      fields: 'id,handle,name,rank,parent_category_id,mpath',
+      handle: categoryHandle,
+    }, { revalidate: 3600 })
 
     const targetCategory = targetCategories?.[0]
     if (!targetCategory) {
@@ -391,23 +383,19 @@ export const getCategoryHierarchy = async (categoryHandle: string): Promise<Http
       return [targetCategory]
     }
 
-    const { product_categories: parentCategories } = await sdk.client.fetch<{
+    const { product_categories: parentCategories } = await categoryFetch<{
       product_categories: CategoryWithMpath[]
-    }>("/store/product-categories", {
-      query: {
-        fields: "id, handle, name, rank, parent_category_id, mpath",
-        id: parentIds,
-      },
-      cache: "force-cache",
-      next: { revalidate: 3600 }
-    })
+    }>('/store/product-categories', {
+      fields: 'id,handle,name,rank,parent_category_id,mpath',
+      id: parentIds.join(','),
+    }, { revalidate: 3600 })
 
     // Step 4: Build hierarchy in correct order (root to leaf)
     const hierarchy: CategoryWithMpath[] = []
     
     // Add parents in order based on mpath
     categoryIds.slice(0, -1).forEach((id: string) => {
-      const parent = parentCategories.find(cat => cat.id === id)
+      const parent = parentCategories.find((cat: CategoryWithMpath) => cat.id === id)
       if (parent) {
         hierarchy.push(parent)
       }
@@ -431,23 +419,19 @@ export const getCategoryHierarchy = async (categoryHandle: string): Promise<Http
 export const getAllDescendantCategoryIds = async (categoryId: string): Promise<string[]> => {
   try {
     // Fetch all categories to find descendants using mpath
-    const { product_categories } = await sdk.client.fetch<{
+    const { product_categories } = await categoryFetch<{
       product_categories: HttpTypes.StoreProductCategory[]
-    }>("/store/product-categories", {
-      query: {
-        fields: "id, handle, name, mpath, parent_category_id",
-        limit: 1000,
-      },
-      cache: "force-cache",
-      next: { revalidate: 300 }
-    })
+    }>('/store/product-categories', {
+      fields: 'id,handle,name,mpath,parent_category_id',
+      limit: 1000,
+    }, { revalidate: 300 })
 
     if (!product_categories) {
       return [categoryId]
     }
 
     // Find the target category
-    const targetCategory = product_categories.find(cat => cat.id === categoryId)
+    const targetCategory = product_categories.find((cat: HttpTypes.StoreProductCategory) => cat.id === categoryId)
     if (!targetCategory) {
       return [categoryId]
     }
@@ -455,7 +439,7 @@ export const getAllDescendantCategoryIds = async (categoryId: string): Promise<s
     const descendantIds = [categoryId]
     
     // Find all categories that have this category in their mpath (are descendants)
-    product_categories.forEach(category => {
+    product_categories.forEach((category: HttpTypes.StoreProductCategory) => {
       const mpath = (category as any).mpath
       if (mpath && typeof mpath === 'string' && category.id !== categoryId) {
         // Check if this category's mpath contains the target category ID
@@ -480,16 +464,10 @@ export const getCategoryByHandle = async (categoryHandle: string[]) => {
   // return unifiedCache.get(`category:metadata:${decodedHandle}`, async () => {
   try {
     // First try to find by exact handle
-    const response = await sdk.client.fetch<HttpTypes.StoreProductCategoryListResponse>(
-      `/store/product-categories`,
-      {
-        query: {
-          fields: "handle, name, rank, parent_category_id, mpath, *category_children, *parent_category",
-          handle: decodedHandle,
-        },
-        cache: "force-cache",
-        next: { revalidate: 300 }
-      }
+    const response = await categoryFetch<HttpTypes.StoreProductCategoryListResponse>(
+      '/store/product-categories',
+      { fields: 'handle,name,rank,parent_category_id,mpath,*category_children,*parent_category', handle: decodedHandle },
+      { revalidate: 300 }
     )
     
     if (response?.product_categories?.length > 0) {
@@ -498,22 +476,16 @@ export const getCategoryByHandle = async (categoryHandle: string[]) => {
     
     // Fallback: search through all categories
     try {
-      const allCategoriesResponse = await sdk.client.fetch<HttpTypes.StoreProductCategoryListResponse>(
-        `/store/product-categories`,
-        {
-          query: {
-            fields: "handle, name, rank, parent_category_id, mpath, *category_children, *parent_category",
-            limit: 1000, // CRITICAL: Match other functions - increased from 100
-          },
-          cache: "force-cache",
-          next: { revalidate: 300 }
-        }
+      const allCategoriesResponse = await categoryFetch<HttpTypes.StoreProductCategoryListResponse>(
+        '/store/product-categories',
+        { fields: 'handle,name,rank,parent_category_id,mpath,*category_children,*parent_category', limit: 1000 },
+        { revalidate: 300 }
       )
       
       if (allCategoriesResponse?.product_categories?.length > 0) {
         const searchTerm = decodedHandle.toLowerCase()
         const matchingCategory = allCategoriesResponse.product_categories.find(
-          cat => cat.handle?.toLowerCase() === searchTerm || cat.name?.toLowerCase() === searchTerm
+          (cat: HttpTypes.StoreProductCategory) => cat.handle?.toLowerCase() === searchTerm || cat.name?.toLowerCase() === searchTerm
         )
         
         if (matchingCategory) {

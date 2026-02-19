@@ -1,21 +1,30 @@
 "use server"
 
-import { sdk } from "../config"
-import { getAuthHeaders } from "./cookies"
+// ✅ Use native fetch (no Authorization header) so Next.js Data Cache works.
+// sdk.client.fetch injects the JWT globally which busts next:{revalidate:300}.
+const BACKEND_URL = process.env.MEDUSA_BACKEND_URL || process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || 'http://localhost:9000'
+const PUB_KEY = process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || ''
 
 /**
  * Fetch attribute values for a specific product variant
- * 
- * NOTE: Uses Next.js fetch caching (revalidate) instead of unifiedCache
- * because this is a Server Action and unifiedCache is client-side only.
  */
 export async function getVariantAttributes(productId: string, variantId: string) {
   try {
-    const headers = {
-      ...(await getAuthHeaders()),
-    }
-
-    const response = await sdk.client.fetch<{
+    const res = await fetch(
+      `${BACKEND_URL}/store/products/${productId}/variants/${variantId}/attributes`,
+      {
+        headers: {
+          'accept': 'application/json',
+          'x-publishable-api-key': PUB_KEY,
+        },
+        next: {
+          revalidate: 300,
+          tags: [`variant-${variantId}-attributes`, `product-${productId}`],
+        }
+      }
+    )
+    if (!res.ok) throw new Error(`getVariantAttributes → ${res.status}`)
+    return res.json() as Promise<{
       attribute_values: Array<{
         id: string
         value: string
@@ -28,19 +37,7 @@ export async function getVariantAttributes(productId: string, variantId: string)
           ui_component: string
         }
       }>
-    }>(
-      `/store/products/${productId}/variants/${variantId}/attributes`,
-      {
-        method: "GET",
-        headers,
-        next: {
-          revalidate: 300, // 5 minutes - matches CACHE_TTL.PRODUCT
-          tags: [`variant-${variantId}-attributes`, `product-${productId}`],
-        }
-      }
-    )
-    
-    return response
+    }>
   } catch (error) {
     console.error(`Failed to fetch variant attributes: ${error instanceof Error ? error.message : 'Unknown error'}`)
     return { attribute_values: [] }

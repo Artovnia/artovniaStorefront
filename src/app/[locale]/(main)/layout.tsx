@@ -9,15 +9,31 @@ import { CookieConsent, ConsentAwareAnalytics, MobileUserNavigation } from '@/co
 import { listCategoriesWithProducts } from '@/lib/data/categories';
 import { getEssentialCategories } from '@/lib/data/categories-static';
 import { listRegions } from '@/lib/data/regions';
+import { setRequestLocale } from 'next-intl/server';
+import { routing } from '@/i18n/routing';
 
 // ✅ CRITICAL: Cache layout data to prevent blocking on every request
 export const revalidate = 3600 // Cache for 1 hour
 
-export default async function RootLayout({
+// ✅ CRITICAL: Enable static rendering for next-intl
+// Without this, next-intl reads locale from headers() which forces dynamic rendering
+export function generateStaticParams() {
+  return routing.locales.map((locale) => ({ locale }));
+}
+
+export default async function MainLayout({
   children,
+  params,
 }: Readonly<{
   children: React.ReactNode;
+  params: Promise<{ locale: string }>;
 }>) {
+  const { locale } = await params;
+  
+  // ✅ CRITICAL: Enable static rendering for next-intl
+  // This must be called BEFORE any next-intl APIs (getMessages, useTranslations, etc.)
+  // Without this, next-intl reads locale from headers() which sets cache-control: no-store
+  setRequestLocale(locale);
 
   // ✅ RESTORED: Fetch categories and regions on server-side with caching
   // This prevents client-side requests on every page navigation

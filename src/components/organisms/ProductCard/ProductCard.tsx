@@ -173,14 +173,25 @@ const ProductCardComponent = ({
     )
   )
   
-  // Prefetch both route and detail-page image on hover/touch
+  // ✅ OPTIMIZATION: Track if we've already prefetched to avoid duplicate requests
+  const hasPrefetched = useRef(false)
+  
+  // Prefetch both route (RSC payload) and detail-page image on hover/touch
+  // This gives the browser a head start before the user clicks
   const handlePrefetch = () => {
+    // Skip if already prefetched (prevents duplicate network requests)
+    if (hasPrefetched.current) return
+    hasPrefetched.current = true
+    
+    // 1. Prefetch RSC payload (React Server Component data)
+    // This is the main optimization - fetches the page data before navigation
     try {
       router.prefetch(productUrl)
     } catch {
       // Route prefetch failed, non-critical
     }
-    // Prefetch the detail-page-sized image so it's cached before navigation
+    
+    // 2. Prefetch the detail-page-sized image so it's cached before navigation
     const imageUrl = product.thumbnail || product.images?.[0]?.url
     prefetchProductImage(imageUrl)
   }

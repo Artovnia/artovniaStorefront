@@ -136,13 +136,13 @@ async function _fetchShippingMethods(
   
   try {
     // Fetch the cart to extract seller IDs and region ID
+    // cache:"no-store" prevents cross-user cart data leakage in serverless environments
     const cartResponse = await sdk.client.fetch<{ cart: any }>(
       `/store/carts/${cartId}`,
       {
         method: "GET",
         headers: authHeaders,
-        cache: "force-cache",
-        next: { revalidate: 30 }, // Cache for 30 seconds
+        cache: "no-store",
         query: {
           fields: "*items, *region, *items.product, *items.variant, *items.variant.options, items.variant.options.option.title, *items.thumbnail, *items.metadata, +items.total, *promotions, +shipping_methods.name, *items.product.seller"
         }
@@ -201,8 +201,7 @@ async function _fetchShippingMethods(
           method: "GET",
           query,
           headers: authHeaders,
-          cache: "force-cache",
-          next: { revalidate: 60 }, // Cache for 1 minute
+          cache: "no-store",
         }
       );
     } catch (error) {
