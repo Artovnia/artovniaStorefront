@@ -49,24 +49,22 @@ export const ProductDetails = async ({
   const supportedLocales = ['en', 'pl']
   const currentLocale = supportedLocales.includes(locale) ? locale : 'en'
 
-  // Fetch delivery timeframe for the product
-  let deliveryTimeframe: DeliveryTimeframe | null = null
-  try {
-    deliveryTimeframe = await getProductDeliveryTimeframe(product.id)
-  } catch (error) {
-    // Delivery timeframe is optional, don't block page render
-  }
+  // Fetch optional data in parallel so one slow request doesn't create a waterfall.
+  const [deliveryTimeframeResult, measurementsResult] = await Promise.allSettled([
+    getProductDeliveryTimeframe(product.id),
+    getProductMeasurements(product.id, selectedVariantId, currentLocale),
+  ])
 
-  // Try to load measurements quickly, but don't block page render
-  let initialMeasurements: SingleProductMeasurement[] | undefined = undefined
-  try {
-    const measurementsResult = await getProductMeasurements(product.id, selectedVariantId, currentLocale)
-    if (isValidMeasurementsArray(measurementsResult)) {
-      initialMeasurements = measurementsResult
-    }
-  } catch (error) {
-    // Measurements will be loaded client-side
-  }
+  const deliveryTimeframe: DeliveryTimeframe | null =
+    deliveryTimeframeResult.status === "fulfilled"
+      ? deliveryTimeframeResult.value
+      : null
+
+  const initialMeasurements: SingleProductMeasurement[] | undefined =
+    measurementsResult.status === "fulfilled" &&
+    isValidMeasurementsArray(measurementsResult.value)
+      ? measurementsResult.value
+      : undefined
 
   return (
     <div>

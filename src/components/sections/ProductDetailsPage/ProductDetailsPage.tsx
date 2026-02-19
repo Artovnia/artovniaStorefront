@@ -9,7 +9,6 @@ import { getVendorCompleteStatus } from "../../../lib/data/vendor-availability"
 import ProductErrorBoundary from "@/components/molecules/ProductErrorBoundary/ProductErrorBoundary"
 import { Breadcrumbs } from "@/components/atoms/Breadcrumbs/Breadcrumbs"
 import { buildProductBreadcrumbsLocal } from "@/lib/utils/breadcrumbs"
-import { getProductReviews } from "@/lib/data/reviews"
 import { generateProductJsonLd, generateBreadcrumbJsonLd } from "@/lib/helpers/seo"
 import { Link } from "@/i18n/routing"
 import { getBatchLowestPrices } from "@/lib/data/price-history"
@@ -46,7 +45,6 @@ export const ProductDetailsPage = async ({
   // Removed noStore() to enable ISR caching - user data now fetched client-side
   const [
     sellerProductsResult,
-    reviewsResult,
     vendorStatusResult,
     breadcrumbsResult,
     promotionalProductsResult,
@@ -63,9 +61,6 @@ export const ProductDetailsPage = async ({
           queryParams: { limit: 8 },
         }).then(r => r.response.products).catch(() => [])
       : Promise.resolve([]),
-
-    // Reviews (public data, can be cached)
-    getProductReviews(product.id).catch(() => ({ reviews: [] })),
 
     // Vendor status — no Promise.race wrapper (causes memory leaks/unhandled rejections)
     // getVendorCompleteStatus has its own AbortSignal.timeout(10000) internally
@@ -121,11 +116,6 @@ export const ProductDetailsPage = async ({
       ? sellerProductsResult.value
       : []
 
-  const reviews =
-    reviewsResult.status === "fulfilled"
-      ? reviewsResult.value?.reviews || []
-      : []
-
   // ✅ Extract batched vendor status
   const vendorStatus =
     vendorStatusResult.status === "fulfilled"
@@ -165,30 +155,9 @@ export const ProductDetailsPage = async ({
     ? productPricesResult.value as Record<string, any>
     : {}
 
-  // Fetch additional prices for seller and suggested products (these are below fold, so slight delay is OK)
-  let initialPriceData: Record<string, any> = { ...productPrices }
-  try {
-    const additionalVariantIds = [
-      ...sellerProducts.flatMap((p: any) => p.variants?.map((v: any) => v.id) || []),
-      ...suggestedProducts.flatMap((p: any) => p.variants?.map((v: any) => v.id) || [])
-    ].filter(Boolean)
-
-    // Only fetch if there are additional variants not already fetched
-    const newVariantIds = additionalVariantIds.filter(id => !productPrices[id])
-    const uniqueNewVariantIds = [...new Set(newVariantIds)]
-
-    if (uniqueNewVariantIds.length > 0 && region) {
-      const additionalPrices = await getBatchLowestPrices(
-        uniqueNewVariantIds,
-        'PLN',
-        region.id,
-        30
-      )
-      initialPriceData = { ...productPrices, ...additionalPrices }
-    }
-  } catch (error) {
-    console.error('❌ [ProductDetailsPage] Failed to fetch additional prices:', error)
-  }
+  // Keep SSR critical path focused on the viewed product.
+  // Seller/suggested section prices are below-fold and loaded by BatchPriceProvider on the client.
+  const initialPriceData: Record<string, any> = { ...productPrices }
 
   // ✅ FIX: Get price from variant's calculated_price
   const getProductPrice = (): number | undefined => {
@@ -210,7 +179,7 @@ export const ProductDetailsPage = async ({
 
   // Generate structured data for SEO
   const productPrice = getProductPrice()
-  const productJsonLd = generateProductJsonLd(product, productPrice, "PLN", reviews)
+  const productJsonLd = generateProductJsonLd(product, productPrice, "PLN", [])
   const breadcrumbJsonLd = generateBreadcrumbJsonLd(breadcrumbs)
 
   return (
@@ -361,7 +330,6 @@ export const ProductDetailsPage = async ({
                       suggestedProducts={suggestedProducts as any}
                       suggestedCategoryName={suggestedProductsData.categoryName}
                       suggestedCategoryHandle={suggestedProductsData.categoryHandle}
-                      prefetchedReviews={reviews}
                       sellerName={product.seller?.name}
                       sellerHandle={product.seller?.handle}
                     />

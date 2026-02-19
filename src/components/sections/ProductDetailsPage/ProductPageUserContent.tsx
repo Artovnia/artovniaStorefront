@@ -12,7 +12,7 @@ interface ProductPageUserContentProps {
   suggestedProducts: any[]
   suggestedCategoryName: string
   suggestedCategoryHandle: string
-  prefetchedReviews: any[]
+  prefetchedReviews?: any[]
   sellerName?: string
   sellerHandle?: string
 }
@@ -33,7 +33,7 @@ export function ProductPageUserContent({
   suggestedProducts,
   suggestedCategoryName,
   suggestedCategoryHandle,
-  prefetchedReviews,
+  prefetchedReviews = [],
 }: ProductPageUserContentProps) {
   const { 
     customer, 

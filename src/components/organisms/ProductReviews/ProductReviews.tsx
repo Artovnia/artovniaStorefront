@@ -2,6 +2,7 @@
 "use client"
 
 import { useState } from "react"
+import { useEffect } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { Button } from "@/components/atoms"
@@ -43,6 +44,10 @@ type FormValues = {
   rating: number
   customer_note: string
 }
+
+const BACKEND_URL =
+  process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || "http://localhost:9000"
+const PUB_KEY = process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || ""
 
 // Helper functions
 const calculateAverageRating = (reviews: ReviewData[]): number => {
@@ -407,6 +412,42 @@ export const ProductReviews = ({
  
   const [reviews, setReviews] = useState<ReviewData[]>(prefetchedReviews)
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false)
+
+  useEffect(() => {
+    let cancelled = false
+
+    const fetchProductReviews = async () => {
+      try {
+        const response = await fetch(
+          `${BACKEND_URL}/store/products/${productId}/reviews?limit=100`,
+          {
+            method: "GET",
+            headers: {
+              accept: "application/json",
+              "x-publishable-api-key": PUB_KEY,
+            },
+          }
+        )
+
+        if (!response.ok) {
+          return
+        }
+
+        const data = (await response.json()) as { reviews?: ReviewData[] }
+        if (!cancelled && Array.isArray(data.reviews)) {
+          setReviews(data.reviews)
+        }
+      } catch {
+        // Keep existing reviews state on fetch errors.
+      }
+    }
+
+    fetchProductReviews()
+
+    return () => {
+      cancelled = true
+    }
+  }, [productId])
 
   const averageRating = calculateAverageRating(reviews)
   const userReview = findUserReview(reviews, customer)

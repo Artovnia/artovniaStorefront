@@ -14,8 +14,7 @@ export const revalidate = 300
 // This deduplicates parallel requests in the same render cycle (metadata + component)
 // By passing regionId directly, we eliminate the internal getRegion() call
 const getCachedProduct = cache(async (handle: string, regionId: string) => {
-  const product = await listProductsForDetail({ handle, regionId })
-  return product
+  return listProductsForDetail({ handle, regionId })
 })
 
 export async function generateMetadata({
@@ -37,9 +36,9 @@ export async function generateMetadata({
     }
 
     // ✅ OPTIMIZATION: React cache() deduplicates this with the component fetch
-    const product = await getCachedProduct(handle, region.id)
-    
-    if (!product) {
+    const productResult = await getCachedProduct(handle, region.id)
+
+    if (!productResult.product && productResult.errorType === "not_found") {
       return {
         title: "Produkt nie znaleziony",
         description: "Nie znaleziono produktu.",
@@ -47,7 +46,14 @@ export async function generateMetadata({
       }
     }
 
-    return generateProductMetadata(product, locale)
+    if (!productResult.product) {
+      return {
+        title: "Produkt",
+        description: "Strona produktu",
+      }
+    }
+
+    return generateProductMetadata(productResult.product, locale)
   } catch (error) {
     console.error("Error generating product metadata:", error)
     return {
@@ -72,14 +78,25 @@ export default async function ProductPage({
   
   // ✅ OPTIMIZATION: React cache() ensures this returns the same data as generateMetadata
   // without making a duplicate API call (deduplicates by function args)
-  const product = await getCachedProduct(handle, region.id)
+  const productResult = await getCachedProduct(handle, region.id)
 
-  if (!product) {
+  if (!productResult.product && productResult.errorType === "not_found") {
     return (
       <main className="container">
         <div className="py-20 text-center">
           <h1 className="text-2xl font-bold">Produkt nie znaleziony</h1>
           <p className="mt-4 text-gray-600">Nie znaleziono produktu o podanym adresie.</p>
+        </div>
+      </main>
+    )
+  }
+
+  if (!productResult.product) {
+    return (
+      <main className="container">
+        <div className="py-20 text-center">
+          <h1 className="text-2xl font-bold">Produkt chwilowo niedostępny</h1>
+          <p className="mt-4 text-gray-600">Wystąpił tymczasowy problem z pobraniem danych produktu. Odśwież stronę za chwilę.</p>
         </div>
       </main>
     )
@@ -98,7 +115,7 @@ export default async function ProductPage({
           Next.js auto-preload is more reliable because it uses the exact same URL generation. */}
       
       <main className="container">
-        <ProductDetailsPage handle={handle} locale={locale} product={product} region={region} />
+        <ProductDetailsPage handle={handle} locale={locale} product={productResult.product} region={region} />
       </main>
     </>
   )

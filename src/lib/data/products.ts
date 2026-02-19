@@ -224,7 +224,10 @@ export const listProductsForDetail = async ({
 }: {
   handle: string
   regionId: string
-}): Promise<HttpTypes.StoreProduct | null> => {
+}): Promise<{
+  product: HttpTypes.StoreProduct | null
+  errorType?: "not_found" | "transient" | "request"
+}> => {
   try {
     // ✅ Use publicFetch (no Authorization header) so Next.js Data Cache works
     const { products } = await publicFetch<{ products: HttpTypes.StoreProduct[]; count: number }>(
@@ -254,16 +257,35 @@ export const listProductsForDetail = async ({
       { revalidate: 300, tags: ['products'] },
       'listProductsForDetail'
     )
-    
-    return products[0] || null
+
+    if (!products[0]) {
+      return { product: null, errorType: "not_found" }
+    }
+
+    return { product: products[0] }
   } catch (error) {
+    const message = error instanceof Error ? error.message : String(error)
+    const statusMatch = message.match(/->\s(\d{3})/)
+    const statusCode = statusMatch ? Number(statusMatch[1]) : undefined
+    const isTransient =
+      statusCode === 408 ||
+      statusCode === 425 ||
+      statusCode === 429 ||
+      (typeof statusCode === 'number' && statusCode >= 500)
+
     console.error('❌ listProductsForDetail failed:', {
-      error: error instanceof Error ? error.message : error,
+      error: message,
       handle,
       regionId,
+      statusCode,
+      errorType: isTransient ? 'transient' : 'request',
       stack: error instanceof Error ? error.stack : undefined
     })
-    return null
+
+    return {
+      product: null,
+      errorType: isTransient ? 'transient' : 'request',
+    }
   }
 }
 
