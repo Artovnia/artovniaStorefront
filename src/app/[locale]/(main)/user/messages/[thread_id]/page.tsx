@@ -7,7 +7,10 @@ import Image from "next/image"
 import { notFound } from "next/navigation"
 import { MessageContainer } from "./message-container"
 import { MarkAsRead } from "./mark-as-read"
+import { Suspense } from "react"
 
+// 🔒 REQUIRED: User pages require authentication check (cookies) and LoginForm uses useSearchParams
+export const dynamic = 'force-dynamic'
 
 // Define the correct type for Next.js 15
 type PageProps = {
@@ -20,7 +23,11 @@ export default async function MessageThreadPage(props: PageProps) {
   
   const user = await retrieveCustomer()
 
-  if (!user) return <LoginForm />
+  if (!user) return (
+    <Suspense fallback={<div className="container py-8">Ładowanie...</div>}>
+      <LoginForm />
+    </Suspense>
+  )
 
   // Use the extracted thread_id
   const messageThread = await getMessageThread(thread_id)

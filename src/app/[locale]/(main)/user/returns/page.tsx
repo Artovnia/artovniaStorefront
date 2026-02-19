@@ -1,11 +1,10 @@
-// Enable ISR caching with 60-second revalidation
-// Returns don't change frequently, so caching improves performance significantly
-export const revalidate = 60
-
 import { UserPageLayout } from "@/components/molecules"
 import { OrderReturnRequests } from "@/components/sections/OrderReturnRequests/OrderReturnRequests"
 import { retrieveCustomer } from "@/lib/data/customer"
 import { getReturns } from "@/lib/data/orders"
+
+// 🔒 REQUIRED: User pages require authentication check (cookies) and uses searchParams
+export const dynamic = 'force-dynamic'
 
 type PageProps = {
   params: Promise<{ locale: string }>

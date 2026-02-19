@@ -10,6 +10,10 @@ import { isEmpty } from "lodash"
 import { MessagePagination } from "./message-pagination"
 import { hasUnreadMessages } from "@/lib/utils/message-utils"
 import { markThreadAsRead } from "@/lib/data/actions/messages"
+import { Suspense } from "react"
+
+// 🔒 REQUIRED: User pages require authentication check (cookies) and LoginForm uses useSearchParams
+export const dynamic = 'force-dynamic'
 
 // Simple Bell Icon component
 const BellIcon = ({ className = "" }: { className?: string }) => (
@@ -41,7 +45,11 @@ export default async function MessagesPage({ searchParams }: PageProps) {
   
   const user = await retrieveCustomer()
 
-  if (!user) return <LoginForm />
+  if (!user) return (
+    <Suspense fallback={<div className="container py-8">Ładowanie...</div>}>
+      <LoginForm />
+    </Suspense>
+  )
 
   // Get current page from search params
   // Use nullish coalescing to safely handle searchParams

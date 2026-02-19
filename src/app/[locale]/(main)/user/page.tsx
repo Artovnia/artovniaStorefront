@@ -1,6 +1,7 @@
 import { LoginForm, UserPageLayout } from "@/components/molecules"
 import { retrieveCustomer } from "@/lib/data/customer"
 import { redirect } from "next/navigation"
+import { Suspense } from "react"
 
 // 🔒 CRITICAL: Disable caching for user-specific data
 export const dynamic = 'force-dynamic'
@@ -21,7 +22,11 @@ export default async function UserPage({
   }
 
   // If not logged in, show login form with redirect parameter
-  if (!user) return <LoginForm redirectUrl={redirectUrl} />
+  if (!user) return (
+    <Suspense fallback={<div className="container py-8">Ładowanie...</div>}>
+      <LoginForm redirectUrl={redirectUrl} />
+    </Suspense>
+  )
 
   return (
     <UserPageLayout className="h-full max-w-[1920px] mx-auto py-12">

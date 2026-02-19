@@ -1,29 +1,20 @@
 import { Metadata } from "next"
-import { getTranslations } from "next-intl/server"
 import React, { Suspense } from "react"
 import TermsOfUseContent from "@/components/pages/terms/TermsOfUseContent"
 import { Link } from "@/i18n/routing"
 import { ArrowLeftIcon } from "@/icons"
 
-export async function generateMetadata({
-  params,
-}: {
-  params: Promise<{ locale: string }>
-}) {
-  const { locale } = await params
-  const t = await getTranslations({ locale, namespace: "terms" })
-
-  return {
-    title: t("meta.title"),
-    description: t("meta.description"),
-    alternates: {
-      canonical: `${process.env.NEXT_PUBLIC_BASE_URL}/regulamin`,
-    },
-    robots: {
-      index: false,
-      follow: true,
-    },
-  } as Metadata
+// ✅ Static metadata - no getTranslations() to avoid dynamic rendering
+export const metadata: Metadata = {
+  title: "Regulamin | Artovnia",
+  description: "Regulamin sklepu internetowego Artovnia. Zasady korzystania z platformy, prawa i obowiązki użytkowników.",
+  alternates: {
+    canonical: `${process.env.NEXT_PUBLIC_BASE_URL}/regulamin`,
+  },
+  robots: {
+    index: false,
+    follow: true,
+  },
 }
 
 export const revalidate = 604800 // Revalidate every 7 days (legal document)

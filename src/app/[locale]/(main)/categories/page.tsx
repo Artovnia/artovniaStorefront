@@ -8,6 +8,9 @@ import { JsonLd } from '@/components/JsonLd'
 import type { Metadata } from "next"
 import { generateBreadcrumbJsonLd, generateCollectionPageJsonLd } from "@/lib/helpers/seo"
 
+// 🔒 REQUIRED: isServerSideBot() calls headers() which requires dynamic rendering
+export const dynamic = 'force-dynamic'
+
 export const metadata: Metadata = {
   title: "Rękodzieło i Sztuka - Wszystkie Kategorie | Artovnia",
   description:

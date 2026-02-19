@@ -2,11 +2,19 @@ import { LoginForm, UserNavigation } from "@/components/molecules"
 import { ReviewsWritten } from "@/components/organisms"
 import { retrieveCustomer } from "@/lib/data/customer"
 import { getReviews } from "@/lib/data/reviews"
+import { Suspense } from "react"
+
+// 🔒 REQUIRED: User pages require authentication check (cookies) and LoginForm uses useSearchParams
+export const dynamic = 'force-dynamic'
 
 export default async function Page() {
   const user = await retrieveCustomer()
 
-  if (!user) return <LoginForm />
+  if (!user) return (
+    <Suspense fallback={<div className="container py-8">Ładowanie...</div>}>
+      <LoginForm />
+    </Suspense>
+  )
 
   const { reviews = [] } = await getReviews()
 

@@ -3,11 +3,19 @@ import { UserNavigation } from "@/components/molecules"
 import { retrieveCustomer } from "@/lib/data/customer"
 import Link from "next/link"
 import { NewMessageForm } from "./new-message-form"
+import { Suspense } from "react"
+
+// 🔒 REQUIRED: User pages require authentication check (cookies) and LoginForm uses useSearchParams
+export const dynamic = 'force-dynamic'
 
 export default async function NewMessagePage() {
   const user = await retrieveCustomer()
 
-  if (!user) return <LoginForm />
+  if (!user) return (
+    <Suspense fallback={<div className="container py-8">Ładowanie...</div>}>
+      <LoginForm />
+    </Suspense>
+  )
 
   return (
     <main className="container">

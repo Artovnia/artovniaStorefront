@@ -3,6 +3,10 @@ import { retrieveCustomer } from "@/lib/data/customer"
 import { OrdersPagination } from "@/components/sections"
 import { listOrderSets } from "@/lib/data/orders"
 import { transformOrderSetToOrder } from "@/lib/utils/order-transformations"
+import { Suspense } from "react"
+
+// 🔒 REQUIRED: User pages require authentication check (cookies) and LoginForm uses useSearchParams
+export const dynamic = 'force-dynamic'
 
 const LIMIT = 10
 
@@ -13,7 +17,11 @@ export default async function UserPage({
 }) {
   const user = await retrieveCustomer()
 
-  if (!user) return <LoginForm />
+  if (!user) return (
+    <Suspense fallback={<div className="container py-8">Ładowanie...</div>}>
+      <LoginForm />
+    </Suspense>
+  )
 
   const { page } = await searchParams
   const currentPage = parseInt(page) || 1
