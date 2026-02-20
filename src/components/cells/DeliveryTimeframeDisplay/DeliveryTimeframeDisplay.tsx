@@ -34,7 +34,6 @@ export const DeliveryTimeframeDisplay = ({
   className = "",
   showFallback = true,
 }: DeliveryTimeframeDisplayProps) => {
-   console.log("DeliveryTimeframeDisplay:", { timeframe, showFallback })
   // Use provided timeframe or fallback to default 5 days
   const displayTimeframe = timeframe 
     ? formatTimeframe(timeframe)

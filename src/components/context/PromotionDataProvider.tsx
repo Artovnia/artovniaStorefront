@@ -78,16 +78,6 @@ export const PromotionDataProvider: React.FC<PromotionDataProviderProps> = ({
       return
     }
 
-    // ✅ CRITICAL FIX: Skip fetch if we already have server data
-    if (initialProductMap && initialProductMap.size > 0) {
-      if (process.env.NODE_ENV === 'development') {
-        console.log(`✅ [PromotionDataProvider] Using server-provided data (${initialProductMap.size} products), skipping client fetch`)
-      }
-      setPromotionalProducts(initialProductMap)
-      setIsLoading(false)
-      return
-    }
-    
     // ✅ CRITICAL FIX: Skip fetch if explicitly passed empty array
     // undefined = fetch based on limit (homepage, categories)
     // [] = skip fetch (products already have promotion data)

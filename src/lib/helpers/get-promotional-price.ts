@@ -58,6 +58,12 @@ export function getPromotionalPrice({
   }
 
   const basePrice = targetVariant.prices?.find((p: any) => !regionId || p.region_id === regionId)
+
+  // Fallback base amount from calculated_price when prices array is not fetched
+  const basePriceAmount = basePrice?.amount
+    ?? targetVariant.calculated_price?.original_amount
+    ?? targetVariant.calculated_price?.calculated_amount
+    ?? 0
   
   // Check for price-list discounts using same logic as ProductCard
   const hasCalculatedPrice = targetVariant.calculated_price && 
@@ -67,11 +73,10 @@ export function getPromotionalPrice({
   // Check for promotion module discounts
   const hasPromotionDiscount = product.has_promotions && product.promotions && product.promotions.length > 0
   
-  if (!basePrice || (!hasPromotionDiscount && !hasCalculatedPrice)) {
-    const formattedPrice = formatPrice(basePrice?.amount || 0)
+  if (!basePriceAmount || (!hasPromotionDiscount && !hasCalculatedPrice)) {
     return {
-      originalPrice: formattedPrice,
-      promotionalPrice: formattedPrice,
+      originalPrice: formatPrice(basePriceAmount),
+      promotionalPrice: formatPrice(basePriceAmount),
       discountPercentage: 0,
       hasPromotion: false
     }
@@ -97,10 +102,9 @@ export function getPromotionalPrice({
 
   // Fall back to promotion module logic if no price-list discount
   if (!hasPromotionDiscount) {
-    const formattedPrice = formatPrice(basePrice?.amount || 0)
     return {
-      originalPrice: formattedPrice,
-      promotionalPrice: formattedPrice,
+      originalPrice: formatPrice(basePriceAmount),
+      promotionalPrice: formatPrice(basePriceAmount),
       discountPercentage: 0,
       hasPromotion: false
     }
@@ -123,13 +127,13 @@ export function getPromotionalPrice({
         
         if (discountPercentage > bestDiscountPercentage) {
           bestDiscountPercentage = discountPercentage
-          bestDiscountAmount = (basePrice.amount * discountPercentage) / 100
+          bestDiscountAmount = (basePriceAmount * discountPercentage) / 100
         }
       }
       // Handle fixed amount discount
-      else if (appMethod.type === 'fixed' && typeof appMethod.value === 'number' && basePrice?.amount) {
+      else if (appMethod.type === 'fixed' && typeof appMethod.value === 'number' && basePriceAmount) {
         const fixedDiscountAmount = appMethod.value
-        const equivalentPercentage = (fixedDiscountAmount / basePrice.amount) * 100
+        const equivalentPercentage = (fixedDiscountAmount / basePriceAmount) * 100
         
         
         if (equivalentPercentage > bestDiscountPercentage) {
@@ -144,9 +148,9 @@ export function getPromotionalPrice({
       
       if (promotion.type === 'percentage' && value > bestDiscountPercentage) {
         bestDiscountPercentage = value
-        bestDiscountAmount = (basePrice.amount * value) / 100
-      } else if (promotion.type === 'fixed' && basePrice?.amount) {
-        const equivalentPercentage = (value / basePrice.amount) * 100
+        bestDiscountAmount = (basePriceAmount * value) / 100
+      } else if (promotion.type === 'fixed' && basePriceAmount) {
+        const equivalentPercentage = (value / basePriceAmount) * 100
         if (equivalentPercentage > bestDiscountPercentage) {
           bestDiscountPercentage = Math.round(equivalentPercentage * 100) / 100
           bestDiscountAmount = value
@@ -156,17 +160,15 @@ export function getPromotionalPrice({
   }
 
   if (bestDiscountPercentage === 0 || bestDiscountAmount === 0) {
-    const formattedPrice = formatPrice(basePrice.amount || 0)
-    
     return {
-      originalPrice: formattedPrice,
-      promotionalPrice: formattedPrice,
+      originalPrice: formatPrice(basePriceAmount),
+      promotionalPrice: formatPrice(basePriceAmount),
       discountPercentage: 0,
       hasPromotion: false
     }
   }
 
-  const originalAmount = basePrice.amount || 0
+  const originalAmount = basePriceAmount
   const promotionalAmount = Math.max(0, originalAmount - bestDiscountAmount)
 
   return {

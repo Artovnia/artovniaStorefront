@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo } from 'react'
 import { HttpTypes } from '@medusajs/types'
 import { ProductCard } from '@/components/organisms'
 import { Pagination } from '@/components/cells/Pagination/Pagination'
-import { listProductsWithSort } from '@/lib/data/products'
+import { getProductsPromotionsBatch, listProductsWithSort } from '@/lib/data/products'
 import { getUserWishlists } from '@/lib/data/wishlist'
 import { ProductListingSkeleton } from '@/components/organisms/ProductListingSkeleton/ProductListingSkeleton'
 import { PromotionDataProvider } from '@/components/context/PromotionDataProvider'
@@ -48,8 +48,7 @@ export function SellerProductListingClient({
   const [wishlist, setWishlist] = useState<SerializableWishlist[]>(initialWishlists || [])
   // ✅ Start with no loading if we have initial data
   const [isLoading, setIsLoading] = useState(!(initialProducts && initialProducts.length > 0))
-  // ✅ Track if this is the first render to use initial data
-  const [isFirstRender, setIsFirstRender] = useState(true)
+  const [promotionalSeedProducts, setPromotionalSeedProducts] = useState<HttpTypes.StoreProduct[]>(initialProducts || [])
   
   // ✅ OPTIMIZATION: Memoize user ID to prevent unnecessary re-fetches
   const userId = user?.id
@@ -59,17 +58,21 @@ export function SellerProductListingClient({
   const categoryId = searchParams.get('category') || ''
   
   // ✅ CRITICAL FIX: Fetch on page change, filter change
+  // Uses server-provided page-1 data directly to avoid duplicate initial fetch.
   useEffect(() => {
     const fetchData = async () => {
-      // ✅ FIXED: Only skip fetch on first render if we have initial data AND on page 1 with no filters
-      if (isFirstRender && currentPage === 1 && !sortBy && !categoryId && initialProducts && initialProducts.length > 0) {
-        setIsFirstRender(false)
+      const shouldUseInitialData =
+        currentPage === 1 &&
+        !sortBy &&
+        !categoryId &&
+        Boolean(initialProducts && initialProducts.length > 0)
+
+      if (shouldUseInitialData) {
+        setProducts(initialProducts || [])
+        setTotalCount(initialTotalCount || initialProducts?.length || 0)
+        setWishlist(initialWishlists || [])
+        setIsLoading(false)
         return
-      }
-      
-      // Mark that we're no longer on first render
-      if (isFirstRender) {
-        setIsFirstRender(false)
       }
 
       setIsLoading(true)
@@ -103,7 +106,43 @@ export function SellerProductListingClient({
     fetchData()
     // ✅ Re-fetch when page, filters, or seller changes
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [seller_id, currentPage, sortBy, categoryId])
+  }, [seller_id, currentPage, sortBy, categoryId, initialProducts, initialTotalCount, initialWishlists])
+
+  // Enrich current page products with targeted promotion payloads.
+  // This avoids relying on global promotions listing, which may omit many seller products.
+  useEffect(() => {
+    let isCancelled = false
+
+    const enrichProductsWithPromotions = async () => {
+      if (!products.length) {
+        setPromotionalSeedProducts([])
+        return
+      }
+
+      const promotionsByProduct = await getProductsPromotionsBatch(
+        products.map((product) => product.id)
+      )
+
+      const enrichedProducts = products.map((product) => {
+        const promotions = promotionsByProduct[product.id] || []
+        return {
+          ...product,
+          promotions,
+          has_promotions: promotions.length > 0 || Boolean((product as any).has_promotions),
+        } as HttpTypes.StoreProduct
+      })
+
+      if (!isCancelled) {
+        setPromotionalSeedProducts(enrichedProducts)
+      }
+    }
+
+    enrichProductsWithPromotions()
+
+    return () => {
+      isCancelled = true
+    }
+  }, [products])
   
   // ✅ Reset to page 1 when filters change
   useEffect(() => {
@@ -134,17 +173,33 @@ export function SellerProductListingClient({
     }
   }
 
+  // Extract product IDs for promotion data provider
+  const productIds = products.map(p => p.id)
+  const promotionSeedKey = useMemo(
+    () =>
+      promotionalSeedProducts
+        .map((product) => {
+          const productWithPromotions = product as HttpTypes.StoreProduct & {
+            promotions?: unknown[]
+            has_promotions?: boolean
+          }
+          return `${product.id}:${productWithPromotions.promotions?.length || 0}:${productWithPromotions.has_promotions ? 1 : 0}`
+        })
+        .join('|'),
+    [promotionalSeedProducts]
+  )
+
   if (isLoading) {
     return <ProductListingSkeleton />
   }
 
-  // Extract product IDs for promotion data provider
-  const productIds = products.map(p => p.id)
-
   return (
     <PromotionDataProvider 
+      key={promotionSeedKey}
       countryCode="PL"
       productIds={productIds}
+      initialData={promotionalSeedProducts}
+      serverDataProvided={true}
     >
       <div>
         {/* Filter Bar */}

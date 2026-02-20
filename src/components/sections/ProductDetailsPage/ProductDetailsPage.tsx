@@ -4,7 +4,7 @@ import { VendorAvailabilityProvider } from "../../../components/organisms/Vendor
 import { BatchPriceProvider } from "@/components/context/BatchPriceProvider"
 import { PromotionDataProvider } from "@/components/context/PromotionDataProvider"
 import { ProductUserDataProvider } from "@/components/context/ProductUserDataProvider"
-import { listProductsLean, listProductsWithPromotions, listSuggestedProducts, getProductShippingOptions } from "../../../lib/data/products"
+import { listProductsLean, getProductPromotions, listSuggestedProducts, getProductShippingOptions } from "../../../lib/data/products"
 import { getVendorCompleteStatus } from "../../../lib/data/vendor-availability"
 import ProductErrorBoundary from "@/components/molecules/ProductErrorBoundary/ProductErrorBoundary"
 import { Breadcrumbs } from "@/components/atoms/Breadcrumbs/Breadcrumbs"
@@ -79,11 +79,10 @@ export const ProductDetailsPage = async ({
     // Breadcrumbs — built locally from product.categories (no network call)
     Promise.resolve(buildProductBreadcrumbsLocal(product, locale)),
 
-    // Promotional products — limit 50 to match client default (prevents flash of content change)
-    listProductsWithPromotions({
-      countryCode: locale,
-      limit: 50
-    }).then(r => r.response.products).catch(() => []),
+    // Current product promotions — targeted fetch via /store/products/{id}/promotions
+    // Only fetches promotions for this specific product (not all 50 promotional products globally)
+    // PromotionDataProvider will fetch promotions for card products (seller/suggested) client-side
+    getProductPromotions(product.id).catch(() => []),
 
     // Shipping options — server-side fetch with revalidate:300 (no client-side fetch needed)
     product.id && region?.id
@@ -129,10 +128,14 @@ export const ProductDetailsPage = async ({
   const breadcrumbs =
     breadcrumbsResult.status === "fulfilled" ? breadcrumbsResult.value : []
  
-  const promotionalProducts =
+  // Current product's own promotions — merge into product object for PromotionDataProvider
+  const currentProductPromotions =
     promotionalProductsResult.status === "fulfilled"
       ? (promotionalProductsResult.value as any[])
       : []
+  const currentProductWithPromotions = currentProductPromotions.length > 0
+    ? { ...product, promotions: currentProductPromotions, has_promotions: true }
+    : product
 
   const initialShippingOptions =
     shippingOptionsResult.status === "fulfilled"
@@ -200,12 +203,13 @@ export const ProductDetailsPage = async ({
           <Breadcrumbs items={breadcrumbs} />
         </div>
 
-        {/* Promotion data — serverDataProvided=true prevents client re-fetch even when no active promotions */}
+        {/* Promotion data for current product is server-fetched; card products fetched client-side */}
+        {/* serverDataProvided=false allows client to fetch promotions for seller/suggested cards */}
         <PromotionDataProvider 
           countryCode={locale} 
           limit={50}
-          initialData={[...sellerProducts, ...promotionalProducts]}
-          serverDataProvided={true}
+          initialData={[currentProductWithPromotions]}
+          serverDataProvided={false}
         >
           <BatchPriceProvider 
             currencyCode="PLN"

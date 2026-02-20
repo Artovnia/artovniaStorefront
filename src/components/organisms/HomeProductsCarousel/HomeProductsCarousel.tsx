@@ -59,8 +59,7 @@ export const HomeProductsCarousel = ({
         );
       })
       .filter(Boolean);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sellerProducts, home, theme, isSellerSection]); // Intentionally exclude user/wishlist - WishlistButton manages its own state
+  }, [sellerProducts, home, theme, isSellerSection, user, wishlist]);
 
   if (!sellerProducts?.length) {
     return (

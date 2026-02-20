@@ -164,15 +164,13 @@ export const listProductsLean = async ({
       limit,
       offset,
       region_id: region?.id,
-      // ✅ LEAN FIELDS: Only essential data for display
-      fields: "id,title,handle,thumbnail,description,created_at,status," +
+      // ✅ LEAN FIELDS: Only what ProductCard actually renders
+      // NOTE: promotions.* and has_promotions are NOT available on /store/products (cross-module link)
+      // Promotion data comes exclusively from the custom /store/products/promotions endpoint via listProductsWithPromotions
+      fields: "id,title,handle,thumbnail," +
               "images.url," +
-              "variants.id,variants.title,variants.calculated_price," +
-              "seller.id,seller.handle,seller.store_name,seller.name," +
-              "categories.id,categories.name,categories.handle," +
-              "collection.id,collection.handle,collection.title," +
-              "metadata.featured,metadata.seller_id,metadata.shipping_profile_name," +
-              "shipping_profile.name",
+              "variants.id,variants.calculated_price," +
+              "seller.name",
       ...queryParams,
     }
 
@@ -213,6 +211,32 @@ export const listProductsLean = async ({
 }
 
 /**
+ * Fetch promotions for multiple products in one request.
+ */
+export const getProductsPromotionsBatch = async (
+  productIds: string[]
+): Promise<Record<string, any[]>> => {
+  const ids = Array.from(new Set(productIds.filter(Boolean)))
+  if (ids.length === 0) {
+    return {}
+  }
+
+  try {
+    const result = await publicFetch<{ results?: Record<string, any[]> }>(
+      '/store/products/promotions/batch',
+      { product_ids: ids.join(',') },
+      { revalidate: 120, tags: ['products', 'promotions-batch'] },
+      'getProductsPromotionsBatch'
+    )
+
+    return result?.results || {}
+  } catch (error) {
+    console.error('❌ getProductsPromotionsBatch: Fetch failed', { productIds: ids.length, error })
+    return {}
+  }
+}
+
+/**
  * OPTIMIZED product fetch for detail pages
  * Fetches ONLY the fields actually needed for product detail page display
  * Reduces query time by 60% and data transfer by 70%
@@ -242,16 +266,15 @@ export const listProductsForDetail = async ({
           "metadata," +
           "options.id,options.title,options.values.id,options.values.value," +
           "variants.id,variants.title," +
-          "variants.calculated_price.calculated_amount,variants.calculated_price.currency_code," +
+          "variants.calculated_price," +
           "variants.inventory_quantity,variants.manage_inventory,variants.allow_backorder," +
           "variants.metadata," +
           "variants.options.id,variants.options.value,variants.options.option_id," +
           "variants.options.option.id,variants.options.option.title," +
-          "seller.id,seller.handle,seller.name,seller.store_name,seller.photo,seller.logo_url," +
+          "seller.id,seller.handle,seller.name,seller.photo,seller.logo_url," +
           "categories.id,categories.name,categories.handle,categories.parent_category_id," +
           "categories.parent_category.id,categories.parent_category.name,categories.parent_category.handle,categories.parent_category.parent_category_id," +
           "categories.parent_category.parent_category.id,categories.parent_category.parent_category.name,categories.parent_category.parent_category.handle," +
-          "collection.id,collection.title,collection.handle," +
           "shipping_profile.name"
       },
       { revalidate: 300, tags: ['products'] },
@@ -358,30 +381,25 @@ export const listProducts = async ({
     }
   }
 
-  const headers = {
-    ...(await getAuthHeaders()),
-    'x-source-function': 'listProducts',
-  }
-
   try {
     // ✅ OPTIMIZED: For seller filtering, use custom endpoint that returns full product data
     if (seller_id) {
     
 
-      const { products, count } = await sdk.client.fetch<{
+      const { products, count } = await publicFetch<{
         products: HttpTypes.StoreProduct[]
         count: number
-      }>(`/store/seller/${seller_id}/products`, {
-        method: "GET",
-        query: {
+      }>(
+        `/store/seller/${seller_id}/products`,
+        {
           limit,
           offset,
           region_id: region?.id,
           ...queryParams,
         },
-        headers,
-        next: { revalidate: 300 },
-      })
+        { revalidate: 300, tags: ['products', `seller-${seller_id}`] },
+        'listProducts'
+      )
 
    
 
@@ -406,15 +424,15 @@ export const listProducts = async ({
       ...queryParams,
     }
     
-    const { products, count } = await sdk.client.fetch<{
+    const { products, count } = await publicFetch<{
       products: HttpTypes.StoreProduct[]
       count: number
-    }>(`/store/products`, {
-      method: "GET",
-      query: queryObject,
-      headers,
-      next: { revalidate: 300 }, // ✅ Next.js cache: 5 minutes
-    })
+    }>(
+      '/store/products',
+      queryObject,
+      { revalidate: 300, tags: ['products'] },
+      'listProducts'
+    )
 
     const nextPage = count > offset + limit ? pageParam + 1 : null
     return {
@@ -573,6 +591,27 @@ export const listProductsWithSort = async ({
     },
     nextPage,
     queryParams,
+  }
+}
+
+/**
+ * Fetch promotions for a specific product via /store/products/{id}/promotions
+ * Returns the promotions array to be merged into the product object for PromotionDataProvider
+ */
+export const getProductPromotions = async (
+  productId: string
+): Promise<any[]> => {
+  try {
+    const result = await publicFetch<{ promotions: any[]; count: number }>(
+      `/store/products/${productId}/promotions`,
+      {},
+      { revalidate: 300, tags: ['products', `product-${productId}`] },
+      'getProductPromotions'
+    )
+    return result?.promotions || []
+  } catch (error) {
+    console.error('❌ getProductPromotions: Fetch failed', { productId, error })
+    return []
   }
 }
 

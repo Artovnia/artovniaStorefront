@@ -1,8 +1,7 @@
 // src/components/organisms/ProductReviews/ProductReviews.tsx
 "use client"
 
-import { useState } from "react"
-import { useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { Button } from "@/components/atoms"
@@ -412,11 +411,16 @@ export const ProductReviews = ({
  
   const [reviews, setReviews] = useState<ReviewData[]>(prefetchedReviews)
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false)
+  const sectionRef = useRef<HTMLDivElement>(null)
+  const hasFetched = useRef(false)
 
   useEffect(() => {
     let cancelled = false
 
     const fetchProductReviews = async () => {
+      if (hasFetched.current) return
+      hasFetched.current = true
+
       try {
         const response = await fetch(
           `${BACKEND_URL}/store/products/${productId}/reviews?limit=100`,
@@ -442,10 +446,26 @@ export const ProductReviews = ({
       }
     }
 
-    fetchProductReviews()
+    const el = sectionRef.current
+    if (!el) {
+      fetchProductReviews()
+      return () => { cancelled = true }
+    }
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          observer.disconnect()
+          fetchProductReviews()
+        }
+      },
+      { rootMargin: '200px' }
+    )
+    observer.observe(el)
 
     return () => {
       cancelled = true
+      observer.disconnect()
     }
   }, [productId])
 
@@ -494,7 +514,7 @@ export const ProductReviews = ({
   }
 
   return (
-    <div className="w-full py-8">
+    <div className="w-full py-8" ref={sectionRef}>
       <div className="bg-cream-100 border border-cream-300">
         {/* Header */}
         <div className="px-6 py-5 border-b border-cream-200">

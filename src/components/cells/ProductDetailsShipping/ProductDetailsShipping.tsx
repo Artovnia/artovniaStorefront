@@ -2,11 +2,8 @@
 
 import { ProductPageAccordion } from '@/components/molecules';
 import { convertToLocale } from "@/lib/helpers/money"
-import { getProductShippingOptions } from "@/lib/data/products"
 import { HttpTypes } from "@medusajs/types"
 import { Text, Heading } from "@medusajs/ui"
-import { useState, useEffect } from "react"
-import { LoaderWrapper } from "@/components/atoms/icons/IconWrappers"
 
 type ProductDetailsShippingProps = {
   product: HttpTypes.StoreProduct
@@ -19,44 +16,7 @@ export const ProductDetailsShipping = ({
   region,
   initialShippingOptions,
 }: ProductDetailsShippingProps) => {
-  // When server-fetched options are provided, use them directly (no client fetch)
-  const [shippingMethods, setShippingMethods] = useState<any[]>(
-    initialShippingOptions ?? []
-  )
-  const [loading, setLoading] = useState(!initialShippingOptions)
-  const [error, setError] = useState<string | null>(null)
-
-  useEffect(() => {
-    // Skip client-side fetch if server already provided shipping options
-    if (initialShippingOptions) {
-      setShippingMethods(initialShippingOptions)
-      setLoading(false)
-      return
-    }
-
-    const fetchShippingMethods = async () => {
-      if (!product?.id || !region?.id) {
-        setLoading(false)
-        setShippingMethods([])
-        return
-      }
-
-      try {
-        setLoading(true)
-        setError(null)
-        const shippingOptions = await getProductShippingOptions(product.id, region.id)
-        setShippingMethods(shippingOptions)
-      } catch (err) {
-        console.error("ProductDetailsShipping: Error fetching shipping methods:", err)
-        setError("Failed to load shipping methods")
-        setShippingMethods([])
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    fetchShippingMethods()
-  }, [product?.id, region?.id, initialShippingOptions])
+  const shippingMethods: any[] = initialShippingOptions ?? []
 
   return (
     <ProductPageAccordion
@@ -70,12 +30,7 @@ export const ProductDetailsShipping = ({
             Dostępne metody dostawy dla regionu
           </Heading>
           
-          {loading ? (
-            <div className="flex items-center gap-2 py-6">
-              <LoaderWrapper className="w-4 h-4" />
-              <Text className="text-ui-fg-subtle font-instrument-sans">Ładowanie metod dostawy...</Text>
-            </div>
-          ) : shippingMethods && shippingMethods.length > 0 ? (
+          {shippingMethods && shippingMethods.length > 0 ? (
             <div className="border border-ui-border-base rounded-xl overflow-hidden bg-[#BFB7AD]/40 backdrop-blur-sm">
               {shippingMethods.map((method: any, index: number) => (
                 <div key={method.id} className={`

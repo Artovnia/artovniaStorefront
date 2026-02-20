@@ -361,7 +361,9 @@ const ProductCardComponent = ({
             </div>
             
             {/* Lowest Price Display - compact version with info icon tooltip for ProductCard */}
-            {product.variants && product.variants.length > 0 && hasAnyDiscount && (
+            {/* Show in seller/suggested sections even without explicit discount flags,
+                so cards can still fetch/resolve 30-day lowest price data. */}
+            {product.variants && product.variants.length > 0 && (hasAnyDiscount || isSellerSection) && (
               <div className="mt-0">
                 <CompactLowestPriceDisplay
                   variantId={product.variants[0].id}
@@ -371,6 +373,7 @@ const ProductCardComponent = ({
                   fallbackPrice={
                     // Priority: Medusa calculated_price > Algolia prices array > Algolia min_price
                     product.variants[0]?.calculated_price?.original_amount ||
+                    product.variants[0]?.calculated_price?.calculated_amount ||
                     product.variants[0]?.prices?.[0]?.amount ||
                     (product as any).min_price
                   }
