@@ -39,6 +39,8 @@ export const ProductCarouselIndicator = ({
 
   // Calculate total slides for indicator
   const totalSlides = showAnimatedSlide ? slides.length + 1 : slides.length
+  const getIndicatorKey = (slide: MedusaProductImage, index: number) =>
+    `${slide.id ?? "no-id"}-${slide.url ?? "no-url"}-${index}`
 
   return (
     <div className="embla__dots relative lg:absolute lg:top-3 lg:bottom-auto w-full lg:w-auto lg:max-w-[calc(100%-24px)] py-3 lg:py-0 lg:block">
@@ -60,7 +62,7 @@ export const ProductCarouselIndicator = ({
           <div className="embla__container h-[250px] lg:h-[680px] flex lg:block">
             {(slides || []).map((slide, index) => (
               <div
-                key={slide.id}
+                key={getIndicatorKey(slide, index)}
                 className="mb-3 rounded-sm cursor-pointer w-16 h-16 bg-primary"
                 onClick={() => changeSlideHandler(index)}
               >

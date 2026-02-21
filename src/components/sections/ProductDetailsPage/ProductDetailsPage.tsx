@@ -58,7 +58,12 @@ export const ProductDetailsPage = async ({
       ? listProductsLean({
           seller_id: product.seller!.id,
           regionId: region.id,
-          queryParams: { limit: 8 },
+          queryParams: {
+            limit: 8,
+            // Below-fold cards hydrate prices from BatchPriceProvider on client.
+            // Avoid calculated_price expansion in this server-side cold path.
+            fields: 'id,title,handle,thumbnail,images.url,variants.id,seller.name',
+          },
         }).then(r => r.response.products).catch(() => [])
       : Promise.resolve([]),
 

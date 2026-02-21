@@ -47,6 +47,8 @@ export const ProductCarousel = ({
 
   // Extract image URLs for prefetch reuse
   const imageUrls = slides.map((s) => s.url)
+  const getSlideKey = (slide: MedusaProductImage, index: number) =>
+    `${slide.id ?? "no-id"}-${slide.url ?? "no-url"}-${index}`
 
   // Determine if we're on mobile/tablet
   const isMobile =
@@ -216,7 +218,7 @@ export const ProductCarousel = ({
                 {/* Regular image slides */}
                 {(slides || []).map((slide, index) => (
                   <div
-                    key={slide.id}
+                    key={getSlideKey(slide, index)}
                     className="embla__slide flex-[0_0_100%] min-w-0 h-[350px] cursor-zoom-in bg-[#F4F0EB]"
                     style={{ backgroundColor: '#F4F0EB' }}
                     onClick={() => openZoomModal(index)}
@@ -320,7 +322,7 @@ export const ProductCarousel = ({
                 {/* Regular image thumbnails — Images deferred until main image loads */}
                 {slides.map((slide, index) => (
                   <button
-                    key={slide.id}
+                    key={`thumb-${getSlideKey(slide, index)}`}
                     onClick={() => handleThumbnailClick(index)}
                     onMouseEnter={() => prefetchGalleryImage(slide.url)}
                     aria-label={`Miniatura ${index + 1} z ${slides.length}`}

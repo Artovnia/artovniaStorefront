@@ -7,6 +7,7 @@ import { HttpTypes } from "@medusajs/types"
 import { SellerProps } from "@/types/seller"
 import { unifiedCache, CACHE_TTL } from "@/lib/utils/unified-cache"
 import { fetchWithRetry } from "@/lib/utils/fetch-with-timeout"
+import { unstable_cache } from "next/cache"
 
 // Type for allowed sort keys in server-side product listing
 type SortOptions = "created_at" | "created_at_desc" | "created_at_asc" | "title" | "price" | "price_asc" | "price_desc" | "updated_at"
@@ -18,6 +19,8 @@ type SortOptions = "created_at" | "created_at_desc" | "created_at_asc" | "title"
 // Use this helper for all public (unauthenticated) cacheable fetches.
 const BACKEND_URL = process.env.MEDUSA_BACKEND_URL || process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || 'http://localhost:9000'
 const PUB_KEY = process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || ''
+const SLOW_PUBLIC_FETCH_MS = Number(process.env.SLOW_PUBLIC_FETCH_MS || 1200)
+const PRODUCT_CACHE_REVALIDATE_SECONDS = 600
 
 async function publicFetch<T>(
   path: string,
@@ -41,13 +44,114 @@ async function publicFetch<T>(
   }
   if (sourceFunction) headers['x-source-function'] = sourceFunction
 
+  const startedAt = Date.now()
   const res = await fetch(url.toString(), { headers, next: nextOptions })
+  const networkMs = Date.now() - startedAt
   if (!res.ok) {
     const body = await res.text().catch(() => '')
     throw new Error(`publicFetch ${path} → ${res.status}: ${body}`)
   }
-  return res.json() as Promise<T>
+
+  const parseStartedAt = Date.now()
+  const data = await res.json() as T
+  const parseMs = Date.now() - parseStartedAt
+  const totalMs = Date.now() - startedAt
+
+  if (totalMs >= SLOW_PUBLIC_FETCH_MS) {
+    console.warn(JSON.stringify({
+      level: 'warn',
+      msg: 'Slow storefront publicFetch',
+      sourceFunction: sourceFunction || 'unknown',
+      path,
+      status: res.status,
+      networkMs,
+      parseMs,
+      totalMs,
+      cacheControl: res.headers.get('cache-control'),
+      backendCache: res.headers.get('x-cache') || null,
+      cacheStatus: res.headers.get('x-vercel-cache') || res.headers.get('x-nextjs-cache') || null,
+    }))
+  }
+
+  return data
 }
+
+const getCachedProductDetail = unstable_cache(
+  async (handle: string, regionId: string) => {
+    const { products } = await publicFetch<{ products: HttpTypes.StoreProduct[]; count: number }>(
+      '/store/products',
+      {
+        handle,
+        region_id: regionId,
+        limit: 1,
+        fields:
+          'id,title,handle,description,thumbnail,created_at,' +
+          'images.url,' +
+          'metadata,' +
+          'options.id,options.title,options.values.value,' +
+          'variants.id,variants.title,' +
+          'variants.calculated_price,' +
+          'variants.inventory_quantity,variants.manage_inventory,variants.allow_backorder,' +
+          'variants.metadata,' +
+          'variants.options.value,variants.options.option_id,' +
+          'variants.options.option.title,' +
+          'seller.id,seller.handle,seller.name,seller.photo,seller.logo_url,' +
+          'categories.id,categories.name,categories.handle,categories.parent_category_id,' +
+          'categories.parent_category.id,categories.parent_category.name,categories.parent_category.handle,categories.parent_category.parent_category_id,' +
+          'categories.parent_category.parent_category.id,categories.parent_category.parent_category.name,categories.parent_category.parent_category.handle',
+      },
+      { revalidate: PRODUCT_CACHE_REVALIDATE_SECONDS, tags: ['products'] },
+      'listProductsForDetail'
+    )
+
+    return products[0] || null
+  },
+  ['product-detail-v1'],
+  { revalidate: PRODUCT_CACHE_REVALIDATE_SECONDS, tags: ['products'] }
+)
+
+const getCachedLeanProducts = unstable_cache(
+  async (
+    endpoint: string,
+    queryObject: Record<string, string | number | boolean | string[] | null | undefined>,
+    _cacheIdentity: string
+  ) => {
+    return publicFetch<{ products: HttpTypes.StoreProduct[]; count: number }>(
+      endpoint,
+      queryObject,
+      { revalidate: PRODUCT_CACHE_REVALIDATE_SECONDS, tags: ['products'] },
+      'listProductsLean'
+    )
+  },
+  ['lean-products-v1'],
+  { revalidate: PRODUCT_CACHE_REVALIDATE_SECONDS, tags: ['products'] }
+)
+
+const getCachedProductPromotions = unstable_cache(
+  async (productId: string) => {
+    return publicFetch<{ promotions: any[]; count: number }>(
+      `/store/products/${productId}/promotions`,
+      {},
+      { revalidate: PRODUCT_CACHE_REVALIDATE_SECONDS, tags: ['products', `product-${productId}`] },
+      'getProductPromotions'
+    )
+  },
+  ['product-promotions-v1'],
+  { revalidate: PRODUCT_CACHE_REVALIDATE_SECONDS, tags: ['products'] }
+)
+
+const getCachedProductShippingOptions = unstable_cache(
+  async (productId: string, regionId: string) => {
+    return publicFetch<{ shipping_options: any[] }>(
+      '/store/product-shipping-options',
+      { product_id: productId, region_id: regionId },
+      { revalidate: PRODUCT_CACHE_REVALIDATE_SECONDS, tags: ['products', `shipping-${productId}`] },
+      'getProductShippingOptions'
+    )
+  },
+  ['product-shipping-options-v1'],
+  { revalidate: PRODUCT_CACHE_REVALIDATE_SECONDS, tags: ['products'] }
+)
 
 /**
  * Performs client-side ordering of product arrays when server sorting isn't applied.
@@ -176,14 +280,11 @@ export const listProductsLean = async ({
 
     // seller_id is not a valid param on /store/products — use the seller-specific endpoint
     const endpoint = seller_id ? `/store/seller/${seller_id}/products` : `/store/products`
-    const tags = seller_id ? ['products', `seller-${seller_id}`] : ['products']
-
     // ✅ Use publicFetch (no Authorization header) so Next.js Data Cache works
-    const { products, count } = await publicFetch<{ products: HttpTypes.StoreProduct[]; count: number }>(
+    const { products, count } = await getCachedLeanProducts(
       endpoint,
       queryObject,
-      { revalidate: 300, tags },
-      'listProductsLean'
+      seller_id || 'no-seller'
     )
 
     const nextPage = count > offset + limit ? pageParam + 1 : null
@@ -225,7 +326,7 @@ export const getProductsPromotionsBatch = async (
     const result = await publicFetch<{ results?: Record<string, any[]> }>(
       '/store/products/promotions/batch',
       { product_ids: ids.join(',') },
-      { revalidate: 120, tags: ['products', 'promotions-batch'] },
+      { revalidate: PRODUCT_CACHE_REVALIDATE_SECONDS, tags: ['products', 'promotions-batch'] },
       'getProductsPromotionsBatch'
     )
 
@@ -253,39 +354,13 @@ export const listProductsForDetail = async ({
   errorType?: "not_found" | "transient" | "request"
 }> => {
   try {
-    // ✅ Use publicFetch (no Authorization header) so Next.js Data Cache works
-    const { products } = await publicFetch<{ products: HttpTypes.StoreProduct[]; count: number }>(
-      '/store/products',
-      {
-        handle,
-        region_id: regionId,
-        limit: 1,
-        fields:
-          "id,title,handle,description,thumbnail,created_at,status," +
-          "images.id,images.url," +
-          "metadata," +
-          "options.id,options.title,options.values.id,options.values.value," +
-          "variants.id,variants.title," +
-          "variants.calculated_price," +
-          "variants.inventory_quantity,variants.manage_inventory,variants.allow_backorder," +
-          "variants.metadata," +
-          "variants.options.id,variants.options.value,variants.options.option_id," +
-          "variants.options.option.id,variants.options.option.title," +
-          "seller.id,seller.handle,seller.name,seller.photo,seller.logo_url," +
-          "categories.id,categories.name,categories.handle,categories.parent_category_id," +
-          "categories.parent_category.id,categories.parent_category.name,categories.parent_category.handle,categories.parent_category.parent_category_id," +
-          "categories.parent_category.parent_category.id,categories.parent_category.parent_category.name,categories.parent_category.parent_category.handle," +
-          "shipping_profile.name"
-      },
-      { revalidate: 300, tags: ['products'] },
-      'listProductsForDetail'
-    )
+    const product = await getCachedProductDetail(handle, regionId)
 
-    if (!products[0]) {
+    if (!product) {
       return { product: null, errorType: "not_found" }
     }
 
-    return { product: products[0] }
+    return { product }
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error)
     const statusMatch = message.match(/->\s(\d{3})/)
@@ -397,7 +472,7 @@ export const listProducts = async ({
           region_id: region?.id,
           ...queryParams,
         },
-        { revalidate: 300, tags: ['products', `seller-${seller_id}`] },
+        { revalidate: PRODUCT_CACHE_REVALIDATE_SECONDS, tags: ['products', `seller-${seller_id}`] },
         'listProducts'
       )
 
@@ -430,7 +505,7 @@ export const listProducts = async ({
     }>(
       '/store/products',
       queryObject,
-      { revalidate: 300, tags: ['products'] },
+      { revalidate: PRODUCT_CACHE_REVALIDATE_SECONDS, tags: ['products'] },
       'listProducts'
     )
 
@@ -516,7 +591,7 @@ export const listProductsWithSort = async ({
         query.category_id = category_id
       }
 
-      // ✅ OPTIMIZED: Direct fetch with shorter cache for faster updates
+      // ✅ OPTIMIZED: Direct fetch with product cache TTL
       const { products, count } = await sdk.client.fetch<{
         products: HttpTypes.StoreProduct[]
         count: number
@@ -525,7 +600,7 @@ export const listProductsWithSort = async ({
         query,
         headers,
         next: { 
-          revalidate: 60, // ✅ Reduced from 300s to 60s for faster page switches
+          revalidate: PRODUCT_CACHE_REVALIDATE_SECONDS,
           tags: ['seller-products', `seller-${seller_id}`] 
         },
       })
@@ -602,12 +677,7 @@ export const getProductPromotions = async (
   productId: string
 ): Promise<any[]> => {
   try {
-    const result = await publicFetch<{ promotions: any[]; count: number }>(
-      `/store/products/${productId}/promotions`,
-      {},
-      { revalidate: 300, tags: ['products', `product-${productId}`] },
-      'getProductPromotions'
-    )
+    const result = await getCachedProductPromotions(productId)
     return result?.promotions || []
   } catch (error) {
     console.error('❌ getProductPromotions: Fetch failed', { productId, error })
@@ -673,7 +743,7 @@ export const listProductsWithPromotions = async ({
         count: number
         promotions_found?: number
         applicable_product_ids?: number
-      }>('/store/products/promotions', queryParams, { revalidate: 300 })
+      }>('/store/products/promotions', queryParams, { revalidate: PRODUCT_CACHE_REVALIDATE_SECONDS })
 
       const products = productsResponse?.products || []
       const count = productsResponse?.count || 0
@@ -713,12 +783,7 @@ export const getProductShippingOptions = async (
   regionId: string
 ) => {
   try {
-    // ✅ Use publicFetch (no Authorization header) so Next.js Data Cache works
-    const response = await publicFetch<{ shipping_options: any[] }>(
-      '/store/product-shipping-options',
-      { product_id: productId, region_id: regionId },
-      { revalidate: 300, tags: [`shipping-${productId}`] }
-    )
+    const response = await getCachedProductShippingOptions(productId, regionId)
     return response.shipping_options || []
   } catch (error) {
     console.error(`❌ Frontend: Error fetching shipping options for product ${productId}:`, error)
@@ -807,7 +872,12 @@ export const listSuggestedProducts = async ({
         listProductsLean({
           category_id: cat.id,
           regionId,
-          queryParams: { limit: limit + 4 }, // Fetch extra to account for duplicates
+          queryParams: {
+            limit: limit + 4, // Fetch extra to account for duplicates
+            // Suggested cards are below-fold on PDP and can resolve final prices client-side.
+            // Keep this query lean to reduce category cold-path latency.
+            fields: 'id,title,handle,thumbnail,images.url,variants.id,seller.name',
+          },
         }).then(r => ({
           products: r.response.products || [],
           priority: categoryChain.indexOf(cat) // Lower = higher priority
@@ -817,7 +887,10 @@ export const listSuggestedProducts = async ({
         // No categories — use general fallback as the only source
         listProductsLean({
           regionId,
-          queryParams: { limit: limit + 4 },
+          queryParams: {
+            limit: limit + 4,
+            fields: 'id,title,handle,thumbnail,images.url,variants.id,seller.name',
+          },
         }).then(r => ({
           products: r.response.products || [],
           priority: 100

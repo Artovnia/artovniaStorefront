@@ -20,6 +20,8 @@ File: `src/app/[locale]/(main)/products/[handle]/page.tsx`
   - `export const revalidate = 300`
 - Uses request-level deduplication:
   - `cache(async (handle, regionId) => listProductsForDetail(...))`
+- Uses cross-request/server-cache deduplication in data layer:
+  - `unstable_cache(async (handle, regionId) => publicFetch(...), ['product-detail-v1'], { revalidate: 300, tags: ['products'] })`
 - Server flow:
   1. Resolve locale/region via `getRegion(locale)`
   2. Fetch product detail via `listProductsForDetail({ handle, regionId })`
@@ -80,23 +82,27 @@ Query keys:
 - `fields=<detail fields string>`
 
 Fields currently fetched:
-- `id,title,handle,description,thumbnail,created_at,status`
-- `images.id,images.url`
+- `id,title,handle,description,thumbnail,created_at`
+- `images.url`
 - `metadata`
-- `options.id,options.title,options.values.id,options.values.value`
+- `options.id,options.title,options.values.value`
 - `variants.id,variants.title,variants.calculated_price`
 - `variants.inventory_quantity,variants.manage_inventory,variants.allow_backorder`
 - `variants.metadata`
-- `variants.options.id,variants.options.value,variants.options.option_id`
-- `variants.options.option.id,variants.options.option.title`
+- `variants.options.value,variants.options.option_id`
+- `variants.options.option.title`
 - `seller.id,seller.handle,seller.name,seller.photo,seller.logo_url`
 - `categories.id,categories.name,categories.handle,categories.parent_category_id`
 - `categories.parent_category.id,categories.parent_category.name,categories.parent_category.handle,categories.parent_category.parent_category_id`
 - `categories.parent_category.parent_category.id,categories.parent_category.parent_category.name,categories.parent_category.parent_category.handle`
-- `shipping_profile.name`
 
 Cache strategy:
-- `publicFetch` (no auth header) + `next: { revalidate: 300, tags: ['products'] }`
+- Outer cache: `unstable_cache` in `getCachedProductDetail(handle, regionId)` with `revalidate: 300` and `tags: ['products']`
+- Inner fetch: `publicFetch` (no auth header) + `next: { revalidate: 300, tags: ['products'] }`
+
+Observed impact:
+- Fewer backend traces for repeated PDP visits (more requests served by Next/server cache before backend hit)
+- Faster repeated `GET /store/products?handle=...` behavior (often near ~100ms or lower when warm)
 
 ## 2.2 `listProductsLean`
 File: `src/lib/data/products.ts`
@@ -128,6 +134,19 @@ Endpoint:
 Strategy:
 - Uses `listProductsLean` on category chain in parallel
 - Dedupes + excludes current product + shuffles
+
+## 2.6 `publicFetch` slow-request timing instrumentation
+File: `src/lib/data/products.ts`
+
+Behavior:
+- Measures and logs:
+  - `networkMs` (fetch round-trip)
+  - `parseMs` (JSON parse time)
+  - `totalMs`
+- Logs only when `totalMs >= SLOW_PUBLIC_FETCH_MS` (default `1200`)
+
+Where logs appear:
+- Storefront server runtime logs (Next.js terminal), not browser console.
 
 ---
 
@@ -178,7 +197,12 @@ Main gains:
 2. Parallelized server fetches in `ProductDetailsPage`
 3. Seller/suggested sections use lean card payloads
 4. Request-level dedupe via React `cache()`
-5. Layout navigation data fetched once server-side and passed to Header/Footer
+5. Cross-request detail dedupe via `unstable_cache` in `getCachedProductDetail(handle, regionId)`
+6. Layout navigation data fetched once server-side and passed to Header/Footer
+
+What changed that reduced traces and sped up `GET /store/products?handle=...`:
+- `listProductsForDetail` now reads via `getCachedProductDetail` (`unstable_cache`) instead of directly calling `publicFetch` each time.
+- Result: repeated visits for same `(handle, regionId)` are served from Next/server cache more often, so backend receives fewer requests and telemetry stores fewer traces.
 
 ---
 
@@ -191,13 +215,16 @@ If regressions appear:
 4. In admin telemetry, verify slow request card badge:
    - `POOL CAPTURED` vs `POOL MISSING`
 5. Verify OpenTelemetry overview pool coverage card for snapshot availability
+6. If testing timing logs, set `SLOW_PUBLIC_FETCH_MS=0` temporarily and check storefront server logs for `Slow storefront publicFetch`
 
 ---
 
 ## 7) Change Log (Performance-focused)
 
 - PDP route uses cached detail fetch + ISR
+- PDP detail data additionally wrapped in `unstable_cache` (cross-request cache, 300s)
 - `ProductDetailsPage` runs parallel server fetches
 - `listProductsLean` drives seller/suggested card sections
 - Seller endpoint honors requested fields and field-sensitive caching
 - Telemetry UI/API enhanced with DB pool visibility and coverage
+- Storefront `publicFetch` logs timing split (`networkMs`, `parseMs`, `totalMs`) for slow calls

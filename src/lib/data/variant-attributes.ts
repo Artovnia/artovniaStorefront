@@ -1,9 +1,10 @@
 "use server"
 
 // ✅ Use native fetch (no Authorization header) so Next.js Data Cache works.
-// sdk.client.fetch injects the JWT globally which busts next:{revalidate:300}.
+// sdk.client.fetch injects the JWT globally which busts next:{revalidate}.
 const BACKEND_URL = process.env.MEDUSA_BACKEND_URL || process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || 'http://localhost:9000'
 const PUB_KEY = process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || ''
+const PRODUCT_CACHE_REVALIDATE_SECONDS = 600
 
 /**
  * Fetch attribute values for a specific product variant
@@ -18,7 +19,7 @@ export async function getVariantAttributes(productId: string, variantId: string)
           'x-publishable-api-key': PUB_KEY,
         },
         next: {
-          revalidate: 300,
+          revalidate: PRODUCT_CACHE_REVALIDATE_SECONDS,
           tags: [`variant-${variantId}-attributes`, `product-${productId}`],
         }
       }
