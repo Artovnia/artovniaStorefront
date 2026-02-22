@@ -4,7 +4,13 @@ import { VendorAvailabilityProvider } from "../../../components/organisms/Vendor
 import { BatchPriceProvider } from "@/components/context/BatchPriceProvider"
 import { PromotionDataProvider } from "@/components/context/PromotionDataProvider"
 import { ProductUserDataProvider } from "@/components/context/ProductUserDataProvider"
-import { listProductsLean, getProductPromotions, listSuggestedProducts, getProductShippingOptions } from "../../../lib/data/products"
+import {
+  listProductsLean,
+  getProductPromotions,
+  listSuggestedProducts,
+  getProductShippingOptions,
+  getProductDetailCategoryHierarchy,
+} from "../../../lib/data/products"
 import { getVendorCompleteStatus } from "../../../lib/data/vendor-availability"
 import ProductErrorBoundary from "@/components/molecules/ProductErrorBoundary/ProductErrorBoundary"
 import { Breadcrumbs } from "@/components/atoms/Breadcrumbs/Breadcrumbs"
@@ -46,7 +52,7 @@ export const ProductDetailsPage = async ({
   const [
     sellerProductsResult,
     vendorStatusResult,
-    breadcrumbsResult,
+    categoryHierarchyResult,
     promotionalProductsResult,
     shippingOptionsResult,
     variantAttributesResult,
@@ -60,9 +66,9 @@ export const ProductDetailsPage = async ({
           regionId: region.id,
           queryParams: {
             limit: 8,
-            // Below-fold cards hydrate prices from BatchPriceProvider on client.
-            // Avoid calculated_price expansion in this server-side cold path.
-            fields: 'id,title,handle,thumbnail,images.url,variants.id,seller.name',
+            // Lowest-price badge on cards needs numeric fallback when history is missing.
+            // Include lightweight variant pricing fields for stable 30-day price rendering.
+            fields: 'id,title,handle,thumbnail,images.url,variants.id,variants.calculated_price,variants.prices.amount,variants.prices.currency_code,seller.name',
           },
         }).then(r => r.response.products).catch(() => [])
       : Promise.resolve([]),
@@ -81,8 +87,9 @@ export const ProductDetailsPage = async ({
           suspension: undefined,
         }),
 
-    // Breadcrumbs — built locally from product.categories (no network call)
-    Promise.resolve(buildProductBreadcrumbsLocal(product, locale)),
+    // Deferred category tree for breadcrumbs and related sections.
+    // Keeps listProductsForDetail focused on above-the-fold fields.
+    getProductDetailCategoryHierarchy({ handle: product.handle, regionId: region.id }).catch(() => []),
 
     // Current product promotions — targeted fetch via /store/products/{id}/promotions
     // Only fetches promotions for this specific product (not all 50 promotional products globally)
@@ -130,8 +137,16 @@ export const ProductDetailsPage = async ({
   const holidayMode = vendorStatus?.holiday
   const suspension = vendorStatus?.suspension
 
-  const breadcrumbs =
-    breadcrumbsResult.status === "fulfilled" ? breadcrumbsResult.value : []
+  const categoryHierarchy =
+    categoryHierarchyResult.status === "fulfilled"
+      ? (categoryHierarchyResult.value as HttpTypes.StoreProductCategory[])
+      : []
+
+  const productWithCategoryHierarchy = categoryHierarchy.length > 0
+    ? ({ ...product, categories: categoryHierarchy } as HttpTypes.StoreProduct)
+    : product
+
+  const breadcrumbs = buildProductBreadcrumbsLocal(productWithCategoryHierarchy, locale)
  
   // Current product's own promotions — merge into product object for PromotionDataProvider
   const currentProductPromotions =
@@ -187,7 +202,7 @@ export const ProductDetailsPage = async ({
 
   // Generate structured data for SEO
   const productPrice = getProductPrice()
-  const productJsonLd = generateProductJsonLd(product, productPrice, "PLN", [])
+  const productJsonLd = generateProductJsonLd(productWithCategoryHierarchy, productPrice, "PLN", [])
   const breadcrumbJsonLd = generateBreadcrumbJsonLd(breadcrumbs)
 
   return (

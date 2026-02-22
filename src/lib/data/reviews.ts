@@ -183,7 +183,6 @@ export const createReview = async (review: any) => {
 
     // Parse and return the result
     const result = await response.json()
-    console.log('📝 [createReview] Backend response:', result)
     
     // Revalidate paths and tags using Next.js cache invalidation
     try {

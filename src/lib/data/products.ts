@@ -20,16 +20,253 @@ type SortOptions = "created_at" | "created_at_desc" | "created_at_asc" | "title"
 const BACKEND_URL = process.env.MEDUSA_BACKEND_URL || process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || 'http://localhost:9000'
 const PUB_KEY = process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || ''
 const SLOW_PUBLIC_FETCH_MS = Number(process.env.SLOW_PUBLIC_FETCH_MS || 1200)
-const PRODUCT_CACHE_REVALIDATE_SECONDS = 600
+const PRODUCT_CACHE_REVALIDATE_SECONDS = Number(process.env.PRODUCT_CACHE_REVALIDATE_SECONDS || 1800)
+const PUBLIC_FETCH_CACHE_TELEMETRY_LOG_EVERY = Number(process.env.PUBLIC_FETCH_CACHE_TELEMETRY_LOG_EVERY || 50)
+
+type PublicFetchBucketStats = {
+  requests: number
+  edgeHits: number
+  edgeMisses: number
+  edgeStale: number
+  backendHits: number
+  backendMisses: number
+  avgMs: number
+  lastMs: number
+  lastEdgeStatus: string | null
+  lastBackendStatus: string | null
+  lastSeenAt: string | null
+}
+
+const TRACKED_PUBLIC_FETCH_PATHS = new Set(['/store/products', '/store/product-categories'])
+const publicFetchCacheBuckets = new Map<string, PublicFetchBucketStats>()
+let publicFetchTelemetryEvents = 0
+
+if (PRODUCT_CACHE_REVALIDATE_SECONDS < 300) {
+  console.warn(
+    '[Cache] PRODUCT_CACHE_REVALIDATE_SECONDS is set below 300s. This may increase cache misses and backend load.'
+  )
+}
+
+const PRODUCT_DETAIL_CRITICAL_FIELDS =
+  'id,title,handle,description,thumbnail,created_at,' +
+  'images.url,' +
+  'metadata,' +
+  'options.id,options.title,options.values.value,' +
+  'variants.id,variants.title,' +
+  'variants.calculated_price,' +
+  'variants.inventory_quantity,variants.manage_inventory,variants.allow_backorder,' +
+  'variants.metadata,' +
+  'variants.options.value,variants.options.option_id,' +
+  'variants.options.option.title,' +
+  'seller.id,seller.handle,seller.name,seller.photo,seller.logo_url,' +
+  'categories.id,categories.name,categories.handle,categories.parent_category_id'
+
+const PRODUCT_DETAIL_CATEGORY_TREE_FIELDS =
+  'id,' +
+  'categories.id,categories.name,categories.handle,categories.parent_category_id,' +
+  'categories.parent_category.id,categories.parent_category.name,categories.parent_category.handle,categories.parent_category.parent_category_id,' +
+  'categories.parent_category.parent_category.id,categories.parent_category.parent_category.name,categories.parent_category.parent_category.handle'
+
+const SELLER_LISTING_DEFAULT_FIELDS =
+  'id,title,handle,thumbnail,images.url,created_at,' +
+  'variants.id,variants.calculated_price,variants.prices.amount,variants.prices.currency_code,' +
+  'seller.id,seller.name,seller.handle,' +
+  'categories.id,categories.name,categories.handle,categories.parent_category_id'
+
+type QueryParamScalar = string | number | boolean
+type QueryParamValue = QueryParamScalar | QueryParamScalar[] | null | undefined
+
+function hasParam(params: Record<string, QueryParamScalar | string[]>, key: string): boolean {
+  const value = params[key]
+  if (value === undefined || value === null) {
+    return false
+  }
+
+  if (Array.isArray(value)) {
+    return value.length > 0
+  }
+
+  if (typeof value === 'string') {
+    return value.trim().length > 0
+  }
+
+  return true
+}
+
+function buildPublicFetchBucketKey(
+  path: string,
+  params: Record<string, QueryParamScalar | string[]>,
+  sourceFunction?: string
+): string {
+  if (path === '/store/products') {
+    return [
+      path,
+      `source:${sourceFunction || 'unknown'}`,
+      `handle:${hasParam(params, 'handle') ? 1 : 0}`,
+      `region:${hasParam(params, 'region_id') ? 1 : 0}`,
+      `category:${hasParam(params, 'category_id') ? 1 : 0}`,
+      `seller:${hasParam(params, 'seller_id') ? 1 : 0}`,
+      `fields:${hasParam(params, 'fields') ? 1 : 0}`,
+    ].join('|')
+  }
+
+  if (path === '/store/product-categories') {
+    return [
+      path,
+      `source:${sourceFunction || 'unknown'}`,
+      `parent:${hasParam(params, 'parent_category_id') ? 1 : 0}`,
+      `descTree:${hasParam(params, 'include_descendants_tree') ? 1 : 0}`,
+      `fields:${hasParam(params, 'fields') ? 1 : 0}`,
+      `limit:${hasParam(params, 'limit') ? 1 : 0}`,
+    ].join('|')
+  }
+
+  return `${path}|source:${sourceFunction || 'unknown'}`
+}
+
+function incrementAverage(currentAvg: number, currentCount: number, value: number): number {
+  if (currentCount <= 0) {
+    return value
+  }
+
+  return ((currentAvg * (currentCount - 1)) + value) / currentCount
+}
+
+function recordPublicFetchBucketTelemetry({
+  path,
+  params,
+  sourceFunction,
+  totalMs,
+  edgeStatus,
+  backendStatus,
+}: {
+  path: string
+  params: Record<string, QueryParamScalar | string[]>
+  sourceFunction?: string
+  totalMs: number
+  edgeStatus: string | null
+  backendStatus: string | null
+}) {
+  if (!TRACKED_PUBLIC_FETCH_PATHS.has(path)) {
+    return
+  }
+
+  const bucketKey = buildPublicFetchBucketKey(path, params, sourceFunction)
+  const prev = publicFetchCacheBuckets.get(bucketKey)
+  const nextRequests = (prev?.requests || 0) + 1
+
+  const edgeStatusNormalized = (edgeStatus || '').toUpperCase()
+  const backendStatusNormalized = (backendStatus || '').toUpperCase()
+
+  const next: PublicFetchBucketStats = {
+    requests: nextRequests,
+    edgeHits: (prev?.edgeHits || 0) + (edgeStatusNormalized === 'HIT' ? 1 : 0),
+    edgeMisses: (prev?.edgeMisses || 0) + (edgeStatusNormalized === 'MISS' ? 1 : 0),
+    edgeStale: (prev?.edgeStale || 0) + (edgeStatusNormalized === 'STALE' ? 1 : 0),
+    backendHits: (prev?.backendHits || 0) + (backendStatusNormalized === 'HIT' ? 1 : 0),
+    backendMisses: (prev?.backendMisses || 0) + (backendStatusNormalized === 'MISS' ? 1 : 0),
+    avgMs: incrementAverage(prev?.avgMs || 0, nextRequests, totalMs),
+    lastMs: totalMs,
+    lastEdgeStatus: edgeStatus,
+    lastBackendStatus: backendStatus,
+    lastSeenAt: new Date().toISOString(),
+  }
+
+  publicFetchCacheBuckets.set(bucketKey, next)
+  publicFetchTelemetryEvents += 1
+
+  const shouldLogSummary =
+    Number.isFinite(PUBLIC_FETCH_CACHE_TELEMETRY_LOG_EVERY) &&
+    PUBLIC_FETCH_CACHE_TELEMETRY_LOG_EVERY > 0 &&
+    publicFetchTelemetryEvents % PUBLIC_FETCH_CACHE_TELEMETRY_LOG_EVERY === 0
+
+  if (shouldLogSummary) {
+    const summary = Array.from(publicFetchCacheBuckets.entries())
+      .map(([bucket, stats]) => ({
+        bucket,
+        requests: stats.requests,
+        edgeHitRate: stats.requests > 0 ? Number(((stats.edgeHits / stats.requests) * 100).toFixed(2)) : 0,
+        backendHitRate: stats.requests > 0 ? Number(((stats.backendHits / stats.requests) * 100).toFixed(2)) : 0,
+        avgMs: Number(stats.avgMs.toFixed(2)),
+        lastMs: stats.lastMs,
+      }))
+      .sort((a, b) => b.requests - a.requests)
+      .slice(0, 20)
+
+    console.info(JSON.stringify({
+      level: 'info',
+      msg: 'publicFetch cache bucket summary',
+      trackedPaths: Array.from(TRACKED_PUBLIC_FETCH_PATHS),
+      eventsProcessed: publicFetchTelemetryEvents,
+      buckets: summary,
+    }))
+  }
+}
+
+function normalizeCommaSeparatedList(value: string): string {
+  return Array.from(
+    new Set(
+      value
+        .split(',')
+        .map((item) => item.trim())
+        .filter(Boolean)
+    )
+  )
+    .sort()
+    .join(',')
+}
+
+function normalizeQueryParams(params: Record<string, QueryParamValue>): Record<string, QueryParamScalar | string[]> {
+  const normalized: Record<string, QueryParamScalar | string[]> = {}
+
+  for (const key of Object.keys(params).sort()) {
+    const rawValue = params[key]
+
+    if (rawValue === undefined || rawValue === null) {
+      continue
+    }
+
+    if (Array.isArray(rawValue)) {
+      const normalizedArray = rawValue
+        .filter((value) => value !== undefined && value !== null)
+        .map((value) => String(value).trim())
+        .filter(Boolean)
+        .sort()
+
+      if (normalizedArray.length > 0) {
+        normalized[key] = normalizedArray
+      }
+      continue
+    }
+
+    if (typeof rawValue === 'string') {
+      const trimmedValue = rawValue.trim()
+      if (!trimmedValue) {
+        continue
+      }
+
+      normalized[key] = key === 'fields'
+        ? normalizeCommaSeparatedList(trimmedValue)
+        : trimmedValue
+      continue
+    }
+
+    normalized[key] = rawValue
+  }
+
+  return normalized
+}
 
 async function publicFetch<T>(
   path: string,
-  params: Record<string, any>,
+  params: Record<string, QueryParamValue>,
   nextOptions: NextFetchRequestConfig,
   sourceFunction?: string
 ): Promise<T> {
   const url = new URL(`${BACKEND_URL}${path}`)
-  Object.entries(params).forEach(([k, v]) => {
+  const normalizedParams = normalizeQueryParams(params)
+
+  Object.entries(normalizedParams).forEach(([k, v]) => {
     if (v === undefined || v === null) return
     if (Array.isArray(v)) {
       v.forEach(item => url.searchParams.append(k, String(item)))
@@ -73,6 +310,15 @@ async function publicFetch<T>(
     }))
   }
 
+  recordPublicFetchBucketTelemetry({
+    path,
+    params: normalizedParams,
+    sourceFunction,
+    totalMs,
+    edgeStatus: res.headers.get('x-vercel-cache') || res.headers.get('x-nextjs-cache') || null,
+    backendStatus: res.headers.get('x-cache') || null,
+  })
+
   return data
 }
 
@@ -84,21 +330,7 @@ const getCachedProductDetail = unstable_cache(
         handle,
         region_id: regionId,
         limit: 1,
-        fields:
-          'id,title,handle,description,thumbnail,created_at,' +
-          'images.url,' +
-          'metadata,' +
-          'options.id,options.title,options.values.value,' +
-          'variants.id,variants.title,' +
-          'variants.calculated_price,' +
-          'variants.inventory_quantity,variants.manage_inventory,variants.allow_backorder,' +
-          'variants.metadata,' +
-          'variants.options.value,variants.options.option_id,' +
-          'variants.options.option.title,' +
-          'seller.id,seller.handle,seller.name,seller.photo,seller.logo_url,' +
-          'categories.id,categories.name,categories.handle,categories.parent_category_id,' +
-          'categories.parent_category.id,categories.parent_category.name,categories.parent_category.handle,categories.parent_category.parent_category_id,' +
-          'categories.parent_category.parent_category.id,categories.parent_category.parent_category.name,categories.parent_category.parent_category.handle',
+        fields: PRODUCT_DETAIL_CRITICAL_FIELDS,
       },
       { revalidate: PRODUCT_CACHE_REVALIDATE_SECONDS, tags: ['products'] },
       'listProductsForDetail'
@@ -110,10 +342,34 @@ const getCachedProductDetail = unstable_cache(
   { revalidate: PRODUCT_CACHE_REVALIDATE_SECONDS, tags: ['products'] }
 )
 
+const getCachedProductCategoryHierarchy = unstable_cache(
+  async (handle: string, regionId: string) => {
+    const { products } = await publicFetch<{ products: HttpTypes.StoreProduct[]; count: number }>(
+      '/store/products',
+      {
+        handle,
+        region_id: regionId,
+        limit: 1,
+        fields: PRODUCT_DETAIL_CATEGORY_TREE_FIELDS,
+      },
+      { revalidate: PRODUCT_CACHE_REVALIDATE_SECONDS, tags: ['products'] },
+      'getProductDetailCategoryHierarchy'
+    )
+
+    const product = products?.[0] as (HttpTypes.StoreProduct & {
+      categories?: HttpTypes.StoreProductCategory[]
+    }) | undefined
+
+    return product?.categories || []
+  },
+  ['product-detail-categories-v1'],
+  { revalidate: PRODUCT_CACHE_REVALIDATE_SECONDS, tags: ['products'] }
+)
+
 const getCachedLeanProducts = unstable_cache(
   async (
     endpoint: string,
-    queryObject: Record<string, string | number | boolean | string[] | null | undefined>,
+    queryObject: Record<string, QueryParamValue>,
     _cacheIdentity: string
   ) => {
     return publicFetch<{ products: HttpTypes.StoreProduct[]; count: number }>(
@@ -262,7 +518,7 @@ export const listProductsLean = async ({
 
   try {
     // ✅ OPTIMIZED: Minimal fields for homepage - stays under 2MB cache limit
-    const queryObject: Record<string, any> = {
+    const queryObject: Record<string, QueryParamValue> = {
       category_id,
       collection_id,
       limit,
@@ -278,12 +534,14 @@ export const listProductsLean = async ({
       ...queryParams,
     }
 
+    const normalizedQueryObject = normalizeQueryParams(queryObject)
+
     // seller_id is not a valid param on /store/products — use the seller-specific endpoint
     const endpoint = seller_id ? `/store/seller/${seller_id}/products` : `/store/products`
     // ✅ Use publicFetch (no Authorization header) so Next.js Data Cache works
     const { products, count } = await getCachedLeanProducts(
       endpoint,
-      queryObject,
+      normalizedQueryObject,
       seller_id || 'no-seller'
     )
 
@@ -308,6 +566,25 @@ export const listProductsLean = async ({
       nextPage: null,
       queryParams,
     }
+  }
+}
+
+export const getProductDetailCategoryHierarchy = async ({
+  handle,
+  regionId,
+}: {
+  handle: string
+  regionId: string
+}): Promise<HttpTypes.StoreProductCategory[]> => {
+  try {
+    return await getCachedProductCategoryHierarchy(handle, regionId)
+  } catch (error) {
+    console.error('❌ getProductDetailCategoryHierarchy failed:', {
+      handle,
+      regionId,
+      error: error instanceof Error ? error.message : String(error),
+    })
+    return []
   }
 }
 
@@ -577,33 +854,35 @@ export const listProductsWithSort = async ({
         }
       }
 
-      const headers = { ...(await getAuthHeaders()) }
-      
+      const queryParamsRecord = (queryParams || {}) as Record<string, QueryParamValue>
+      const fieldsFromQuery =
+        typeof queryParamsRecord.fields === 'string' && queryParamsRecord.fields.trim().length > 0
+          ? queryParamsRecord.fields
+          : SELLER_LISTING_DEFAULT_FIELDS
+
       // Build query parameters for seller products endpoint
-      const query: any = {
+      const query: Record<string, QueryParamValue> = {
+        ...queryParamsRecord,
         limit,
         offset,
         region_id: region.id,
         sortBy: sortBy || 'created_at_desc',
+        fields: fieldsFromQuery,
       }
       
       if (category_id) {
         query.category_id = category_id
       }
 
-      // ✅ OPTIMIZED: Direct fetch with product cache TTL
-      const { products, count } = await sdk.client.fetch<{
+      const { products, count } = await publicFetch<{
         products: HttpTypes.StoreProduct[]
         count: number
-      }>(`/store/seller/${seller_id}/products`, {
-        method: "GET",
+      }>(
+        `/store/seller/${seller_id}/products`,
         query,
-        headers,
-        next: { 
-          revalidate: PRODUCT_CACHE_REVALIDATE_SECONDS,
-          tags: ['seller-products', `seller-${seller_id}`] 
-        },
-      })
+        { revalidate: PRODUCT_CACHE_REVALIDATE_SECONDS, tags: ['seller-products', `seller-${seller_id}`] },
+        'listProductsWithSort'
+      )
 
       const nextPage = count > offset + limit ? page + 1 : null
       return {

@@ -132,7 +132,7 @@ export const CategorySidebar = ({
         {/* Current Category Header - Hidden on mobile */}
         {resolvedCurrentCategory ? (
           <div className="mb-6 hidden md:block">
-            <h1 className="heading-xl uppercase">{resolvedCurrentCategory.name}</h1>
+            <h1 className="heading-xl ">{resolvedCurrentCategory.name}</h1>
             {resolvedCurrentCategory.description && (
               <p className="text-base-regular text-ui-fg-subtle mb-6">
                 {resolvedCurrentCategory.description}
@@ -142,7 +142,7 @@ export const CategorySidebar = ({
         ) : (
           !currentCategoryHandle && (
             <div className="mb-6 hidden md:block">
-              <h1 className="heading-xl uppercase">Wszystkie produkty</h1>
+              <h1 className="heading-xl">Wszystkie produkty</h1>
             </div>
           )
         )}
