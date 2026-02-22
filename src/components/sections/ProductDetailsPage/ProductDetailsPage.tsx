@@ -9,7 +9,6 @@ import {
   getProductPromotions,
   listSuggestedProducts,
   getProductShippingOptions,
-  getProductDetailCategoryHierarchy,
 } from "../../../lib/data/products"
 import { getVendorCompleteStatus } from "../../../lib/data/vendor-availability"
 import ProductErrorBoundary from "@/components/molecules/ProductErrorBoundary/ProductErrorBoundary"
@@ -52,7 +51,6 @@ export const ProductDetailsPage = async ({
   const [
     sellerProductsResult,
     vendorStatusResult,
-    categoryHierarchyResult,
     promotionalProductsResult,
     shippingOptionsResult,
     variantAttributesResult,
@@ -86,10 +84,6 @@ export const ProductDetailsPage = async ({
           holiday: undefined,
           suspension: undefined,
         }),
-
-    // Deferred category tree for breadcrumbs and related sections.
-    // Keeps listProductsForDetail focused on above-the-fold fields.
-    getProductDetailCategoryHierarchy({ handle: product.handle, regionId: region.id }).catch(() => []),
 
     // Current product promotions — targeted fetch via /store/products/{id}/promotions
     // Only fetches promotions for this specific product (not all 50 promotional products globally)
@@ -137,16 +131,7 @@ export const ProductDetailsPage = async ({
   const holidayMode = vendorStatus?.holiday
   const suspension = vendorStatus?.suspension
 
-  const categoryHierarchy =
-    categoryHierarchyResult.status === "fulfilled"
-      ? (categoryHierarchyResult.value as HttpTypes.StoreProductCategory[])
-      : []
-
-  const productWithCategoryHierarchy = categoryHierarchy.length > 0
-    ? ({ ...product, categories: categoryHierarchy } as HttpTypes.StoreProduct)
-    : product
-
-  const breadcrumbs = buildProductBreadcrumbsLocal(productWithCategoryHierarchy, locale)
+  const breadcrumbs = buildProductBreadcrumbsLocal(product, locale)
  
   // Current product's own promotions — merge into product object for PromotionDataProvider
   const currentProductPromotions =
@@ -202,7 +187,7 @@ export const ProductDetailsPage = async ({
 
   // Generate structured data for SEO
   const productPrice = getProductPrice()
-  const productJsonLd = generateProductJsonLd(productWithCategoryHierarchy, productPrice, "PLN", [])
+  const productJsonLd = generateProductJsonLd(product, productPrice, "PLN", [])
   const breadcrumbJsonLd = generateBreadcrumbJsonLd(breadcrumbs)
 
   return (

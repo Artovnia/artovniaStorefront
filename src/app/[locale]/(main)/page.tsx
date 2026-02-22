@@ -191,7 +191,7 @@ const ProductsSkeleton = () => (
   <div className="py-2 md:py-8 w-full" role="status" aria-label="Ładowanie produktów">
     <div className="h-8 bg-gray-200 rounded w-48 mb-6 md:mb-12 ml-4 lg:ml-[68px] animate-pulse"></div>
     <div className="flex gap-4 overflow-hidden px-4">
-      {[1, 2, 3, 4].map(i => (
+      {[1, 2, 3, 4, 5, 6, 7].map(i => (
         <div key={i} className="flex-shrink-0 w-[252px]">
           <div className="h-[315px] bg-gray-200 rounded animate-pulse mb-2"></div>
           <div className="h-4 bg-gray-200 rounded w-3/4 animate-pulse mb-2"></div>

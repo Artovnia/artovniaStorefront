@@ -1228,47 +1228,42 @@ export const batchFetchProductsByHandles = async ({
     const region = await getRegion(countryCode)
     if (!region) return []
 
-    const headers = {
-      ...(await getAuthHeaders()),
-    }
+    const uniqueHandles = Array.from(new Set(handles.filter(Boolean))).slice(0, limit)
 
-    // ✅ OPTIMIZED: Use Next.js cache with lean fields and timeout/retry
-    const { products } = await fetchWithRetry(
-      () => sdk.client.fetch<{
-        products: HttpTypes.StoreProduct[]
-        count: number
-      }>(`/store/products`, {
-        method: "GET",
-        query: {
-          limit,
+    const fetches = uniqueHandles.map(async (handle) => {
+      const { products } = await publicFetch<{ products: HttpTypes.StoreProduct[]; count: number }>(
+        '/store/products',
+        {
+          limit: 1,
+          handle,
           region_id: region.id,
-          handle: handles, // Pass multiple handles
-          // ✅ LEAN FIELDS: Only essential data for seller product display
-          fields: "id,title,handle,thumbnail,description,created_at,status," +
-                  "images.url," + // ✅ Added for thumbnail fallback
-                  "variants.id,variants.title,variants.calculated_price," +
-                  "seller.id,seller.handle,seller.store_name," +
-                  "categories.id,categories.name,categories.handle," +
-                  "metadata.featured",
+          fields:
+            'id,title,handle,thumbnail,description,created_at,status,' +
+            'images.url,' +
+            'variants.id,variants.title,variants.calculated_price,' +
+            'seller.id,seller.handle,seller.store_name,' +
+            'categories.id,categories.name,categories.handle,' +
+            'metadata.featured',
         },
-        headers,
-        next: { revalidate: 600, tags: ['products', 'seller-products'] }, // ✅ 10-minute cache
-      }),
-      {
-        timeout: 15000,
-        maxRetries: 3,
-        onRetry: (attempt, error) => {
-          console.warn(`🔄 Retrying batchFetchProductsByHandles (attempt ${attempt}):`, error.message)
-        }
+        { revalidate: 600, tags: ['products', 'seller-products'] },
+        'batchFetchProductsByHandles'
+      )
+
+      return { handle, product: products?.[0] || null }
+    })
+
+    const settled = await Promise.allSettled(fetches)
+    const byHandle = new Map<string, HttpTypes.StoreProduct & { seller?: SellerProps }>()
+
+    settled.forEach((result) => {
+      if (result.status === 'fulfilled' && result.value.product) {
+        byHandle.set(result.value.handle, result.value.product as HttpTypes.StoreProduct & { seller?: SellerProps })
       }
-    )
+    })
 
-    // Ensure products are returned in the same order as requested handles
-    const orderedProducts = handles.map(handle => 
-      products.find(p => p.handle === handle)
-    ).filter(Boolean) as (HttpTypes.StoreProduct & { seller?: SellerProps })[]
-
-    return orderedProducts
+    return uniqueHandles
+      .map((handle) => byHandle.get(handle))
+      .filter(Boolean) as (HttpTypes.StoreProduct & { seller?: SellerProps })[]
   } catch (error) {
     console.error('Batch fetch products failed:', error)
     return []
