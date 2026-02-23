@@ -1241,7 +1241,7 @@ export const batchFetchProductsByHandles = async ({
             'id,title,handle,thumbnail,description,created_at,status,' +
             'images.url,' +
             'variants.id,variants.title,variants.calculated_price,' +
-            'seller.id,seller.handle,seller.store_name,' +
+            'seller.id,seller.handle,seller.name,' +
             'categories.id,categories.name,categories.handle,' +
             'metadata.featured',
         },

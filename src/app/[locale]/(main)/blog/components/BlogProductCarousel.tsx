@@ -76,7 +76,7 @@ export default function BlogProductCarousel({
   }
 
   return (
-    <div className="my-8 py-6 bg-white rounded-lg border border-[#BFB7AD]/30">
+    <div className="my-8 py-6 px-2 bg-white rounded-lg border border-[#BFB7AD]/30">
       {title && (
         <h3 className="text-xl md:text-2xl font-instrument-serif text-[#3B3634] mb-4 px-4 md:px-6">
           {title}
@@ -104,7 +104,11 @@ export default function BlogProductCarousel({
           {products.map((product) => {
             const customTitle = getCustomTitle(product.handle || '')
             const { cheapestPrice } = getProductPrice({ product })
-            const sellerName = product.seller?.name || product.seller?.store_name
+            const sellerName =
+              product.seller?.name ||
+              product.seller?.store_name ||
+              (product.metadata as any)?.seller_name ||
+              (product.metadata as any)?.seller_store_name
 
             return (
               <Link
@@ -112,7 +116,7 @@ export default function BlogProductCarousel({
                 href={`/products/${product.handle}`}
                 className="flex-shrink-0 snap-start group"
               >
-                <article className="w-[160px] sm:w-[180px] bg-[#F4F0EB] rounded-lg overflow-hidden hover:shadow-md transition-shadow">
+                <article className="w-[160px] sm:w-[180px] bg-[#F4F0EB]  overflow-hidden hover:shadow-md transition-shadow">
                   {/* Product Image */}
                   <div className="relative aspect-square bg-[#F4F0EB] overflow-hidden">
                     {product.thumbnail || product.images?.[0]?.url ? (
@@ -132,17 +136,17 @@ export default function BlogProductCarousel({
 
                   {/* Product Info */}
                   <div className="p-3">
-                    {/* Seller Name */}
-                    {showSellerName && sellerName && (
-                      <p className="text-xs text-[#3B3634]/70 font-instrument-sans truncate mb-1">
-                        {sellerName}
-                      </p>
-                    )}
-
                     {/* Product Title */}
                     <h4 className="text-sm font-medium text-[#3B3634] font-instrument-sans line-clamp-2 min-h-[2.5rem]">
                       {customTitle || product.title}
                     </h4>
+
+                    {/* Seller Name */}
+                    {showSellerName && sellerName && (
+                      <p className="text-xs text-[#3B3634]/70 font-instrument-sans truncate mt-1">
+                        {sellerName}
+                      </p>
+                    )}
 
                     {/* Price */}
                     {showPrices && cheapestPrice?.calculated_price && (

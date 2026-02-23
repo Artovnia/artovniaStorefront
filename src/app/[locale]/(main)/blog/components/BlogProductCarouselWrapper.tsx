@@ -92,6 +92,12 @@ export default function BlogProductCarouselWrapper({
       }
 
       try {
+        const pathLocale =
+          typeof window !== 'undefined'
+            ? window.location.pathname.split('/').filter(Boolean)[0]
+            : undefined
+        const countryCode = pathLocale || process.env.NEXT_PUBLIC_DEFAULT_REGION || 'pl'
+
         const handles = normalizedProductItems
           .map((item) => item.productHandle)
           .filter(Boolean)
@@ -107,7 +113,7 @@ export default function BlogProductCarouselWrapper({
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({ handles }),
+          body: JSON.stringify({ handles, countryCode }),
         })
 
         if (!response.ok) {

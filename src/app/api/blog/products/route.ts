@@ -4,7 +4,7 @@ import { batchFetchProductsByHandles } from '@/lib/data/products'
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { handles } = body
+    const { handles, countryCode } = body
 
     if (!handles || !Array.isArray(handles) || handles.length === 0) {
       return NextResponse.json(
@@ -19,7 +19,7 @@ export async function POST(request: NextRequest) {
     // Fetch products using the existing batch fetch function
     const products = await batchFetchProductsByHandles({
       handles: limitedHandles,
-      countryCode: 'pl', // Default to Poland
+      countryCode: (typeof countryCode === 'string' && countryCode.trim()) || 'pl',
       limit: 12,
     })
 
