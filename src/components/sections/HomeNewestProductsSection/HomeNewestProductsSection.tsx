@@ -1,9 +1,7 @@
 import { HomeProductsCarousel } from "@/components/organisms"
-import { listProductsLean } from "@/lib/data/products"
 import { Product } from "@/types/product"
 import { HttpTypes } from "@medusajs/types"
 import { SerializableWishlist } from "@/types/wishlist"
-import { unstable_cache } from 'next/cache'
 
 interface HomeNewestProductsSectionProps {
   heading?: string
@@ -12,6 +10,7 @@ interface HomeNewestProductsSectionProps {
   home?: boolean
   user?: HttpTypes.StoreCustomer | null
   wishlist?: SerializableWishlist[]
+  products: (HttpTypes.StoreProduct & { seller?: unknown })[]
 }
 
 export const HomeNewestProductsSection = async ({ 
@@ -20,29 +19,11 @@ export const HomeNewestProductsSection = async ({
   limit = 4,
   home = false,
   user = null,
-  wishlist = []
+  wishlist = [],
+  products,
 }: HomeNewestProductsSectionProps) => {
   try {
-    // ✅ Use Next.js server-side cache to prevent skeleton loading on navigation
-    const getCachedProducts = unstable_cache(
-      async () => {
-        const result = await listProductsLean({
-          countryCode: locale,
-          queryParams: {
-            limit: limit,
-            order: "-created_at", // Descending order: newest products first (left side of carousel)
-          },
-        })
-        return result?.response?.products || []
-      },
-      [`homepage-newest-${locale}-${limit}`], // Cache key
-      {
-        revalidate: 600, // 10 minutes
-        tags: ['homepage-products', 'products']
-      }
-    )
-    
-    const products = await getCachedProducts()
+    const resolvedProducts = products.slice(0, limit)
     
     return (
       <section className="py-2 md:py-8 w-full" aria-labelledby="newest-products-heading">
@@ -52,7 +33,7 @@ export const HomeNewestProductsSection = async ({
 
         <HomeProductsCarousel
           locale={locale}
-          sellerProducts={products as unknown as Product[]}
+          sellerProducts={resolvedProducts as unknown as Product[]}
           home={home}
           theme="light"
           user={user}

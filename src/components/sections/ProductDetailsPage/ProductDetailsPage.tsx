@@ -13,7 +13,7 @@ import {
 import { getVendorCompleteStatus } from "../../../lib/data/vendor-availability"
 import ProductErrorBoundary from "@/components/molecules/ProductErrorBoundary/ProductErrorBoundary"
 import { Breadcrumbs } from "@/components/atoms/Breadcrumbs/Breadcrumbs"
-import { buildProductBreadcrumbsLocal } from "@/lib/utils/breadcrumbs"
+import { buildProductBreadcrumbs } from "@/lib/utils/breadcrumbs"
 import { generateProductJsonLd, generateBreadcrumbJsonLd } from "@/lib/helpers/seo"
 import { Link } from "@/i18n/routing"
 import { getBatchLowestPrices } from "@/lib/data/price-history"
@@ -131,7 +131,7 @@ export const ProductDetailsPage = async ({
   const holidayMode = vendorStatus?.holiday
   const suspension = vendorStatus?.suspension
 
-  const breadcrumbs = buildProductBreadcrumbsLocal(product, locale)
+  const breadcrumbs = await buildProductBreadcrumbs(product, locale)
  
   // Current product's own promotions — merge into product object for PromotionDataProvider
   const currentProductPromotions =

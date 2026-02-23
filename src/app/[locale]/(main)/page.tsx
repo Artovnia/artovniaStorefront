@@ -11,6 +11,7 @@ import { PromotionDataProvider } from "@/components/context/PromotionDataProvide
 import { BatchPriceProvider } from "@/components/context/BatchPriceProvider"
 import { retrieveCustomer } from "@/lib/data/customer"
 import { getUserWishlists } from "@/lib/data/wishlist"
+import { listProductsLean } from "@/lib/data/products"
 import type { Metadata } from "next"
 import { generateOrganizationJsonLd, generateWebsiteJsonLd } from "@/lib/helpers/seo"
 import { JsonLd } from "@/components/JsonLd"
@@ -44,7 +45,7 @@ export const metadata: Metadata = {
     absolute: "Artovnia.com - Rękodzieło i Sztuka polskich twórców | Polski Marketplace"
   },
   description:
-    "Rękodzieło, biżuteria handmade, obrazy, ceramika, rzeźby i meble od polskich artystów. Kup unikalne dzieła sztuki lub sprzedawaj swoje prace na Artovnia.",
+    "Rękodzieło, biżuteria handmade, obrazy, ubrania, ceramika, rzeźby i meble od polskich artystów. Kup unikalne dzieła sztuki lub sprzedawaj swoje prace na Artovnia.",
   keywords: [
     // Primary keywords (highest search volume)
     'rękodzieło',
@@ -100,6 +101,9 @@ export const metadata: Metadata = {
     // Marketplace keywords
     'marketplace rękodzieła',
     'marketplace sztuki',
+    'rynek rękodzieła',
+    'rynek sztuki',
+    'rynek artystyczny',
     'polska sztuka',
     'polscy artyści',
     'kupić rękodzieło',
@@ -222,7 +226,13 @@ const CategoriesSkeleton = () => (
  * ✅ OPTIMIZATION: Async wrapper for SmartBestProductsSection
  * Fetches user data in parallel with rendering, doesn't block LCP
  */
-async function SmartBestProductsSectionWithUser({ locale }: { locale: string }) {
+async function SmartBestProductsSectionWithUser({
+  locale,
+  products,
+}: {
+  locale: string
+  products: (HttpTypes.StoreProduct & { seller?: unknown })[]
+}) {
   // Fetch user data - this doesn't block Hero rendering due to Suspense
   let user: HttpTypes.StoreCustomer | null = null
   let wishlist: SerializableWishlist[] = []
@@ -242,6 +252,7 @@ async function SmartBestProductsSectionWithUser({ locale }: { locale: string }) 
     <SmartBestProductsSection 
       user={user} 
       wishlist={wishlist} 
+      products={products}
     />
   )
 }
@@ -250,7 +261,13 @@ async function SmartBestProductsSectionWithUser({ locale }: { locale: string }) 
  * ✅ OPTIMIZATION: Async wrapper for HomeNewestProductsSection
  * Fetches user data in parallel, doesn't block above-the-fold content
  */
-async function HomeNewestProductsSectionWithUser({ locale }: { locale: string }) {
+async function HomeNewestProductsSectionWithUser({
+  locale,
+  products,
+}: {
+  locale: string
+  products: (HttpTypes.StoreProduct & { seller?: unknown })[]
+}) {
   let user: HttpTypes.StoreCustomer | null = null
   let wishlist: SerializableWishlist[] = []
   
@@ -273,6 +290,7 @@ async function HomeNewestProductsSectionWithUser({ locale }: { locale: string })
       home={true}
       user={user}
       wishlist={wishlist}
+      products={products}
     />
   )
 }
@@ -288,6 +306,18 @@ export default async function Home({
   const organizationJsonLd = generateOrganizationJsonLd()
   const websiteJsonLd = generateWebsiteJsonLd()
 
+  // Reuse one newest-first pool for both homepage product sections.
+  // This avoids duplicate /store/products calls for limit=50 and limit=8.
+  const homepageProductPool = (
+    await listProductsLean({
+      countryCode: locale,
+      queryParams: {
+        limit: 50,
+        order: "-created_at",
+      },
+    })
+  )?.response?.products || []
+
   // ✅ CRITICAL LCP OPTIMIZATION: Don't block Hero render with data fetching
   // Promotional data is fetched AFTER Hero renders via streaming
   // Hero is pure server component with no async dependencies
@@ -297,25 +327,20 @@ export default async function Home({
       {/* Structured Data (JSON-LD) for SEO */}
       <JsonLd data={organizationJsonLd} />
       <JsonLd data={websiteJsonLd} />
-      
-      <PromotionDataProvider 
-      countryCode="PL" 
-      limit={30}
-    >
-      <BatchPriceProvider 
-        currencyCode="PLN"
-      >
-        <main className="flex flex-col text-primary" aria-label="Strona główna Artovnia">
-          {/* ✅ CRITICAL: Hero renders FIRST - no async dependencies, no Suspense */}
-          <div className="mx-auto max-w-[1920px] w-full">
-            <Hero />
-          </div>
-          
+
+      <main className="flex flex-col text-primary" aria-label="Strona główna Artovnia">
+        {/* ✅ Keep hero above product-data providers to minimize critical render path */}
+        <div className="mx-auto max-w-[1920px] w-full">
+          <Hero />
+        </div>
+
+        <PromotionDataProvider countryCode="PL" limit={30}>
+          <BatchPriceProvider currencyCode="PLN">
           {/* ✅ OPTIMIZATION: SmartBestProducts in Suspense - doesn't block Hero LCP */}
           {/* User data fetched inside component, not blocking page render */}
           <div className="mx-auto max-w-[1920px] w-full mb-8 min-h-[400px] py-2 md:py-8">
             <Suspense fallback={<ProductsSkeleton />}>
-              <SmartBestProductsSectionWithUser locale={locale} />
+              <SmartBestProductsSectionWithUser locale={locale} products={homepageProductPool} />
             </Suspense>
           </div>
 
@@ -339,10 +364,12 @@ export default async function Home({
             {/* Content container inside full-width section */}
             <div className="mx-auto max-w-[1920px] w-full min-h-[400px] py-2 md:py-8 font-instrument-sans">
               <Suspense fallback={<ProductsSkeleton />}>
-                <HomeNewestProductsSectionWithUser locale={locale} />
+                <HomeNewestProductsSectionWithUser locale={locale} products={homepageProductPool} />
               </Suspense>
             </div>
           </div>
+          </BatchPriceProvider>
+        </PromotionDataProvider>
 
           {/* Categories Section - wrapped in Suspense for streaming */}
           <Suspense fallback={<CategoriesSkeleton />}>
@@ -370,10 +397,7 @@ export default async function Home({
 
          
 
-    
         </main>
-      </BatchPriceProvider>
-    </PromotionDataProvider>
     </>
   )
 }

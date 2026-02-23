@@ -246,7 +246,10 @@ export const CookieConsent: React.FC<CookieConsentProps> = ({
       {/* Backdrop */}
       <div
         className="absolute inset-0 bg-[#3B3634]/20 backdrop-blur-sm pointer-events-auto"
-        onClick={handleRejectAll}
+        onClick={(e) => {
+          // Do not close on outside click; require explicit user choice.
+          e.preventDefault()
+        }}
         aria-hidden="true"
       />
 

@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import BlogProductCarousel from './BlogProductCarousel'
 import { HttpTypes } from '@medusajs/types'
 
@@ -9,11 +9,64 @@ interface ProductCarouselItem {
   customTitle?: string
 }
 
+type RawProductCarouselItem = ProductCarouselItem & {
+  handle?: string
+  title?: string
+  productUrl?: string
+  product_url?: string
+  product?: {
+    handle?: string
+  }
+}
+
 interface BlogProductCarouselWrapperProps {
   title?: string
-  productItems: ProductCarouselItem[]
+  productItems: RawProductCarouselItem[]
   showPrices?: boolean
   showSellerName?: boolean
+}
+
+const normalizeProductHandle = (rawHandle?: string): string => {
+  if (!rawHandle) return ''
+
+  let trimmed = String(rawHandle).trim()
+  try {
+    trimmed = decodeURIComponent(trimmed)
+  } catch {
+    // Keep original value if decoding fails
+  }
+
+  if (!trimmed) return ''
+
+  // Support legacy values like "/products/handle", full URLs and query/hash fragments
+  const withoutQuery = trimmed.split('?')[0].split('#')[0]
+  const normalizedPath = withoutQuery.replace(/^https?:\/\/[^/]+/i, '')
+  const withoutPrefix = normalizedPath.replace(/^\/?products\//i, '')
+
+  return withoutPrefix.replace(/^\/+|\/+$/g, '').toLowerCase()
+}
+
+const normalizeProductItems = (items: RawProductCarouselItem[]): ProductCarouselItem[] => {
+  const byHandle = new Map<string, ProductCarouselItem>()
+
+  items.forEach((item) => {
+    const rawHandle =
+      item.productHandle ||
+      item.handle ||
+      item.product?.handle ||
+      item.productUrl ||
+      item.product_url
+
+    const productHandle = normalizeProductHandle(rawHandle)
+    if (!productHandle) return
+
+    byHandle.set(productHandle, {
+      productHandle,
+      customTitle: item.customTitle || item.title,
+    })
+  })
+
+  return Array.from(byHandle.values())
 }
 
 export default function BlogProductCarouselWrapper({
@@ -22,19 +75,26 @@ export default function BlogProductCarouselWrapper({
   showPrices = true,
   showSellerName = true,
 }: BlogProductCarouselWrapperProps) {
+  const normalizedProductItems = useMemo(
+    () => normalizeProductItems(productItems || []),
+    [productItems]
+  )
+
   const [products, setProducts] = useState<(HttpTypes.StoreProduct & { seller?: any })[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     const fetchProducts = async () => {
-      if (!productItems || productItems.length === 0) {
+      if (!normalizedProductItems || normalizedProductItems.length === 0) {
         setIsLoading(false)
         return
       }
 
       try {
-        const handles = productItems.map((item) => item.productHandle).filter(Boolean)
+        const handles = normalizedProductItems
+          .map((item) => item.productHandle)
+          .filter(Boolean)
         
         if (handles.length === 0) {
           setIsLoading(false)
@@ -65,7 +125,7 @@ export default function BlogProductCarouselWrapper({
     }
 
     fetchProducts()
-  }, [productItems])
+  }, [normalizedProductItems])
 
   if (isLoading) {
     return (
@@ -103,7 +163,7 @@ export default function BlogProductCarouselWrapper({
     <BlogProductCarousel
       title={title}
       products={products}
-      productItems={productItems}
+      productItems={normalizedProductItems}
       showPrices={showPrices}
       showSellerName={showSellerName}
     />

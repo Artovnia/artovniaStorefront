@@ -34,7 +34,10 @@ export async function buildProductBreadcrumbs(
   if (primaryCategory?.handle) {
     try {
       // Use the new getCategoryHierarchy function to get full hierarchy from backend
-      const categoryHierarchy = await getCategoryHierarchy(primaryCategory.handle)
+      const categoryHierarchy = await getCategoryHierarchy({
+        id: primaryCategory.id,
+        handle: primaryCategory.handle,
+      })
       
       // Add each category level to breadcrumbs
       categoryHierarchy.forEach(category => {

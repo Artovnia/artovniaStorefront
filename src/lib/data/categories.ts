@@ -33,6 +33,43 @@ interface CategoryWithMpath extends HttpTypes.StoreProductCategory {
   mpath?: string
 }
 
+type CategoryLookup =
+  | string
+  | {
+      id?: string | null
+      handle?: string | null
+    }
+
+type CategoryWithParent = HttpTypes.StoreProductCategory & {
+  parent_category?: CategoryWithParent | null
+}
+
+function buildAncestorChain(category: CategoryWithParent | null | undefined): HttpTypes.StoreProductCategory[] {
+  if (!category) return []
+
+  const chain: HttpTypes.StoreProductCategory[] = []
+  const visited = new Set<string>()
+  let current: CategoryWithParent | null = category
+
+  while (current) {
+    if (current.id && visited.has(current.id)) {
+      break
+    }
+
+    if (current.id) {
+      visited.add(current.id)
+    }
+
+    if (current.handle && current.name) {
+      chain.unshift(current)
+    }
+
+    current = current.parent_category || null
+  }
+
+  return chain
+}
+
 /**
  * ✅ OPTIMIZED: Get categories that have products using dedicated backend endpoint
  * Uses React cache() for request deduplication + Next.js fetch cache for persistence
@@ -342,17 +379,69 @@ async function getEssentialCategories(): Promise<{
 /**
  * Build full category hierarchy path from root to leaf
  * This is used for breadcrumbs to show the complete path
- * 
- * OPTIMIZED: Instead of fetching all 1000 categories, we:
- * 1. Fetch only the target category with mpath
- * 2. Parse mpath to get parent category IDs
- * 3. Fetch only those specific parent categories
- * 
- * This reduces the query from 1000 categories to ~3-5 categories
+ *
+ * Strategy:
+ * 1) Prefer Medusa category tree retrieval via include_ancestors_tree
+ * 2) Fallback to mpath-based lookup when ancestor tree is not available
  */
-export const getCategoryHierarchy = async (categoryHandle: string): Promise<HttpTypes.StoreProductCategory[]> => {
+export const getCategoryHierarchy = async (categoryLookup: CategoryLookup): Promise<HttpTypes.StoreProductCategory[]> => {
   try {
-    // Step 1: Fetch only the target category with mpath field
+    const categoryId =
+      typeof categoryLookup === 'string' ? '' : (categoryLookup.id || '').trim()
+    const categoryHandle =
+      typeof categoryLookup === 'string'
+        ? categoryLookup.trim()
+        : (categoryLookup.handle || '').trim()
+
+    // Preferred: retrieve category by id and include full ancestors tree in one request
+    if (categoryId) {
+      try {
+        const response = await categoryFetch<{ product_category?: CategoryWithParent }>(
+          `/store/product-categories/${categoryId}`,
+          {
+            include_ancestors_tree: true,
+            fields:
+              'id,handle,name,parent_category_id,' +
+              'parent_category.id,parent_category.handle,parent_category.name,parent_category.parent_category_id,parent_category.parent_category',
+          },
+          { revalidate: 3600 }
+        )
+
+        const chain = buildAncestorChain(response?.product_category || null)
+        if (chain.length > 0) {
+          return chain
+        }
+      } catch {
+        // Continue to handle-based lookup below
+      }
+    }
+
+    // Preferred: one request with ancestor tree included by Medusa
+    if (categoryHandle) {
+      const { product_categories: categoriesWithAncestors } = await categoryFetch<{
+        product_categories: CategoryWithParent[]
+      }>('/store/product-categories', {
+        handle: categoryHandle,
+        limit: 1,
+        include_ancestors_tree: true,
+        fields:
+          'id,handle,name,parent_category_id,' +
+          'parent_category.id,parent_category.handle,parent_category.name,parent_category.parent_category_id,parent_category.parent_category',
+      }, { revalidate: 3600 })
+
+      const categoryWithAncestors = categoriesWithAncestors?.[0]
+      const chain = buildAncestorChain(categoryWithAncestors)
+
+      if (chain.length > 0) {
+        return chain
+      }
+    }
+
+    // Fallback: mpath-based lookup (kept for resilience across API responses)
+    if (!categoryHandle) {
+      return []
+    }
+
     const { product_categories: targetCategories } = await categoryFetch<{
       product_categories: CategoryWithMpath[]
     }>('/store/product-categories', {
@@ -366,7 +455,7 @@ export const getCategoryHierarchy = async (categoryHandle: string): Promise<Http
       return []
     }
 
-    // Step 2: Parse mpath to get parent category IDs
+    // Parse mpath to get parent category IDs
     // mpath format: "pcat_root.pcat_parent.pcat_current"
     const mpath = targetCategory.mpath || ''
     const categoryIds = mpath.split('.').filter(Boolean)
@@ -376,7 +465,7 @@ export const getCategoryHierarchy = async (categoryHandle: string): Promise<Http
       return [targetCategory]
     }
 
-    // Step 3: Fetch only the parent categories (exclude the target category itself)
+    // Fetch only the parent categories (exclude the target category itself)
     const parentIds = categoryIds.slice(0, -1) // Remove last ID (target category)
     
     if (parentIds.length === 0) {
@@ -390,7 +479,7 @@ export const getCategoryHierarchy = async (categoryHandle: string): Promise<Http
       id: parentIds.join(','),
     }, { revalidate: 3600 })
 
-    // Step 4: Build hierarchy in correct order (root to leaf)
+    // Build hierarchy in correct order (root to leaf)
     const hierarchy: CategoryWithMpath[] = []
     
     // Add parents in order based on mpath
