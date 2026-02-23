@@ -10,6 +10,7 @@ import {
   listSuggestedProducts,
   getProductShippingOptions,
 } from "../../../lib/data/products"
+import { PDP_SELLER_CARD_FIELDS } from "@/lib/constants/product-fields"
 import { getVendorCompleteStatus } from "../../../lib/data/vendor-availability"
 import ProductErrorBoundary from "@/components/molecules/ProductErrorBoundary/ProductErrorBoundary"
 import { Breadcrumbs } from "@/components/atoms/Breadcrumbs/Breadcrumbs"
@@ -45,6 +46,7 @@ export const ProductDetailsPage = async ({
   // ✅ OPTIMIZATION: Get product's own variant IDs BEFORE Promise.allSettled
   // This allows us to fetch prices in parallel instead of sequentially
   const productVariantIds = product.variants?.map((v: any) => v.id).filter(Boolean) || []
+  const breadcrumbsPromise = buildProductBreadcrumbs(product, locale)
 
   // ✅ OPTIMIZATION: Parallel fetch EVERYTHING (including prices) - NO WATERFALL
   // Removed noStore() to enable ISR caching - user data now fetched client-side
@@ -64,9 +66,8 @@ export const ProductDetailsPage = async ({
           regionId: region.id,
           queryParams: {
             limit: 8,
-            // Lowest-price badge on cards needs numeric fallback when history is missing.
-            // Include lightweight variant pricing fields for stable 30-day price rendering.
-            fields: 'id,title,handle,thumbnail,images.url,variants.id,variants.calculated_price,variants.prices.amount,variants.prices.currency_code,seller.name',
+            // Canonical seller-card fields keep cache keys stable across callsites.
+            fields: PDP_SELLER_CARD_FIELDS,
           },
         }).then(r => r.response.products).catch(() => [])
       : Promise.resolve([]),
@@ -131,7 +132,7 @@ export const ProductDetailsPage = async ({
   const holidayMode = vendorStatus?.holiday
   const suspension = vendorStatus?.suspension
 
-  const breadcrumbs = await buildProductBreadcrumbs(product, locale)
+  const breadcrumbs = await breadcrumbsPromise
  
   // Current product's own promotions — merge into product object for PromotionDataProvider
   const currentProductPromotions =

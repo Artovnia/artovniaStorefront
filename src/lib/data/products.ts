@@ -7,6 +7,10 @@ import { HttpTypes } from "@medusajs/types"
 import { SellerProps } from "@/types/seller"
 import { unifiedCache, CACHE_TTL } from "@/lib/utils/unified-cache"
 import { fetchWithRetry } from "@/lib/utils/fetch-with-timeout"
+import {
+  LEAN_PRODUCT_CARD_FIELDS,
+  PDP_SUGGESTED_CARD_FIELDS,
+} from "@/lib/constants/product-fields"
 import { unstable_cache } from "next/cache"
 
 // Type for allowed sort keys in server-side product listing
@@ -59,7 +63,9 @@ const PRODUCT_DETAIL_CRITICAL_FIELDS =
   'variants.options.value,variants.options.option_id,' +
   'variants.options.option.title,' +
   'seller.id,seller.handle,seller.name,seller.photo,seller.logo_url,' +
-  'categories.id,categories.name,categories.handle,categories.parent_category_id'
+  'categories.id,categories.name,categories.handle,categories.parent_category_id,' +
+  'categories.parent_category.id,categories.parent_category.name,categories.parent_category.handle,categories.parent_category.parent_category_id,' +
+  'categories.parent_category.parent_category.id,categories.parent_category.parent_category.name,categories.parent_category.parent_category.handle'
 
 const PRODUCT_DETAIL_CATEGORY_TREE_FIELDS =
   'id,' +
@@ -527,10 +533,7 @@ export const listProductsLean = async ({
       // ✅ LEAN FIELDS: Only what ProductCard actually renders
       // NOTE: promotions.* and has_promotions are NOT available on /store/products (cross-module link)
       // Promotion data comes exclusively from the custom /store/products/promotions endpoint via listProductsWithPromotions
-      fields: "id,title,handle,thumbnail," +
-              "images.url," +
-              "variants.id,variants.calculated_price," +
-              "seller.name",
+      fields: LEAN_PRODUCT_CARD_FIELDS,
       ...queryParams,
     }
 
@@ -1155,7 +1158,7 @@ export const listSuggestedProducts = async ({
             limit: limit + 4, // Fetch extra to account for duplicates
             // Suggested cards are below-fold on PDP and can resolve final prices client-side.
             // Keep this query lean to reduce category cold-path latency.
-            fields: 'id,title,handle,thumbnail,images.url,variants.id,seller.name',
+            fields: PDP_SUGGESTED_CARD_FIELDS,
           },
         }).then(r => ({
           products: r.response.products || [],
@@ -1168,7 +1171,7 @@ export const listSuggestedProducts = async ({
           regionId,
           queryParams: {
             limit: limit + 4,
-            fields: 'id,title,handle,thumbnail,images.url,variants.id,seller.name',
+            fields: PDP_SUGGESTED_CARD_FIELDS,
           },
         }).then(r => ({
           products: r.response.products || [],

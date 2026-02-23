@@ -6,6 +6,13 @@ export interface BreadcrumbItem {
   path: string
 }
 
+type CategoryLike = {
+  name?: string
+  handle?: string
+  parent_category_id?: string | null
+  parent_category?: CategoryLike | null
+}
+
 // Extended product type that includes categories and collection
 type ProductWithCategories = HttpTypes.StoreProduct & {
   categories?: HttpTypes.StoreProductCategory[]
@@ -20,45 +27,36 @@ export async function buildProductBreadcrumbs(
   product: ProductWithCategories,
   locale: string = 'pl'
 ): Promise<BreadcrumbItem[]> {
-  const breadcrumbs: BreadcrumbItem[] = []
+  const localBreadcrumbs = buildProductBreadcrumbsLocal(product, locale)
+  const primaryCategory = product.categories?.[0] as CategoryLike | undefined
 
-  // Always start with Home
-  breadcrumbs.push({
-    label: 'Strona główna',
-    path: '/'
-  })
+  // Fast path: no category or local parent chain is complete.
+  if (!primaryCategory?.handle || isLocalCategoryChainComplete(primaryCategory)) {
+    return localBreadcrumbs
+  }
 
-  // Get the primary category (first category if multiple exist)
-  const primaryCategory = product.categories?.[0]
-  
-  if (primaryCategory?.handle) {
-    try {
-      // Use the new getCategoryHierarchy function to get full hierarchy from backend
-      const categoryHierarchy = await getCategoryHierarchy({
-        id: primaryCategory.id,
-        handle: primaryCategory.handle,
-      })
-      
-      // Add each category level to breadcrumbs
-      categoryHierarchy.forEach(category => {
-        breadcrumbs.push({
-          label: category.name,
-          path: `/categories/${category.handle}`
-        })
-      })
-    } catch (error) {
-      console.error('Error building category hierarchy for breadcrumbs:', error)
-      // Fallback to just the primary category
-      breadcrumbs.push({
-        label: primaryCategory.name,
-        path: `/categories/${primaryCategory.handle}`
-      })
+  // Slow-path fallback: local chain is incomplete (missing some ancestor parent relation).
+  try {
+    const hierarchy = await getCategoryHierarchy({
+      id: (primaryCategory as any).id,
+      handle: primaryCategory.handle,
+    })
+
+    if (!hierarchy.length) {
+      return localBreadcrumbs
     }
-  } 
-  // No more collection fallback - we always want to use categories
-  // If we don't have categories, we'll just show Home
 
-  return breadcrumbs
+    return [
+      { label: 'Strona główna', path: '/' },
+      ...hierarchy.map((category) => ({
+        label: category.name,
+        path: `/categories/${category.handle}`,
+      })),
+    ]
+  } catch (error) {
+    console.error('Error building category hierarchy for breadcrumbs:', error)
+    return localBreadcrumbs
+  }
 }
 
 /**
@@ -78,20 +76,46 @@ export function buildProductBreadcrumbsLocal(
   if (!primaryCategory) return breadcrumbs
 
   // Walk the parent_category chain from the fetched data (no network call)
-  const chain: Array<{ name: string; handle: string }> = []
-  let current: any = primaryCategory
-  while (current) {
-    if (current.name && current.handle) {
-      chain.unshift({ name: current.name, handle: current.handle })
-    }
-    current = current.parent_category || null
-  }
+  const chain = extractCategoryChain(primaryCategory as CategoryLike)
 
   chain.forEach(cat => {
     breadcrumbs.push({ label: cat.name, path: `/categories/${cat.handle}` })
   })
 
   return breadcrumbs
+}
+
+function extractCategoryChain(
+  category: CategoryLike | null | undefined
+): Array<{ name: string; handle: string }> {
+  const chain: Array<{ name: string; handle: string }> = []
+  let current = category || null
+
+  while (current) {
+    if (current.name && current.handle) {
+      chain.unshift({ name: current.name, handle: current.handle })
+    }
+
+    current = current.parent_category || null
+  }
+
+  return chain
+}
+
+function isLocalCategoryChainComplete(category: CategoryLike): boolean {
+  let current: CategoryLike | null = category
+  let guard = 0
+
+  while (current && guard < 20) {
+    if (current.parent_category_id && !current.parent_category) {
+      return false
+    }
+
+    current = current.parent_category || null
+    guard += 1
+  }
+
+  return true
 }
 
 /**
