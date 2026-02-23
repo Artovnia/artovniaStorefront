@@ -40,9 +40,6 @@ export const ProductDetailsPage = async ({
     return null
   }
 
-  // ✅ OPTIMIZATION: Get initial variant ID for prefetching
-  const initialVariantId = product.variants?.[0]?.id
-
   // ✅ OPTIMIZATION: Get product's own variant IDs BEFORE Promise.allSettled
   // This allows us to fetch prices in parallel instead of sequentially
   const productVariantIds = product.variants?.map((v: any) => v.id).filter(Boolean) || []
@@ -55,7 +52,6 @@ export const ProductDetailsPage = async ({
     vendorStatusResult,
     promotionalProductsResult,
     shippingOptionsResult,
-    variantAttributesResult,
     categoryProductsResult,
     productPricesResult,
   ] = await Promise.allSettled([
@@ -95,14 +91,6 @@ export const ProductDetailsPage = async ({
     product.id && region?.id
       ? getProductShippingOptions(product.id, region.id).catch(() => [])
       : Promise.resolve([]),
-
-    // ✅ OPTIMIZATION: Prefetch initial variant attributes on server
-    initialVariantId
-      ? (async () => {
-          const { getVariantAttributes } = await import("@/lib/data/variant-attributes")
-          return getVariantAttributes(product.id, initialVariantId)
-        })().catch(() => ({ attribute_values: [] }))
-      : Promise.resolve({ attribute_values: [] }),
 
     // ✅ Suggested products: "Może Ci się spodobać" section
     region
@@ -148,10 +136,7 @@ export const ProductDetailsPage = async ({
       ? (shippingOptionsResult.value as any[])
       : []
 
-  const initialVariantAttributes =
-    variantAttributesResult.status === "fulfilled"
-      ? (variantAttributesResult.value as { attribute_values: any[] })
-      : { attribute_values: [] }
+  const initialVariantAttributes = undefined
 
   const suggestedProductsData =
     categoryProductsResult.status === "fulfilled"

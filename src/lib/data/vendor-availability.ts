@@ -1,5 +1,8 @@
 // Use process.env directly for backend URL
 const MEDUSA_BACKEND_URL = process.env.MEDUSA_BACKEND_URL || "http://localhost:9000"
+const VENDOR_STATUS_DEDUP_TTL_MS = Number(process.env.VENDOR_STATUS_DEDUP_TTL_MS || 2000)
+
+const inflightVendorStatusRequests = new Map<string, { promise: Promise<VendorCompleteStatus>; timestamp: number }>()
 
 /**
  * Get headers with the publishable API key required for Medusa API calls
@@ -85,7 +88,7 @@ export async function getVendorAvailability(vendorId: string): Promise<VendorAva
     }
     
     // Get the response data
-    const data = await response.json()
+      const data = await response.json()
     
     // Ensure onHoliday is properly set based on status
     if (data.status === 'holiday') {
@@ -346,26 +349,33 @@ export async function getVendorCompleteStatus(vendorId: string): Promise<VendorC
     }
   }
   
-  try {
-    const response = await fetch(
-      `${MEDUSA_BACKEND_URL}/store/vendors/${vendorId}/status`,
-      {
-        next: { revalidate: 3600 }, // Cache for 1 hour (ISR compatible)
-        headers: getHeaders(),
-        signal: AbortSignal.timeout(10000) // 10 second timeout
-      }
-    )
+  const dedupKey = `vendor_status:${vendorId}`
+  const existingRequest = inflightVendorStatusRequests.get(dedupKey)
+  if (existingRequest && Date.now() - existingRequest.timestamp < VENDOR_STATUS_DEDUP_TTL_MS) {
+    return existingRequest.promise
+  }
+
+  const requestPromise = (async (): Promise<VendorCompleteStatus> => {
+    try {
+      const response = await fetch(
+        `${MEDUSA_BACKEND_URL}/store/vendors/${vendorId}/status`,
+        {
+          next: { revalidate: 3600 }, // Cache for 1 hour (ISR compatible)
+          headers: getHeaders(),
+          signal: AbortSignal.timeout(10000) // 10 second timeout
+        }
+      )
     
-    if (!response.ok) {
-      if (response.status !== 404) {
-        console.warn(`Vendor status API returned ${response.status} for vendor ${vendorId}`)
+      if (!response.ok) {
+        if (response.status !== 404) {
+          console.warn(`Vendor status API returned ${response.status} for vendor ${vendorId}`)
+        }
+        return {
+          availability: getDefaultAvailability(),
+          holiday: null,
+          suspension: null
+        }
       }
-      return {
-        availability: getDefaultAvailability(),
-        holiday: null,
-        suspension: null
-      }
-    }
     
     const data = await response.json()
     
@@ -400,17 +410,29 @@ export async function getVendorCompleteStatus(vendorId: string): Promise<VendorC
       has_expired: false
     } : null
     
-    return {
-      availability,
-      holiday,
-      suspension
+      return {
+        availability,
+        holiday,
+        suspension
+      }
+    } catch (error) {
+      console.error(`Error fetching vendor complete status: ${error instanceof Error ? error.message : 'Unknown error'}`)
+      return {
+        availability: getDefaultAvailability(),
+        holiday: null,
+        suspension: null
+      }
     }
-  } catch (error) {
-    console.error(`Error fetching vendor complete status: ${error instanceof Error ? error.message : 'Unknown error'}`)
-    return {
-      availability: getDefaultAvailability(),
-      holiday: null,
-      suspension: null
-    }
-  }
+  })().finally(() => {
+    setTimeout(() => {
+      inflightVendorStatusRequests.delete(dedupKey)
+    }, VENDOR_STATUS_DEDUP_TTL_MS)
+  })
+
+  inflightVendorStatusRequests.set(dedupKey, {
+    promise: requestPromise,
+    timestamp: Date.now(),
+  })
+
+  return requestPromise
 }

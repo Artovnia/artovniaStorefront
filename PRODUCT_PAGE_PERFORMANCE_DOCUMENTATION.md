@@ -3,6 +3,54 @@
 ## Scope
 This document reflects the **actual current implementation** and observed runtime behavior as of 2026-02-23.
 
+## Update log (2026-02-23, evening)
+
+Implemented now:
+- ✅ PDP detail field-set trimmed in `listProductsForDetail`:
+  - removed `options.values.value`
+  - removed `seller.logo_url`
+  - kept `seller.photo` and breadcrumb-critical category parent chain fields.
+- ✅ Removed redundant PDP category-only detail fetch path in storefront data layer:
+  - deleted `PRODUCT_DETAIL_CATEGORY_TREE_FIELDS`
+  - deleted `getProductDetailCategoryHierarchy` helper path (no active callsites in current PDP flow).
+- ✅ Bumped detail cache namespace from `product-detail-v1` to `product-detail-v2` to avoid stale cached payload shape after field changes.
+- ✅ Seller products endpoint fast-path hardened and validated in runtime:
+  - default enabled unless `SELLER_PRODUCTS_CREATED_AT_FAST_PATH=false`,
+  - dynamic SQL link-table resolution (`seller_seller_product_product` first, fallback candidate `seller_product`),
+  - fixed knex compatibility issue by using `whereNull(...)` chain (removed failing `andWhereNull(...)` usage),
+  - verified response header path marker via direct request:
+    - `X-Seller-Products-Path: fast-path`.
+- ✅ Added opt-in deep stage profiling for seller products route:
+  - env flag: `SELLER_PRODUCTS_PROFILE=true`,
+  - log location: backend terminal (`apps/backend` `yarn dev` process),
+  - route file: `apps/backend/src/api/store/seller/[id]/products/route.ts`,
+  - log message key: `seller products endpoint stage timings`.
+- ✅ Added opt-in/threshold stage profiling for shipping options route:
+  - env flag: `SHIPPING_OPTIONS_PROFILE=true` (forces logging for all requests),
+  - default behavior when false: logs only when total >= `SLOW_ENDPOINT_STAGE_LOG_MS` (default 300ms),
+  - log location: backend terminal (`apps/backend` `yarn dev` process),
+  - route file: `apps/backend/src/api/store/product-shipping-options/route.ts`,
+  - log message key: `Store endpoint stage timings` with `route: /store/product-shipping-options`.
+- ✅ Shipping options endpoint payload trimmed for cold path:
+  - reduced over-fetch in `shipping_option`, `service_zone`, and `shipping_option_price_set` graph fields to only pricing/filtering-relevant columns.
+- ✅ Suggested products category query load reduced:
+  - lowered per-category overfetch buffer from fixed `+4` to configurable default `+2`,
+  - new env knob in storefront data layer: `PDP_SUGGESTED_EXTRA_PRODUCTS` (default `2`),
+  - file: `ArtovniaStorefront/src/lib/data/products.ts`.
+- ✅ Added storefront-side short-lived in-flight request dedup to reduce duplicate first-enter calls during parallel prefetch/render cycles:
+  - `publicFetch(...)` dedup window via `PUBLIC_FETCH_DEDUP_TTL_MS` (default `2000`),
+  - vendor status fetch dedup via `VENDOR_STATUS_DEDUP_TTL_MS` (default `2000`),
+  - lowest-prices batch dedup via `PRICE_BATCH_DEDUP_TTL_MS` (default `2000`),
+  - files:
+    - `ArtovniaStorefront/src/lib/data/products.ts`
+    - `ArtovniaStorefront/src/lib/data/vendor-availability.ts`
+    - `ArtovniaStorefront/src/lib/data/price-history.ts`
+
+New observed slowest PDP-adjacent API in logs:
+- `GET /store/seller/:id/products?...` around ~313ms on MISS in the reported sample.
+- Backend implementation path confirmed:
+  - `apps/backend/src/api/store/seller/[id]/products/route.ts`
+
 Analyzed sources:
 - `src/app/[locale]/(main)/products/[handle]/page.tsx`
 - `src/components/sections/ProductDetailsPage/ProductDetailsPage.tsx`
@@ -123,6 +171,7 @@ What works:
 - PDP detail fetch now carries category parent chain needed for full breadcrumb tree without mandatory extra category request,
 - key `fields` sets for storefront list calls are canonicalized to reduce cache fragmentation,
 - `use server` runtime export issue fixed by moving card field constants out of `products.ts` into `src/lib/constants/product-fields.ts`.
+- latest PDP detail query field trim deployed with no observed storefront regressions in manual tests.
 
 What is still weak:
 - cold-path latency remains high,
@@ -140,3 +189,58 @@ What is still weak:
 5. Separate metrics by sourceFunction (`listProductsForDetail`, `listProductsLean`, `getProductPromotions`, `getProductShippingOptions`).
 6. Confirm backend cache key strategy for seller/promotions/shipping endpoints and whether keys are too granular.
 7. Validate cache effectiveness by replaying the exact same PDP URL sequence in controlled runs.
+8. For `/store/seller/:id/products`, compare:
+   - current default graph path,
+   - created_at fast-path (if enabled),
+   - cache HIT vs MISS latency deltas.
+
+---
+
+## 8) Temporary profiling logs and cleanup plan (post-optimization)
+
+These logs are intentionally temporary for tuning sessions.
+
+### Current temporary profiling controls
+- Seller products route profiling: `SELLER_PRODUCTS_PROFILE=true`
+- Shipping options route profiling: `SHIPPING_OPTIONS_PROFILE=true`
+- Slow-stage threshold (shipping route and other stage-timed routes): `SLOW_ENDPOINT_STAGE_LOG_MS` (default `300`)
+
+### Where logs are emitted
+- Backend process output only (Medusa app):
+  - `apps/backend/src/api/store/seller/[id]/products/route.ts`
+  - `apps/backend/src/api/store/product-shipping-options/route.ts`
+
+---
+
+## Update log (2026-02-23, late night) — post-restart cold test
+
+### What happened on first enter (duplicate calls)
+- In the recorded cold run, many PDP requests appeared in pairs (same URL + params). This pattern is consistent with parallel prefetch/render cycles in Next.js dev flow (metadata/render and/or prefetch + navigation overlap).
+- Important: this duplicate pattern was strongest only on first cold navigation; subsequent product opens were mostly single-call and much faster.
+
+### Current endpoint status from latest logs
+- `/store/products?handle=...` (detail): ~80–145ms typical after warm-up; first cold sample had duplicate pair ~180–210ms.
+- `/store/vendors/:id/status`: improved to ~49–89ms on later opens; cold duplicate pair observed (~155ms + ~75ms).
+- `/store/seller/:id/products` fast-path:
+  - strong on many sellers (~96–183ms),
+  - occasional heavier MISS still present (example ~506ms with hydration dominating).
+- `/store/products/:id/promotions`:
+  - now mostly much lower on warm (~52ms),
+  - still occasional slower first-hit sample (~288ms).
+- `/store/product-shipping-options`:
+  - warm often ~124–230ms,
+  - cold MISS still main remaining bottleneck (~305–361ms stage-timed, ~339–465ms total response in samples).
+- `/store/products/:id/variants/:variantId/attributes`:
+  - now much faster in empty/common case (~11–22ms in latest samples).
+
+### Remaining main bottlenecks (priority)
+1. `product-shipping-options` cold path (`batch2_shipping_options`, `batch3_zones_and_prices`).
+2. `seller/:id/products` occasional slow MISS where hydrate stage spikes for specific sellers.
+3. `products/:id/promotions` occasional cold outliers despite improved shared active-promotions behavior.
+
+### How to disable after development
+1. Remove these env vars (or set to `false`):
+   - `SELLER_PRODUCTS_PROFILE`
+   - `SHIPPING_OPTIONS_PROFILE`
+2. Keep `SLOW_ENDPOINT_STAGE_LOG_MS` at default or unset.
+3. Optionally remove temporary stage-mark helpers from the two route files once KPI targets are reached and stable for multiple deploy cycles.

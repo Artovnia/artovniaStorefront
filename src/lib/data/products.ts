@@ -25,7 +25,11 @@ const BACKEND_URL = process.env.MEDUSA_BACKEND_URL || process.env.NEXT_PUBLIC_ME
 const PUB_KEY = process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || ''
 const SLOW_PUBLIC_FETCH_MS = Number(process.env.SLOW_PUBLIC_FETCH_MS || 1200)
 const PRODUCT_CACHE_REVALIDATE_SECONDS = Number(process.env.PRODUCT_CACHE_REVALIDATE_SECONDS || 1800)
+const SUGGESTED_PRODUCTS_EXTRA_PER_CATEGORY = Number(process.env.PDP_SUGGESTED_EXTRA_PRODUCTS || 2)
 const PUBLIC_FETCH_CACHE_TELEMETRY_LOG_EVERY = Number(process.env.PUBLIC_FETCH_CACHE_TELEMETRY_LOG_EVERY || 50)
+const PUBLIC_FETCH_DEDUP_TTL_MS = Number(process.env.PUBLIC_FETCH_DEDUP_TTL_MS || 2000)
+
+const inflightPublicFetchRequests = new Map<string, { promise: Promise<unknown>; timestamp: number }>()
 
 type PublicFetchBucketStats = {
   requests: number
@@ -55,20 +59,14 @@ const PRODUCT_DETAIL_CRITICAL_FIELDS =
   'id,title,handle,description,thumbnail,created_at,' +
   'images.url,' +
   'metadata,' +
-  'options.id,options.title,options.values.value,' +
+  'options.id,options.title,' +
   'variants.id,variants.title,' +
   'variants.calculated_price,' +
   'variants.inventory_quantity,variants.manage_inventory,variants.allow_backorder,' +
   'variants.metadata,' +
   'variants.options.value,variants.options.option_id,' +
   'variants.options.option.title,' +
-  'seller.id,seller.handle,seller.name,seller.photo,seller.logo_url,' +
-  'categories.id,categories.name,categories.handle,categories.parent_category_id,' +
-  'categories.parent_category.id,categories.parent_category.name,categories.parent_category.handle,categories.parent_category.parent_category_id,' +
-  'categories.parent_category.parent_category.id,categories.parent_category.parent_category.name,categories.parent_category.parent_category.handle'
-
-const PRODUCT_DETAIL_CATEGORY_TREE_FIELDS =
-  'id,' +
+  'seller.id,seller.handle,seller.name,seller.photo,' +
   'categories.id,categories.name,categories.handle,categories.parent_category_id,' +
   'categories.parent_category.id,categories.parent_category.name,categories.parent_category.handle,categories.parent_category.parent_category_id,' +
   'categories.parent_category.parent_category.id,categories.parent_category.parent_category.name,categories.parent_category.parent_category.handle'
@@ -263,6 +261,31 @@ function normalizeQueryParams(params: Record<string, QueryParamValue>): Record<s
   return normalized
 }
 
+function getDeduplicatedPublicFetch<T>(
+  dedupKey: string,
+  fetcher: () => Promise<T>
+): Promise<T> {
+  const now = Date.now()
+  const existing = inflightPublicFetchRequests.get(dedupKey)
+
+  if (existing && now - existing.timestamp < PUBLIC_FETCH_DEDUP_TTL_MS) {
+    return existing.promise as Promise<T>
+  }
+
+  const promise = fetcher().finally(() => {
+    setTimeout(() => {
+      inflightPublicFetchRequests.delete(dedupKey)
+    }, PUBLIC_FETCH_DEDUP_TTL_MS)
+  })
+
+  inflightPublicFetchRequests.set(dedupKey, {
+    promise: promise as Promise<unknown>,
+    timestamp: now,
+  })
+
+  return promise
+}
+
 async function publicFetch<T>(
   path: string,
   params: Record<string, QueryParamValue>,
@@ -287,45 +310,53 @@ async function publicFetch<T>(
   }
   if (sourceFunction) headers['x-source-function'] = sourceFunction
 
-  const startedAt = Date.now()
-  const res = await fetch(url.toString(), { headers, next: nextOptions })
-  const networkMs = Date.now() - startedAt
-  if (!res.ok) {
-    const body = await res.text().catch(() => '')
-    throw new Error(`publicFetch ${path} → ${res.status}: ${body}`)
-  }
-
-  const parseStartedAt = Date.now()
-  const data = await res.json() as T
-  const parseMs = Date.now() - parseStartedAt
-  const totalMs = Date.now() - startedAt
-
-  if (totalMs >= SLOW_PUBLIC_FETCH_MS) {
-    console.warn(JSON.stringify({
-      level: 'warn',
-      msg: 'Slow storefront publicFetch',
-      sourceFunction: sourceFunction || 'unknown',
-      path,
-      status: res.status,
-      networkMs,
-      parseMs,
-      totalMs,
-      cacheControl: res.headers.get('cache-control'),
-      backendCache: res.headers.get('x-cache') || null,
-      cacheStatus: res.headers.get('x-vercel-cache') || res.headers.get('x-nextjs-cache') || null,
-    }))
-  }
-
-  recordPublicFetchBucketTelemetry({
+  const dedupKey = JSON.stringify({
     path,
     params: normalizedParams,
-    sourceFunction,
-    totalMs,
-    edgeStatus: res.headers.get('x-vercel-cache') || res.headers.get('x-nextjs-cache') || null,
-    backendStatus: res.headers.get('x-cache') || null,
+    next: nextOptions,
   })
 
-  return data
+  return getDeduplicatedPublicFetch<T>(dedupKey, async () => {
+    const startedAt = Date.now()
+    const res = await fetch(url.toString(), { headers, next: nextOptions })
+    const networkMs = Date.now() - startedAt
+    if (!res.ok) {
+      const body = await res.text().catch(() => '')
+      throw new Error(`publicFetch ${path} → ${res.status}: ${body}`)
+    }
+
+    const parseStartedAt = Date.now()
+    const data = await res.json() as T
+    const parseMs = Date.now() - parseStartedAt
+    const totalMs = Date.now() - startedAt
+
+    if (totalMs >= SLOW_PUBLIC_FETCH_MS) {
+      console.warn(JSON.stringify({
+        level: 'warn',
+        msg: 'Slow storefront publicFetch',
+        sourceFunction: sourceFunction || 'unknown',
+        path,
+        status: res.status,
+        networkMs,
+        parseMs,
+        totalMs,
+        cacheControl: res.headers.get('cache-control'),
+        backendCache: res.headers.get('x-cache') || null,
+        cacheStatus: res.headers.get('x-vercel-cache') || res.headers.get('x-nextjs-cache') || null,
+      }))
+    }
+
+    recordPublicFetchBucketTelemetry({
+      path,
+      params: normalizedParams,
+      sourceFunction,
+      totalMs,
+      edgeStatus: res.headers.get('x-vercel-cache') || res.headers.get('x-nextjs-cache') || null,
+      backendStatus: res.headers.get('x-cache') || null,
+    })
+
+    return data
+  })
 }
 
 const getCachedProductDetail = unstable_cache(
@@ -344,31 +375,7 @@ const getCachedProductDetail = unstable_cache(
 
     return products[0] || null
   },
-  ['product-detail-v1'],
-  { revalidate: PRODUCT_CACHE_REVALIDATE_SECONDS, tags: ['products'] }
-)
-
-const getCachedProductCategoryHierarchy = unstable_cache(
-  async (handle: string, regionId: string) => {
-    const { products } = await publicFetch<{ products: HttpTypes.StoreProduct[]; count: number }>(
-      '/store/products',
-      {
-        handle,
-        region_id: regionId,
-        limit: 1,
-        fields: PRODUCT_DETAIL_CATEGORY_TREE_FIELDS,
-      },
-      { revalidate: PRODUCT_CACHE_REVALIDATE_SECONDS, tags: ['products'] },
-      'getProductDetailCategoryHierarchy'
-    )
-
-    const product = products?.[0] as (HttpTypes.StoreProduct & {
-      categories?: HttpTypes.StoreProductCategory[]
-    }) | undefined
-
-    return product?.categories || []
-  },
-  ['product-detail-categories-v1'],
+  ['product-detail-v2'],
   { revalidate: PRODUCT_CACHE_REVALIDATE_SECONDS, tags: ['products'] }
 )
 
@@ -569,25 +576,6 @@ export const listProductsLean = async ({
       nextPage: null,
       queryParams,
     }
-  }
-}
-
-export const getProductDetailCategoryHierarchy = async ({
-  handle,
-  regionId,
-}: {
-  handle: string
-  regionId: string
-}): Promise<HttpTypes.StoreProductCategory[]> => {
-  try {
-    return await getCachedProductCategoryHierarchy(handle, regionId)
-  } catch (error) {
-    console.error('❌ getProductDetailCategoryHierarchy failed:', {
-      handle,
-      regionId,
-      error: error instanceof Error ? error.message : String(error),
-    })
-    return []
   }
 }
 
@@ -1103,6 +1091,12 @@ export const listSuggestedProducts = async ({
   const seenProductIds = new Set<string>([product.id]) // Exclude current product
   let categoryName = ''
   let categoryHandle = ''
+  const suggestedFetchLimit =
+    limit +
+    Math.max(
+      0,
+      Number.isFinite(SUGGESTED_PRODUCTS_EXTRA_PER_CATEGORY) ? SUGGESTED_PRODUCTS_EXTRA_PER_CATEGORY : 2
+    )
 
   const categories = (product as any).categories as HttpTypes.StoreProductCategory[] | undefined
 
@@ -1155,7 +1149,8 @@ export const listSuggestedProducts = async ({
           category_id: cat.id,
           regionId,
           queryParams: {
-            limit: limit + 4, // Fetch extra to account for duplicates
+            // Keep extra fetch buffer small to reduce category cold-path payload.
+            limit: suggestedFetchLimit,
             // Suggested cards are below-fold on PDP and can resolve final prices client-side.
             // Keep this query lean to reduce category cold-path latency.
             fields: PDP_SUGGESTED_CARD_FIELDS,
@@ -1170,7 +1165,7 @@ export const listSuggestedProducts = async ({
         listProductsLean({
           regionId,
           queryParams: {
-            limit: limit + 4,
+            limit: suggestedFetchLimit,
             fields: PDP_SUGGESTED_CARD_FIELDS,
           },
         }).then(r => ({

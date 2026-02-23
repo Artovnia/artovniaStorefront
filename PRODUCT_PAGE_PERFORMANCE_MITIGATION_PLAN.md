@@ -11,10 +11,37 @@ Implemented:
 - ✅ Breadcrumb computation starts in parallel with other PDP server fetches.
 - ✅ Storefront cache field normalization applied using canonical constants (`lean`, `PDP seller`, `PDP suggested`).
 - ✅ `use server` export issue resolved by moving field constants to `src/lib/constants/product-fields.ts`.
+- ✅ PDP detail field trim applied for test/perf validation:
+  - removed `options.values.value`
+  - removed `seller.logo_url`
+  - kept `seller.photo` and full breadcrumb-relevant category parent chain.
+- ✅ Removed redundant storefront product-detail category-only query path (`PRODUCT_DETAIL_CATEGORY_TREE_FIELDS` + helper).
+- ✅ Detail cache namespace bumped to `product-detail-v2` to invalidate stale field-shape cache entries safely.
+- ✅ `/store/seller/:id/products` fast-path hardened and validated:
+  - default-enabled unless `SELLER_PRODUCTS_CREATED_AT_FAST_PATH=false`,
+  - dynamic link-table resolution for SQL path,
+  - fixed knex null-filter compatibility (`whereNull` chain),
+  - verified runtime path via response header `X-Seller-Products-Path: fast-path`.
+- ✅ Added opt-in stage profiling for seller products endpoint:
+  - env: `SELLER_PRODUCTS_PROFILE=true`,
+  - location: `apps/backend/src/api/store/seller/[id]/products/route.ts`,
+  - backend terminal log key: `seller products endpoint stage timings`.
+- ✅ Added opt-in/threshold stage profiling for shipping options endpoint:
+  - env: `SHIPPING_OPTIONS_PROFILE=true`,
+  - threshold env: `SLOW_ENDPOINT_STAGE_LOG_MS` (default `300`),
+  - location: `apps/backend/src/api/store/product-shipping-options/route.ts`,
+  - backend terminal log key: `Store endpoint stage timings` (`route: /store/product-shipping-options`).
+- ✅ Trimmed shipping-options cold-path graph payload to required fields only:
+  - `shipping_option`: kept id/name/price_type/service_zone_id/data/amount/prices,
+  - `service_zone`: reduced to `geo_zones.country_code`,
+  - `shipping_option_price_set`: reduced to `price_set.prices.amount/currency_code`.
+- ✅ Reduced PDP suggested-products category overfetch:
+  - replaced fixed extra buffer `+4` with configurable `PDP_SUGGESTED_EXTRA_PRODUCTS` (default `2`),
+  - location: `ArtovniaStorefront/src/lib/data/products.ts` (`listSuggestedProducts`).
 
 Still pending from plan:
 - telemetry comparison (post-change P50/P95/P99, MISS/HIT trend),
-- backend endpoint profiling and index/query tuning,
+- backend endpoint index/query tuning (post-profiling),
 - explicit cache warmup + alert hardening.
 
 ---
@@ -116,6 +143,14 @@ Higher effective hit rate for repeated paths and less cache fragmentation.
    - whether cache was hit/missed
 3. Add/verify indexes used by slow filters/sorts.
 4. Review expensive joins in promotions and shipping endpoints.
+5. For `/store/seller/:id/products` specifically (now frequently the slowest PDP-adjacent call):
+   - confirm route path: `apps/backend/src/api/store/seller/[id]/products/route.ts`,
+   - profile cold path branches (`fast-path` vs default graph path),
+   - verify if `SELLER_PRODUCTS_CREATED_AT_FAST_PATH=true` is safe in current DB schema,
+   - inspect query count/latency split between:
+     - seller-product link fetch,
+     - sortable payload fetch,
+     - final page hydration fetch.
 
 ### Expected impact
 Reduce cold fetch latency where storefront cache cannot help.
@@ -164,3 +199,15 @@ Rollback:
 - PDP server request count reduced on first render
 - HIT ratio trend up, MISS growth slope down
 - eliminate 20s+ outliers for promotions/shipping during normal load
+
+---
+
+## Temporary profiling cleanup checklist (after optimization phase)
+
+1. Disable env-based verbose profiling:
+   - unset or set `SELLER_PRODUCTS_PROFILE=false`
+   - unset or set `SHIPPING_OPTIONS_PROFILE=false`
+2. Keep/restore `SLOW_ENDPOINT_STAGE_LOG_MS` to default behavior (or unset).
+3. If logs remain noisy in stable production, remove temporary stage-mark helpers from:
+   - `apps/backend/src/api/store/seller/[id]/products/route.ts`
+   - `apps/backend/src/api/store/product-shipping-options/route.ts`

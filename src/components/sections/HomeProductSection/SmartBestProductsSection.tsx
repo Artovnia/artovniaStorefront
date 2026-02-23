@@ -23,6 +23,19 @@ export const SmartBestProductsSection = async ({
   products,
 }: SmartBestProductsSectionProps) => {
   try {
+    const getSellerKey = (product: HttpTypes.StoreProduct & { seller?: unknown }): string => {
+      const seller = product.seller as { id?: string; handle?: string; name?: string } | undefined
+      const metadataSellerId = (product.metadata as any)?.seller_id as string | undefined
+
+      if (seller?.id) return `id:${seller.id}`
+      if (seller?.handle) return `handle:${seller.handle}`
+      if (metadataSellerId) return `meta:${metadataSellerId}`
+      if (seller?.name) return `name:${seller.name}`
+
+      // Unknown seller identity: keep product renderable without collapsing all unknowns into one bucket.
+      return `unknown:${product.id}`
+    }
+
     const allProducts = products
 
     if (allProducts.length === 0) {
@@ -88,7 +101,7 @@ export const SmartBestProductsSection = async ({
           wishlistCount: parseInt((product.metadata as any)?.wishlist_count || '0'),
 
           // Seller diversity
-          sellerId: (product.metadata as any)?.seller_id || 'default',
+          sellerId: getSellerKey(product),
         }
 
         let score = 0
@@ -165,8 +178,14 @@ export const SmartBestProductsSection = async ({
     if (diversifiedProducts.length < limit) {
       for (const product of scoredProducts) {
         if (!diversifiedProducts.includes(product)) {
-          diversifiedProducts.push(product)
-          if (diversifiedProducts.length >= limit) break
+          const sellerId = product._metrics.sellerId
+          const count = sellerCounts[sellerId] || 0
+
+          if (count < MAX_PER_SELLER) {
+            diversifiedProducts.push(product)
+            sellerCounts[sellerId] = count + 1
+            if (diversifiedProducts.length >= limit) break
+          }
         }
       }
     }
