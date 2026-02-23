@@ -1,6 +1,6 @@
 import Image from "next/image"
 import { HERO_BANNERS, HERO_CONFIG } from "@/config/hero-banners"
-import { HeroClient } from "./HeroClient"
+import { HeroClientMountGate } from "./HeroClientMountGate"
 
 export interface HeroBanner {
   id: string
@@ -170,7 +170,7 @@ export const Hero = ({
       </div>
       
       {/* ✅ Client carousel hydrates on top - takes over after JS loads */}
-      <HeroClient 
+      <HeroClientMountGate
         banners={banners}
         className=""
         pauseOnHover={pauseOnHover}

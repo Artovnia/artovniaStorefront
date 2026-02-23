@@ -330,7 +330,7 @@ export const NavbarSearch = () => {
                       {suggestion.value}
                     </span>
                     {enabled && suggestion.categoryLabel && (
-                      <span className="shrink-0 text-right text-xs sm:text-sm text-[#3B3634]/70">
+                      <span className="shrink-0 text-right font-instrument-sans text-xs sm:text-sm text-[#3B3634]/70">
                         w {suggestion.categoryLabel}
                       </span>
                     )}

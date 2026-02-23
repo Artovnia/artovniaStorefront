@@ -17,6 +17,8 @@ interface FooterAccordionProps {
  */
 export function FooterAccordion({ title, id, children }: FooterAccordionProps) {
   const [isOpen, setIsOpen] = useState(false)
+  const mobileHeadingId = `${id}-mobile-heading`
+  const desktopHeadingId = `${id}-desktop-heading`
 
   return (
     <div>
@@ -28,7 +30,7 @@ export function FooterAccordion({ title, id, children }: FooterAccordionProps) {
         aria-expanded={isOpen}
         aria-controls={`footer-panel-${id}`}
       >
-        <h2 className="text-white font-instrument-sans font-normal text-lg uppercase" id={id}>
+        <h2 className="text-white font-instrument-sans font-normal text-lg uppercase" id={mobileHeadingId}>
           {title}
         </h2>
         <ChevronDown
@@ -41,7 +43,7 @@ export function FooterAccordion({ title, id, children }: FooterAccordionProps) {
       {/* Desktop: static header (unchanged from original) */}
       <h2
         className="hidden lg:block text-white font-instrument-sans font-normal text-lg mb-6 uppercase"
-        id={id}
+        id={desktopHeadingId}
       >
         {title}
       </h2>
@@ -53,7 +55,7 @@ export function FooterAccordion({ title, id, children }: FooterAccordionProps) {
           isOpen ? "max-h-96 opacity-100 pt-4 pb-2" : "max-h-0 opacity-0"
         }`}
         role="region"
-        aria-labelledby={id}
+        aria-labelledby={mobileHeadingId}
       >
         {children}
       </div>

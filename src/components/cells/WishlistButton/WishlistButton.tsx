@@ -152,6 +152,10 @@ export const WishlistButton = ({
     }
   }
 
+  const buttonLabel = isWishlisted
+    ? "Usuń produkt z ulubionych"
+    : "Dodaj produkt do ulubionych"
+
   return (
     <Button
       onClick={handleClick}
@@ -159,6 +163,9 @@ export const WishlistButton = ({
       className="w-7 h-7   p-0 flex items-center ring-1 ring-[#B7B7AD] justify-center rounded-full bg-[#F4F0EB] bg-opacity-80 hover:bg-[#B7B7AD] hover:fill-[#B7B7AD]"
       loading={isWishlistAdding}
       disabled={isWishlistAdding}
+      aria-label={buttonLabel}
+      title={buttonLabel}
+      aria-pressed={isWishlisted}
     >
       {isWishlisted ? <HeartFilledIcon size={18} /> : <HeartIcon size={18} />}
     </Button>

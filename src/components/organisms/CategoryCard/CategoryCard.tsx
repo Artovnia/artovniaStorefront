@@ -42,7 +42,8 @@ export function CategoryCard({
       >
         <Image
           src={category.image || `/images/categories/${category.handle}.webp`}
-          alt={category.name}
+          alt=""
+          aria-hidden="true"
           fill
           className="transition-transform duration-500 group-hover:scale-110"
           sizes={

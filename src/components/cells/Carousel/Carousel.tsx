@@ -122,8 +122,6 @@ export const CustomCarousel = ({
           className={`overflow-x-auto scrollbar-hide ${noMobileMargin ? '' : 'mx-4'}`}
           ref={scrollContainerRef}
           onScroll={handleScroll}
-          role="list"
-          aria-label="Lista produktów"
           style={{
             scrollbarWidth: 'none', /* Firefox */
             msOverflowStyle: 'none', /* IE/Edge */
