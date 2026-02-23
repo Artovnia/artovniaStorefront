@@ -527,16 +527,15 @@ export const ProductReviews = ({
         <div className="px-6 py-5 border-b border-cream-200 bg-cream-100/50">
           <div className="flex flex-col sm:flex-row sm:items-center gap-6">
             {/* Average Rating */}
-            <div className="text-center sm:text-left sm:pr-6 sm:border-r sm:border-cream-200">
-              <div className="flex items-baseline gap-1 justify-center sm:justify-start">
+            <div className="flex flex-col text-center sm:text-left sm:pr-6 sm:border-r sm:border-cream-200">
+              <div className="flex flex-col-2 items-baseline gap-1 justify-center sm:justify-start">
                 <span className="text-4xl font-medium text-plum font-instrument-serif">
                   {averageRating > 0 ? averageRating : "—"}
                 </span>
                 <span className="text-lg text-plum-muted">/5</span>
-              </div>
-              <div className="mt-1">
                 <StarRating rate={averageRating} starSize={16} />
               </div>
+            
               <p className="text-xs text-plum-muted font-instrument-sans mt-2">
                 {reviews.length}{" "}
                 {reviews.length === 1
