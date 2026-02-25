@@ -52,10 +52,8 @@ export const SmartBestProductsSection = async ({
       )
     }
 
-    // ✅ FIX: Use stable timestamp for SSR/CSR consistency
-    // Generate a deterministic seed from the cache key to ensure same results on server and client
-    const cacheTimestamp = Math.floor(Date.now() / (1000 * 60 * 10)) // Stable for 10 minutes
-    const currentTime = cacheTimestamp * (1000 * 60 * 10)
+    // Rotate every 30 minutes to keep homepage fresh while remaining deterministic during a render.
+    const rotationSeed = Math.floor(Date.now() / (1000 * 60 * 30))
 
     // ✅ FIX: Deterministic pseudo-random using product ID as seed
     const deterministicRandom = (productId: string, salt: number = 0): number => {
@@ -69,84 +67,38 @@ export const SmartBestProductsSection = async ({
       return Math.abs(hash % 1000) / 1000 // Returns 0-1
     }
 
-    // Enhanced scoring algorithm
+    // Lightweight score: mostly randomized, with small quality/popularity boosts.
+    // This avoids "just newest products" behavior while keeping query cost low.
     const scoredProducts = allProducts
       .map(product => {
-        const createdAt = new Date(product.created_at || 0).getTime()
-        const updatedAt = new Date((product as any).updated_at || product.created_at || 0).getTime()
-
         const metrics = {
-          // Quality indicators
           variantCount: product.variants?.length || 0,
           imageCount: product.images?.length || 0,
           hasDescription: product.description ? 1 : 0,
           descriptionLength: product.description?.length || 0,
 
-          // Recency
-          daysSinceCreated: Math.floor(
-            (currentTime - createdAt) / (1000 * 60 * 60 * 24)
-          ),
-          daysSinceUpdated: Math.floor(
-            (currentTime - updatedAt) / (1000 * 60 * 60 * 24)
-          ),
-
-          // Categorization
-          hasCollection: (product as any).collection_id ? 1 : 0,
-          tagCount: product.tags?.length || 0,
-
-          // Metadata
           isFeatured: (product.metadata as any)?.featured === 'true' ? 1 : 0,
-          isNew: (currentTime - createdAt) < (30 * 24 * 60 * 60 * 1000) ? 1 : 0,
           viewCount: parseInt((product.metadata as any)?.view_count || '0'),
           wishlistCount: parseInt((product.metadata as any)?.wishlist_count || '0'),
-
-          // Seller diversity
           sellerId: getSellerKey(product),
         }
 
-        let score = 0
+        const qualityScore =
+          Math.min(metrics.imageCount * 3, 15) +
+          metrics.hasDescription * 10 +
+          Math.min(metrics.descriptionLength / 220, 8) +
+          Math.min(metrics.variantCount * 2, 10)
 
-        // RECENCY: Strong preference for new products (heaviest weight)
-        if (metrics.daysSinceCreated <= 7) {
-          score += 200 // Last week
-        } else if (metrics.daysSinceCreated <= 30) {
-          score += 150 // Last month
-        } else if (metrics.daysSinceCreated <= 90) {
-          score += 100 // Last 3 months
-        } else if (metrics.daysSinceCreated <= 180) {
-          score += 50 // Last 6 months
-        } else {
-          // Penalty for old products
-          score -= Math.min((metrics.daysSinceCreated - 180) * 0.5, 150)
-        }
+        const engagementScore =
+          Math.min(metrics.viewCount * 0.01, 6) +
+          Math.min(metrics.wishlistCount * 2, 12)
 
-        // Recently updated products get boost
-        if (metrics.daysSinceUpdated <= 7) {
-          score += 40
-        } else if (metrics.daysSinceUpdated <= 30) {
-          score += 20
-        }
+        const featuredScore = metrics.isFeatured * 10
 
-        // QUALITY: Content richness
-        score += Math.min(metrics.imageCount * 8, 40)
-        score += metrics.hasDescription * 25
-        score += Math.min(metrics.descriptionLength / 100, 25)
-        score += Math.min(metrics.variantCount * 6, 30)
+        // Main driver: deterministic pseudo-random ranking refreshed every 30 minutes.
+        const randomScore = deterministicRandom(product.id, rotationSeed) * 100
 
-        // CATEGORIZATION
-        score += metrics.hasCollection * 30
-        score += Math.min(metrics.tagCount * 4, 20)
-
-        // FEATURED & NEW
-        score += metrics.isFeatured * 150
-        score += metrics.isNew * 80
-
-        // ENGAGEMENT (if tracked in metadata)
-        score += metrics.viewCount * 0.05
-        score += metrics.wishlistCount * 12
-
-        // ✅ FIX: DETERMINISTIC RANDOMNESS: Break ties using product ID as seed
-        score += deterministicRandom(product.id, cacheTimestamp) * 15
+        const score = randomScore + qualityScore + engagementScore + featuredScore
 
         return {
           ...product,
@@ -195,7 +147,7 @@ export const SmartBestProductsSection = async ({
       .slice(0, limit)
       .map((product, index) => ({
         product,
-        sortKey: deterministicRandom(product.id, index + cacheTimestamp)
+        sortKey: deterministicRandom(product.id, index + rotationSeed)
       }))
       .sort((a, b) => a.sortKey - b.sortKey)
       .map(item => item.product)

@@ -325,15 +325,24 @@ const AboutUsContent = () => {
                 </motion.div>
                 <motion.h3
                   variants={fadeInUp}
-                  className="font-instrument-serif text-2xl font-medium text-white mb-2"
+                  className="font-instrument-serif flex flex-row justify-between text-2xl font-medium text-white mb-2"
                 >
                   Arek
+                  <a
+                    href="https://appcrates.pl"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="underline decoration-white/60 underline-offset-4 transition-colors hover:text-primary"
+                  >
+                  <span className="ml-1">appcrates.pl</span></a>
                 </motion.h3>
                 <motion.p
                   variants={fadeInUp}
                   className="text-sm uppercase tracking-wider text-white mb-3 font-instrument-sans"
                 >
-                  Developer
+                 
+                    Developer 
+              
                 </motion.p>
                 <motion.p
                   variants={fadeInUp}

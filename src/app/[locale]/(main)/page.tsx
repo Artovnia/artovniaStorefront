@@ -11,7 +11,7 @@ import { PromotionDataProvider } from "@/components/context/PromotionDataProvide
 import { BatchPriceProvider } from "@/components/context/BatchPriceProvider"
 import { retrieveCustomer } from "@/lib/data/customer"
 import { getUserWishlists } from "@/lib/data/wishlist"
-import { listProductsLean } from "@/lib/data/products"
+import { listProductsLean, listSmartHomeRandomProducts } from "@/lib/data/products"
 import type { Metadata } from "next"
 import { generateOrganizationJsonLd, generateWebsiteJsonLd } from "@/lib/helpers/seo"
 import { JsonLd } from "@/components/JsonLd"
@@ -306,17 +306,33 @@ export default async function Home({
   const organizationJsonLd = generateOrganizationJsonLd()
   const websiteJsonLd = generateWebsiteJsonLd()
 
-  // Reuse one newest-first pool for both homepage product sections.
-  // This avoids duplicate /store/products calls for limit=50 and limit=8.
-  const homepageProductPool = (
-    await listProductsLean({
-      countryCode: locale,
-      queryParams: {
-        limit: 50,
-        order: "-created_at",
-      },
-    })
-  )?.response?.products || []
+  // Use two lightweight pools:
+  // 1) newest pool for "Nowości"
+  // 2) 6-hour cached random batch for SmartBestProductsSection
+  const NEWEST_POOL_LIMIT = 50
+  const SMART_POOL_LIMIT = 60
+
+  const newestProductPool = await listProductsLean({
+    countryCode: locale,
+    queryParams: {
+      limit: NEWEST_POOL_LIMIT,
+      order: "-created_at",
+    },
+  })
+
+  const newestProducts = newestProductPool?.response?.products || []
+  const newestProductsCount = newestProductPool?.response?.count || 0
+
+  // If newest pool already contains all available products, avoid the extra smart-batch request.
+  const smartProducts = newestProductsCount > NEWEST_POOL_LIMIT
+    ? await listSmartHomeRandomProducts({
+        countryCode: locale,
+        limit: SMART_POOL_LIMIT,
+        totalCountHint: newestProductsCount,
+      })
+    : newestProducts
+
+  const safeSmartProducts = smartProducts.length > 0 ? smartProducts : newestProducts
 
   // ✅ CRITICAL LCP OPTIMIZATION: Don't block Hero render with data fetching
   // Promotional data is fetched AFTER Hero renders via streaming
@@ -340,7 +356,7 @@ export default async function Home({
           {/* User data fetched inside component, not blocking page render */}
           <div className="mx-auto max-w-[1920px] w-full mb-8 min-h-[400px] py-2 md:py-8">
             <Suspense fallback={<ProductsSkeleton />}>
-              <SmartBestProductsSectionWithUser locale={locale} products={homepageProductPool} />
+              <SmartBestProductsSectionWithUser locale={locale} products={safeSmartProducts} />
             </Suspense>
           </div>
 
@@ -364,7 +380,7 @@ export default async function Home({
             {/* Content container inside full-width section */}
             <div className="mx-auto max-w-[1920px] w-full min-h-[400px] py-2 md:py-8 font-instrument-sans">
               <Suspense fallback={<ProductsSkeleton />}>
-                <HomeNewestProductsSectionWithUser locale={locale} products={homepageProductPool} />
+                <HomeNewestProductsSectionWithUser locale={locale} products={newestProducts} />
               </Suspense>
             </div>
           </div>

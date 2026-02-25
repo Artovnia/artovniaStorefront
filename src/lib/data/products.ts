@@ -25,6 +25,7 @@ const BACKEND_URL = process.env.MEDUSA_BACKEND_URL || process.env.NEXT_PUBLIC_ME
 const PUB_KEY = process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || ''
 const SLOW_PUBLIC_FETCH_MS = Number(process.env.SLOW_PUBLIC_FETCH_MS || 1200)
 const PRODUCT_CACHE_REVALIDATE_SECONDS = Number(process.env.PRODUCT_CACHE_REVALIDATE_SECONDS || 1800)
+const SMART_HOME_PRODUCTS_REVALIDATE_SECONDS = Number(process.env.SMART_HOME_PRODUCTS_REVALIDATE_SECONDS || 21600)
 const SUGGESTED_PRODUCTS_EXTRA_PER_CATEGORY = Number(process.env.PDP_SUGGESTED_EXTRA_PRODUCTS || 2)
 const PUBLIC_FETCH_CACHE_TELEMETRY_LOG_EVERY = Number(process.env.PUBLIC_FETCH_CACHE_TELEMETRY_LOG_EVERY || 50)
 const PUBLIC_FETCH_DEDUP_TTL_MS = Number(process.env.PUBLIC_FETCH_DEDUP_TTL_MS || 2000)
@@ -43,6 +44,31 @@ type PublicFetchBucketStats = {
   lastEdgeStatus: string | null
   lastBackendStatus: string | null
   lastSeenAt: string | null
+}
+
+export const listSmartHomeRandomProducts = async ({
+  countryCode,
+  limit = 60,
+  totalCountHint,
+}: {
+  countryCode: string
+  limit?: number
+  totalCountHint?: number
+}): Promise<(HttpTypes.StoreProduct & { seller?: SellerProps })[]> => {
+  if (!countryCode) {
+    return []
+  }
+
+  const rotationBucket = Math.floor(Date.now() / (SMART_HOME_PRODUCTS_REVALIDATE_SECONDS * 1000))
+
+  const result = await getCachedSmartHomeProductsBatch(
+    countryCode,
+    limit,
+    rotationBucket,
+    totalCountHint
+  )
+
+  return (result.products || []) as (HttpTypes.StoreProduct & { seller?: SellerProps })[]
 }
 
 const TRACKED_PUBLIC_FETCH_PATHS = new Set(['/store/products', '/store/product-categories'])
@@ -377,6 +403,77 @@ const getCachedProductDetail = unstable_cache(
   },
   ['product-detail-v2'],
   { revalidate: PRODUCT_CACHE_REVALIDATE_SECONDS, tags: ['products'] }
+)
+
+const getCachedSmartHomeProductsBatch = unstable_cache(
+  async (
+    countryCode: string,
+    limit: number,
+    rotationBucket: number,
+    totalCountHint?: number
+  ) => {
+    const region = await getRegion(countryCode)
+
+    if (!region?.id) {
+      return { products: [], count: 0 }
+    }
+
+    let totalCount = Number(totalCountHint) || 0
+
+    if (totalCount <= 0) {
+      const normalizedCountQuery = normalizeQueryParams({
+        region_id: region.id,
+        limit: 1,
+        offset: 0,
+        fields: LEAN_PRODUCT_CARD_FIELDS,
+      })
+
+      const countResult = await publicFetch<{ products: HttpTypes.StoreProduct[]; count: number }>(
+        '/store/products',
+        normalizedCountQuery,
+        { revalidate: SMART_HOME_PRODUCTS_REVALIDATE_SECONDS, tags: ['products', 'home-smart-products'] },
+        'listSmartHomeRandomProducts.count'
+      )
+
+      totalCount = countResult?.count || 0
+    }
+
+    if (totalCount <= 0) {
+      return { products: [], count: 0 }
+    }
+
+    const safeLimit = Math.max(1, Math.min(limit, totalCount))
+    const maxOffset = Math.max(totalCount - safeLimit, 0)
+
+    const seedString = `${countryCode}:${region.id}:${rotationBucket}:${totalCount}:${safeLimit}`
+    let hash = 0
+    for (let i = 0; i < seedString.length; i++) {
+      hash = ((hash << 5) - hash) + seedString.charCodeAt(i)
+      hash = hash & hash
+    }
+    const randomOffset = maxOffset > 0 ? Math.abs(hash) % (maxOffset + 1) : 0
+
+    const normalizedBatchQuery = normalizeQueryParams({
+      region_id: region.id,
+      limit: safeLimit,
+      offset: randomOffset,
+      fields: LEAN_PRODUCT_CARD_FIELDS,
+    })
+
+    const batchResult = await publicFetch<{ products: HttpTypes.StoreProduct[]; count: number }>(
+      '/store/products',
+      normalizedBatchQuery,
+      { revalidate: SMART_HOME_PRODUCTS_REVALIDATE_SECONDS, tags: ['products', 'home-smart-products'] },
+      'listSmartHomeRandomProducts.batch'
+    )
+
+    return {
+      products: batchResult?.products || [],
+      count: totalCount,
+    }
+  },
+  ['smart-home-products-random-v1'],
+  { revalidate: SMART_HOME_PRODUCTS_REVALIDATE_SECONDS, tags: ['products', 'home-smart-products'] }
 )
 
 const getCachedLeanProducts = unstable_cache(
