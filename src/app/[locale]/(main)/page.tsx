@@ -286,7 +286,7 @@ async function HomeNewestProductsSectionWithUser({
     <HomeNewestProductsSection 
       heading="Nowości" 
       locale={locale}
-      limit={8}
+      limit={12}
       home={true}
       user={user}
       wishlist={wishlist}

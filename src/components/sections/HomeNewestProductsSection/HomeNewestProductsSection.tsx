@@ -16,7 +16,7 @@ interface HomeNewestProductsSectionProps {
 export const HomeNewestProductsSection = async ({ 
   heading = "Najnowsze produkty",
   locale = process.env.NEXT_PUBLIC_DEFAULT_REGION || "pl",
-  limit = 4,
+  limit = 12,
   home = false,
   user = null,
   wishlist = [],

@@ -16,7 +16,7 @@ interface SmartBestProductsSectionProps {
 export const SmartBestProductsSection = async ({ 
   heading = "Najlepsze produkty",
   locale = process.env.NEXT_PUBLIC_DEFAULT_REGION || "pl",
-  limit = 10,
+  limit = 12,
   home = false,
   user = null,
   wishlist = [],
