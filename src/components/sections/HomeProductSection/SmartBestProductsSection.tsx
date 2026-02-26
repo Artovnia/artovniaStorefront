@@ -112,6 +112,7 @@ export const SmartBestProductsSection = async ({
     const MAX_PER_SELLER = 3
     const diversifiedProducts: typeof scoredProducts = []
     const sellerCounts: Record<string, number> = {}
+    const selectedIds = new Set<string>()
 
     // First pass: enforce diversity limit
     for (const product of scoredProducts) {
@@ -121,24 +122,36 @@ export const SmartBestProductsSection = async ({
       if (count < MAX_PER_SELLER) {
         diversifiedProducts.push(product)
         sellerCounts[sellerId] = count + 1
+        selectedIds.add(product.id)
       }
 
       if (diversifiedProducts.length >= limit) break
     }
 
-    // Second pass: fill remaining slots if needed
+    // Second pass: fill remaining slots while preserving seller cap
     if (diversifiedProducts.length < limit) {
       for (const product of scoredProducts) {
-        if (!diversifiedProducts.includes(product)) {
+        if (!selectedIds.has(product.id)) {
           const sellerId = product._metrics.sellerId
           const count = sellerCounts[sellerId] || 0
 
           if (count < MAX_PER_SELLER) {
             diversifiedProducts.push(product)
             sellerCounts[sellerId] = count + 1
+            selectedIds.add(product.id)
             if (diversifiedProducts.length >= limit) break
           }
         }
+      }
+    }
+
+    // Third pass: if seller cap still leaves holes, relax cap to guarantee full section size.
+    if (diversifiedProducts.length < limit) {
+      for (const product of scoredProducts) {
+        if (selectedIds.has(product.id)) continue
+        diversifiedProducts.push(product)
+        selectedIds.add(product.id)
+        if (diversifiedProducts.length >= limit) break
       }
     }
 

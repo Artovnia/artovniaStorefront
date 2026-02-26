@@ -14,7 +14,7 @@ export const categories: {
     id: "1",
     name: "Biżuteria",
     handle: "bizuteria",
-    image: "/images/categories/Bizuteria.webp",
+    image: "/images/categories/Rectangle 6_kategoria.webp",
     imagePosition: "center 50%",
     featured: true, // Large featured category
   },
@@ -22,28 +22,28 @@ export const categories: {
     id: "2",
     name: "Torebki i plecaki",
     handle: "torebki-i-plecaki",
-    image: "/images/categories/Torebki-i-plecaki.webp",
+    image: "/images/categories/Rectangle 2_kategoria.webp",
     imagePosition: "center 90%",
   },
   {
     id: "3",
     name: "Dziecko",
     handle: "dziecko",
-    image: "/images/categories/Dziecko.webp",
+    image: "/images/categories/Rectangle 7_kategoria.webp",
     imagePosition: "center 50%",
   },
   {
     id: "4",
     name: "Dekoracje",
     handle: "dekoracje",
-    image: "/images/categories/Dekoracje.webp",
+    image: "/images/categories/Rectangle 3_kategoria.webp",
     imagePosition: "center 50%",
   },
   {
     id: "5",
     name: "Kuchnia i jadalnia",
     handle: "kuchnia-i-jadalnia",
-    image: "/images/categories/Kubki.webp",
+    image: "/images/categories/Rectangle 8_kategoria.webp",
     imagePosition: "center 60%", // Shows more of the bottom of this image
   },
 ]
