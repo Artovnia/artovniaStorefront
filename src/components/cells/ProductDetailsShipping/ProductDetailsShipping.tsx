@@ -42,9 +42,9 @@ export const ProductDetailsShipping = ({
                       <Text className="font-medium text-ui-fg-base font-instrument-sans text-sm leading-relaxed">
                         {method.name}
                       </Text>
-                      {method.seller_name && (
+                      {(method.seller_name || product?.seller?.name) && (
                         <Text className="text-xs text-ui-fg-muted font-instrument-sans mt-0.5 opacity-75">
-                          przez {method.seller_name}
+                          przez {method.seller_name || product?.seller?.name}
                         </Text>
                       )}
                     </div>

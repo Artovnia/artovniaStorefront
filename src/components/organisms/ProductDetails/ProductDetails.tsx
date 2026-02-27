@@ -6,8 +6,7 @@ import {
   ProductPageDetails,
 } from "@/components/cells"
 import { ProductDetailsShippingWrapper } from "@/components/cells/ProductDetailsShipping/ProductDetailsShippingWrapper"
-import { getProductMeasurements } from "@/lib/data/measurements"
-import { getProductDeliveryTimeframe, DeliveryTimeframe } from "@/lib/data/delivery-timeframe"
+import { DeliveryTimeframe } from "@/lib/data/delivery-timeframe"
 // ✅ REMOVED: retrieveCustomer, isAuthenticated, getUserWishlists - now fetched client-side via ProductUserDataProvider
 import { SellerProps } from "@/types/seller"
 import { SingleProductMeasurement } from "@/types/product"
@@ -32,6 +31,8 @@ export const ProductDetails = async ({
   region,
   initialVariantAttributes,
   initialShippingOptions,
+  initialDeliveryTimeframe,
+  initialMeasurements,
 }: {
   product: HttpTypes.StoreProduct & { 
     seller: SellerProps
@@ -40,6 +41,8 @@ export const ProductDetails = async ({
   region?: HttpTypes.StoreRegion | null
   initialVariantAttributes?: { attribute_values: any[] }
   initialShippingOptions?: any[]
+  initialDeliveryTimeframe?: DeliveryTimeframe | null
+  initialMeasurements?: SingleProductMeasurement[]
 }) => {
   // Pre-calculate variant and locale data
   const selectedVariantId = Array.isArray(product.variants) && product.variants.length > 0 && product.variants[0]?.id 
@@ -49,21 +52,11 @@ export const ProductDetails = async ({
   const supportedLocales = ['en', 'pl']
   const currentLocale = supportedLocales.includes(locale) ? locale : 'en'
 
-  // Fetch optional data in parallel so one slow request doesn't create a waterfall.
-  const [deliveryTimeframeResult, measurementsResult] = await Promise.allSettled([
-    getProductDeliveryTimeframe(product.id),
-    getProductMeasurements(product.id, selectedVariantId, currentLocale),
-  ])
+  const deliveryTimeframe: DeliveryTimeframe | null = initialDeliveryTimeframe ?? null
 
-  const deliveryTimeframe: DeliveryTimeframe | null =
-    deliveryTimeframeResult.status === "fulfilled"
-      ? deliveryTimeframeResult.value
-      : null
-
-  const initialMeasurements: SingleProductMeasurement[] | undefined =
-    measurementsResult.status === "fulfilled" &&
-    isValidMeasurementsArray(measurementsResult.value)
-      ? measurementsResult.value
+  const safeInitialMeasurements: SingleProductMeasurement[] | undefined =
+    initialMeasurements && isValidMeasurementsArray(initialMeasurements)
+      ? initialMeasurements
       : undefined
 
   return (
@@ -84,7 +77,7 @@ export const ProductDetails = async ({
         <ProductDetailsMeasurements 
           productId={product.id}
           locale={currentLocale}
-          initialMeasurements={initialMeasurements}
+          initialMeasurements={safeInitialMeasurements}
           variants={product.variants?.map(v => ({
             id: v.id,
             title: v.title || undefined

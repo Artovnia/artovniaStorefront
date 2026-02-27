@@ -8,6 +8,7 @@ import { cache } from "react"
 const BACKEND_URL = process.env.MEDUSA_BACKEND_URL || process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || 'http://localhost:9000'
 const PUB_KEY = process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || ''
 const PUBLIC_HEADERS = { 'accept': 'application/json', 'x-publishable-api-key': PUB_KEY }
+const CATEGORY_TREE_REVALIDATE_SECONDS = Number(process.env.CATEGORY_TREE_REVALIDATE_SECONDS || 86400)
 
 async function categoryFetch<T>(path: string, params: Record<string, any>, nextOpts: NextFetchRequestConfig): Promise<T> {
   const url = new URL(`${BACKEND_URL}${path}`)
@@ -219,7 +220,7 @@ export const listCategoriesWithProducts = async (): Promise<{
         include_descendants_tree: true,
         limit: 50,
       },
-      { revalidate: 3600 }
+      { revalidate: CATEGORY_TREE_REVALIDATE_SECONDS }
     )
 
     const parentCategories = parentResponse?.product_categories || []

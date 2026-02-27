@@ -1,4 +1,5 @@
 "use server"
+import { cache } from "react"
 
 // ✅ Use native fetch (no Authorization header) so Next.js Data Cache works.
 // sdk.client.fetch injects the JWT globally which busts next:{revalidate:300}.
@@ -23,7 +24,7 @@ export interface DeliveryTimeframe {
  * Fetch delivery timeframe for a product
  * Uses caching for performance
  */
-export const getProductDeliveryTimeframe = async (
+const getCachedProductDeliveryTimeframe = cache(async (
   productId: string
 ): Promise<DeliveryTimeframe | null> => {
   if (!productId) return null
@@ -46,6 +47,12 @@ export const getProductDeliveryTimeframe = async (
     console.error(`❌ getProductDeliveryTimeframe: Failed to fetch for product ${productId}:`, error)
     return null
   }
+})
+
+export const getProductDeliveryTimeframe = async (
+  productId: string
+): Promise<DeliveryTimeframe | null> => {
+  return getCachedProductDeliveryTimeframe(productId)
 }
 
 /**

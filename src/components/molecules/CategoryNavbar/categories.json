@@ -529,5 +529,67 @@
       { "id": "pcat_01K19M1P70H6DQAEPVHDPF44ZH", "name": "Kolekcje i antyki", "handle": "kolekcje-i-antyki", "rank": 4 },
       { "id": "pcat_01K19M24W4WWGM5HA2KY0QCTSY", "name": "Pozostałe", "handle": "pozostale-vintage", "rank": 5 }
     ]
-  }
+  },
+  {
+  "id": "pcat_01K1B00A01BEAUTYROOT000000",
+  "name": "Beauty",
+  "handle": "beauty",
+  "rank": 9,
+  "children": [
+    { "id": "pcat_01K1B01A01MYDLA00000000000", "name": "Mydła", "handle": "mydla", "rank": 0 },
+    { "id": "pcat_01K1B02A01KULEKAP0000000000", "name": "Kule do kąpieli", "handle": "kule-do-kapieli", "rank": 1 },
+    {
+      "id": "pcat_01K1B03A01DOTWARZ000000000",
+      "name": "Do twarzy",
+      "handle": "do-twarzy",
+      "rank": 2,
+      "children": [
+        { "id": "pcat_01K1B03B01KREMY00000000000", "name": "Kremy", "handle": "kremy", "rank": 0 },
+        { "id": "pcat_01K1B03C01SERUM00000000000", "name": "Serum", "handle": "serum", "rank": 1 },
+        { "id": "pcat_01K1B03D01PEELTWARZ0000000", "name": "Peelingi", "handle": "peelingi-do-twarzy", "rank": 2 },
+        { "id": "pcat_01K1B03E01MASKTWARZ0000000", "name": "Maski", "handle": "maski-do-twarzy", "rank": 3 },
+        { "id": "pcat_01K1B03F01OCZYSZCZ00000000", "name": "Oczyszczanie", "handle": "oczyszczanie", "rank": 4 },
+        { "id": "pcat_01K1B03G01HYDROLAT00000000", "name": "Hydrolaty", "handle": "hydrolaty", "rank": 5 }
+      ]
+    },
+    {
+      "id": "pcat_01K1B04A01DOWLOSY000000000",
+      "name": "Do włosów",
+      "handle": "do-wlosow",
+      "rank": 3,
+      "children": [
+        { "id": "pcat_01K1B04B01SZAMPONY0000000", "name": "Szampony", "handle": "szampony", "rank": 0 },
+        { "id": "pcat_01K1B04C01ODZYWKI00000000", "name": "Odżywki", "handle": "odzywki", "rank": 1 },
+        { "id": "pcat_01K1B04D01MASKWLOS00000000", "name": "Maski", "handle": "maski", "rank": 2 }
+      ]
+    },
+    {
+      "id": "pcat_01K1B05A01DOCIALA000000000",
+      "name": "Do ciała",
+      "handle": "do-ciala",
+      "rank": 4,
+      "children": [
+        { "id": "pcat_01K1B05B01BALSAMY00000000", "name": "Balsamy", "handle": "balsamy", "rank": 0 },
+        { "id": "pcat_01K1B05C01PEELCIAL00000000", "name": "Peelingi", "handle": "peelingi-do-ciala", "rank": 1 }
+      ]
+    },
+    {
+      "id": "pcat_01K1B06A01ZAPACHY000000000",
+      "name": "Zapachy",
+      "handle": "zapachy",
+      "rank": 5,
+      "children": [
+        { "id": "pcat_01K1B06B01PERFUMY00000000", "name": "Perfumy", "handle": "perfumy", "rank": 0 },
+        { "id": "pcat_01K1B06C01OLEJKIET0000000", "name": "Olejki eteryczne", "handle": "olejki-eteryczne", "rank": 1 },
+        { "id": "pcat_01K1B06D01SWIECE000000000", "name": "Świece", "handle": "swiece", "rank": 2 },
+        { "id": "pcat_01K1B06E01KOMINKI00000000", "name": "Kominki zapachowe", "handle": "kominki-zapachowe", "rank": 3 },
+        { "id": "pcat_01K1B06F01DYFUZORY0000000", "name": "Dyfuzory", "handle": "dyfuzory", "rank": 4 }
+      ]
+    }
+  ]
+}
+
+
+
+
 ]

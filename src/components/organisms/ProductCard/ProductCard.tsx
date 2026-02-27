@@ -361,9 +361,8 @@ const ProductCardComponent = ({
             </div>
             
             {/* Lowest Price Display - compact version with info icon tooltip for ProductCard */}
-            {/* Show in seller/suggested sections even without explicit discount flags,
-                so cards can still fetch/resolve 30-day lowest price data. */}
-            {product.variants && product.variants.length > 0 && (hasAnyDiscount || isSellerSection) && (
+            {/* Only render when this specific product has an actual discount/promotion. */}
+            {product.variants && product.variants.length > 0 && hasAnyDiscount && (
               <div className="mt-0">
                 <CompactLowestPriceDisplay
                   variantId={product.variants[0].id}

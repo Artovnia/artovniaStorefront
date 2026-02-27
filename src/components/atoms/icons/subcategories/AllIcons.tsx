@@ -57,6 +57,14 @@ export {
   KolekcjeAntyikiIcon,
   DekoracjePokojuIcon,
   AkcesoriaDziecięceIcon,
+  MydłaIcon,
+  KuleDoKąpieliIcon,
+  DoTwarzyIcon,
+  DoWłosówIcon,
+  DoCiałaIcon,
+  ZapachyIcon,
+
+
 } from "./icons"
 
 // Legacy aliases for old imports

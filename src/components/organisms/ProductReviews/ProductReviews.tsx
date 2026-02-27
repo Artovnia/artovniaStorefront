@@ -415,6 +415,11 @@ export const ProductReviews = ({
   const hasFetched = useRef(false)
 
   useEffect(() => {
+    if (prefetchedReviews.length > 0) {
+      hasFetched.current = true
+      return
+    }
+
     let cancelled = false
 
     const fetchProductReviews = async () => {
@@ -467,7 +472,7 @@ export const ProductReviews = ({
       cancelled = true
       observer.disconnect()
     }
-  }, [productId])
+  }, [productId, prefetchedReviews.length])
 
   const averageRating = calculateAverageRating(reviews)
   const userReview = findUserReview(reviews, customer)

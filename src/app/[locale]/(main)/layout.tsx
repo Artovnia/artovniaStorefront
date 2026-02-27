@@ -11,7 +11,7 @@ import { getEssentialCategories } from '@/lib/data/categories-static';
 import { listRegions } from '@/lib/data/regions';
 
 // ✅ CRITICAL: Cache layout data to prevent blocking on every request
-export const revalidate = 3600 // Cache for 1 hour
+export const revalidate = 86400 // Cache for 24 hours
 
 export default async function MainLayout({
   children,

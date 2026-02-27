@@ -46,6 +46,30 @@ type PublicFetchBucketStats = {
   lastSeenAt: string | null
 }
 
+export const getProductDeferredDetail = async ({
+  productId,
+  regionId,
+}: {
+  productId: string
+  regionId: string
+}): Promise<Partial<HttpTypes.StoreProduct> | null> => {
+  if (!productId || !regionId) {
+    return null
+  }
+
+  try {
+    const product = await getCachedProductDeferredDetail(productId, regionId)
+    return product || null
+  } catch (error) {
+    console.error('❌ getProductDeferredDetail failed:', {
+      productId,
+      regionId,
+      error: error instanceof Error ? error.message : String(error),
+    })
+    return null
+  }
+}
+
 export const listSmartHomeRandomProducts = async ({
   countryCode,
   limit = 60,
@@ -81,10 +105,9 @@ if (PRODUCT_CACHE_REVALIDATE_SECONDS < 300) {
   )
 }
 
-const PRODUCT_DETAIL_CRITICAL_FIELDS =
-  'id,title,handle,description,thumbnail,created_at,' +
+const PRODUCT_DETAIL_FIRST_PAINT_FIELDS =
+  'id,title,handle,description,thumbnail,' +
   'images.url,' +
-  'metadata,' +
   'options.id,options.title,' +
   'variants.id,variants.title,' +
   'variants.calculated_price,' +
@@ -96,6 +119,10 @@ const PRODUCT_DETAIL_CRITICAL_FIELDS =
   'categories.id,categories.name,categories.handle,categories.parent_category_id,' +
   'categories.parent_category.id,categories.parent_category.name,categories.parent_category.handle,categories.parent_category.parent_category_id,' +
   'categories.parent_category.parent_category.id,categories.parent_category.parent_category.name,categories.parent_category.parent_category.handle'
+
+const PRODUCT_DETAIL_DEFERRED_FIELDS =
+  'id,description,created_at,metadata,' +
+  'tags.id,tags.value,tags.created_at,tags.updated_at'
 
 const SELLER_LISTING_DEFAULT_FIELDS =
   'id,title,handle,thumbnail,images.url,created_at,' +
@@ -393,7 +420,7 @@ const getCachedProductDetail = unstable_cache(
         handle,
         region_id: regionId,
         limit: 1,
-        fields: PRODUCT_DETAIL_CRITICAL_FIELDS,
+        fields: PRODUCT_DETAIL_FIRST_PAINT_FIELDS,
       },
       { revalidate: PRODUCT_CACHE_REVALIDATE_SECONDS, tags: ['products'] },
       'listProductsForDetail'
@@ -402,6 +429,26 @@ const getCachedProductDetail = unstable_cache(
     return products[0] || null
   },
   ['product-detail-v2'],
+  { revalidate: PRODUCT_CACHE_REVALIDATE_SECONDS, tags: ['products'] }
+)
+
+const getCachedProductDeferredDetail = unstable_cache(
+  async (productId: string, regionId: string) => {
+    const { products } = await publicFetch<{ products: HttpTypes.StoreProduct[]; count: number }>(
+      '/store/products',
+      {
+        id: productId,
+        region_id: regionId,
+        limit: 1,
+        fields: PRODUCT_DETAIL_DEFERRED_FIELDS,
+      },
+      { revalidate: PRODUCT_CACHE_REVALIDATE_SECONDS, tags: ['products', `product-deferred-${productId}`] },
+      'getProductDeferredDetail'
+    )
+
+    return products[0] || null
+  },
+  ['product-detail-deferred-v1'],
   { revalidate: PRODUCT_CACHE_REVALIDATE_SECONDS, tags: ['products'] }
 )
 

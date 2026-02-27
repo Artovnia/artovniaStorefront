@@ -9,9 +9,13 @@ import {
   getProductPromotions,
   listSuggestedProducts,
   getProductShippingOptions,
+  getProductDeferredDetail,
 } from "../../../lib/data/products"
 import { PDP_SELLER_CARD_FIELDS } from "@/lib/constants/product-fields"
 import { getVendorCompleteStatus } from "../../../lib/data/vendor-availability"
+import { getProductDeliveryTimeframe } from "@/lib/data/delivery-timeframe"
+import { getProductMeasurements } from "@/lib/data/measurements"
+import { getProductReviews } from "@/lib/data/reviews"
 import ProductErrorBoundary from "@/components/molecules/ProductErrorBoundary/ProductErrorBoundary"
 import { Breadcrumbs } from "@/components/atoms/Breadcrumbs/Breadcrumbs"
 import { buildProductBreadcrumbs } from "@/lib/utils/breadcrumbs"
@@ -43,6 +47,11 @@ export const ProductDetailsPage = async ({
   // ✅ OPTIMIZATION: Get product's own variant IDs BEFORE Promise.allSettled
   // This allows us to fetch prices in parallel instead of sequentially
   const productVariantIds = product.variants?.map((v: any) => v.id).filter(Boolean) || []
+  const selectedVariantId = Array.isArray(product.variants) && product.variants.length > 0 && product.variants[0]?.id
+    ? product.variants[0].id
+    : undefined
+  const supportedLocales = ['en', 'pl']
+  const currentLocale = supportedLocales.includes(locale) ? locale : 'en'
   const breadcrumbsPromise = buildProductBreadcrumbs(product, locale)
 
   // ✅ OPTIMIZATION: Parallel fetch EVERYTHING (including prices) - NO WATERFALL
@@ -54,6 +63,10 @@ export const ProductDetailsPage = async ({
     shippingOptionsResult,
     categoryProductsResult,
     productPricesResult,
+    deliveryTimeframeResult,
+    measurementsResult,
+    productReviewsResult,
+    deferredProductResult,
   ] = await Promise.allSettled([
     // Seller products — lean fields only (cards don't need full product payload)
     product.seller?.id && region
@@ -102,6 +115,17 @@ export const ProductDetailsPage = async ({
     productVariantIds.length > 0 && region
       ? getBatchLowestPrices(productVariantIds, 'PLN', region.id, 30)
       : Promise.resolve({}),
+
+    getProductDeliveryTimeframe(product.id),
+
+    getProductMeasurements(product.id, selectedVariantId, currentLocale),
+
+    getProductReviews(product.id),
+
+    getProductDeferredDetail({
+      productId: product.id,
+      regionId: region.id,
+    }),
   ])
 
   // Extract results with fallbacks
@@ -145,6 +169,22 @@ export const ProductDetailsPage = async ({
 
   const suggestedProducts = suggestedProductsData.products
 
+  const deferredProduct =
+    deferredProductResult.status === "fulfilled"
+      ? deferredProductResult.value
+      : null
+
+  const hydratedProduct = deferredProduct
+    ? {
+        ...product,
+        description: deferredProduct.description ?? product.description,
+        created_at: deferredProduct.created_at ?? product.created_at,
+        metadata: deferredProduct.metadata ?? product.metadata,
+        tags: deferredProduct.tags ?? product.tags,
+      }
+    : product
+  const sellerForDetails = (hydratedProduct.seller ?? product.seller) as HttpTypes.StoreProduct["seller"]
+
   const productPrices = productPricesResult.status === "fulfilled"
     ? productPricesResult.value as Record<string, any>
     : {}
@@ -153,10 +193,25 @@ export const ProductDetailsPage = async ({
   // Seller/suggested section prices are below-fold and loaded by BatchPriceProvider on the client.
   const initialPriceData: Record<string, any> = { ...productPrices }
 
+  const deliveryTimeframe =
+    deliveryTimeframeResult.status === "fulfilled"
+      ? deliveryTimeframeResult.value
+      : null
+
+  const initialMeasurements =
+    measurementsResult.status === "fulfilled" && Array.isArray(measurementsResult.value)
+      ? measurementsResult.value
+      : undefined
+
+  const prefetchedProductReviews =
+    productReviewsResult.status === "fulfilled" && Array.isArray(productReviewsResult.value?.reviews)
+      ? productReviewsResult.value.reviews
+      : []
+
   // ✅ FIX: Get price from variant's calculated_price
   const getProductPrice = (): number | undefined => {
     // Try variant calculated price first
-    const variant = product.variants?.[0]
+    const variant = hydratedProduct.variants?.[0]
     if (variant?.calculated_price?.calculated_amount) {
       return variant.calculated_price.calculated_amount
     }
@@ -165,15 +220,15 @@ export const ProductDetailsPage = async ({
       return variant.calculated_price.original_amount
     }
     // Try product-level price (some setups have this)
-    if ((product as any).calculated_price?.calculated_amount) {
-      return (product as any).calculated_price.calculated_amount
+    if ((hydratedProduct as any).calculated_price?.calculated_amount) {
+      return (hydratedProduct as any).calculated_price.calculated_amount
     }
     return undefined
   }
 
   // Generate structured data for SEO
   const productPrice = getProductPrice()
-  const productJsonLd = generateProductJsonLd(product, productPrice, "PLN", [])
+  const productJsonLd = generateProductJsonLd(hydratedProduct, productPrice, "PLN", [])
   const breadcrumbJsonLd = generateBreadcrumbJsonLd(breadcrumbs)
 
   return (
@@ -230,13 +285,15 @@ export const ProductDetailsPage = async ({
 
                   {/* Details: below gallery on mobile, scrollable right half on desktop */}
                   <div className="w-full mt-4 md:mt-0 md:w-1/2 md:max-w-[calc(50%-12px)] lg:max-w-none md:px-0">
-                    {product.seller ? (
+                    {sellerForDetails ? (
                       <ProductDetails
-                        product={{ ...product, seller: product.seller }}
+                        product={{ ...hydratedProduct, seller: sellerForDetails }}
                         locale={locale}
                         region={region}
                         initialVariantAttributes={initialVariantAttributes}
                         initialShippingOptions={initialShippingOptions}
+                        initialDeliveryTimeframe={deliveryTimeframe}
+                        initialMeasurements={initialMeasurements}
                       />
                     ) : (
                       <div className="p-4 bg-red-50 text-red-800 rounded">
@@ -320,13 +377,14 @@ export const ProductDetailsPage = async ({
 
                     {/* ✅ User-specific content rendered via client component */}
                     <ProductPageUserContent
-                      productId={product.id}
+                      productId={hydratedProduct.id}
                       sellerProducts={sellerProducts as any}
                       suggestedProducts={suggestedProducts as any}
                       suggestedCategoryName={suggestedProductsData.categoryName}
                       suggestedCategoryHandle={suggestedProductsData.categoryHandle}
-                      sellerName={product.seller?.name}
-                      sellerHandle={product.seller?.handle}
+                      prefetchedReviews={prefetchedProductReviews}
+                      sellerName={hydratedProduct.seller?.name}
+                      sellerHandle={hydratedProduct.seller?.handle}
                     />
                   </div>
                 </Suspense>

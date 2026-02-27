@@ -1,6 +1,7 @@
 "use server"
 
 import { SingleProductMeasurement } from "@/types/product"
+import { cache } from "react"
 
 const BACKEND_URL = process.env.MEDUSA_BACKEND_URL || process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || 'http://localhost:9000'
 const PUB_KEY = process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || ''
@@ -8,7 +9,7 @@ const PUB_KEY = process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || ''
 /**
  * Gets a product and its variants by ID with all measurements included
  */
-async function getProductWithMeasurements(productId: string) {
+const getProductWithMeasurements = cache(async (productId: string) => {
   try {
     // ✅ Use native fetch (no Authorization header) so Next.js Data Cache works.
     // sdk.client.fetch injects the JWT globally which busts next:{revalidate:600}.
@@ -43,7 +44,7 @@ async function getProductWithMeasurements(productId: string) {
     console.error(`Error fetching measurements for ${productId}:`, error)
     return null
   }
-}
+})
 
 // Translations for dimension labels
 const dimensionLabels = {

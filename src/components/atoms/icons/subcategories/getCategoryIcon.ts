@@ -80,6 +80,13 @@ import {
   AkcesoriaDziecięceIcon,
   UbrankaDziecięceIcon,
   ZabawkiDziecięceIcon,
+  // Beauty
+  MydłaIcon,
+  KuleDoKąpieliIcon,
+  DoTwarzyIcon,
+  DoWłosówIcon,
+  DoCiałaIcon,
+  ZapachyIcon,
 } from "./icons"
 
 interface IconProps {
@@ -176,6 +183,22 @@ const handleToIcon: Record<string, IconComponent> = {
   "pozostale-dekoracje-dzieciece": PozostałeIcon,
   "pozostale-akcesoria-dzieciece": PozostałeIcon,
   "pozostale-kuchnia": PozostałeIcon,
+
+// ── Beauty ──
+"mydla": MydłaIcon,
+"kule-do-kapieli": KuleDoKąpieliIcon,
+"do-twarzy": DoTwarzyIcon,
+"do-wlosow": DoWłosówIcon,
+"do-ciala": DoCiałaIcon,
+"zapachy": ZapachyIcon,
+
+// Compatibility aliases for accented/legacy slugs
+"mydła": MydłaIcon,
+"kule-do-kąpieli": KuleDoKąpieliIcon,
+"do-włosów": DoWłosówIcon,
+"do-ciała": DoCiałaIcon,
+"do-zapachów": ZapachyIcon,
+
 }
 
 /**
