@@ -399,7 +399,28 @@ const PrivacyPolicyContent = () => {
           <p className="font-medium mb-2">Ann Sayuri ART Anna Wawrzyniak</p>
           <p>ul. Leszczyńskiego 4/29</p>
           <p>50-078 Wrocław</p>
-          <p className="mt-2">E-mail: sayuri.platform@gmail.com</p>
+          <p className="mt-2">E-mail: info.artovnia@gmail.com</p>
+
+           <p>
+  E-mail:{" "}
+  <span
+    className="underline underline-offset-2 cursor-pointer hover:opacity-70 transition-opacity"
+    onClick={() =>
+      window.location.href =
+        atob("bWFpbHRvOmluZm8uYXJ0b3ZuaWFAZ21haWwuY29t")
+    }
+    role="link"
+    tabIndex={0}
+    onKeyDown={(e) => {
+      if (e.key === "Enter" || e.key === " ") {
+        window.location.href =
+          atob("bWFpbHRvOmluZm8uYXJ0b3ZuaWFAZ21haWwuY29t")
+      }
+    }}
+  >
+    {"info.artovnia" + "@" + "gmail.com"}
+  </span>
+</p>
           <p>NIP: 9261642417</p>
           <p>REGON: 522385177</p>
         </div>

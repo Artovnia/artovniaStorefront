@@ -110,10 +110,10 @@ export default function MaintenancePage() {
             Jeśli problem się utrzymuje, skontaktuj się z nami:
           </p>
           <a
-            href="mailto:sayuri.platform@gmail.com"
+            href="mailto:info.artovnia@gmail.com"
             className="text-[#3B3634] hover:text-[#3B3634]/70 font-medium underline underline-offset-4"
           >
-            sayuri.platform@gmail.com
+           info.artovnia@gmail.com
           </a>
         </div>
 
