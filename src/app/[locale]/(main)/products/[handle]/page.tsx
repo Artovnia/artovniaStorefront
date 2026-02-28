@@ -8,7 +8,7 @@ import { ScrollToTop } from "@/components/utils/ScrollToTop"
 import type { Metadata } from "next"
 import { cache } from 'react'
 
-export const revalidate = 300
+export const revalidate = 1800
 
 // ✅ OPTIMIZATION: Use React cache() for request-level deduplication
 // This deduplicates parallel requests in the same render cycle (metadata + component)

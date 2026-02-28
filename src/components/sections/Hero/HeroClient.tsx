@@ -1,6 +1,7 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, useRef } from "react"
+
 import Image from "next/image"
 import { ArrowLeftIcon, ArrowRightIcon } from "@/icons"
 import { HeroBanner } from "./Hero"
@@ -39,12 +40,16 @@ export const HeroClient = ({
 
   const [currentIndex, setCurrentIndex] = useState(1)
   const [isAutoPlaying, setIsAutoPlaying] = useState(true)
-  const [touchStart, setTouchStart] = useState<number | null>(null)
-  const [touchEnd, setTouchEnd] = useState<number | null>(null)
   const [isHovered, setIsHovered] = useState(false)
   const [isTransitioning, setIsTransitioning] = useState(true)
 
+  const touchStartXRef = useRef<number | null>(null)
+  const touchStartYRef = useRef<number | null>(null)
+  const touchEndXRef = useRef<number | null>(null)
+  const gestureLockRef = useRef<"undetermined" | "horizontal" | "vertical">("undetermined")
+
   const minSwipeDistance = 50
+  const gestureLockThreshold = 8
 
   useEffect(() => {
     if (currentIndex === 0) {
@@ -91,18 +96,50 @@ export const HeroClient = ({
   }, [])
 
   const onTouchStart = useCallback((e: React.TouchEvent) => {
-    setTouchEnd(null)
-    setTouchStart(e.targetTouches[0].clientX)
+    const touch = e.targetTouches[0]
+    touchStartXRef.current = touch.clientX
+    touchStartYRef.current = touch.clientY
+    touchEndXRef.current = touch.clientX
+    gestureLockRef.current = "undetermined"
   }, [])
 
   const onTouchMove = useCallback((e: React.TouchEvent) => {
-    setTouchEnd(e.targetTouches[0].clientX)
-  }, [])
+    const touch = e.targetTouches[0]
+
+    if (touchStartXRef.current === null || touchStartYRef.current === null) {
+      return
+    }
+
+    const deltaX = Math.abs(touch.clientX - touchStartXRef.current)
+    const deltaY = Math.abs(touch.clientY - touchStartYRef.current)
+
+    if (
+      gestureLockRef.current === "undetermined" &&
+      (deltaX > gestureLockThreshold || deltaY > gestureLockThreshold)
+    ) {
+      gestureLockRef.current = deltaX > deltaY ? "horizontal" : "vertical"
+    }
+
+    if (gestureLockRef.current === "horizontal") {
+      e.preventDefault()
+      touchEndXRef.current = touch.clientX
+    }
+  }, [gestureLockThreshold])
 
   const onTouchEnd = useCallback(() => {
-    if (!touchStart || !touchEnd) return
+    if (
+      gestureLockRef.current !== "horizontal" ||
+      touchStartXRef.current === null ||
+      touchEndXRef.current === null
+    ) {
+      touchStartXRef.current = null
+      touchStartYRef.current = null
+      touchEndXRef.current = null
+      gestureLockRef.current = "undetermined"
+      return
+    }
 
-    const distance = touchStart - touchEnd
+    const distance = touchStartXRef.current - touchEndXRef.current
     const isLeftSwipe = distance > minSwipeDistance
     const isRightSwipe = distance < -minSwipeDistance
 
@@ -111,7 +148,12 @@ export const HeroClient = ({
     } else if (isRightSwipe) {
       handlePrevious()
     }
-  }, [touchStart, touchEnd, handleNext, handlePrevious])
+
+    touchStartXRef.current = null
+    touchStartYRef.current = null
+    touchEndXRef.current = null
+    gestureLockRef.current = "undetermined"
+  }, [handleNext, handlePrevious])
 
   const handleMouseEnter = useCallback(() => {
     setIsHovered(true)

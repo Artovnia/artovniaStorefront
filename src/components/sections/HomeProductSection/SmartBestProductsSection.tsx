@@ -145,14 +145,12 @@ export const SmartBestProductsSection = async ({
       }
     }
 
-    // Third pass: if seller cap still leaves holes, relax cap to guarantee full section size.
     if (diversifiedProducts.length < limit) {
-      for (const product of scoredProducts) {
-        if (selectedIds.has(product.id)) continue
-        diversifiedProducts.push(product)
-        selectedIds.add(product.id)
-        if (diversifiedProducts.length >= limit) break
-      }
+      console.info('[SMART BEST] Seller diversity cap limited result set', {
+        requested: limit,
+        availableAfterCap: diversifiedProducts.length,
+        uniqueSellers: Object.keys(sellerCounts).length,
+      })
     }
 
     // ✅ FIX: Deterministic shuffle using product IDs as seed
