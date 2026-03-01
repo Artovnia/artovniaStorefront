@@ -129,8 +129,13 @@ export default async function RootLayout({
   const locale = 'pl' // Default locale
   
   return (
-    <html lang={locale} className={`${instrumentSans.variable} ${instrumentSerif.variable}`}>
+    <html
+      lang={locale}
+      translate="no"
+      className={`${instrumentSans.variable} ${instrumentSerif.variable} notranslate`}
+    >
       <head>
+        <meta name="google" content="notranslate" />
         {/* fb:app_id must use <meta property> not <meta name> — Next.js other field
             generates <meta name> which Facebook ignores. Required for Messenger link previews. */}
         {process.env.NEXT_PUBLIC_FB_APP_ID && (

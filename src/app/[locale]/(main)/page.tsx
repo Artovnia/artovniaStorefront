@@ -301,6 +301,7 @@ export default async function Home({
   params: Promise<{ locale: string }>
 }) {
   const { locale } = await params
+  const requestId = `home_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`
 
   // Generate structured data for SEO
   const organizationJsonLd = generateOrganizationJsonLd()
@@ -312,25 +313,66 @@ export default async function Home({
   const NEWEST_POOL_LIMIT = 50
   const SMART_POOL_LIMIT = 60
 
-  const newestProductPool = await listProductsLean({
-    countryCode: locale,
-    queryParams: {
-      limit: NEWEST_POOL_LIMIT,
-      order: "-created_at",
-    },
-  })
+  let newestProducts: (HttpTypes.StoreProduct & { seller?: unknown })[] = []
+  let newestProductsCount = 0
 
-  const newestProducts = newestProductPool?.response?.products || []
-  const newestProductsCount = newestProductPool?.response?.count || 0
+  try {
+    const newestProductPool = await listProductsLean({
+      countryCode: locale,
+      queryParams: {
+        limit: NEWEST_POOL_LIMIT,
+        order: "-created_at",
+      },
+    })
+
+    newestProducts = newestProductPool?.response?.products || []
+    newestProductsCount = newestProductPool?.response?.count || 0
+  } catch (error) {
+    console.error("[HOME][Phase2] Failed to fetch newest product pool", {
+      requestId,
+      locale,
+      error: error instanceof Error ? error.message : String(error),
+      timestamp: new Date().toISOString(),
+    })
+  }
+
+  let smartProducts: (HttpTypes.StoreProduct & { seller?: unknown })[] = newestProducts
 
   // If newest pool already contains all available products, avoid the extra smart-batch request.
-  const smartProducts = newestProductsCount > NEWEST_POOL_LIMIT
-    ? await listSmartHomeRandomProducts({
+  if (newestProductsCount > NEWEST_POOL_LIMIT) {
+    try {
+      smartProducts = await listSmartHomeRandomProducts({
         countryCode: locale,
         limit: SMART_POOL_LIMIT,
         totalCountHint: newestProductsCount,
       })
-    : newestProducts
+    } catch (error) {
+      console.error("[HOME][Phase2] Failed to fetch smart random batch (countHint path)", {
+        requestId,
+        locale,
+        newestProductsCount,
+        error: error instanceof Error ? error.message : String(error),
+        timestamp: new Date().toISOString(),
+      })
+      smartProducts = newestProducts
+    }
+  } else if (newestProducts.length === 0) {
+    // Recovery path: if newest pool is empty, still try independent smart batch.
+    try {
+      smartProducts = await listSmartHomeRandomProducts({
+        countryCode: locale,
+        limit: SMART_POOL_LIMIT,
+      })
+    } catch (error) {
+      console.error("[HOME][Phase2] Failed to fetch smart random batch (recovery path)", {
+        requestId,
+        locale,
+        error: error instanceof Error ? error.message : String(error),
+        timestamp: new Date().toISOString(),
+      })
+      smartProducts = []
+    }
+  }
 
   const safeSmartProducts = smartProducts.length > 0 ? smartProducts : newestProducts
 

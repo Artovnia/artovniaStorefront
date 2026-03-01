@@ -271,7 +271,7 @@ const AboutUsContent = () => {
                   <div className="flex flex-wrap gap-2">
                     {[
                       "🎨 Malarstwo",
-                      "📚 Czytanie",
+                      "📚 Taniec",
                       "🌿 Natura",
                       "☕ Kawa",
                     ].map((interest, index) => (

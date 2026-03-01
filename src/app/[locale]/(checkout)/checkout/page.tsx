@@ -1,9 +1,10 @@
 import CheckoutWrapper from "@/components/sections/CheckoutWrapper/CheckoutWrapper"
 import { retrieveCart } from "@/lib/data/cart"
+import { setCartId } from "@/lib/data/cookies"
 import { listCartShippingMethods } from "@/lib/data/fulfillment"
 import { listCartPaymentMethods } from "@/lib/data/payment"
 import { retrieveCustomer } from "@/lib/data/cookies"
-import { notFound } from "next/navigation"
+import { redirect } from "next/navigation"
 import { Suspense } from "react"
 import Link from "next/link"
 import { CartProvider } from "@/components/context/CartContext"
@@ -12,7 +13,13 @@ import { CartProvider } from "@/components/context/CartContext"
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
 
-export default async function CheckoutPage() {
+type CheckoutPageProps = {
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>
+}
+
+export default async function CheckoutPage({ searchParams }: CheckoutPageProps) {
+  const resolvedSearchParams = await searchParams
+
   return (
     <Suspense
       fallback={
@@ -21,22 +28,31 @@ export default async function CheckoutPage() {
         </div>
       }
     >
-      <CheckoutPageContent />
+      <CheckoutPageContent searchParams={resolvedSearchParams} />
     </Suspense>
   )
 }
 
-async function CheckoutPageContent() {
+async function CheckoutPageContent({
+  searchParams,
+}: {
+  searchParams: { [key: string]: string | string[] | undefined }
+}) {
   try {
-    // 🔒 CRITICAL: Set no-cache headers to prevent CDN/proxy caching
-    const { headers } = await import('next/headers')
-    const headersList = headers()
+    const rawCartId = searchParams?.cart_id
+    const cartIdFromQuery = typeof rawCartId === "string" ? rawCartId : undefined
+    const paymentCancelled = searchParams?.payment_cancelled === "true"
     
-    // Get cart - DO NOT auto-detect country to preserve user's region selection
-    const cart = await retrieveCart().catch(() => null);
+    // Prefer explicit query cart_id when returning from external payment pages.
+    const cart = await retrieveCart(cartIdFromQuery).catch(() => null)
+
+    if (cart?.id && cartIdFromQuery && cart.id === cartIdFromQuery) {
+      await setCartId(cart.id)
+    }
     
     if (!cart) {
-      return notFound()
+      const reason = paymentCancelled ? "payment_cancelled" : "checkout_cart_missing"
+      redirect(`/cart?error=${reason}`)
     }
 
     const [shippingMethods, paymentMethods, customer] = await Promise.all([
@@ -58,6 +74,15 @@ async function CheckoutPageContent() {
       </CartProvider>
     )
   } catch (error) {
+    const digest =
+      error && typeof error === "object" && "digest" in error
+        ? (error as { digest?: string }).digest
+        : undefined
+
+    if (digest?.startsWith("NEXT_REDIRECT") || digest?.startsWith("NEXT_HTTP_ERROR_FALLBACK")) {
+      throw error
+    }
+
     console.error("Error loading checkout page:", error)
     
     // Provide a graceful fallback UI when there's an error

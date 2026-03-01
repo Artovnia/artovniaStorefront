@@ -61,7 +61,7 @@ export function Footer({ categories = [] }: FooterProps) {
               <Link href="/categories" className="block text-white hover:underline transition-colors duration-200 text-sm">
                 Wszystkie produkty
               </Link>
-              {topLevelCategories.slice(0, 6).map((category) => (
+              {topLevelCategories.slice(0, 8).map((category) => (
                 <Link 
                   key={category.id} 
                   href={`/categories/${category.handle}`} 

@@ -1130,7 +1130,7 @@ export const generateOrganizationJsonLd = (): JsonLdBase &
     contactPoint: {
       "@type": "ContactPoint",
       contactType: "Customer Service",
-      email: "kontakt@artovnia.com",
+      email: "info.artovnia@gmail.com",
       availableLanguage: ["Polish", "English"],
     },
     // Additional SEO signals

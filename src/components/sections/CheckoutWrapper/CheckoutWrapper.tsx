@@ -6,6 +6,8 @@ import CartShippingMethodsSection from "../CartShippingMethodsSection/CartShippi
 import CartPaymentSection from "../CartPaymentSection/CartPaymentSection"
 import CartReview from "../CartReview/CartReview"
 import TermsAcceptance from "@/components/cells/TermsAcceptance/TermsAcceptance"
+import CheckoutStepErrorBoundary from "@/components/molecules/CheckoutStepErrorBoundary/CheckoutStepErrorBoundary"
+import { usePathname } from "@/i18n/routing"
 import { HttpTypes } from "@medusajs/types"
 
 // Simple Terms Context to avoid cart caching issues
@@ -39,6 +41,8 @@ const CheckoutWrapper: React.FC<CheckoutWrapperProps> = ({
 }) => {
   const [termsAccepted, setTermsAccepted] = useState(false)
   const [lastCartId, setLastCartId] = useState(cart?.id)
+  const pathname = usePathname()
+  const locale = cart?.region?.countries?.[0]?.iso_2?.toUpperCase() ?? undefined
 
   // Reset terms acceptance when cart changes (new cart)
   useEffect(() => {
@@ -60,27 +64,65 @@ const CheckoutWrapper: React.FC<CheckoutWrapperProps> = ({
         <div className="grid lg:grid-cols-12 gap-8">
           {/* Left Column - Checkout Steps */}
           <div className="flex flex-col gap-4 lg:col-span-7">
-            <CartAddressSection cart={cart as any} customer={customer || null} />
-            <CartShippingMethodsSection
-              cart={cart as any}
-              availableShippingMethods={availableShippingMethods || null}
-            />
-            <CartPaymentSection
-              cart={cart as any}
-              availablePaymentMethods={availablePaymentMethods || null}
-            />
+            <CheckoutStepErrorBoundary
+              step="address"
+              cartId={cart?.id ?? undefined}
+              pathname={pathname ?? undefined}
+              locale={locale}
+            >
+              <CartAddressSection cart={cart as any} customer={customer || null} />
+            </CheckoutStepErrorBoundary>
+
+            <CheckoutStepErrorBoundary
+              step="delivery"
+              cartId={cart?.id ?? undefined}
+              pathname={pathname ?? undefined}
+              locale={locale}
+            >
+              <CartShippingMethodsSection
+                cart={cart as any}
+                availableShippingMethods={availableShippingMethods || null}
+              />
+            </CheckoutStepErrorBoundary>
+
+            <CheckoutStepErrorBoundary
+              step="payment"
+              cartId={cart?.id ?? undefined}
+              pathname={pathname ?? undefined}
+              locale={locale}
+            >
+              <CartPaymentSection
+                cart={cart as any}
+                availablePaymentMethods={availablePaymentMethods || null}
+              />
+            </CheckoutStepErrorBoundary>
           </div>
           
           {/* Right Column - Order Summary */}
           <div className="lg:col-span-5">
             <div className="lg:sticky lg:top-8 space-y-4">
-              <CartReview
-                cart={cart as any} 
-                key={`review-${cart.id}-${cart.updated_at}`}
-              />
-              <TermsAcceptance
-                onAcceptanceChange={handleTermsAcceptanceChange}
-              />
+              <CheckoutStepErrorBoundary
+                step="review"
+                cartId={cart?.id ?? undefined}
+                pathname={pathname ?? undefined}
+                locale={locale}
+              >
+                <CartReview
+                  cart={cart as any}
+                  key={`review-${cart.id}-${cart.updated_at}`}
+                />
+              </CheckoutStepErrorBoundary>
+
+              <CheckoutStepErrorBoundary
+                step="review"
+                cartId={cart?.id ?? undefined}
+                pathname={pathname ?? undefined}
+                locale={locale}
+              >
+                <TermsAcceptance
+                  onAcceptanceChange={handleTermsAcceptanceChange}
+                />
+              </CheckoutStepErrorBoundary>
             </div>
           </div>
         </div>

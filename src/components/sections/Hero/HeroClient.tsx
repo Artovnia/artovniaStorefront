@@ -7,21 +7,19 @@ import { ArrowLeftIcon, ArrowRightIcon } from "@/icons"
 import { HeroBanner } from "./Hero"
 import { HERO_CONFIG } from "@/config/hero-banners"
 
-// Responsive focal point: returns mobile value on small screens, desktop on larger
 const useIsMobile = (breakpoint = 768) => {
-  const [isMobile, setIsMobile] = useState(true) // Default to mobile (SSR-safe)
-  
+  const [isMobile, setIsMobile] = useState(true)
+
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < breakpoint)
     check()
-    window.addEventListener('resize', check)
-    return () => window.removeEventListener('resize', check)
+    window.addEventListener("resize", check)
+    return () => window.removeEventListener("resize", check)
   }, [breakpoint])
-  
+
   return isMobile
 }
 
-// Track image loading errors for debugging
 const imageLoadErrors = new Set<string>()
 
 interface HeroClientProps {
@@ -43,13 +41,21 @@ export const HeroClient = ({
   const [isHovered, setIsHovered] = useState(false)
   const [isTransitioning, setIsTransitioning] = useState(true)
 
+  const containerRef = useRef<HTMLDivElement>(null)
   const touchStartXRef = useRef<number | null>(null)
   const touchStartYRef = useRef<number | null>(null)
   const touchEndXRef = useRef<number | null>(null)
-  const gestureLockRef = useRef<"undetermined" | "horizontal" | "vertical">("undetermined")
+  const gestureLockRef = useRef<
+    "undetermined" | "horizontal" | "vertical"
+  >("undetermined")
+
+  // Store latest callbacks in refs so the native listener always
+  // calls the current version without re-attaching
+  const handleNextRef = useRef<() => void>(() => {})
+  const handlePreviousRef = useRef<() => void>(() => {})
 
   const minSwipeDistance = 50
-  const gestureLockThreshold = 8
+  const gestureLockThreshold = 5 // lowered from 8 for snappier detection
 
   useEffect(() => {
     if (currentIndex === 0) {
@@ -80,108 +86,140 @@ export const HeroClient = ({
   const handleDotClick = useCallback((index: number) => {
     setCurrentIndex(index + 1)
     setIsAutoPlaying(false)
-    setTimeout(() => setIsAutoPlaying(true), HERO_CONFIG.resumeAfterManualNavigation)
+    setTimeout(
+      () => setIsAutoPlaying(true),
+      HERO_CONFIG.resumeAfterManualNavigation
+    )
   }, [])
 
   const handlePrevious = useCallback(() => {
     setCurrentIndex((prev) => prev - 1)
     setIsAutoPlaying(false)
-    setTimeout(() => setIsAutoPlaying(true), HERO_CONFIG.resumeAfterManualNavigation)
+    setTimeout(
+      () => setIsAutoPlaying(true),
+      HERO_CONFIG.resumeAfterManualNavigation
+    )
   }, [])
 
   const handleNext = useCallback(() => {
     setCurrentIndex((prev) => prev + 1)
     setIsAutoPlaying(false)
-    setTimeout(() => setIsAutoPlaying(true), HERO_CONFIG.resumeAfterManualNavigation)
+    setTimeout(
+      () => setIsAutoPlaying(true),
+      HERO_CONFIG.resumeAfterManualNavigation
+    )
   }, [])
 
-  const onTouchStart = useCallback((e: React.TouchEvent) => {
-    const touch = e.targetTouches[0]
-    touchStartXRef.current = touch.clientX
-    touchStartYRef.current = touch.clientY
-    touchEndXRef.current = touch.clientX
-    gestureLockRef.current = "undetermined"
-  }, [])
+  // Keep refs in sync
+  handleNextRef.current = handleNext
+  handlePreviousRef.current = handlePrevious
 
-  const onTouchMove = useCallback((e: React.TouchEvent) => {
-    const touch = e.targetTouches[0]
+  // ─── Native non-passive touch listeners (the key fix for Safari) ───
+  useEffect(() => {
+    const el = containerRef.current
+    if (!el) return
 
-    if (touchStartXRef.current === null || touchStartYRef.current === null) {
-      return
-    }
-
-    const deltaX = Math.abs(touch.clientX - touchStartXRef.current)
-    const deltaY = Math.abs(touch.clientY - touchStartYRef.current)
-
-    if (
-      gestureLockRef.current === "undetermined" &&
-      (deltaX > gestureLockThreshold || deltaY > gestureLockThreshold)
-    ) {
-      gestureLockRef.current = deltaX > deltaY ? "horizontal" : "vertical"
-    }
-
-    if (gestureLockRef.current === "horizontal") {
-      e.preventDefault()
+    const onTouchStart = (e: TouchEvent) => {
+      const touch = e.touches[0]
+      touchStartXRef.current = touch.clientX
+      touchStartYRef.current = touch.clientY
       touchEndXRef.current = touch.clientX
+      gestureLockRef.current = "undetermined"
     }
-  }, [gestureLockThreshold])
 
-  const onTouchEnd = useCallback(() => {
-    if (
-      gestureLockRef.current !== "horizontal" ||
-      touchStartXRef.current === null ||
-      touchEndXRef.current === null
-    ) {
+    const onTouchMove = (e: TouchEvent) => {
+      const touch = e.touches[0]
+
+      if (
+        touchStartXRef.current === null ||
+        touchStartYRef.current === null
+      ) {
+        return
+      }
+
+      const deltaX = Math.abs(touch.clientX - touchStartXRef.current)
+      const deltaY = Math.abs(touch.clientY - touchStartYRef.current)
+
+      // Decide direction once we cross the threshold
+      if (
+        gestureLockRef.current === "undetermined" &&
+        (deltaX > gestureLockThreshold ||
+          deltaY > gestureLockThreshold)
+      ) {
+        gestureLockRef.current =
+          deltaX > deltaY ? "horizontal" : "vertical"
+      }
+
+      if (gestureLockRef.current === "horizontal") {
+        // THIS is the critical line – only works with { passive: false }
+        e.preventDefault()
+        touchEndXRef.current = touch.clientX
+      }
+      // If vertical → do nothing, let the browser scroll normally
+    }
+
+    const onTouchEnd = () => {
+      if (
+        gestureLockRef.current !== "horizontal" ||
+        touchStartXRef.current === null ||
+        touchEndXRef.current === null
+      ) {
+        touchStartXRef.current = null
+        touchStartYRef.current = null
+        touchEndXRef.current = null
+        gestureLockRef.current = "undetermined"
+        return
+      }
+
+      const distance = touchStartXRef.current - touchEndXRef.current
+      if (distance > minSwipeDistance) {
+        handleNextRef.current()
+      } else if (distance < -minSwipeDistance) {
+        handlePreviousRef.current()
+      }
+
       touchStartXRef.current = null
       touchStartYRef.current = null
       touchEndXRef.current = null
       gestureLockRef.current = "undetermined"
-      return
     }
 
-    const distance = touchStartXRef.current - touchEndXRef.current
-    const isLeftSwipe = distance > minSwipeDistance
-    const isRightSwipe = distance < -minSwipeDistance
+    // passive: false is REQUIRED for preventDefault() to work on Safari
+    el.addEventListener("touchstart", onTouchStart, { passive: true })
+    el.addEventListener("touchmove", onTouchMove, { passive: false })
+    el.addEventListener("touchend", onTouchEnd, { passive: true })
 
-    if (isLeftSwipe) {
-      handleNext()
-    } else if (isRightSwipe) {
-      handlePrevious()
+    return () => {
+      el.removeEventListener("touchstart", onTouchStart)
+      el.removeEventListener("touchmove", onTouchMove)
+      el.removeEventListener("touchend", onTouchEnd)
     }
-
-    touchStartXRef.current = null
-    touchStartYRef.current = null
-    touchEndXRef.current = null
-    gestureLockRef.current = "undetermined"
-  }, [handleNext, handlePrevious])
+  }, []) // empty deps — refs handle freshness
 
   const handleMouseEnter = useCallback(() => {
     setIsHovered(true)
-    if (pauseOnHover) {
-      setIsAutoPlaying(false)
-    }
+    if (pauseOnHover) setIsAutoPlaying(false)
   }, [pauseOnHover])
 
   const handleMouseLeave = useCallback(() => {
     setIsHovered(false)
-    if (pauseOnHover) {
-      setIsAutoPlaying(true)
-    }
+    if (pauseOnHover) setIsAutoPlaying(true)
   }, [pauseOnHover])
 
   return (
     <div
+      ref={containerRef}
       className={`absolute inset-0 w-full h-full ${className}`}
+      style={{ touchAction: "pan-y pinch-zoom" }}
       role="region"
       aria-roledescription="karuzela"
       aria-label="Baner główny"
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
-      onTouchStart={onTouchStart}
-      onTouchMove={onTouchMove}
-      onTouchEnd={onTouchEnd}
       aria-live="polite"
     >
+      {/* ── Remove onTouchStart/Move/End from this div ── */}
+
       {extendedBanners.map((banner, index) => {
         const isActive = index === currentIndex
         const offset = (index - currentIndex) * 100
@@ -203,9 +241,14 @@ export const HeroClient = ({
               role={banner.url ? "link" : undefined}
               tabIndex={banner.url && isActive ? 0 : -1}
               aria-label={banner.url ? banner.alt : undefined}
-              onClick={() => banner.url && (window.location.href = banner.url)}
+              onClick={() =>
+                banner.url && (window.location.href = banner.url)
+              }
               onKeyDown={(e) => {
-                if (banner.url && (e.key === "Enter" || e.key === " ")) {
+                if (
+                  banner.url &&
+                  (e.key === "Enter" || e.key === " ")
+                ) {
                   e.preventDefault()
                   window.location.href = banner.url
                 }
@@ -218,7 +261,9 @@ export const HeroClient = ({
                 className="object-cover transition-transform duration-700 group-hover:scale-105"
                 style={{
                   objectPosition:
-                    (isMobile ? banner.focalPoint?.mobile : banner.focalPoint?.desktop) ||
+                    (isMobile
+                      ? banner.focalPoint?.mobile
+                      : banner.focalPoint?.desktop) ||
                     banner.objectPosition ||
                     "center",
                 }}
@@ -231,12 +276,15 @@ export const HeroClient = ({
                 onError={(e) => {
                   if (!imageLoadErrors.has(banner.id)) {
                     imageLoadErrors.add(banner.id)
-                    console.error(`[Hero] ❌ Failed to load image for banner: ${banner.id}`, {
-                      image: banner.image,
-                      index,
-                      priority: shouldPrioritize,
-                      loadError: e,
-                    })
+                    console.error(
+                      `[Hero] ❌ Failed to load image for banner: ${banner.id}`,
+                      {
+                        image: banner.image,
+                        index,
+                        priority: shouldPrioritize,
+                        loadError: e,
+                      }
+                    )
                   }
                 }}
               />
@@ -250,7 +298,9 @@ export const HeroClient = ({
                 <div
                   className={`absolute inset-0 z-10 flex items-${banner.content.verticalAlignment || "center"} justify-${banner.content.alignment || "center"} px-4 sm:px-6 lg:px-8`}
                 >
-                  <div className={`w-full text-${banner.content.alignment || "center"}`}>
+                  <div
+                    className={`w-full text-${banner.content.alignment || "center"}`}
+                  >
                     {banner.content.useLogo ? (
                       <div className="flex justify-center mb-4 sm:mb-6">
                         <Image
@@ -264,7 +314,9 @@ export const HeroClient = ({
                     ) : banner.content.heading ? (
                       <h1
                         className={`text-4xl sm:text-5xl lg:text-6xl text-white mb-4 sm:mb-8 ${
-                          banner.id === "nowy-rok" ? "font-instrument-serif italic" : "font-instrument-serif"
+                          banner.id === "nowy-rok"
+                            ? "font-instrument-serif italic"
+                            : "font-instrument-serif"
                         }`}
                       >
                         {banner.content.heading}
@@ -278,7 +330,7 @@ export const HeroClient = ({
                     )}
 
                     {banner.content.paragraph && (
-                      <p className="font-instrument-sans uppercase text-sm sm:text-lg lg:text-xl text-white mb-6 sm:mb-8  max-w-2xl mx-auto">
+                      <p className="font-instrument-sans uppercase text-sm sm:text-lg lg:text-xl text-white mb-6 sm:mb-8 max-w-2xl mx-auto">
                         {banner.content.paragraph}
                       </p>
                     )}
@@ -355,7 +407,9 @@ export const HeroClient = ({
                   key={index}
                   onClick={() => handleDotClick(index)}
                   className={`w-3 h-3 rounded-full transition-all duration-300 hover:scale-110 ${
-                    index === actualIndex ? "bg-white shadow-lg" : "bg-white/50 hover:bg-white/75"
+                    index === actualIndex
+                      ? "bg-white shadow-lg"
+                      : "bg-white/50 hover:bg-white/75"
                   }`}
                   role="tab"
                   aria-selected={index === actualIndex}
