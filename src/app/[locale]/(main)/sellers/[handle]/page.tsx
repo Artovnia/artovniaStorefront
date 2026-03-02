@@ -16,7 +16,12 @@ import { SellerProps } from "../../../../../types/seller"
 import {
   generateSellerMetadata,
   generateSellerJsonLd,
+  generateItemListJsonLd,
 } from "../../../../../lib/helpers/seo"
+import {
+  extractVendorPageSeoSummary,
+  mergeSellerDescription,
+} from "../../../../../lib/helpers/seller-seo"
 import type { Metadata } from "next"
 import { listProductsWithSort } from "../../../../../lib/data/products"
 import { getUserWishlists } from "../../../../../lib/data/wishlist"
@@ -24,8 +29,6 @@ import { getBatchLowestPrices } from "../../../../../lib/data/price-history"
 import { extractCategoriesWithHierarchy } from '@/lib/data/category-hierarchy'
 import { PRODUCT_LIMIT } from "../../../../../const"
 import { Breadcrumbs } from "../../../../../components/atoms/Breadcrumbs/Breadcrumbs"
-import { sdk } from "../../../../../lib/config"
-import { getRegion } from "../../../../../lib/data/regions"
 import { HttpTypes } from "@medusajs/types"
 
 // ✅ PERFORMANCE: Enable ISR - cache page for 60 seconds
@@ -109,27 +112,6 @@ async function SellerTabsWithData({
   )
 }
 
-// ✅ Helper function to extract unique categories from products
-function extractCategoriesFromProducts(products: HttpTypes.StoreProduct[]): Array<{ id: string; name: string; handle: string }> {
-  const categoriesMap = new Map<string, { id: string; name: string; handle: string }>()
-  
-  products.forEach(product => {
-    // Cast to any because categories exist at runtime but not in StoreProduct type
-    const productWithCategories = product as any
-    productWithCategories.categories?.forEach((cat: any) => {
-      if (cat && cat.id && !categoriesMap.has(cat.id)) {
-        categoriesMap.set(cat.id, {
-          id: cat.id,
-          name: cat.name || '',
-          handle: cat.handle || ''
-        })
-      }
-    })
-  })
-  
-  return Array.from(categoriesMap.values())
-}
-
 // ✅ NEW: Skeleton for seller tabs while data loads
 function SellerTabsFallback() {
   return (
@@ -166,7 +148,14 @@ export async function generateMetadata({
   const { handle, locale } = await params
 
   try {
-    const seller = await getSellerByHandle(handle)
+    const [sellerResult, vendorPageResult] = await Promise.allSettled([
+      getSellerByHandle(handle),
+      getSellerPage(handle),
+    ])
+
+    const seller = sellerResult.status === "fulfilled" ? sellerResult.value : null
+    const vendorPage =
+      vendorPageResult.status === "fulfilled" ? vendorPageResult.value?.page : null
 
     if (!seller) {
       return {
@@ -176,11 +165,17 @@ export async function generateMetadata({
       }
     }
 
+    const vendorStorySummary = extractVendorPageSeoSummary(vendorPage)
+    const mergedDescription = mergeSellerDescription(
+      seller.description,
+      vendorStorySummary
+    )
+
     return generateSellerMetadata(
       {
         name: seller.name,
         handle: seller.handle,
-        description: seller.description,
+        description: mergedDescription || seller.description,
         photo: seller.photo,         // ✅ Changed from banner
         logo_url: seller.logo_url,   // ✅ Changed from logo
       },
@@ -242,7 +237,7 @@ export default async function SellerPage({
 
     // ✅ OPTIMIZATION: Fetch all data in parallel
     // No page-level revalidate allows static generation with on-demand revalidation
-    const [user, reviewsResult, availabilityResult, holidayModeResult, suspensionResult, vendorPageResult] =
+    const [user, reviewsResult, availabilityResult, holidayModeResult, suspensionResult, vendorPageResult, sellerPreviewProductsResult] =
       await Promise.allSettled([
         retrieveCustomer().catch(() => null),
         getSellerReviews(handle).catch(() => ({ reviews: [] })),
@@ -250,11 +245,21 @@ export default async function SellerPage({
         getVendorHolidayMode(seller.id),
         getVendorSuspension(seller.id),
         getSellerPage(handle),
+        listProductsWithSort({
+          seller_id: seller.id,
+          countryCode: "pl",
+          sortBy: "created_at_desc",
+          queryParams: { limit: 10, offset: 0 },
+        }).catch(() => ({ response: { products: [] } } as any)),
       ])
 
     const userData = user.status === "fulfilled" ? user.value : null
     const reviews = reviewsResult.status === "fulfilled" ? reviewsResult.value?.reviews || [] : []
     const vendorPage = vendorPageResult.status === "fulfilled" ? vendorPageResult.value?.page : null
+    const sellerPreviewProducts =
+      sellerPreviewProductsResult.status === "fulfilled"
+        ? sellerPreviewProductsResult.value?.response?.products || []
+        : []
 
     const availability =
       availabilityResult.status === "fulfilled" && availabilityResult.value
@@ -296,6 +301,13 @@ export default async function SellerPage({
       },
       reviews
     )
+    const sellerProductsItemListJsonLd =
+      sellerPreviewProducts.length > 0
+        ? generateItemListJsonLd(
+            sellerPreviewProducts,
+            `Najnowsze produkty od ${seller.name}`
+          )
+        : null
 
     // Breadcrumb items
     const breadcrumbItems = [
@@ -311,6 +323,14 @@ export default async function SellerPage({
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(sellerJsonLd) }}
         />
+        {sellerProductsItemListJsonLd && (
+          <script
+            type="application/ld+json"
+            dangerouslySetInnerHTML={{
+              __html: JSON.stringify(sellerProductsItemListJsonLd),
+            }}
+          />
+        )}
 
         <main className="container">
           {/* Breadcrumbs */}

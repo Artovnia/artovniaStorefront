@@ -6,6 +6,7 @@ import { getRegion } from "@/lib/data/regions"
 import { generateProductMetadata } from "@/lib/helpers/seo"
 import { ScrollToTop } from "@/components/utils/ScrollToTop"
 import type { Metadata } from "next"
+import { notFound } from "next/navigation"
 import { cache } from 'react'
 
 export const revalidate = 1800
@@ -81,14 +82,7 @@ export default async function ProductPage({
   const productResult = await getCachedProduct(handle, region.id)
 
   if (!productResult.product && productResult.errorType === "not_found") {
-    return (
-      <main className="container">
-        <div className="py-20 text-center">
-          <h1 className="text-2xl font-bold">Produkt nie znaleziony</h1>
-          <p className="mt-4 text-gray-600">Nie znaleziono produktu o podanym adresie.</p>
-        </div>
-      </main>
-    )
+    notFound()
   }
 
   if (!productResult.product) {

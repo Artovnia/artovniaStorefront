@@ -60,10 +60,12 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     }
   }
 
-  // ✅ SEO FIX: Check if category has products - noindex empty categories
-  // This prevents empty category pages from being indexed by Google
+  // ✅ SEO FIX: Check if category tree has products (category + descendants)
+  // This prevents indexing thin pages while keeping parent categories indexable
+  // when products exist only in child categories.
   const categoriesWithProducts = await getCategoriesWithProductsFromDatabase()
-  const hasProducts = categoriesWithProducts.has(cat.id)
+  const descendantCategoryIds = await getAllDescendantCategoryIds(cat.id)
+  const hasProducts = descendantCategoryIds.some((id) => categoriesWithProducts.has(id))
   
   if (!hasProducts) {
     // Category exists but has no products - noindex to prevent thin content
@@ -120,7 +122,7 @@ async function Category({ params }: Props) {
   }
 
   // Fetch remaining data in parallel
-  const [categoryIdsResult, userResult, promotionalDataResult, previewProductResult] = 
+  const [categoryIdsResult, userResult, promotionalDataResult] = 
     await Promise.allSettled([
       getAllDescendantCategoryIds(category.id),
       retrieveCustomer()
@@ -137,14 +139,6 @@ async function Category({ params }: Props) {
         limit: 50,
         countryCode: 'PL'
       }).catch(() => ({ response: { products: [], count: 0 }, nextPage: null })),
-      // Fetch first few products for SEO (ItemList schema)
-       listProducts({
-      countryCode: locale,
-      category_id: category.id, // ✅ Top-level, string not array
-      queryParams: {
-        limit: 10,
-      },
-    }).catch(() => ({ response: { products: [], count: 0 } })),
   ])
 
   const categoryIds = categoryIdsResult.status === 'fulfilled' 
@@ -159,13 +153,19 @@ async function Category({ params }: Props) {
     ? promotionalDataResult.value
     : { response: { products: [], count: 0 }, nextPage: null }
 
-  const previewProducts = previewProductResult.status === 'fulfilled'
-    ? previewProductResult.value.response.products
-    : []
+  // Descendant-aware preview products for SEO ItemList schema and counts.
+  // This keeps parent category SEO aligned with what users actually see.
+  const previewProductResult = await listProducts({
+    countryCode: locale,
+    category_id: categoryIds[0] || category.id,
+    queryParams: {
+      limit: 10,
+    },
+  }).catch(() => ({ response: { products: [], count: 0 } }))
 
-  const productCount = previewProductResult.status === 'fulfilled'
-    ? previewProductResult.value.response.count
-    : undefined
+  const previewProducts = previewProductResult.response.products
+
+  const productCount = previewProductResult.response.count
 
   const promotionalProductsMap = new Map(
     promotionalData.response.products.map(p => [p.id, p])
@@ -231,7 +231,7 @@ async function Category({ params }: Props) {
         <BatchPriceProvider currencyCode="PLN">
           <main className="container">
             {/* Category header with description for SEO - Hidden on mobile to prevent duplication with MobileCategoryBreadcrumbs */}
-            <header className="mb-8 hidden ">
+            <header className="mb-8 hidden md:block">
               <h1 className="text-3xl font-bold mb-2">{category.name}</h1>
               {category.description && (
                 <p className="text-ui-fg-subtle">{category.description}</p>

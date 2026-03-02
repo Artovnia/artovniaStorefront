@@ -60,20 +60,20 @@ export default async function TagPage({ params, searchParams }: Props) {
   // Detect user's country for pricing context
   const countryCode = await detectUserCountry()
 
-  // Fetch products with this tag (server-side for SEO)
-  const { products, count } = await listProductsByTag(tagValue, {
-    limit,
-    offset,
-    countryCode,
-  })
+  // Fetch products and related tags in parallel
+  const [{ products, count }, relatedTags] = await Promise.all([
+    listProductsByTag(tagValue, {
+      limit,
+      offset,
+      countryCode,
+    }),
+    getRelatedTags(tagValue, 8, countryCode),
+  ])
 
   // If no products found, show 404
   if (count === 0) {
     return notFound()
   }
-
-  // Fetch related tags
-  const relatedTags = await getRelatedTags(tagValue, 8)
 
   const capitalizeFirst = (str: string) => {
   if (!str) return str;

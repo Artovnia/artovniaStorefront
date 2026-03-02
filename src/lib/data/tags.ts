@@ -1,5 +1,3 @@
-import { sdk } from "@/lib/config"
-import { HttpTypes } from "@medusajs/types"
 import { cache } from "react"
 import { getRegion } from "./regions"
 
@@ -13,19 +11,16 @@ const PUBLISHABLE_KEY = process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY
  * This uses the optimized backend endpoint for database-level filtering
  * instead of fetching all products and filtering client-side.
  */
-export const listProductsByTag = cache(async (
+const listProductsByTagInternal = cache(async (
   tagValue: string,
-  options?: {
-    limit?: number
-    offset?: number
-    countryCode?: string
-  }
+  limit: number,
+  offset: number,
+  countryCode: string,
+  fields: string
 ): Promise<{
   products: any[]
   count: number
 }> => {
-  const { limit = 24, offset = 0, countryCode = "pl" } = options || {}
-
   try {
     // Get region for pricing context
     const region = await getRegion(countryCode)
@@ -35,6 +30,9 @@ export const listProductsByTag = cache(async (
     url.searchParams.set("tag", tagValue)
     url.searchParams.set("limit", limit.toString())
     url.searchParams.set("offset", offset.toString())
+    if (fields) {
+      url.searchParams.set("fields", fields)
+    }
     
     // Add region_id if available for pricing context
     if (region?.id) {
@@ -50,6 +48,7 @@ export const listProductsByTag = cache(async (
       },
       next: {
         tags: ["products", `tag:${tagValue}`],
+        revalidate: 300,
       },
     })
 
@@ -75,6 +74,25 @@ export const listProductsByTag = cache(async (
   }
 })
 
+export const listProductsByTag = async (
+  tagValue: string,
+  options?: {
+    limit?: number
+    offset?: number
+    countryCode?: string
+    fields?: string
+  }
+) => {
+  const {
+    limit = 24,
+    offset = 0,
+    countryCode = "pl",
+    fields = "",
+  } = options || {}
+
+  return listProductsByTagInternal(tagValue, limit, offset, countryCode, fields)
+}
+
 /**
  * Get popular tags with product counts
  * Used for footer links and tag cloud
@@ -83,27 +101,33 @@ export const getPopularTags = cache(async (
   limit: number = 50
 ): Promise<Array<{ value: string; count: number; slug: string }>> => {
   try {
-    // ✅ Add timeout to prevent build hangs when backend is offline
-    const controller = new AbortController()
-    const timeoutId = setTimeout(() => controller.abort(), 10000) // 10 second timeout
-    
-    // Fetch all products with tags
-    const response = await sdk.store.product.list(
-      {
-        fields: "+tags",
-        limit: 1000, // Adjust based on your product count
+    const url = new URL(`${BACKEND_URL}/store/products`)
+    url.searchParams.set("limit", "1000")
+    url.searchParams.set("fields", "id,tags.value")
+
+    const response = await fetch(url.toString(), {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        "x-publishable-api-key": PUBLISHABLE_KEY!,
       },
-      {
-        next: {
-          tags: ["products", "tags"],
-        },
-      }
-    ).finally(() => clearTimeout(timeoutId))
+      next: {
+        tags: ["products", "tags"],
+        revalidate: 3600,
+      },
+    })
+
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`)
+    }
+
+    const data = await response.json()
+    const products = data.products || []
 
     // Count tag occurrences
     const tagCounts = new Map<string, number>()
     
-    response.products.forEach((product: any) => {
+    products.forEach((product: any) => {
       product.tags?.forEach((tag: any) => {
         const count = tagCounts.get(tag.value) || 0
         tagCounts.set(tag.value, count + 1)
@@ -149,11 +173,16 @@ export const getTagBySlug = (slug: string): string => {
  */
 export const getRelatedTags = cache(async (
   tagValue: string,
-  limit: number = 10
+  limit: number = 10,
+  countryCode: string = "pl"
 ): Promise<Array<{ value: string; count: number; slug: string }>> => {
   try {
     // Fetch products with this tag
-    const { products } = await listProductsByTag(tagValue, { limit: 100 })
+    const { products } = await listProductsByTag(tagValue, {
+      limit: 100,
+      countryCode,
+      fields: 'id,tags.value',
+    })
 
     // Count co-occurring tags
     const tagCounts = new Map<string, number>()

@@ -96,7 +96,7 @@ export const SellerTabs = ({
   // Build tabs list - add "historia" tab only if vendor has custom page
   const tabsList = hasCustomPage
     ? [
-        { label: "poznaj twórcę", link: `/sellers/${seller_handle}?tab=poznajtworce` },
+        { label: "poznaj twórcę", link: `/sellers/${seller_handle}/o-tworcy?tab=poznajtworce` },
         { label: "produkty", link: `/sellers/${seller_handle}?tab=produkty` },
         { label: "recenzje", link: `/sellers/${seller_handle}?tab=recenzje` },
       ]

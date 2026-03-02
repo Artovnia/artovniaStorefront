@@ -112,7 +112,7 @@ const PRODUCT_DETAIL_FIRST_PAINT_FIELDS =
   'variants.id,variants.title,' +
   'variants.calculated_price,' +
   'variants.inventory_quantity,variants.manage_inventory,variants.allow_backorder,' +
-  'variants.metadata,' +
+  
   'variants.options.value,variants.options.option_id,' +
   'variants.options.option.title,' +
   'seller.id,seller.handle,seller.name,seller.photo,' +
@@ -121,8 +121,8 @@ const PRODUCT_DETAIL_FIRST_PAINT_FIELDS =
   'categories.parent_category.parent_category.id,categories.parent_category.parent_category.name,categories.parent_category.parent_category.handle'
 
 const PRODUCT_DETAIL_DEFERRED_FIELDS =
-  'id,description,created_at,metadata,' +
-  'tags.id,tags.value,tags.created_at,tags.updated_at'
+  'id,created_at,metadata,' +
+  'tags.id,tags.value'
 
 const SELLER_LISTING_DEFAULT_FIELDS =
   'id,title,handle,thumbnail,images.url,created_at,' +
