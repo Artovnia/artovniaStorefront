@@ -7,10 +7,14 @@ export const ProductPageAccordion = ({
   children,
   heading,
   defaultOpen = false,
+  onOpenChange,
+  onIntent,
 }: {
   children: React.ReactNode;
   heading: string;
   defaultOpen?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  onIntent?: () => void;
 }) => {
   const [open, setOpen] = useState(defaultOpen);
   const [contentHeight, setContentHeight] = useState(
@@ -31,7 +35,9 @@ export const ProductPageAccordion = ({
   }, [open, children]);
 
   const openHandler = () => {
-    setOpen(!open);
+    const nextOpen = !open;
+    setOpen(nextOpen);
+    onOpenChange?.(nextOpen);
   };
   
   return (
@@ -45,6 +51,9 @@ export const ProductPageAccordion = ({
             openHandler();
           }
         }}
+        onMouseEnter={onIntent}
+        onFocus={onIntent}
+        onTouchStart={onIntent}
         aria-expanded={open}
         aria-controls={panelId}
         id={headingId}

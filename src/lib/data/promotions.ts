@@ -13,10 +13,35 @@
  * promotional data caching (which uses 'promotions:PL', etc.)
  */
 
-import { sdk } from "../config"
-import { getAuthHeaders } from "./cookies"
 import { unifiedCache, CACHE_TTL } from "@/lib/utils/unified-cache"
 import { SellerProps } from "@/types/seller"
+
+const BACKEND_URL = process.env.MEDUSA_BACKEND_URL || process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || "http://localhost:9000"
+const PUB_KEY = process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || ""
+
+async function publicPromotionFetch<T>(path: string, query: Record<string, string | number>) {
+  const url = new URL(`${BACKEND_URL}${path}`)
+  Object.entries(query).forEach(([key, value]) => {
+    if (value !== undefined && value !== null) {
+      url.searchParams.set(key, String(value))
+    }
+  })
+
+  const response = await fetch(url.toString(), {
+    method: "GET",
+    headers: {
+      accept: "application/json",
+      "x-publishable-api-key": PUB_KEY,
+    },
+    next: { revalidate: CACHE_TTL.PROMOTIONS, tags: ["products", "promotions"] },
+  })
+
+  if (!response.ok) {
+    throw new Error(`publicPromotionFetch ${path} -> ${response.status}`)
+  }
+
+  return response.json() as Promise<T>
+}
 
 export interface PromotionMetadata {
   id: string
@@ -61,17 +86,10 @@ export const getActivePromotions = async (): Promise<PromotionMetadata[]> => {
   
   return unifiedCache.get(cacheKey, async () => {
     try {
-      const headers = await getAuthHeaders()
-      
-      const response = await sdk.client.fetch<{
+      const response = await publicPromotionFetch<{
         promotions: PromotionMetadata[]
-      }>('/store/promotions', {
-        method: 'GET',
-        query: {
-          fields: '*application_method,*campaign'
-        },
-        headers,
-        cache: 'no-cache'
+      }>("/store/promotions", {
+        fields: "*application_method,*campaign",
       })
 
       return response.promotions || []
@@ -90,11 +108,9 @@ export const getPromotionFilterOptions = async (): Promise<PromotionFilters> => 
   
   return unifiedCache.get(cacheKey, async () => {
     try {
-      const headers = await getAuthHeaders()
-      
       // Fetch products with promotions to extract metadata
       // Using a specific endpoint call separate from PromotionDataProvider
-      const response = await sdk.client.fetch<{
+      const response = await publicPromotionFetch<{
         products: Array<{
           id: string
           seller?: SellerProps
@@ -109,22 +125,17 @@ export const getPromotionFilterOptions = async (): Promise<PromotionFilters> => 
             category_children?: any[]
           }>
         }>
-      }>('/store/products/promotions', {
-        method: 'GET',
-        query: {
-          limit: 50, // Reduced limit to minimize data overlap
-          offset: 0,
-          fields: 'id,*seller,*promotions,*promotions.campaign,*categories' // Added categories
-        },
-        headers,
-        cache: 'no-cache'
+      }>("/store/products/promotions", {
+        limit: 50,
+        offset: 0,
+        fields: "id,*seller,*promotions,*promotions.campaign,*categories",
       })
 
       const products = response.products || []
     
       
       // Fetch ALL categories to build complete hierarchy
-      const allCategoriesResponse = await sdk.client.fetch<
+      const allCategoriesResponse = await publicPromotionFetch<
         { product_categories: Array<{
           id: string
           name: string
@@ -134,12 +145,8 @@ export const getPromotionFilterOptions = async (): Promise<PromotionFilters> => 
           rank?: number
         }> }
       >("/store/product-categories", {
-        query: {
-          fields: "id, handle, name, rank, parent_category_id, mpath",
-          limit: 1000,
-        },
-        headers,
-        cache: 'no-cache'
+        fields: "id, handle, name, rank, parent_category_id, mpath",
+        limit: 1000,
       })
       
       const allCategories = allCategoriesResponse?.product_categories || []
@@ -270,21 +277,14 @@ export const getSellersWithPromotions = async (): Promise<{ id: string; name: st
   
   return unifiedCache.get(cacheKey, async () => {
     try {
-      const headers = await getAuthHeaders()
-      
-      const response = await sdk.client.fetch<{
+      const response = await publicPromotionFetch<{
         products: Array<{
           seller?: SellerProps
         }>
-      }>('/store/products/promotions', {
-        method: 'GET',
-        query: {
-          limit: 50,
-          offset: 0,
-          fields: 'id,seller_id,*seller' // Only fetch seller data
-        },
-        headers,
-        cache: 'no-cache'
+      }>("/store/products/promotions", {
+        limit: 50,
+        offset: 0,
+        fields: "id,seller_id,*seller",
       })
 
       const sellersMap = new Map<string, string>()

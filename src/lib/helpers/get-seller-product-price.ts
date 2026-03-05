@@ -1,7 +1,7 @@
 import { convertToLocale } from "./money"
 
 export const getPricesForVariant = (variant: any) => {
-  if (!variant?.prices[0]?.amount) {
+  if (variant?.prices?.[0]?.amount == null) {
     return null
   }
 

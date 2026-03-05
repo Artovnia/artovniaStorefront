@@ -491,20 +491,38 @@ export const retrieveReturnMethods = async (order_id: string) => {
 /**
  * Cancel an order
  */
-export const cancelOrder = async (orderId: string) => {
+export const cancelOrder = async (
+  orderId: string,
+  lineItems?: Array<{ id: string; quantity: number }>
+) => {
   try {
-    const headers = await getAuthHeaders()
+    const headers = {
+      ...(await getAuthHeaders()),
+      "Content-Type": "application/json",
+      "x-publishable-api-key": process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY as string,
+    }
 
-    const response = await sdk.client.fetch<{
-      message: string
-      order_id: string
-    }>(`/store/orders/${orderId}/cancel`, {
-      method: "POST",
-      headers,
-      cache: "no-cache",
-    })
+    const body = lineItems?.length
+      ? { line_items: lineItems }
+      : undefined
 
-    return { success: true, message: response.message }
+    const response = await fetch(
+      `${process.env.MEDUSA_BACKEND_URL}/store/orders/${orderId}/cancel`,
+      {
+        method: "POST",
+        headers,
+        body: body ? JSON.stringify(body) : undefined,
+        cache: "no-store",
+      }
+    )
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`)
+    }
+
+    const result = await response.json()
+
+    return { success: true, message: result?.message || "Order cancelled successfully" }
   } catch (error) {
     console.error(`Error cancelling order ${orderId}:`, error)
     const errorMessage = error instanceof Error ? error.message : 'Failed to cancel order'

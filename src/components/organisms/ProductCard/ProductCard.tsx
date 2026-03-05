@@ -91,7 +91,7 @@ const ProductCardComponent = ({
 }) => {
   const { prefetchProductImage } = useProductImagePrefetch()
   const router = useRouter()
-  const { getProductWithPromotions, isLoading } = usePromotionData()
+  const { getProductWithPromotions } = usePromotionData()
   const [isMounted, setIsMounted] = useState(false)
   const productUrl = `/products/${product.handle}`
   const cardRef = useRef<HTMLDivElement>(null)
@@ -114,7 +114,7 @@ const ProductCardComponent = ({
     const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0
     if (!isTouchDevice) return
 
-    const imageUrl = product.thumbnail || product.images?.[0]?.url
+    const imageUrl = product.thumbnail
     if (!imageUrl) return
 
     const card = cardRef.current
@@ -151,60 +151,92 @@ const ProductCardComponent = ({
   const promotionalProduct = getProductWithPromotions(product.id)
   const productToUse = promotionalProduct || product
 
+  const displayedVariant = useMemo(() => {
+    const variants = productToUse.variants || product.variants || []
+    if (!variants.length) {
+      return undefined
+    }
+
+    return variants.reduce((best: any, current: any) => {
+      const bestAmount =
+        best?.calculated_price?.calculated_amount ??
+        best?.prices?.[0]?.amount ??
+        Number.POSITIVE_INFINITY
+      const currentAmount =
+        current?.calculated_price?.calculated_amount ??
+        current?.prices?.[0]?.amount ??
+        Number.POSITIVE_INFINITY
+
+      return currentAmount < bestAmount ? current : best
+    }, variants[0] as any)
+  }, [productToUse, product.variants])
+
   // ✅ OPTIMIZATION: Calculate promotional pricing immediately
   const promotionalPricing = useMemo(() => {
-    const firstVariant = productToUse.variants?.[0]
     return getPromotionalPrice({
       product: productToUse as any,
-      regionId: firstVariant?.calculated_price?.region_id,
-      variantId: firstVariant?.id
+      regionId: displayedVariant?.calculated_price?.region_id,
+      variantId: displayedVariant?.id,
     })
-  }, [productToUse])
+  }, [productToUse, displayedVariant])
+
+  const { cheapestPrice, variantPrice } = product?.id
+    ? getProductPrice({
+        product: productToUse as any,
+        variantId: displayedVariant?.id,
+      })
+    : { cheapestPrice: null, variantPrice: null }
+
+  const { cheapestPrice: sellerCheapestPrice, variantPrice: sellerVariantPrice } = product?.id
+    ? getSellerProductPrice({
+        product: productToUse as any,
+        variantId: displayedVariant?.id,
+      })
+    : { cheapestPrice: null, variantPrice: null }
+
+  const activePrice =
+    sellerVariantPrice ||
+    variantPrice ||
+    sellerCheapestPrice ||
+    cheapestPrice
+
+  const hasPriceListDiscount =
+    !!activePrice &&
+    activePrice.calculated_price_number !== activePrice.original_price_number &&
+    activePrice.calculated_price_number < activePrice.original_price_number
 
   // ✅ FIX: Show promotional prices immediately when mounted (no waiting for isLoading)
   // Use productToUse (enriched from context) for discount detection
   const hasAnyDiscount = isMounted && (
-    promotionalPricing.discountPercentage > 0 || 
-    (productToUse as any).has_promotions ||
-    productToUse.variants?.some((variant: any) => 
-      variant.calculated_price && 
-      variant.calculated_price.calculated_amount !== variant.calculated_price.original_amount &&
-      variant.calculated_price.calculated_amount < variant.calculated_price.original_amount
-    )
+    promotionalPricing.discountPercentage > 0 ||
+    hasPriceListDiscount
   )
   
-  // ✅ OPTIMIZATION: Track if we've already prefetched to avoid duplicate requests
-  const hasPrefetched = useRef(false)
+  // ✅ OPTIMIZATION: Track if route prefetch already ran to avoid duplicate requests
+  const hasRoutePrefetched = useRef(false)
   
-  // Prefetch both route (RSC payload) and detail-page image on hover/touch
-  // This gives the browser a head start before the user clicks
+  // Prefetch detail-page image on hover/touch and route payload only on non-touch intent.
+  // This avoids broad route prefetch fan-out during mobile browsing.
   const handlePrefetch = () => {
-    // Skip if already prefetched (prevents duplicate network requests)
-    if (hasPrefetched.current) return
-    hasPrefetched.current = true
-    
-    // 1. Prefetch RSC payload (React Server Component data)
-    // This is the main optimization - fetches the page data before navigation
+    const isTouchDevice =
+      typeof window !== 'undefined' &&
+      ('ontouchstart' in window || navigator.maxTouchPoints > 0)
+
+    // Prefetch the detail-page-sized image so it's cached before navigation.
+    const imageUrl = product.thumbnail
+    prefetchProductImage(imageUrl)
+
+    // Route prefetch only on desktop/focus intent and only once per card.
+    if (isTouchDevice || hasRoutePrefetched.current) return
+    hasRoutePrefetched.current = true
+
     try {
       router.prefetch(productUrl)
     } catch {
       // Route prefetch failed, non-critical
     }
-    
-    // 2. Prefetch the detail-page-sized image so it's cached before navigation
-    const imageUrl = product.thumbnail || product.images?.[0]?.url
-    prefetchProductImage(imageUrl)
   }
   
-  // ✅ SAFETY CHECK: Ensure product has required fields before price calculation
-  const { cheapestPrice } = product?.id ? getProductPrice({
-    product,
-  }) : { cheapestPrice: null }
-
-  const { cheapestPrice: sellerCheapestPrice } = product?.id ? getSellerProductPrice({
-    product,
-  }) : { cheapestPrice: null }
-
   // ✅ SAFETY CHECK: Don't render card if product is invalid
   if (!product?.id || !product?.title) {
     return null
@@ -245,15 +277,15 @@ const ProductCardComponent = ({
             variant="card"
           />
         )}
-        <Link href={productUrl} prefetch={true} aria-label={`Zobacz produkt: ${product.title}`}>
+        <Link href={productUrl} prefetch={false} aria-label={`Zobacz produkt: ${product.title}`}>
           <div className="overflow-hidden w-full h-full flex justify-center items-center" style={{ backgroundColor: '#F4F0EB' }}>
-            {(product.thumbnail || product.images?.[0]?.url) ? (
+            {product.thumbnail ? (
               <LqipImage
-                src={product.thumbnail || product.images?.[0]?.url || "/images/placeholder.svg"}
+                src={product.thumbnail || "/images/placeholder.svg"}
                 alt={product.title}
                 width={320}
                 height={320}
-                quality={75}
+                quality={80}
                 className="object-cover w-full object-center h-full lg:group-hover:scale-105 transition-all duration-300"
                 priority={!isSellerSection && index < 4}
                 loading={isSellerSection ? "lazy" : (index < 4 ? "eager" : "lazy")}
@@ -278,7 +310,7 @@ const ProductCardComponent = ({
           </span>
         </Link>
       </div>
-      <Link href={productUrl} tabIndex={-1} aria-hidden="true">
+      <Link href={productUrl} prefetch={false} tabIndex={-1} aria-hidden="true">
         <div className="flex justify-between flex-grow mt-2">
           <div className="w-full font-instrument-sans">
             {/* 📝 PRODUCT TITLE: font-medium (weight: 500) - Medium prominence, less bold than current price */}
@@ -328,24 +360,18 @@ const ProductCardComponent = ({
                       {/* 💰 PRICE LIST DISCOUNT: font-bold (700) + larger size (text-lg sm:text-xl) */}
                       {/*    👉 To tweak size, edit text-lg sm:text-xl below */}
                       <p className={`font-instrument-sans font-semibold text-md sm:text-md text-[#3B3634] ${themeMode === 'light' ? 'text-white' : ''}`}>
-                        {(sellerCheapestPrice?.calculated_price || cheapestPrice?.calculated_price)?.replace(/PLN\s+([\d,.]+)/, '$1 zł')}
+                        {activePrice?.calculated_price?.replace(/PLN\s+([\d,.]+)/, '$1 zł')}
                       </p>
                       {/* 📊 ORIGINAL PRICE: Strikethrough, smaller, gray - de-emphasized */}
-                      {sellerCheapestPrice?.calculated_price
-                        ? sellerCheapestPrice?.calculated_price !==
-                            sellerCheapestPrice?.original_price && (
+                      {activePrice?.calculated_price
+                        ? activePrice?.calculated_price !==
+                            activePrice?.original_price && (
                             <p className="text-xs text-gray-500 line-through">
                               <span className="sr-only">Cena przed promocją: </span>
-                              {sellerCheapestPrice?.original_price?.replace(/PLN\s+([\d,.]+)/, '$1 zł')}
+                              {activePrice?.original_price?.replace(/PLN\s+([\d,.]+)/, '$1 zł')}
                             </p>
                           )
-                        : cheapestPrice?.calculated_price !==
-                            cheapestPrice?.original_price && (
-                            <p className="text-xs text-gray-500 line-through">
-                              <span className="sr-only">Cena przed promocją: </span>
-                              {cheapestPrice?.original_price?.replace(/PLN\s+([\d,.]+)/, '$1 zł')}
-                            </p>
-                          )}
+                        : null}
                     </>
                   )}
                 </>
@@ -354,7 +380,7 @@ const ProductCardComponent = ({
                   {/* 💰 REGULAR PRICE: font-bold (700) + larger size (text-lg sm:text-xl) */}
                   {/*    👉 To tweak size, edit text-lg sm:text-xl below */}
                   <p className={`font-instrument-sans font-semibold text-md sm:text-md ${themeMode === 'light' ? 'text-white' : ''}`}>
-                    {(sellerCheapestPrice?.calculated_price || cheapestPrice?.calculated_price)?.replace(/PLN\s+([\d,.]+)/, '$1 zł')}
+                    {activePrice?.calculated_price?.replace(/PLN\s+([\d,.]+)/, '$1 zł')}
                   </p>
                 </>
               )}
@@ -362,18 +388,18 @@ const ProductCardComponent = ({
             
             {/* Lowest Price Display - compact version with info icon tooltip for ProductCard */}
             {/* Only render when this specific product has an actual discount/promotion. */}
-            {product.variants && product.variants.length > 0 && hasAnyDiscount && (
+            {displayedVariant?.id && hasAnyDiscount && (
               <div className="mt-0">
                 <CompactLowestPriceDisplay
-                  variantId={product.variants[0].id}
+                  variantId={displayedVariant.id}
                   currencyCode="PLN"
                   className="text-xs"
                   themeMode={themeMode}
                   fallbackPrice={
                     // Priority: Medusa calculated_price > Algolia prices array > Algolia min_price
-                    product.variants[0]?.calculated_price?.original_amount ||
-                    product.variants[0]?.calculated_price?.calculated_amount ||
-                    product.variants[0]?.prices?.[0]?.amount ||
+                    displayedVariant?.calculated_price?.original_amount ||
+                    displayedVariant?.calculated_price?.calculated_amount ||
+                    displayedVariant?.prices?.[0]?.amount ||
                     (product as any).min_price
                   }
                 />

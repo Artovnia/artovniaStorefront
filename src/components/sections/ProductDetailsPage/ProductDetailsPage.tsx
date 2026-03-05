@@ -8,14 +8,11 @@ import {
   listProductsLean,
   getProductPromotions,
   listSuggestedProducts,
-  getProductShippingOptions,
-  getProductDeferredDetail,
 } from "../../../lib/data/products"
 import { PDP_SELLER_CARD_FIELDS } from "@/lib/constants/product-fields"
 import { getVendorCompleteStatus } from "../../../lib/data/vendor-availability"
 import { getProductDeliveryTimeframe } from "@/lib/data/delivery-timeframe"
 import { getProductMeasurements } from "@/lib/data/measurements"
-import { getProductReviews } from "@/lib/data/reviews"
 import ProductErrorBoundary from "@/components/molecules/ProductErrorBoundary/ProductErrorBoundary"
 import { Breadcrumbs } from "@/components/atoms/Breadcrumbs/Breadcrumbs"
 import { buildProductBreadcrumbs } from "@/lib/utils/breadcrumbs"
@@ -60,13 +57,10 @@ export const ProductDetailsPage = async ({
     sellerProductsResult,
     vendorStatusResult,
     promotionalProductsResult,
-    shippingOptionsResult,
     categoryProductsResult,
     productPricesResult,
     deliveryTimeframeResult,
     measurementsResult,
-    productReviewsResult,
-    deferredProductResult,
   ] = await Promise.allSettled([
     // Seller products — lean fields only (cards don't need full product payload)
     product.seller?.id && region
@@ -100,11 +94,6 @@ export const ProductDetailsPage = async ({
     // PromotionDataProvider will fetch promotions for card products (seller/suggested) client-side
     getProductPromotions(product.id).catch(() => []),
 
-    // Shipping options — server-side fetch with revalidate:300 (no client-side fetch needed)
-    product.id && region?.id
-      ? getProductShippingOptions(product.id, region.id).catch(() => [])
-      : Promise.resolve([]),
-
     // ✅ Suggested products: "Może Ci się spodobać" section
     region
       ? listSuggestedProducts({ product, regionId: region.id, limit: 8 })
@@ -119,13 +108,6 @@ export const ProductDetailsPage = async ({
     getProductDeliveryTimeframe(product.id),
 
     getProductMeasurements(product.id, selectedVariantId, currentLocale),
-
-    getProductReviews(product.id),
-
-    getProductDeferredDetail({
-      productId: product.id,
-      regionId: region.id,
-    }),
   ])
 
   // Extract results with fallbacks
@@ -155,11 +137,6 @@ export const ProductDetailsPage = async ({
     ? { ...product, promotions: currentProductPromotions, has_promotions: true }
     : product
 
-  const initialShippingOptions =
-    shippingOptionsResult.status === "fulfilled"
-      ? (shippingOptionsResult.value as any[])
-      : []
-
   const initialVariantAttributes = undefined
 
   const suggestedProductsData =
@@ -168,22 +145,7 @@ export const ProductDetailsPage = async ({
       : { products: [], categoryName: '', categoryHandle: '' }
 
   const suggestedProducts = suggestedProductsData.products
-
-  const deferredProduct =
-    deferredProductResult.status === "fulfilled"
-      ? deferredProductResult.value
-      : null
-
-  const hydratedProduct = deferredProduct
-    ? {
-        ...product,
-        description: deferredProduct.description ?? product.description,
-        created_at: deferredProduct.created_at ?? product.created_at,
-        metadata: deferredProduct.metadata ?? product.metadata,
-        tags: deferredProduct.tags ?? product.tags,
-      }
-    : product
-  const sellerForDetails = (hydratedProduct.seller ?? product.seller) as HttpTypes.StoreProduct["seller"]
+  const sellerForDetails = product.seller as HttpTypes.StoreProduct["seller"]
 
   const productPrices = productPricesResult.status === "fulfilled"
     ? productPricesResult.value as Record<string, any>
@@ -203,15 +165,29 @@ export const ProductDetailsPage = async ({
       ? measurementsResult.value
       : undefined
 
-  const prefetchedProductReviews =
-    productReviewsResult.status === "fulfilled" && Array.isArray(productReviewsResult.value?.reviews)
-      ? productReviewsResult.value.reviews
-      : []
+  const galleryImages = (() => {
+    const thumbnailUrl = (product as any)?.thumbnail
+    const baseImages = Array.isArray((product as any)?.images)
+      ? (product as any).images.filter((image: any) => image?.url)
+      : Array.isArray(product?.images)
+        ? product.images.filter((image: any) => image?.url)
+        : []
+
+    if (!thumbnailUrl) {
+      return baseImages
+    }
+
+    const dedupedImages = baseImages.filter((image: any) => image.url !== thumbnailUrl)
+
+    return [{ id: `thumbnail-${product.id}`, url: thumbnailUrl }, ...dedupedImages]
+  })()
+
+  const prefetchedProductReviews: any[] = []
 
   // ✅ FIX: Get price from variant's calculated_price
   const getProductPrice = (): number | undefined => {
     // Try variant calculated price first
-    const variant = hydratedProduct.variants?.[0]
+    const variant = product.variants?.[0]
     if (variant?.calculated_price?.calculated_amount) {
       return variant.calculated_price.calculated_amount
     }
@@ -220,8 +196,8 @@ export const ProductDetailsPage = async ({
       return variant.calculated_price.original_amount
     }
     // Try product-level price (some setups have this)
-    if ((hydratedProduct as any).calculated_price?.calculated_amount) {
-      return (hydratedProduct as any).calculated_price.calculated_amount
+    if ((product as any).calculated_price?.calculated_amount) {
+      return (product as any).calculated_price.calculated_amount
     }
     return undefined
   }
@@ -229,7 +205,7 @@ export const ProductDetailsPage = async ({
   // Generate structured data for SEO
   const productPrice = getProductPrice()
   const productJsonLd = generateProductJsonLd(
-    hydratedProduct,
+    product,
     productPrice,
     "PLN",
     prefetchedProductReviews
@@ -283,7 +259,7 @@ export const ProductDetailsPage = async ({
                   {/* Gallery: full-width stacked on mobile, sticky left half on desktop */}
                   <div className="w-full md:w-1/2 md:max-w-[calc(50%-12px)] lg:max-w-none md:px-0 md:sticky md:top-20 md:self-start">
                     <ProductGallery
-                      images={product?.images || []}
+                      images={galleryImages}
                       title={product?.title || ""}
                     />
                   </div>
@@ -292,11 +268,10 @@ export const ProductDetailsPage = async ({
                   <div className="w-full mt-4 md:mt-0 md:w-1/2 md:max-w-[calc(50%-12px)] lg:max-w-none md:px-0">
                     {sellerForDetails ? (
                       <ProductDetails
-                        product={{ ...hydratedProduct, seller: sellerForDetails }}
+                        product={{ ...product, seller: sellerForDetails }}
                         locale={locale}
                         region={region}
                         initialVariantAttributes={initialVariantAttributes}
-                        initialShippingOptions={initialShippingOptions}
                         initialDeliveryTimeframe={deliveryTimeframe}
                         initialMeasurements={initialMeasurements}
                       />
@@ -382,14 +357,14 @@ export const ProductDetailsPage = async ({
 
                     {/* ✅ User-specific content rendered via client component */}
                     <ProductPageUserContent
-                      productId={hydratedProduct.id}
+                      productId={product.id}
                       sellerProducts={sellerProducts as any}
                       suggestedProducts={suggestedProducts as any}
                       suggestedCategoryName={suggestedProductsData.categoryName}
                       suggestedCategoryHandle={suggestedProductsData.categoryHandle}
                       prefetchedReviews={prefetchedProductReviews}
-                      sellerName={hydratedProduct.seller?.name}
-                      sellerHandle={hydratedProduct.seller?.handle}
+                      sellerName={product.seller?.name}
+                      sellerHandle={product.seller?.handle}
                     />
                   </div>
                 </Suspense>

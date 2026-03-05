@@ -5,6 +5,20 @@ import { LowestPriceData } from "@/types/price-history"
 import { getPublishableApiKey } from "@/lib/get-publishable-key"
 import { unifiedCache } from "@/lib/utils/unified-cache"
 
+function buildBatchPriceCacheKey(
+  variantIds: string[],
+  currencyCode: string,
+  regionId: string | undefined,
+  days: number
+): string {
+  const normalizedIds = [...variantIds]
+    .filter((id) => id && id.trim().length > 0)
+    .map((id) => id.trim())
+    .sort()
+
+  return `promotional:price:batch:${normalizedIds.join(',')}:${currencyCode}:${regionId || 'default'}:${days}`
+}
+
 interface BatchLowestPricesOptions {
   variantIds: string[]
   currencyCode: string
@@ -33,7 +47,7 @@ function getInitialCachedData(
 ): Record<string, LowestPriceData | null> | null {
   if (variantIds.length === 0) return null
   
-  const cacheKey = `promotional:price:batch:${variantIds.sort().join(',')}:${currencyCode}:${regionId || 'default'}:${days}`
+  const cacheKey = buildBatchPriceCacheKey(variantIds, currencyCode, regionId, days)
   const cached = unifiedCache.getSync<Record<string, LowestPriceData | null>>(cacheKey)
   return cached
 }
@@ -120,7 +134,7 @@ export function useBatchLowestPrices({
       }
     }
 
-    const cacheKey = `promotional:price:batch:${variantIds.sort().join(',')}:${currencyCode}:${regionId || 'default'}:${days}`
+    const cacheKey = buildBatchPriceCacheKey(variantIds, currencyCode, regionId, days)
     
     return unifiedCache.get(cacheKey, fetchFn)
   }, [variantIds, currencyCode, regionId, days])
@@ -151,7 +165,7 @@ export function useBatchLowestPrices({
     }
 
     // Create cache key for deduplication
-    const cacheKey = `${variantIds.sort().join(',')}:${currencyCode}:${regionId || 'default'}:${days}`
+    const cacheKey = buildBatchPriceCacheKey(variantIds, currencyCode, regionId, days)
     
     // Skip if same request is already in progress
     if (lastFetchRef.current === cacheKey) {

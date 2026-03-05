@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import ReactDOM from 'react-dom'
 import Image from 'next/image'
+import { useGalleryPrefetch } from '@/hooks/useGalleryPrefetch'
 import { MedusaProductImage } from '@/types/product'
 
 // Inline icon components to avoid external dependencies
@@ -42,6 +43,35 @@ export const ImageZoomModal = ({
   const [isZoomed, setIsZoomed] = useState(false)
   const [zoomPosition, setZoomPosition] = useState({ x: 50, y: 50 })
   const [mounted, setMounted] = useState(false)
+  const [isImageTransitioning, setIsImageTransitioning] = useState(false)
+  const [transitionDirection, setTransitionDirection] = useState<'next' | 'prev'>('next')
+  const { prefetchGalleryImage } = useGalleryPrefetch()
+
+  const getImageKey = useCallback((image: MedusaProductImage, index: number) => {
+    return `${image.id ?? 'no-id'}-${image.url ?? 'no-url'}-${index}`
+  }, [])
+
+  const prefetchAtIndex = useCallback((index: number) => {
+    if (!images.length) return
+    const safeIndex = (index + images.length) % images.length
+    const targetUrl = images[safeIndex]?.url
+    if (targetUrl) {
+      prefetchGalleryImage(targetUrl)
+    }
+  }, [images, prefetchGalleryImage])
+
+  const transitionToIndex = useCallback((nextIndex: number, direction: 'next' | 'prev') => {
+    setTransitionDirection(direction)
+    setIsImageTransitioning(true)
+    setCurrentIndex(nextIndex)
+    setIsZoomed(false)
+
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        setIsImageTransitioning(false)
+      })
+    })
+  }, [])
 
   // Update current index when initialIndex changes
   useEffect(() => {
@@ -65,22 +95,22 @@ export const ImageZoomModal = ({
           break
         case 'ArrowLeft':
           e.preventDefault()
-          goToPrevious()
+          transitionToIndex(currentIndex === 0 ? images.length - 1 : currentIndex - 1, 'prev')
           break
         case 'ArrowRight':
           e.preventDefault()
-          goToNext()
+          transitionToIndex(currentIndex === images.length - 1 ? 0 : currentIndex + 1, 'next')
           break
         case ' ':
           e.preventDefault()
-          toggleZoom()
+          setIsZoomed((prev) => !prev)
           break
       }
     }
 
     document.addEventListener('keydown', handleKeyDown)
     return () => document.removeEventListener('keydown', handleKeyDown)
-  }, [isOpen])
+  }, [currentIndex, images.length, isOpen, onClose, transitionToIndex])
 
   // Prevent body scroll when modal is open
   useEffect(() => {
@@ -95,15 +125,22 @@ export const ImageZoomModal = ({
     }
   }, [isOpen])
 
+  useEffect(() => {
+    if (!isOpen || images.length <= 1) return
+
+    prefetchAtIndex(currentIndex + 1)
+    prefetchAtIndex(currentIndex - 1)
+  }, [currentIndex, images.length, isOpen, prefetchAtIndex])
+
   const goToPrevious = useCallback(() => {
-    setCurrentIndex((prev) => (prev === 0 ? images.length - 1 : prev - 1))
-    setIsZoomed(false)
-  }, [images.length])
+    const nextIndex = currentIndex === 0 ? images.length - 1 : currentIndex - 1
+    transitionToIndex(nextIndex, 'prev')
+  }, [currentIndex, images.length, transitionToIndex])
 
   const goToNext = useCallback(() => {
-    setCurrentIndex((prev) => (prev === images.length - 1 ? 0 : prev + 1))
-    setIsZoomed(false)
-  }, [images.length])
+    const nextIndex = currentIndex === images.length - 1 ? 0 : currentIndex + 1
+    transitionToIndex(nextIndex, 'next')
+  }, [currentIndex, images.length, transitionToIndex])
 
   const toggleZoom = useCallback(() => {
     setIsZoomed(!isZoomed)
@@ -156,6 +193,7 @@ export const ImageZoomModal = ({
         <>
           <button
             onClick={goToPrevious}
+            onMouseEnter={() => prefetchAtIndex(currentIndex - 1)}
             className="absolute left-4 top-1/2 -translate-y-1/2 z-10 text-white hover:text-gray-300 transition-colors p-3 hover:bg-white/10 rounded-full"
             aria-label="Poprzednie zdjęcie"
           >
@@ -163,6 +201,7 @@ export const ImageZoomModal = ({
           </button>
           <button
             onClick={goToNext}
+            onMouseEnter={() => prefetchAtIndex(currentIndex + 1)}
             className="absolute right-4 top-1/2 -translate-y-1/2 z-10 text-white hover:text-gray-300 transition-colors p-3 hover:bg-white/10 rounded-full"
             aria-label="Następne zdjęcie"
           >
@@ -183,13 +222,20 @@ export const ImageZoomModal = ({
         >
           <div className="relative">
             <Image
+              key={`zoom-main-${getImageKey(currentImage, currentIndex)}`}
               src={decodeURIComponent(currentImage.url)}
               alt={`Product image ${currentIndex + 1}`}
               width={1200}
               height={1200}
               quality={100}
-              className={`max-w-full max-h-[80vh] w-auto h-auto object-contain transition-transform duration-300 ease-out ${
+              className={`max-w-full max-h-[80vh] w-auto h-auto object-contain transition-all duration-300 ease-out ${
                 isZoomed ? 'scale-200' : 'scale-100'
+              } ${
+                isImageTransitioning
+                  ? transitionDirection === 'next'
+                    ? 'opacity-0 translate-x-3'
+                    : 'opacity-0 -translate-x-3'
+                  : 'opacity-100 translate-x-0'
               }`}
               style={{
                 transformOrigin: isZoomed ? `${zoomPosition.x}% ${zoomPosition.y}%` : 'center'
@@ -214,10 +260,10 @@ export const ImageZoomModal = ({
         <div className="absolute bottom-16 left-1/2 -translate-x-1/2 flex gap-2 bg-black/30 p-3 rounded-lg backdrop-blur-sm">
           {images.map((image, index) => (
             <button
-              key={image.id}
+              key={getImageKey(image, index)}
               onClick={() => {
-                setCurrentIndex(index)
-                setIsZoomed(false)
+                const direction = index >= currentIndex ? 'next' : 'prev'
+                transitionToIndex(index, direction)
               }}
               aria-label={`Miniatura ${index + 1} z ${images.length}`}
               aria-current={currentIndex === index ? "true" : undefined}

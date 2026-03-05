@@ -43,7 +43,7 @@ export const HomeProductsCarousel = ({
           id: String(product.id),
           handle: (product as any).handle || String(product.id),
           title: product.title || "Untitled Product",
-          thumbnail: (product as any).images?.[0]?.url || (product as any).thumbnail || "/images/product/placeholder.jpg"
+          thumbnail: (product as any).thumbnail || "/images/product/placeholder.jpg"
         };
         
         return (

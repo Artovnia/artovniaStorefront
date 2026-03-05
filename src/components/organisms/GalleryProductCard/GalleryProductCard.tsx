@@ -42,6 +42,7 @@ export const GalleryProductCard = ({
   const [isMounted, setIsMounted] = useState(false);
   const productUrl = `/products/${product.handle}`;
   const cardRef = useRef<HTMLDivElement>(null);
+  const hasRoutePrefetched = useRef(false);
 
   useEffect(() => {
     setIsMounted(true);
@@ -104,11 +105,19 @@ export const GalleryProductCard = ({
       ));
 
   const handlePrefetch = () => {
+    const isTouchDevice =
+      typeof window !== "undefined" &&
+      ("ontouchstart" in window || navigator.maxTouchPoints > 0);
+
+    const imageUrl = product.thumbnail || product.images?.[0]?.url;
+    prefetchProductImage(imageUrl);
+
+    if (isTouchDevice || hasRoutePrefetched.current) return;
+    hasRoutePrefetched.current = true;
+
     try {
       router.prefetch(productUrl);
     } catch {}
-    const imageUrl = product.thumbnail || product.images?.[0]?.url;
-    prefetchProductImage(imageUrl);
   };
 
   const { cheapestPrice } = product?.id
@@ -160,10 +169,9 @@ export const GalleryProductCard = ({
             />
           )}
 
-      
         <Link
           href={productUrl}
-          prefetch={true}
+          prefetch={false}
           aria-label={`Zobacz produkt: ${product.title}`}
           className="block w-full h-full"
         >
@@ -198,10 +206,10 @@ export const GalleryProductCard = ({
           )}
         </Link>
 
-        {/* ✅ Hover overlay — dark, high contrast */}
+        {/* Hover overlay — dark, high contrast */}
         <Link
           href={productUrl}
-          prefetch={true}
+          prefetch={false}
           aria-label={`Zobacz więcej o: ${product.title}`}
           className={clsx(
             "absolute inset-x-0 bottom-0 z-10",
@@ -219,7 +227,7 @@ export const GalleryProductCard = ({
       </div>
 
       {/* ── Info ── */}
-      <Link href={productUrl} aria-label={`Szczegóły: ${product.title}`}>
+      <Link href={productUrl} prefetch={false} aria-label={`Szczegóły: ${product.title}`}>
         <div className="flex justify-between flex-grow mt-2">
           <div className="w-full font-instrument-sans">
             {/* Title */}

@@ -4,6 +4,7 @@ import { ProductPageAccordion } from '@/components/molecules';
 import { convertToLocale } from "@/lib/helpers/money"
 import { HttpTypes } from "@medusajs/types"
 import { Text, Heading } from "@medusajs/ui"
+import { useCallback, useRef, useState } from 'react'
 
 type ProductDetailsShippingProps = {
   product: HttpTypes.StoreProduct
@@ -16,12 +17,57 @@ export const ProductDetailsShipping = ({
   region,
   initialShippingOptions,
 }: ProductDetailsShippingProps) => {
-  const shippingMethods: any[] = initialShippingOptions ?? []
+  const [shippingMethods, setShippingMethods] = useState<any[]>(initialShippingOptions ?? [])
+  const [isLoading, setIsLoading] = useState(false)
+  const [hasError, setHasError] = useState(false)
+  const hasRequestedRef = useRef((initialShippingOptions?.length || 0) > 0)
+
+  const loadShippingOptions = useCallback(async () => {
+    if (hasRequestedRef.current || !product?.id || !region?.id) return
+
+    hasRequestedRef.current = true
+    setIsLoading(true)
+    setHasError(false)
+
+    try {
+      const backendUrl = process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || 'http://localhost:9000'
+      const publishableKey = process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || ''
+      const params = new URLSearchParams({
+        product_id: product.id,
+        region_id: region.id,
+      })
+
+      const response = await fetch(`${backendUrl}/store/product-shipping-options?${params.toString()}`, {
+        headers: {
+          accept: 'application/json',
+          'x-publishable-api-key': publishableKey,
+        },
+      })
+
+      if (!response.ok) {
+        throw new Error(`Shipping options request failed: ${response.status}`)
+      }
+
+      const data = await response.json() as { shipping_options?: any[] }
+      setShippingMethods(data.shipping_options || [])
+    } catch (error) {
+      console.error('Failed to load product shipping options lazily:', error)
+      setHasError(true)
+    } finally {
+      setIsLoading(false)
+    }
+  }, [product?.id, region?.id])
 
   return (
     <ProductPageAccordion
       heading='Dostawa & Zwroty'
       defaultOpen={false}
+      onIntent={loadShippingOptions}
+      onOpenChange={(open) => {
+        if (open) {
+          loadShippingOptions()
+        }
+      }}
     >
       <div className='product-details font-instrument-sans'>
         {/* Shipping Methods Section */}
@@ -30,7 +76,19 @@ export const ProductDetailsShipping = ({
             Dostępne metody dostawy dla regionu
           </Heading>
           
-          {shippingMethods && shippingMethods.length > 0 ? (
+          {isLoading && shippingMethods.length === 0 ? (
+            <div className="text-center py-8 px-4 border border-dashed border-ui-border-base rounded-xl bg-ui-bg-subtle/20">
+              <Text className="text-ui-fg-muted font-instrument-sans text-sm">
+                Ładowanie metod dostawy...
+              </Text>
+            </div>
+          ) : hasError && shippingMethods.length === 0 ? (
+            <div className="text-center py-8 px-4 border border-dashed border-ui-border-base rounded-xl bg-ui-bg-subtle/20">
+              <Text className="text-ui-fg-muted font-instrument-sans text-sm">
+                Nie udało się pobrać metod dostawy.
+              </Text>
+            </div>
+          ) : shippingMethods && shippingMethods.length > 0 ? (
             <div className="border border-ui-border-base rounded-xl overflow-hidden bg-[#BFB7AD]/40 backdrop-blur-sm">
               {shippingMethods.map((method: any, index: number) => (
                 <div key={method.id} className={`

@@ -1,7 +1,7 @@
 import { formatDistanceToNow } from 'date-fns';
 import locale from 'date-fns/locale/pl';
 
-export const ProductPostedDate = async ({
+export const ProductPostedDate = ({
   posted,
 }: {
   posted: string | null;

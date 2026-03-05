@@ -82,10 +82,13 @@ export const CompactLowestPriceDisplay = memo(
       )
     }
 
-    // Priority: lowest_30d_amount > current_amount from price history > fallbackPrice
+    // Priority: lowest_30d_amount > fallbackPrice (base/original) > current_amount
     const lowestPrice =
-      priceData?.lowest_30d_amount || priceData?.current_amount || fallbackPrice
-    if (!lowestPrice) return null
+      priceData?.lowest_30d_amount ??
+      fallbackPrice ??
+      priceData?.current_amount ??
+      null
+    if (lowestPrice == null) return null
 
     const fullText = `Najniższa cena z ${days} dni: ${formatPrice(lowestPrice, currencyCode)}`
 

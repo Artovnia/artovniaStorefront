@@ -37,7 +37,7 @@ const getCachedProductDeliveryTimeframe = cache(async (
           'accept': 'application/json',
           'x-publishable-api-key': PUB_KEY,
         },
-        next: { revalidate: 300, tags: ['delivery-timeframe', `product-${productId}`] },
+        next: { revalidate: 1800, tags: ['delivery-timeframe', `product-${productId}`] },
       }
     )
     if (!res.ok) return null

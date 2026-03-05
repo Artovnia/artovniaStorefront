@@ -108,8 +108,9 @@ export const SmartBestProductsSection = async ({
       })
       .sort((a, b) => b._score - a._score)
 
-    // SELLER DIVERSITY: Max 3 products per seller
+    // SELLER DIVERSITY: Max 3 products per seller (strict cap)
     const MAX_PER_SELLER = 3
+
     const diversifiedProducts: typeof scoredProducts = []
     const sellerCounts: Record<string, number> = {}
     const selectedIds = new Set<string>()
@@ -123,12 +124,11 @@ export const SmartBestProductsSection = async ({
         diversifiedProducts.push(product)
         sellerCounts[sellerId] = count + 1
         selectedIds.add(product.id)
+        if (diversifiedProducts.length >= limit) break
       }
-
-      if (diversifiedProducts.length >= limit) break
     }
 
-    // Second pass: fill remaining slots while preserving seller cap
+    // Second pass: keep scanning while preserving seller cap
     if (diversifiedProducts.length < limit) {
       for (const product of scoredProducts) {
         if (!selectedIds.has(product.id)) {

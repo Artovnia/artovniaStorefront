@@ -190,7 +190,7 @@ export const MobileUserNavigation = () => {
       )}
 
       {/* Bottom Navigation Dock */}
-      <div className="fixed bottom-0 left-0 right-0 z-30 md:hidden" role="navigation" aria-label="Nawigacja mobilna">
+      <div className="fixed bottom-0 left-0 right-0 z-30 xl:hidden" role="navigation" aria-label="Nawigacja mobilna">
         <div className="bg-transparent">
           <div className="flex items-end justify-center w-full">
             {/* Navigation Dock Container - 3 items only */}

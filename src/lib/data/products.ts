@@ -116,9 +116,7 @@ const PRODUCT_DETAIL_FIRST_PAINT_FIELDS =
   'variants.options.value,variants.options.option_id,' +
   'variants.options.option.title,' +
   'seller.id,seller.handle,seller.name,seller.photo,' +
-  'categories.id,categories.name,categories.handle,categories.parent_category_id,' +
-  'categories.parent_category.id,categories.parent_category.name,categories.parent_category.handle,categories.parent_category.parent_category_id,' +
-  'categories.parent_category.parent_category.id,categories.parent_category.parent_category.name,categories.parent_category.parent_category.handle'
+  'categories.id,categories.name,categories.handle,categories.parent_category_id' 
 
 const PRODUCT_DETAIL_DEFERRED_FIELDS =
   'id,created_at,metadata,' +
@@ -498,28 +496,77 @@ const getCachedSmartHomeProductsBatch = unstable_cache(
       hash = ((hash << 5) - hash) + seedString.charCodeAt(i)
       hash = hash & hash
     }
-    const randomOffset = maxOffset > 0 ? Math.abs(hash) % (maxOffset + 1) : 0
+    const baseOffset = maxOffset > 0 ? Math.abs(hash) % (maxOffset + 1) : 0
 
-    const normalizedBatchQuery = normalizeQueryParams({
-      region_id: region.id,
-      limit: safeLimit,
-      offset: randomOffset,
-      fields: LEAN_PRODUCT_CARD_FIELDS,
-    })
+    // Build a wider, deterministic pool from multiple windows to avoid seller-clustered slices.
+    const sliceCount = maxOffset > 0 ? Math.min(4, Math.max(2, Math.ceil(safeLimit / 20))) : 1
+    const offsetModulo = maxOffset + 1
+    const stride = offsetModulo > 1 ? Math.max(1, Math.floor(offsetModulo / sliceCount)) : 1
+    const sliceOffsets: number[] = []
 
-    const batchResult = await publicFetch<{ products: HttpTypes.StoreProduct[]; count: number }>(
-      '/store/products',
-      normalizedBatchQuery,
-      { revalidate: SMART_HOME_PRODUCTS_REVALIDATE_SECONDS, tags: ['products', 'home-smart-products'] },
-      'listSmartHomeRandomProducts.batch'
-    )
+    for (let i = 0; i < sliceCount; i++) {
+      const candidateOffset = offsetModulo > 0 ? (baseOffset + (i * stride)) % offsetModulo : 0
+      if (!sliceOffsets.includes(candidateOffset)) {
+        sliceOffsets.push(candidateOffset)
+      }
+    }
+
+    if (sliceOffsets.length === 0) {
+      sliceOffsets.push(0)
+    }
+
+    const mergedProducts: HttpTypes.StoreProduct[] = []
+    const seenProductIds = new Set<string>()
+
+    for (const [index, sliceOffset] of sliceOffsets.entries()) {
+      const normalizedBatchQuery = normalizeQueryParams({
+        region_id: region.id,
+        limit: safeLimit,
+        offset: sliceOffset,
+        fields: LEAN_PRODUCT_CARD_FIELDS,
+      })
+
+      const batchResult = await publicFetch<{ products: HttpTypes.StoreProduct[]; count: number }>(
+        '/store/products',
+        normalizedBatchQuery,
+        { revalidate: SMART_HOME_PRODUCTS_REVALIDATE_SECONDS, tags: ['products', 'home-smart-products'] },
+        `listSmartHomeRandomProducts.batch.slice${index + 1}`
+      )
+
+      for (const product of batchResult?.products || []) {
+        if (!product?.id || seenProductIds.has(product.id)) {
+          continue
+        }
+
+        seenProductIds.add(product.id)
+        mergedProducts.push(product)
+      }
+    }
+
+    const seededSortProducts = mergedProducts
+      .map((product) => {
+        const productSeed = `${seedString}:${product.id}`
+        let productHash = 0
+        for (let i = 0; i < productSeed.length; i++) {
+          productHash = ((productHash << 5) - productHash) + productSeed.charCodeAt(i)
+          productHash = productHash & productHash
+        }
+
+        return {
+          product,
+          sortKey: Math.abs(productHash),
+        }
+      })
+      .sort((a, b) => a.sortKey - b.sortKey)
+      .slice(0, safeLimit)
+      .map((entry) => entry.product)
 
     return {
-      products: batchResult?.products || [],
+      products: seededSortProducts,
       count: totalCount,
     }
   },
-  ['smart-home-products-random-v1'],
+  ['smart-home-products-random-v2'],
   { revalidate: SMART_HOME_PRODUCTS_REVALIDATE_SECONDS, tags: ['products', 'home-smart-products'] }
 )
 
@@ -1157,7 +1204,15 @@ export const listProductsWithPromotions = async ({
         count: number
         promotions_found?: number
         applicable_product_ids?: number
-      }>('/store/products/promotions', queryParams, { revalidate: PRODUCT_CACHE_REVALIDATE_SECONDS })
+      }>(
+        '/store/products/promotions',
+        queryParams,
+        {
+          revalidate: PRODUCT_CACHE_REVALIDATE_SECONDS,
+          tags: ['products', 'promotions', 'homepage-products', 'prices'],
+        },
+        'listProductsWithPromotions'
+      )
 
       const products = productsResponse?.products || []
       const count = productsResponse?.count || 0

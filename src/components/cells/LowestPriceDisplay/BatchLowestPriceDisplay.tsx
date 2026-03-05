@@ -53,9 +53,13 @@ export const BatchLowestPriceDisplay = memo(
       )
     }
 
-    // Priority: lowest_30d_amount > current_amount from price history > fallbackPrice (variant's original price)
-    const lowestPrice = priceData?.lowest_30d_amount || priceData?.current_amount || fallbackPrice
-    if (!lowestPrice) return null
+    // Priority: lowest_30d_amount > fallbackPrice (variant's original/base price) > current_amount
+    const lowestPrice =
+      priceData?.lowest_30d_amount ??
+      fallbackPrice ??
+      priceData?.current_amount ??
+      null
+    if (lowestPrice == null) return null
 
     return (
       <span

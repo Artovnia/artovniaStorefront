@@ -1,8 +1,10 @@
 "use server"
 
-import { sdk } from "../config"
-import { getAuthHeaders } from "./cookies"
 import { HttpTypes } from "@medusajs/types"
+
+const BACKEND_URL = process.env.MEDUSA_BACKEND_URL || process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || "http://localhost:9000"
+const PUB_KEY = process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || ""
+const PRODUCT_PROMOTIONS_REVALIDATE_SECONDS = Number(process.env.PRODUCT_PROMOTIONS_REVALIDATE_SECONDS || 120)
 
 interface ProductPromotion {
   id: string
@@ -42,25 +44,32 @@ export const getProductPromotions = async (
   }
 
   try {
-    const headers = {
-      ...(await getAuthHeaders()),
-    }
-
-    const response = await sdk.client.fetch<{
-      promotions: ProductPromotion[]
-      count: number
-    }>(`/store/products/${productId}/promotions`, {
+    const response = await fetch(`${BACKEND_URL}/store/products/${productId}/promotions`, {
       method: "GET",
-      headers,
-      cache: "no-store", // Prevent any caching of promotion data
-      next: { revalidate: 0 } // Force fresh data on every request
+      headers: {
+        accept: "application/json",
+        "x-publishable-api-key": PUB_KEY,
+      },
+      next: {
+        revalidate: PRODUCT_PROMOTIONS_REVALIDATE_SECONDS,
+        tags: ["products", `product-${productId}`, "promotions"],
+      },
     })
 
-    const promotions = response.promotions || []
+    if (!response.ok) {
+      throw new Error(`getProductPromotions -> ${response.status}`)
+    }
+
+    const data = await response.json() as {
+      promotions: ProductPromotion[]
+      count: number
+    }
+
+    const promotions = data.promotions || []
     
     return {
       promotions,
-      count: response.count || 0,
+      count: data.count || 0,
       hasPromotions: promotions.length > 0
     }
   } catch (error) {

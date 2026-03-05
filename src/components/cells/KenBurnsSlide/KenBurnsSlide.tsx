@@ -125,12 +125,13 @@ export const KenBurnsSlide = ({
         const isPrevious = index === previousIndex
         const isVisible = isCurrent || isPrevious
         const patternIndex = index % ANIMATION_PATTERNS.length
+        const layerKey = `${image.id ?? 'no-id'}-${image.url ?? 'no-url'}-${index}`
 
         const opacity = isCurrent ? 1 : 0
 
         return (
           <div
-            key={image.id}
+            key={layerKey}
             className="absolute inset-0 ken-burns-image"
             style={{
               opacity,

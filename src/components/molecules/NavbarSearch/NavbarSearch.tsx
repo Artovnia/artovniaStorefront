@@ -17,6 +17,32 @@ type SuggestionItem = {
   value: string;
   source: "query_suggestions" | "products";
   categoryLabel?: string;
+  thumbnailUrl?: string;
+};
+
+const extractProductThumbnailUrl = (
+  hit: Record<string, any>
+): string | undefined => {
+  const thumbnailCandidates = [
+    hit?.thumbnail,
+    hit?.image,
+    hit?.product_thumbnail,
+    hit?.["metadata.thumbnail"],
+    hit?.metadata?.thumbnail,
+    Array.isArray(hit?.images)
+      ? hit.images[0]
+      : hit?.images && typeof hit.images === "object"
+      ? Object.values(hit.images)[0]
+      : undefined,
+  ];
+
+  for (const candidate of thumbnailCandidates) {
+    if (typeof candidate === "string" && candidate.trim()) {
+      return candidate.trim();
+    }
+  }
+
+  return undefined;
 };
 
 const extractQuerySuggestionCategoryLabel = (
@@ -173,6 +199,11 @@ export const NavbarSearch = () => {
             hitsPerPage: 8,
             attributesToRetrieve: [
               "title",
+              "thumbnail",
+              "image",
+              "product_thumbnail",
+              "images",
+              "metadata.thumbnail",
               "categories.name",
               "categories",
               "category",
@@ -217,6 +248,7 @@ export const NavbarSearch = () => {
             value,
             source: "products",
             categoryLabel: extractQuerySuggestionCategoryLabel(hit),
+            thumbnailUrl: extractProductThumbnailUrl(hit),
           });
         }
 
@@ -303,19 +335,19 @@ export const NavbarSearch = () => {
         onBlur={() => {
           setTimeout(() => setShowSuggestions(false), 120);
         }}
-        className="py-2 text-md min-w-[350px] "
+        className="py-2 text-md 2xl:min-w-[350px] "
       />
 
       {suggestionsEnabled && showSuggestions && (
-        <div className="absolute top-full right-0 z-50 mt-1 w-[min(92vw,36rem)] border border-[#3B3634]/15 bg-primary shadow-lg rounded-lg">
-          <ul className="max-h-80 overflow-y-auto py-1">
+        <div className="absolute top-full right-0 z-50 mt-1  2xl:w-[min(92vw,36rem)] border border-[#3B3634]/15 bg-primary shadow-lg rounded-lg">
+          <ul className="max-h-96 overflow-y-auto py-1">
             {suggestions.map((suggestion, index) => (
               <li
                 key={`${suggestion.value}-${suggestion.source}-${index}`}
               >
                 <button
                   type="button"
-                  className={`w-full px-4 py-2 text-left text-sm font-instrument-sans hover:bg-[#3B3634]/5 ${
+                  className={`w-full px-4 py-2.5 text-left text-sm font-instrument-sans hover:bg-[#3B3634]/5 ${
                     activeSuggestionIndex === index
                       ? "bg-[#3B3634]/10"
                       : ""
@@ -325,9 +357,20 @@ export const NavbarSearch = () => {
                     selectSuggestion(suggestion.value);
                   }}
                 >
-                  <span className="flex w-full items-baseline justify-between gap-3 min-w-0">
-                    <span className="truncate pr-2">
-                      {suggestion.value}
+                  <span className="flex w-full items-center justify-between gap-3 min-w-0">
+                    <span className="flex min-w-0 items-center gap-3">
+                      {suggestion.source === "products" &&
+                        suggestion.thumbnailUrl && (
+                          <img
+                            src={suggestion.thumbnailUrl}
+                            alt={suggestion.value}
+                            className="h-11 w-11 shrink-0 rounded object-cover border border-[#3B3634]/10"
+                            loading="lazy"
+                          />
+                        )}
+                      <span className="truncate pr-2">
+                        {suggestion.value}
+                      </span>
                     </span>
                     {enabled && suggestion.categoryLabel && (
                       <span className="shrink-0 text-right font-instrument-sans text-xs sm:text-sm text-[#3B3634]/70">

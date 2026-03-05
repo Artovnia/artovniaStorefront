@@ -9,6 +9,7 @@ import { DeleteCartItemButton } from "@/components/molecules"
 import { Link } from "@/i18n/routing"
 import { QuantityChanger } from "@/components/cells"
 import { retrieveCart } from "@/lib/data/cart"
+import { useEffect, useMemo, useRef } from "react"
 import { useCart } from "@/components/context/CartContext"
 import type { VariantInventory } from "@/components/context/CartContext"
 
@@ -28,7 +29,24 @@ export const CartItemsProducts = ({
   cartId?: string
   onCartUpdate?: (updatedCart: HttpTypes.StoreCart) => void
 }) => {
-  const { variantInventory } = useCart()
+  const { variantInventory, refreshInventory } = useCart()
+  const lastInventoryRefreshKeyRef = useRef<string>("")
+
+  const inventoryRefreshKey = useMemo(
+    () => (products || [])
+      .map((item) => `${item.id}:${item.variant_id || ''}:${item.quantity}`)
+      .sort()
+      .join('|'),
+    [products]
+  )
+
+  useEffect(() => {
+    if (!products?.length || !inventoryRefreshKey) return
+    if (lastInventoryRefreshKeyRef.current === inventoryRefreshKey) return
+
+    lastInventoryRefreshKeyRef.current = inventoryRefreshKey
+    refreshInventory()
+  }, [inventoryRefreshKey, products?.length, refreshInventory])
 
   // Compute maxQuantity for a cart item based on fetched inventory data
   const getMaxQuantity = (product: any): number => {

@@ -24,6 +24,12 @@ export const ProductCarousel = ({
   slides: MedusaProductImage[]
   title?: string
 }) => {
+  // MOBILE IMAGE HEIGHT TUNING:
+  // - Uses fixed, viewport-aware height for better above-the-fold control.
+  // - Keep this smaller if you want title visible without scrolling.
+  // - Format: clamp(min, preferred-vh, max)
+  const MOBILE_IMAGE_HEIGHT_CLASS = "h-[clamp(320px,37svh,370px)]"
+
   const screenSize = useScreenSize()
   const { prefetchGalleryImage, prefetchAllForKenBurns, prefetchAdjacent } = useGalleryPrefetch()
   const [selectedImageIndex, setSelectedImageIndex] = useState(0)
@@ -36,6 +42,7 @@ export const ProductCarousel = ({
   const [isAnimatedSlideActive, setIsAnimatedSlideActive] = useState(false)
   const [mobileSelectedIndex, setMobileSelectedIndex] = useState(0)
   const [mainImageLoaded, setMainImageLoaded] = useState(false)
+  const [transitionDirection, setTransitionDirection] = useState<"next" | "prev">("next")
   const thumbnailContainerRef = useRef<HTMLDivElement>(null)
 
   // Check if we should show animated slide (only if we have at least 1 image)
@@ -62,6 +69,7 @@ export const ProductCarousel = ({
   // Navigation functions for arrows (now includes animated slide)
   const goToPrevious = () => {
     if (totalSlides <= 1) return
+    setTransitionDirection("prev")
     setIsTransitioning(true)
     setTimeout(() => {
       setSelectedImageIndex((prev) => {
@@ -76,6 +84,7 @@ export const ProductCarousel = ({
 
   const goToNext = () => {
     if (totalSlides <= 1) return
+    setTransitionDirection("next")
     setIsTransitioning(true)
     setTimeout(() => {
       setSelectedImageIndex((prev) => {
@@ -90,6 +99,7 @@ export const ProductCarousel = ({
 
   const handleThumbnailClick = (index: number) => {
     if (index === selectedImageIndex) return
+    setTransitionDirection(index > selectedImageIndex ? "next" : "prev")
     setIsTransitioning(true)
     setTimeout(() => {
       setSelectedImageIndex(index)
@@ -104,6 +114,7 @@ export const ProductCarousel = ({
     if (selectedImageIndex === animatedSlideIndex) return
     // Prefetch ALL images for KenBurns before activating
     prefetchAllForKenBurns(imageUrls)
+    setTransitionDirection("next")
     setIsTransitioning(true)
     setTimeout(() => {
       setSelectedImageIndex(animatedSlideIndex)
@@ -125,6 +136,16 @@ export const ProductCarousel = ({
   const closeZoomModal = () => {
     setIsZoomModalOpen(false)
   }
+
+  const prefetchRelativeImage = useCallback((delta: number) => {
+    if (!slides.length || selectedImageIndex >= slides.length) return
+
+    const nextIndex = (selectedImageIndex + delta + slides.length) % slides.length
+    const nextImage = slides[nextIndex]
+    if (nextImage?.url) {
+      prefetchGalleryImage(nextImage.url)
+    }
+  }, [prefetchGalleryImage, selectedImageIndex, slides])
 
   // Thumbnail scroll functions
   const scrollThumbnails = (direction: "up" | "down") => {
@@ -210,16 +231,19 @@ export const ProductCarousel = ({
       {(!isHydrated || isMobile) && (
         <div className="lg:hidden w-full overflow-hidden bg-[#F4F0EB]" style={{ backgroundColor: '#F4F0EB' }}>
           <div className="embla relative w-full" role="region" aria-label="Galeria zdjęć produktu" aria-roledescription="karuzela">
+            {/* MOBILE HEIGHT/SHAPE CONTROL:
+                this wrapper defines the visible image area on mobile. */}
+            <div className={`relative w-full ${MOBILE_IMAGE_HEIGHT_CLASS}`}>
             <div
-              className="embla__viewport overflow-hidden rounded-xs"
+              className="embla__viewport h-full overflow-hidden rounded-xs"
               ref={emblaRef}
             >
-              <div className="embla__container h-[250px] flex w-full">
+              <div className="embla__container h-full flex w-full">
                 {/* Regular image slides */}
                 {(slides || []).map((slide, index) => (
                   <div
                     key={getSlideKey(slide, index)}
-                    className="embla__slide flex-[0_0_100%] min-w-0 h-[350px] cursor-zoom-in bg-[#F4F0EB]"
+                    className="embla__slide relative flex-[0_0_100%] min-w-0 h-full cursor-zoom-in bg-[#F4F0EB]"
                     style={{ backgroundColor: '#F4F0EB' }}
                     onClick={() => openZoomModal(index)}
                     role="group"
@@ -230,28 +254,26 @@ export const ProductCarousel = ({
                       <LqipImage
                         src={slide.url}
                         alt={title}
-                        width={800}
-                        height={800}
+                        fill
                         quality={80}
                         priority={true}
                         loading="eager"
                         fetchPriority="high"
                         onLoad={() => { if (!mainImageLoaded) setMainImageLoaded(true) }}
-                        sizes="(max-width: 640px) 100vw, (max-width: 828px) 100vw, 50vw"
-                        className="max-h-[700px] w-full h-auto aspect-square object-cover object-center hover:scale-105 transition-transform duration-300"
+                        sizes="(max-width: 640px) 100vw, (max-width: 828px) 100vw, 100vw"
+                        className="w-full h-full object-cover object-center hover:scale-105 transition-transform duration-300"
                       />
                     ) : (
                       <Image
                         src={slide.url}
                         alt={title}
-                        width={800}
-                        height={800}
+                        fill
                         quality={70}
                         loading="lazy"
                         fetchPriority="low"
                         placeholder="empty"
-                        sizes="(max-width: 640px) 100vw, (max-width: 828px) 100vw, 50vw"
-                        className="max-h-[700px] w-full h-auto aspect-square object-cover object-center hover:scale-105 transition-transform duration-300"
+                        sizes="(max-width: 640px) 100vw, (max-width: 828px) 100vw, 100vw"
+                        className="w-full h-full object-cover object-center hover:scale-105 transition-transform duration-300"
                         unoptimized={false}
                       />
                     )}
@@ -262,7 +284,7 @@ export const ProductCarousel = ({
                 {showAnimatedSlide && slides.length > 0 && (
                   <div
                     key="animated-slide"
-                    className="embla__slide flex-[0_0_100%] min-w-0 h-[350px] relative bg-[#F4F0EB]"
+                    className="embla__slide relative flex-[0_0_100%] min-w-0 h-full bg-[#F4F0EB]"
                     style={{ backgroundColor: '#F4F0EB' }}
                     role="group"
                     aria-roledescription="slajd"
@@ -279,6 +301,7 @@ export const ProductCarousel = ({
                   </div>
                 )}
               </div>
+            </div>
             </div>
             {/* Indicator moved outside embla__viewport */}
             {slides?.length ? (
@@ -412,6 +435,7 @@ export const ProductCarousel = ({
                 <>
                   <button
                     onClick={goToPrevious}
+                    onMouseEnter={() => prefetchRelativeImage(-1)}
                     className="absolute left-3 top-1/2 -translate-y-1/2 z-10 bg-white/20 hover:bg-white rounded-full p-3 shadow-lg transition-all duration-300 opacity-0 group-hover:opacity-100 hover:scale-110 backdrop-blur-sm"
                     disabled={isTransitioning}
                     aria-label="Poprzednie zdjęcie"
@@ -420,6 +444,7 @@ export const ProductCarousel = ({
                   </button>
                   <button
                     onClick={goToNext}
+                    onMouseEnter={() => prefetchRelativeImage(1)}
                     className="absolute right-3 top-1/2 -translate-y-1/2 z-10 bg-white/20 hover:bg-white rounded-full p-3 shadow-lg transition-all duration-300 opacity-0 group-hover:opacity-100 hover:scale-110 backdrop-blur-sm"
                     disabled={isTransitioning}
                     aria-label="Następne zdjęcie"
@@ -438,6 +463,7 @@ export const ProductCarousel = ({
                     onClick={() => openZoomModal(selectedImageIndex)}
                   >
                     <LqipImage
+                      key={`main-slide-${getSlideKey(slides[selectedImageIndex], selectedImageIndex)}`}
                       src={slides[selectedImageIndex].url}
                       alt={title}
                       fill
@@ -448,8 +474,10 @@ export const ProductCarousel = ({
                       onLoad={() => { if (!mainImageLoaded) setMainImageLoaded(true) }}
                       className={`object-cover bg-[#F4F0EB] transition-all duration-500 ease-out hover:scale-105 ${
                         isTransitioning
-                          ? "opacity-0 scale-105 blur-sm"
-                          : "opacity-100 scale-100 blur-0"
+                          ? transitionDirection === "next"
+                            ? "opacity-0 scale-105 blur-sm translate-x-3"
+                            : "opacity-0 scale-105 blur-sm -translate-x-3"
+                          : "opacity-100 scale-100 blur-0 translate-x-0"
                       }`}
                       sizes="(max-width: 640px) 100vw, (max-width: 828px) 100vw, 50vw"
                     />

@@ -15,6 +15,7 @@ import "@/types/medusa"
 import { ProductAdditionalAttributes } from "@/components/cells/ProductAdditionalAttributes/ProductAdditionalAttributes"
 import { ProductDetailsClient } from "@/components/organisms/ProductDetails/ProductDetailsClient"
 import { MeasurementsErrorBoundary } from "./MeasurementsErrorBoundary"
+import { Suspense } from "react"
 
 // Helper function to validate measurements data
 function isValidMeasurementsArray(data: any): data is SingleProductMeasurement[] {
@@ -92,11 +93,12 @@ export const ProductDetails = async ({
         region={region}
         initialShippingOptions={initialShippingOptions}
       />
-      <ProductDetailsFooter
-        tags={product?.tags || []}
-        posted={product?.created_at || null}
-        product={product}
-      />
+      <Suspense fallback={null}>
+        <ProductDetailsFooter
+          product={product}
+          regionId={region?.id}
+        />
+      </Suspense>
       
     </div>
   )

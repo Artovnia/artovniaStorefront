@@ -1,17 +1,15 @@
 "use client"
 
-import { Button, Checkbox, Divider } from "@/components/atoms"
+import { Button, Divider } from "@/components/atoms"
 import { Modal } from "@/components/molecules"
 import { useState } from "react"
 import Image from "next/image"
 import { convertToLocale } from "@/lib/helpers/money"
-import { cn } from "@/lib/utils"
 import { cancelOrder } from "@/lib/data/orders"
 import { useRouter } from "next/navigation"
 
 export const OrderCancel = ({ order }: { order: any }) => {
   const [open, setOpen] = useState(false)
-  const [selectedItems, setSelectedItems] = useState<any[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const router = useRouter()
@@ -56,22 +54,6 @@ export const OrderCancel = ({ order }: { order: any }) => {
     }
   }
 
-  const handleSelectItem = (item: any) => {
-    if (selectedItems.includes(item)) {
-      setSelectedItems(selectedItems.filter((i) => i.id !== item.id))
-    } else {
-      setSelectedItems([...selectedItems, item])
-    }
-  }
-
-  const handleChangeQuantity = (item: any, quantity: number) => {
-    const itemline = selectedItems.find((i) => i.id === item.id)
-    if (itemline) {
-      itemline.quantity += quantity
-      setSelectedItems([...selectedItems])
-    }
-  }
-
   return (
     <>
       <div className="md:flex justify-between items-center">
@@ -98,26 +80,19 @@ export const OrderCancel = ({ order }: { order: any }) => {
       </div>
       {open && (
         <Modal
-          heading="Wybierz produkty do anulowania"
+          heading="Anuluj zamówienie"
           onClose={() => setOpen(false)}
         >
           <div>
+            <p className="px-4 text-secondary label-sm">
+              Anulowanie dotyczy całego zamówienia. Poniżej znajduje się lista produktów objętych anulowaniem.
+            </p>
             <ul className="px-4">
-              {order.items.map((item: any) => {
-                const isSelected = selectedItems.includes(item)
-                const itemline = selectedItems.find((i) => i.id === item.id)
-                return (
+              {order.items.map((item: any) => (
                   <li
                     key={item.id}
-                    className={cn(
-                      "flex items-center gap-4 p-4 mb-2 rounded-sm",
-                      isSelected && "bg-secondary/70"
-                    )}
+                    className="flex items-center gap-4 p-4 mb-2 rounded-sm"
                   >
-                    <Checkbox
-                      checked={isSelected}
-                      onChange={() => handleSelectItem(item)}
-                    />
                     <div className="flex gap-4 w-full">
                       <div className="w-16 rounded-sm border">
                         {item.thumbnail ? (
@@ -148,29 +123,7 @@ export const OrderCancel = ({ order }: { order: any }) => {
                           </p>
                         </div>
                         <div className="flex items-center justify-center">
-                          {isSelected && (
-                            <div className="flex items-center mt-2">
-                              <Button
-                                variant="text"
-                                className="w-8 h-8 flex items-center justify-center !bg-transparent !hover:bg-secondary"
-                                disabled={item.quantity === 1}
-                                onClick={() => handleChangeQuantity(item, -1)}
-                              >
-                                -
-                              </Button>
-                              <div className="text-primary font-medium border rounded-sm w-8 h-8 text-center flex items-center justify-center bg-primary">
-                                {item.quantity}
-                              </div>
-                              <Button
-                                variant="text"
-                                className="w-8 h-8 flex items-center justify-center !bg-transparent !hover:bg-secondary"
-                                disabled={item.quantity === itemline.quantity}
-                                onClick={() => handleChangeQuantity(item, 1)}
-                              >
-                                +
-                              </Button>
-                            </div>
-                          )}
+                          <p className="text-secondary label-sm">Ilość: {item.quantity}</p>
                         </div>
                         <div className="flex items-center justify-end">
                           <p className="text-primary label-lg">
@@ -183,8 +136,7 @@ export const OrderCancel = ({ order }: { order: any }) => {
                       </div>
                     </div>
                   </li>
-                )
-              })}
+                ))}
             </ul>
 
             <Divider className="my-4" />
@@ -197,15 +149,10 @@ export const OrderCancel = ({ order }: { order: any }) => {
               <Button 
                 className="uppercase w-full" 
                 onClick={handleCancel}
-                disabled={cannotCancelOrder || isLoading || selectedItems.length === 0}
+                disabled={cannotCancelOrder || isLoading}
               >
-                {isLoading ? 'Anulowanie...' : 'Anuluj zamówienie'}
+                {isLoading ? 'Anulowanie...' : 'Potwierdź anulowanie całego zamówienia'}
               </Button>
-              <p className="text-xs text-secondary text-center mt-2">
-                {selectedItems.length === 0 
-                  ? 'Wybierz produkty do anulowania' 
-                  : `Wybrano ${selectedItems.length} ${selectedItems.length === 1 ? 'produkt' : 'produktów'}`}
-              </p>
             </div>
           </div>
         </Modal>

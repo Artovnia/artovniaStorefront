@@ -1,5 +1,29 @@
-import { sdk } from "@/lib/config"
 import { HttpTypes } from "@medusajs/types"
+
+const BACKEND_URL = process.env.MEDUSA_BACKEND_URL || process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || "http://localhost:9000"
+const PUB_KEY = process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || ""
+
+async function fetchAllCategories(): Promise<CategoryWithMpath[]> {
+  const url = new URL(`${BACKEND_URL}/store/product-categories`)
+  url.searchParams.set("fields", "id, handle, name, rank, parent_category_id, mpath")
+  url.searchParams.set("limit", "1000")
+
+  const response = await fetch(url.toString(), {
+    method: "GET",
+    headers: {
+      accept: "application/json",
+      "x-publishable-api-key": PUB_KEY,
+    },
+    next: { revalidate: 3600, tags: ["product-categories", "products", "promotions"] },
+  })
+
+  if (!response.ok) {
+    throw new Error(`fetchAllCategories -> ${response.status}`)
+  }
+
+  const data = (await response.json()) as { product_categories?: CategoryWithMpath[] }
+  return data.product_categories || []
+}
 
 interface CategoryWithMpath {
   id: string
@@ -16,10 +40,9 @@ interface CategoryWithMpath {
  * 
  * This function:
  * 1. Extracts category IDs from products
- * 2. Fetches those categories with mpath
- * 3. Parses mpath to get all ancestor category IDs
- * 4. Fetches all ancestor categories
- * 5. Builds complete category trees with full paths
+ * 2. Fetches category catalog once (cacheable public endpoint)
+ * 3. Resolves ancestor chains in-memory via parent_category_id
+ * 4. Builds complete category trees with full paths
  * 
  * Example: If product has "Subcategory C" (mpath: "root.parent.subcategory"),
  * it will return the full tree: Root → Parent → Subcategory C
@@ -44,54 +67,40 @@ export async function extractCategoriesWithHierarchy(
   }
 
   try {
-    // Step 2: Fetch the product categories with mpath
-    const { product_categories: productCategories } = await sdk.client.fetch<{
-      product_categories: CategoryWithMpath[]
-    }>("/store/product-categories", {
-      query: {
-        fields: "id, handle, name, rank, parent_category_id, mpath",
-        id: Array.from(productCategoryIds),
-      },
-      cache: "force-cache",
-      next: { revalidate: 3600 }
-    })
-
-    if (!productCategories || productCategories.length === 0) {
+    // Step 2: Fetch category catalog once
+    const allCategories = await fetchAllCategories()
+    if (!allCategories.length) {
       return []
     }
 
-    // Step 3: Parse mpath to get all ancestor category IDs
-    const allCategoryIds = new Set<string>()
-    
-    productCategories.forEach(cat => {
-      if (cat.mpath) {
-        // mpath format: "pcat_root.pcat_parent.pcat_current"
-        const pathIds = cat.mpath.split('.').filter(Boolean)
-        pathIds.forEach(id => allCategoryIds.add(id))
-      } else {
-        // If no mpath, just add the category itself
-        allCategoryIds.add(cat.id)
+    const categoryById = new Map<string, CategoryWithMpath>()
+    allCategories.forEach((category) => {
+      categoryById.set(category.id, category)
+    })
+
+    // Step 3: Walk parent chain for each category used by current products
+    const relevantCategoryIds = new Set<string>()
+    for (const categoryId of productCategoryIds) {
+      let currentId: string | null | undefined = categoryId
+
+      while (currentId) {
+        if (relevantCategoryIds.has(currentId)) {
+          break
+        }
+
+        relevantCategoryIds.add(currentId)
+        const current = categoryById.get(currentId)
+        currentId = current?.parent_category_id
       }
-    })
+    }
 
-    // Step 4: Fetch ALL categories (including ancestors)
-    const { product_categories: allCategories } = await sdk.client.fetch<{
-      product_categories: CategoryWithMpath[]
-    }>("/store/product-categories", {
-      query: {
-        fields: "id, handle, name, rank, parent_category_id, mpath",
-        id: Array.from(allCategoryIds),
-      },
-      cache: "force-cache",
-      next: { revalidate: 3600 }
-    })
-
-    if (!allCategories || allCategories.length === 0) {
+    const relevantCategories = allCategories.filter((category) => relevantCategoryIds.has(category.id))
+    if (!relevantCategories.length) {
       return []
     }
 
-    // Step 5: Build category tree
-    return buildCategoryTreeWithChildren(allCategories)
+    // Step 4: Build category tree
+    return buildCategoryTreeWithChildren(relevantCategories)
   } catch (error) {
     console.error('Error extracting categories with hierarchy:', error)
     return []

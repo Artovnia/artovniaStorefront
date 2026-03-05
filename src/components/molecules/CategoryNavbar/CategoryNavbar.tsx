@@ -48,7 +48,7 @@ const CategoryNavItem = ({ category, isActive, isCurrentRoute, onHover, onClose 
         onClick={handleCategoryClick}
         aria-current={isCurrentRoute ? "page" : undefined}
         className={cn(
-          "uppercase px-4 py-1 text-lg block whitespace-nowrap font-normal transition-colors",
+          "uppercase px-2 2xl:px-3 py-1 text-md 2xl:text-lg block whitespace-nowrap font-normal transition-colors",
           "flex items-center",
           "font-instrument-sans",
           isCurrentRoute && "border-b-2 border-[#3B3634]",
@@ -206,7 +206,7 @@ export const CategoryNavbar = ({ categories, activeCategory, onClose, onDropdown
           href="/categories"
           onClick={() => onClose?.()}
           className={cn(
-            "uppercase flex items-center justify-between text-lg transition-colors",
+            "uppercase flex items-center justify-between text-md 2xl:text-lg transition-colors",
             "px-4 py-1 font-normal",
             "font-instrument-sans",
             "hover:border-b-2 hover:border-[#3B3634]/40"
@@ -234,7 +234,7 @@ export const CategoryNavbar = ({ categories, activeCategory, onClose, onDropdown
           href="/promotions"
           onClick={() => onClose?.()}
           className={cn(
-            "uppercase flex items-center justify-between text-lg transition-colors",
+            "uppercase flex items-center justify-between text-md 2xl:text-lg transition-colors",
             "px-4 py-1 font-normal text-red-600 hover:text-red-700",
             "font-instrument-sans",
             "hover:border-b-2 hover:border-red-600"

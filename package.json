@@ -16,8 +16,8 @@
   "dependencies": {
     "@headlessui/react": "^2.2.1",
     "@hookform/resolvers": "^3.10.0",
-    "@medusajs/js-sdk": "^2.2.0",
-    "@medusajs/types": "^2.12.1",
+    "@medusajs/js-sdk": "^2.13.3",
+    "@medusajs/types": "^2.13.3",
     "@medusajs/ui": "^4.0.7",
     "@portabletext/react": "^3.2.1",
     "@sanity/client": "^7.8.2",

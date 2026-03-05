@@ -1,6 +1,6 @@
 "use client"
 
-import React, { createContext, useContext, useReducer, useCallback, useEffect, useMemo, useRef } from 'react'
+import React, { createContext, useContext, useReducer, useCallback, useMemo, useRef } from 'react'
 import { HttpTypes } from '@medusajs/types'
 import { retrieveCart, retrieveCartForAddress, retrieveCartForShipping, retrieveCartForPayment, addToCart, updateLineItem, deleteLineItem, setAddresses, setShippingMethod, selectPaymentSession, initiatePaymentSession, fetchCartItemsInventory } from '@/lib/data/cart'
 import { unifiedCache } from "@/lib/utils/unified-cache"
@@ -230,16 +230,6 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children, initialCar
       return {}
     }
   }, [state.cart?.items, state.cart?.region_id])
-
-  // Auto-fetch inventory when cart items change
-  const prevItemsRef = useRef<string>('')
-  useEffect(() => {
-    const itemsKey = state.cart?.items?.map(i => `${i.variant_id}:${i.quantity}`).join(',') || ''
-    if (itemsKey && itemsKey !== prevItemsRef.current) {
-      prevItemsRef.current = itemsKey
-      refreshInventory()
-    }
-  }, [state.cart?.items, refreshInventory])
 
   // Helper function to clear cart storage
   const clearCartStorage = () => {
