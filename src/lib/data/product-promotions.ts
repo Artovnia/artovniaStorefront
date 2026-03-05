@@ -1,8 +1,11 @@
 "use server"
 
 import { HttpTypes } from "@medusajs/types"
+import {
+  buildMedusaEndpointCandidates,
+  isCannotGetHtmlResponse,
+} from "@/lib/utils/medusa-backend-url"
 
-const BACKEND_URL = process.env.MEDUSA_BACKEND_URL || process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || "http://localhost:9000"
 const PUB_KEY = process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || ""
 const PRODUCT_PROMOTIONS_REVALIDATE_SECONDS = Number(process.env.PRODUCT_PROMOTIONS_REVALIDATE_SECONDS || 120)
 
@@ -44,20 +47,45 @@ export const getProductPromotions = async (
   }
 
   try {
-    const response = await fetch(`${BACKEND_URL}/store/products/${productId}/promotions`, {
-      method: "GET",
-      headers: {
-        accept: "application/json",
-        "x-publishable-api-key": PUB_KEY,
-      },
-      next: {
-        revalidate: PRODUCT_PROMOTIONS_REVALIDATE_SECONDS,
-        tags: ["products", `product-${productId}`, "promotions"],
-      },
-    })
+    const endpointCandidates = buildMedusaEndpointCandidates(
+      `/store/products/${productId}/promotions`
+    )
 
-    if (!response.ok) {
-      throw new Error(`getProductPromotions -> ${response.status}`)
+    let response: Response | null = null
+
+    for (let candidateIndex = 0; candidateIndex < endpointCandidates.length; candidateIndex += 1) {
+      const endpoint = endpointCandidates[candidateIndex]
+      const currentResponse = await fetch(endpoint, {
+        method: "GET",
+        headers: {
+          accept: "application/json",
+          "x-publishable-api-key": PUB_KEY,
+        },
+        next: {
+          revalidate: PRODUCT_PROMOTIONS_REVALIDATE_SECONDS,
+          tags: ["products", `product-${productId}`, "promotions"],
+        },
+      })
+
+      if (!currentResponse.ok) {
+        const body = await currentResponse.text().catch(() => "")
+        const retryWithAlternativePath =
+          candidateIndex < endpointCandidates.length - 1 &&
+          isCannotGetHtmlResponse(currentResponse.status, body)
+
+        if (retryWithAlternativePath) {
+          continue
+        }
+
+        throw new Error(`getProductPromotions -> ${currentResponse.status}`)
+      }
+
+      response = currentResponse
+      break
+    }
+
+    if (!response) {
+      throw new Error("getProductPromotions -> no successful endpoint candidate")
     }
 
     const data = await response.json() as {

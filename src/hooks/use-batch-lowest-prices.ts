@@ -4,6 +4,10 @@ import { useState, useEffect, useCallback, useRef } from "react"
 import { LowestPriceData } from "@/types/price-history"
 import { getPublishableApiKey } from "@/lib/get-publishable-key"
 import { unifiedCache } from "@/lib/utils/unified-cache"
+import {
+  buildMedusaEndpointCandidates,
+  isCannotGetHtmlResponse,
+} from "@/lib/utils/medusa-backend-url"
 
 function buildBatchPriceCacheKey(
   variantIds: string[],
@@ -82,29 +86,50 @@ export function useBatchLowestPrices({
 
     const fetchChunk = async (
       chunkIds: string[],
-      baseUrl: string,
       publishableKey: string
     ): Promise<Record<string, LowestPriceData | null>> => {
-      const url = new URL(`${baseUrl}/store/variants/lowest-prices-batch`)
-      url.searchParams.set('variant_ids', chunkIds.join(','))
-      url.searchParams.set('currency_code', currencyCode)
-      if (regionId) {
-        url.searchParams.set('region_id', regionId)
+      const endpointCandidates = buildMedusaEndpointCandidates('/store/variants/lowest-prices-batch')
+
+      let response: Response | null = null
+
+      for (let candidateIndex = 0; candidateIndex < endpointCandidates.length; candidateIndex += 1) {
+        const endpoint = endpointCandidates[candidateIndex]
+        const url = new URL(endpoint)
+        url.searchParams.set('variant_ids', chunkIds.join(','))
+        url.searchParams.set('currency_code', currencyCode)
+        if (regionId) {
+          url.searchParams.set('region_id', regionId)
+        }
+        url.searchParams.set('days', days.toString())
+
+        const currentResponse = await fetch(url.toString(), {
+          method: 'GET',
+          headers: {
+            'x-publishable-api-key': publishableKey,
+            'x-source-function': 'useBatchLowestPrices',
+          },
+        })
+
+        if (!currentResponse.ok) {
+          const body = await currentResponse.text().catch(() => '')
+          const retryWithAlternativePath =
+            candidateIndex < endpointCandidates.length - 1 &&
+            isCannotGetHtmlResponse(currentResponse.status, body)
+
+          if (retryWithAlternativePath) {
+            continue
+          }
+
+          console.error('[useBatchLowestPrices] Response error:', currentResponse.status, body)
+          throw new Error(`Failed to fetch batch lowest prices: ${currentResponse.status}`)
+        }
+
+        response = currentResponse
+        break
       }
-      url.searchParams.set('days', days.toString())
 
-      const response = await fetch(url.toString(), {
-        method: 'GET',
-        headers: {
-          'x-publishable-api-key': publishableKey,
-          'x-source-function': 'useBatchLowestPrices',
-        },
-      })
-
-      if (!response.ok) {
-        const errorText = await response.text()
-        console.error('[useBatchLowestPrices] Response error:', errorText)
-        throw new Error(`Failed to fetch batch lowest prices: ${response.statusText}`)
+      if (!response) {
+        throw new Error('Failed to fetch batch lowest prices: no successful endpoint candidate')
       }
 
       const result = await response.json()
@@ -113,7 +138,6 @@ export function useBatchLowestPrices({
 
     const fetchFn = async (): Promise<Record<string, LowestPriceData | null>> => {
       try {
-        const baseUrl = process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || 'http://localhost:9000'
         const publishableKey = await getPublishableApiKey()
 
         // Split into chunks of CHUNK_SIZE and fetch in parallel
@@ -123,7 +147,7 @@ export function useBatchLowestPrices({
         }
 
         const chunkResults = await Promise.all(
-          chunks.map(chunk => fetchChunk(chunk, baseUrl, publishableKey))
+          chunks.map(chunk => fetchChunk(chunk, publishableKey))
         )
 
         // Merge all chunk results into a single record

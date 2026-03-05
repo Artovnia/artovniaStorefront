@@ -1,6 +1,9 @@
 import { LowestPriceData } from "@/types/price-history"
+import {
+  buildMedusaEndpointCandidates,
+  isCannotGetHtmlResponse,
+} from "@/lib/utils/medusa-backend-url"
 
-const MEDUSA_BACKEND_URL = process.env.MEDUSA_BACKEND_URL || process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || 'http://localhost:9000'
 const PRICE_BATCH_DEDUP_TTL_MS = Number(process.env.PRICE_BATCH_DEDUP_TTL_MS || 2000)
 
 const inflightPriceBatchRequests = new Map<string, { promise: Promise<Record<string, LowestPriceData | null>>; timestamp: number }>()
@@ -49,30 +52,52 @@ export async function getBatchLowestPrices(
 
   return getDeduplicatedPriceBatch(dedupKey, async () => {
     try {
-    // Build URL with query parameters for GET request
-    const url = new URL(`${MEDUSA_BACKEND_URL}/store/variants/lowest-prices-batch`)
-    url.searchParams.set('variant_ids', variantIds.join(','))
-    url.searchParams.set('currency_code', currencyCode)
-    if (regionId) {
-      url.searchParams.set('region_id', regionId)
-    }
-    url.searchParams.set('days', days.toString())
-    
-    const response = await fetch(url.toString(), {
-      method: 'GET', // ✅ Changed to GET for Next.js caching
-      headers: {
-        'x-publishable-api-key': process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || '',
-      },
-      next: { 
-        revalidate: 60, // ✅ Now this works with GET!
-        tags: ['prices'] // For revalidation
-      }
-    })
+      const endpointCandidates = buildMedusaEndpointCandidates('/store/variants/lowest-prices-batch')
 
-    if (!response.ok) {
-      console.error('[getBatchLowestPrices] Response error:', response.statusText)
-      return {}
-    }
+      let response: Response | null = null
+
+      for (let candidateIndex = 0; candidateIndex < endpointCandidates.length; candidateIndex += 1) {
+        const endpoint = endpointCandidates[candidateIndex]
+        const url = new URL(endpoint)
+        url.searchParams.set('variant_ids', variantIds.join(','))
+        url.searchParams.set('currency_code', currencyCode)
+        if (regionId) {
+          url.searchParams.set('region_id', regionId)
+        }
+        url.searchParams.set('days', days.toString())
+
+        const currentResponse = await fetch(url.toString(), {
+          method: 'GET',
+          headers: {
+            'x-publishable-api-key': process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || '',
+          },
+          next: {
+            revalidate: 60,
+            tags: ['prices']
+          }
+        })
+
+        if (!currentResponse.ok) {
+          const body = await currentResponse.text().catch(() => '')
+          const retryWithAlternativePath =
+            candidateIndex < endpointCandidates.length - 1 &&
+            isCannotGetHtmlResponse(currentResponse.status, body)
+
+          if (retryWithAlternativePath) {
+            continue
+          }
+
+          console.error('[getBatchLowestPrices] Response error:', currentResponse.status, body)
+          return {}
+        }
+
+        response = currentResponse
+        break
+      }
+
+      if (!response) {
+        return {}
+      }
 
       const result = await response.json()
       return result.results || {}

@@ -8,6 +8,10 @@ import { SellerProps } from "@/types/seller"
 import { unifiedCache, CACHE_TTL } from "@/lib/utils/unified-cache"
 import { fetchWithRetry } from "@/lib/utils/fetch-with-timeout"
 import {
+  buildMedusaEndpointCandidates,
+  isCannotGetHtmlResponse,
+} from "@/lib/utils/medusa-backend-url"
+import {
   LEAN_PRODUCT_CARD_FIELDS,
   PDP_SUGGESTED_CARD_FIELDS,
 } from "@/lib/constants/product-fields"
@@ -21,7 +25,6 @@ type SortOptions = "created_at" | "created_at_desc" | "created_at_asc" | "title"
 // Authorization header. The Medusa SDK injects the JWT token globally on every
 // sdk.client.fetch() call, which busts the cache for every public request.
 // Use this helper for all public (unauthenticated) cacheable fetches.
-const BACKEND_URL = process.env.MEDUSA_BACKEND_URL || process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || 'http://localhost:9000'
 const PUB_KEY = process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || ''
 const SLOW_PUBLIC_FETCH_MS = Number(process.env.SLOW_PUBLIC_FETCH_MS || 1200)
 const PRODUCT_CACHE_REVALIDATE_SECONDS = Number(process.env.PRODUCT_CACHE_REVALIDATE_SECONDS || 1800)
@@ -343,17 +346,8 @@ async function publicFetch<T>(
   nextOptions: NextFetchRequestConfig,
   sourceFunction?: string
 ): Promise<T> {
-  const url = new URL(`${BACKEND_URL}${path}`)
   const normalizedParams = normalizeQueryParams(params)
-
-  Object.entries(normalizedParams).forEach(([k, v]) => {
-    if (v === undefined || v === null) return
-    if (Array.isArray(v)) {
-      v.forEach(item => url.searchParams.append(k, String(item)))
-    } else {
-      url.searchParams.set(k, String(v))
-    }
-  })
+  const endpointCandidates = buildMedusaEndpointCandidates(path)
 
   const headers: Record<string, string> = {
     'accept': 'application/json',
@@ -368,45 +362,72 @@ async function publicFetch<T>(
   })
 
   return getDeduplicatedPublicFetch<T>(dedupKey, async () => {
-    const startedAt = Date.now()
-    const res = await fetch(url.toString(), { headers, next: nextOptions })
-    const networkMs = Date.now() - startedAt
-    if (!res.ok) {
-      const body = await res.text().catch(() => '')
-      throw new Error(`publicFetch ${path} → ${res.status}: ${body}`)
-    }
+    let lastErrorMessage = ''
 
-    const parseStartedAt = Date.now()
-    const data = await res.json() as T
-    const parseMs = Date.now() - parseStartedAt
-    const totalMs = Date.now() - startedAt
+    for (let candidateIndex = 0; candidateIndex < endpointCandidates.length; candidateIndex += 1) {
+      const endpoint = endpointCandidates[candidateIndex]
+      const url = new URL(endpoint)
 
-    if (totalMs >= SLOW_PUBLIC_FETCH_MS) {
-      console.warn(JSON.stringify({
-        level: 'warn',
-        msg: 'Slow storefront publicFetch',
-        sourceFunction: sourceFunction || 'unknown',
+      Object.entries(normalizedParams).forEach(([k, v]) => {
+        if (v === undefined || v === null) return
+        if (Array.isArray(v)) {
+          v.forEach(item => url.searchParams.append(k, String(item)))
+        } else {
+          url.searchParams.set(k, String(v))
+        }
+      })
+
+      const startedAt = Date.now()
+      const res = await fetch(url.toString(), { headers, next: nextOptions })
+      const networkMs = Date.now() - startedAt
+
+      if (!res.ok) {
+        const body = await res.text().catch(() => '')
+        const retryWithAlternativePath =
+          candidateIndex < endpointCandidates.length - 1 && isCannotGetHtmlResponse(res.status, body)
+
+        if (retryWithAlternativePath) {
+          continue
+        }
+
+        lastErrorMessage = `publicFetch ${path} → ${res.status}: ${body}`
+        break
+      }
+
+      const parseStartedAt = Date.now()
+      const data = await res.json() as T
+      const parseMs = Date.now() - parseStartedAt
+      const totalMs = Date.now() - startedAt
+
+      if (totalMs >= SLOW_PUBLIC_FETCH_MS) {
+        console.warn(JSON.stringify({
+          level: 'warn',
+          msg: 'Slow storefront publicFetch',
+          sourceFunction: sourceFunction || 'unknown',
+          path,
+          status: res.status,
+          networkMs,
+          parseMs,
+          totalMs,
+          cacheControl: res.headers.get('cache-control'),
+          backendCache: res.headers.get('x-cache') || null,
+          cacheStatus: res.headers.get('x-vercel-cache') || res.headers.get('x-nextjs-cache') || null,
+        }))
+      }
+
+      recordPublicFetchBucketTelemetry({
         path,
-        status: res.status,
-        networkMs,
-        parseMs,
+        params: normalizedParams,
+        sourceFunction,
         totalMs,
-        cacheControl: res.headers.get('cache-control'),
-        backendCache: res.headers.get('x-cache') || null,
-        cacheStatus: res.headers.get('x-vercel-cache') || res.headers.get('x-nextjs-cache') || null,
-      }))
+        edgeStatus: res.headers.get('x-vercel-cache') || res.headers.get('x-nextjs-cache') || null,
+        backendStatus: res.headers.get('x-cache') || null,
+      })
+
+      return data
     }
 
-    recordPublicFetchBucketTelemetry({
-      path,
-      params: normalizedParams,
-      sourceFunction,
-      totalMs,
-      edgeStatus: res.headers.get('x-vercel-cache') || res.headers.get('x-nextjs-cache') || null,
-      backendStatus: res.headers.get('x-cache') || null,
-    })
-
-    return data
+    throw new Error(lastErrorMessage || `publicFetch ${path} failed for all endpoint candidates`)
   })
 }
 
