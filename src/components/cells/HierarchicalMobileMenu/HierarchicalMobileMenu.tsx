@@ -120,7 +120,7 @@ export const HierarchicalMobileMenu = ({
             <h1 className="text-xl font-bold text-gray-900">Menu</h1>
             <button
               onClick={handleMenuClose}
-              className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+              className="p-2  rounded-full transition-colors"
               aria-label="Zamknij menu"
             >
               <CloseIcon size={20} className="text-gray-600" />

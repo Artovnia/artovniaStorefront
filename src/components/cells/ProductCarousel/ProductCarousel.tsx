@@ -143,7 +143,7 @@ export const ProductCarousel = ({
     const nextIndex = (selectedImageIndex + delta + slides.length) % slides.length
     const nextImage = slides[nextIndex]
     if (nextImage?.url) {
-      prefetchGalleryImage(nextImage.url)
+      prefetchGalleryImage(nextImage.url, 80)
     }
   }, [prefetchGalleryImage, selectedImageIndex, slides])
 

@@ -1,39 +1,7 @@
 "use client"
 
-// Inline icon components
-const ChevronLeftIcon = ({ className }: { className?: string }) => (
-  <svg
-    className={className}
-    fill="none"
-    viewBox="0 0 24 24"
-    strokeWidth={1.5}
-    stroke="currentColor"
-    aria-hidden="true"
-  >
-    <path
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      d="M15.75 19.5L8.25 12l7.5-7.5"
-    />
-  </svg>
-)
-
-const ChevronRightIcon = ({ className }: { className?: string }) => (
-  <svg
-    className={className}
-    fill="none"
-    viewBox="0 0 24 24"
-    strokeWidth={1.5}
-    stroke="currentColor"
-    aria-hidden="true"
-  >
-    <path
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      d="M8.25 4.5l7.5 7.5-7.5 7.5"
-    />
-  </svg>
-)
+import { useState } from "react"
+import { PaginationButton } from "@/components/atoms"
 
 interface PaginationProps {
   currentPage: number
@@ -48,6 +16,8 @@ export default function Pagination({
   onPageChange,
   ariaLabel = "Nawigacja stron",
 }: PaginationProps) {
+  const [goToPage, setGoToPage] = useState("")
+
   if (totalPages <= 1) return null
 
   const getPageNumbers = () => {
@@ -79,81 +49,113 @@ export default function Pagination({
   }
 
   const handlePageChange = (page: number) => {
+    if (page < 1 || page > totalPages || page === currentPage) {
+      return
+    }
+
     onPageChange(page)
-    // Scroll to top smoothly when changing pages
     window.scrollTo({ top: 0, behavior: "smooth" })
   }
 
+  const handleGoToPage = () => {
+    const pageNum = parseInt(goToPage, 10)
+
+    if (!isNaN(pageNum) && pageNum >= 1 && pageNum <= totalPages) {
+      handlePageChange(pageNum)
+      setGoToPage("")
+    }
+  }
+
+  const handleGoToPageKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") {
+      handleGoToPage()
+    }
+  }
+
   return (
-    <nav
-      className="flex items-center justify-center space-x-2 mt-8"
-      aria-label={ariaLabel}
-      role="navigation"
-    >
-      {/* Previous Button */}
-      <button
-        onClick={() => handlePageChange(currentPage - 1)}
-        disabled={currentPage === 1}
-        className="p-2 rounded-md border border-gray-300 bg-primary hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-        aria-label="Poprzednia strona"
-        title="Poprzednia strona"
-      >
-        <ChevronLeftIcon className="w-5 h-5 text-gray-600" />
-      </button>
+    <nav className="mt-10" aria-label={ariaLabel} role="navigation">
+      <div className="flex items-center justify-center gap-2 flex-wrap">
+        <PaginationButton
+          isNavArrow
+          disabled={currentPage === 1}
+          onClick={() => handlePageChange(currentPage - 1)}
+          aria-label="Poprzednia strona"
+          title="Poprzednia strona"
+        >
+          <span className="text-lg font-bold">&lsaquo;</span>
+        </PaginationButton>
 
-      {/* Page Numbers */}
-      <div className="flex items-center space-x-1" role="list">
-        {getPageNumbers().map((page, index) => {
-          if (page === "...") {
+        <div className="flex items-center gap-1" role="list">
+          {getPageNumbers().map((page, index) => {
+            if (page === "...") {
+              return (
+                <div
+                  key={`ellipsis-${index}`}
+                  className="mx-1 flex items-center text-[#3B3634]/60"
+                  aria-hidden="true"
+                >
+                  ...
+                </div>
+              )
+            }
+
+            const pageNumber = page as number
+            const isActive = pageNumber === currentPage
+
             return (
-              <span
-                key={`ellipsis-${index}`}
-                className="px-3 py-2 text-gray-500"
-                aria-hidden="true"
+              <PaginationButton
+                key={pageNumber}
+                isActive={isActive}
+                onClick={() => handlePageChange(pageNumber)}
+                aria-label={`Strona ${pageNumber}`}
+                aria-current={isActive ? "page" : undefined}
+                title={`Przejdź do strony ${pageNumber}`}
+                role="listitem"
               >
-                ...
-              </span>
+                {pageNumber}
+              </PaginationButton>
             )
-          }
+          })}
+        </div>
 
-          const pageNumber = page as number
-          const isActive = pageNumber === currentPage
+        <PaginationButton
+          isNavArrow
+          disabled={currentPage === totalPages}
+          onClick={() => handlePageChange(currentPage + 1)}
+          aria-label="Następna strona"
+          title="Następna strona"
+        >
+          <span className="text-lg font-bold">&rsaquo;</span>
+        </PaginationButton>
 
-          return (
+        <div className="hidden md:flex items-center ml-3">
+          <span className="mr-2 text-sm font-instrument-sans text-[#3B3634]/70">
+            Idź do strony:
+          </span>
+          <div className="flex relative ring-1 ring-[#3B3634] rounded-full overflow-hidden">
+            <input
+              type="text"
+              value={goToPage}
+              onChange={(e) => setGoToPage(e.target.value.replace(/[^0-9]/g, ""))}
+              onKeyDown={handleGoToPageKeyDown}
+              className="w-12 h-10 px-3 bg-primary text-sm font-instrument-sans focus:outline-none border-none"
+              aria-label="Przejdź do strony"
+            />
             <button
-              key={pageNumber}
-              onClick={() => handlePageChange(pageNumber)}
-              className={`px-4 py-2 rounded-md font-medium transition-colors font-instrument-sans ${
-                isActive
-                  ? "bg-[#3B3634] text-white"
-                  : "bg-primary text-gray-700 hover:bg-gray-50 border border-gray-300"
-              }`}
-              aria-label={`Strona ${pageNumber}`}
-              aria-current={isActive ? "page" : undefined}
-              title={`Przejdź do strony ${pageNumber}`}
-              role="listitem"
+              onClick={handleGoToPage}
+              className="h-10 px-3 text-[#3B3634] hover:bg-[#BFB7AD] text-sm focus:outline-none border-none bg-transparent transition-colors"
+              aria-label="Potwierdź numer strony"
+              title="Przejdź do podanej strony"
             >
-              {pageNumber}
+              <span className="text-lg font-bold">&rarr;</span>
             </button>
-          )
-        })}
+          </div>
+        </div>
+
+        <span className="sr-only" aria-live="polite" aria-atomic="true">
+          Strona {currentPage} z {totalPages}
+        </span>
       </div>
-
-      {/* Next Button */}
-      <button
-        onClick={() => handlePageChange(currentPage + 1)}
-        disabled={currentPage === totalPages}
-        className="p-2 rounded-md border border-gray-300 bg-primary hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-        aria-label="Następna strona"
-        title="Następna strona"
-      >
-        <ChevronRightIcon className="w-5 h-5 text-gray-600" />
-      </button>
-
-      {/* Screen reader announcement for current page */}
-      <span className="sr-only" aria-live="polite" aria-atomic="true">
-        Strona {currentPage} z {totalPages}
-      </span>
     </nav>
   )
 }

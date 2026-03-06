@@ -4,6 +4,7 @@ import { getCategoryHierarchy } from "@/lib/data/categories"
 export interface BreadcrumbItem {
   label: string
   path: string
+  isHome?: boolean
 }
 
 type CategoryLike = {
@@ -47,7 +48,7 @@ export async function buildProductBreadcrumbs(
     }
 
     return [
-      { label: 'Strona główna', path: '/' },
+      { label: 'Strona główna', path: '/', isHome: true },
       ...hierarchy.map((category) => ({
         label: category.name,
         path: `/categories/${category.handle}`,
@@ -69,7 +70,7 @@ export function buildProductBreadcrumbsLocal(
   locale: string = 'pl'
 ): BreadcrumbItem[] {
   const breadcrumbs: BreadcrumbItem[] = [
-    { label: 'Strona główna', path: '/' }
+    { label: 'Strona główna', path: '/', isHome: true }
   ]
 
   const primaryCategory = product.categories?.[0]
@@ -150,7 +151,8 @@ export function buildCollectionBreadcrumbs(
   // Always start with Home
   breadcrumbs.push({
     label: 'Strona główna',
-    path: '/'
+    path: '/',
+    isHome: true
   })
 
   // Use collection as primary navigation

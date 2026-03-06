@@ -6,6 +6,38 @@ import { CollapseIcon } from "@/icons"
 import { format } from "date-fns"
 import { pl } from "date-fns/locale"
 
+const BrushDivider = ({ className = "" }: { className?: string }) => (
+  <div className={`flex justify-center ${className}`}>
+    <svg
+      className="w-64 h-4 text-[#3B3634]/20"
+      viewBox="0 0 300 15"
+      fill="none"
+    >
+      <path
+        d="M5 8c40-5 80-3 120 0s80 5 120 1c15-2 30-3 45-1"
+        stroke="currentColor"
+        strokeWidth="2.5"
+        strokeLinecap="round"
+      />
+    </svg>
+  </div>
+)
+
+const ArtCard = ({
+  children,
+  className = "",
+}: {
+  children: React.ReactNode
+  className?: string
+}) => (
+  <div
+    className={`relative bg-white/50 backdrop-blur-sm border border-[#3B3634]/10 p-8 md:p-10 ${className}`}
+  >
+   
+    {children}
+  </div>
+)
+
 const TermsOfUseContent = () => {
   const [lastUpdated] = useState(new Date(2026, 0, 4))
   const [effectiveDate] = useState(new Date(2025, 10, 5))
@@ -13,13 +45,16 @@ const TermsOfUseContent = () => {
   return (
     <div className="terms-content">
       {/* Header Section */}
-      <header className="mb-10">
-        <h1 className="font-instrument-serif text-3xl md:text-4xl mb-4 font-medium">
-          REGULAMIN SERWISU ARTOVNIA
+      <header className="mb-12 text-center">
+        <h1 className="font-instrument-serif text-4xl md:text-5xl lg:text-6xl mb-6 font-normal italic text-[#3B3634] tracking-tight">
+          Regulamin Serwisu Artovnia
         </h1>
-        <div className="text-sm text-gray-500 mb-6">
+        <p className="text-lg md:text-xl text-[#3B3634]/60 font-instrument-sans mb-4 max-w-xl mx-auto leading-relaxed">
+          Zasady korzystania z platformy
+        </p>
+        <div className="text-sm text-[#3B3634]/40 font-instrument-sans space-y-0.5">
           <p>
-            Data obowiązywania:{" "}
+            Data wejścia w życie:{" "}
             {format(effectiveDate, "d MMMM yyyy", { locale: pl })}
           </p>
           <p>
@@ -29,24 +64,61 @@ const TermsOfUseContent = () => {
         </div>
       </header>
 
-      {/* Terms Content Sections with Accordion */}
-      <div className="space-y-6">
+      <BrushDivider className="mb-12" />
+
+      <div className="max-w-none space-y-10">
+        {/* Terms Sections Accordion */}
+        <ArtCard>
+          <div className="flex items-center gap-4 mb-10">
+            <div className="w-14 h-14 border-2 border-[#3B3634]/30 flex items-center justify-center">
+              <svg
+                className="w-7 h-7 stroke-[#3B3634]"
+                fill="none"
+                viewBox="0 0 24 24"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                <polyline points="14 2 14 8 20 8" />
+                <line x1="16" y1="13" x2="8" y2="13" />
+                <line x1="16" y1="17" x2="8" y2="17" />
+                <polyline points="10 9 9 9 8 9" />
+              </svg>
+            </div>
+            <h2 className="font-instrument-serif text-3xl md:text-4xl font-normal italic text-[#3B3634]">
+              Pełna treść regulaminu
+            </h2>
+          </div>
+
+          <div className="space-y-0">
         {/* Section 1 - POSTANOWIENIA OGÓLNE */}
-        <Disclosure as="div" className="border-b border-gray-200 pb-6">
+        <Disclosure as="div" className="border-b border-[#3B3634]/10 border-t" defaultOpen>
           {({ open }) => (
             <>
-              <Disclosure.Button className="flex w-full justify-between items-center text-left">
-                <h2 className="text-xl font-medium font-instrument-sans">
-                  1. POSTANOWIENIA OGÓLNE
-                </h2>
-                <CollapseIcon
-                  size={18}
-                  className={`${
-                    open ? "transform rotate-180" : ""
-                  } text-gray-500`}
-                />
+              <Disclosure.Button className="flex w-full justify-between items-center text-left py-6 group">
+                <h3 className="text-lg font-semibold font-instrument-sans text-[#3B3634] pr-4 group-hover:text-[#3B3634]/80 transition-colors duration-200">
+                  <span className="text-[#3B3634]/40 mr-3 font-normal">01</span>
+                  Postanowienia ogólne
+                </h3>
+                <div
+                  className={`flex-shrink-0 w-8 h-8 border border-[#3B3634]/20 flex items-center justify-center transition-all duration-300 ${
+                    open
+                      ? "bg-[#3B3634]/10 border-[#3B3634]/10 text-white"
+                      : "group-hover:border-[#3B3634]/40"
+                  }`}
+                >
+                  <CollapseIcon
+                    size={14}
+                    className={`transition-transform duration-300 ${
+                      open
+                        ? "transform rotate-180 text-white"
+                        : "text-[#3B3634]/50"
+                    }`}
+                  />
+                </div>
               </Disclosure.Button>
-              <Disclosure.Panel className="pt-4 text-gray-700 space-y-3">
+              <Disclosure.Panel className="pb-6 pl-9 text-[#3B3634]/90 font-instrument-sans leading-relaxed space-y-3">
                 <p>
                   1.1. Niniejszy regulamin (dalej &quot;Regulamin&quot;)
                   określa zasady korzystania z internetowej platformy
@@ -75,109 +147,120 @@ const TermsOfUseContent = () => {
         </Disclosure>
 
         {/* Section 2 - DEFINICJE */}
-        <Disclosure as="div" className="border-b border-gray-200 pb-6">
+        <Disclosure as="div" className="border-b border-[#3B3634]/10">
           {({ open }) => (
             <>
-              <Disclosure.Button className="flex w-full justify-between items-center text-left">
-                <h2 className="text-xl font-medium font-instrument-sans">
-                  2. DEFINICJE
-                </h2>
-                <CollapseIcon
-                  size={18}
-                  className={`${
-                    open ? "transform rotate-180" : ""
-                  } text-gray-500`}
-                />
+              <Disclosure.Button className="flex w-full justify-between items-center text-left py-6 group">
+                <h3 className="text-lg font-semibold font-instrument-sans text-[#3B3634] pr-4 group-hover:text-[#3B3634]/80 transition-colors duration-200">
+                  <span className="text-[#3B3634]/40 mr-3 font-normal">02</span>
+                  Definicje
+                </h3>
+                <div
+                  className={`flex-shrink-0 w-8 h-8 border border-[#3B3634]/20 flex items-center justify-center transition-all duration-300 ${
+                    open
+                      ? "bg-[#3B3634]/10 border-[#3B3634]/10 text-white"
+                      : "group-hover:border-[#3B3634]/40"
+                  }`}
+                >
+                  <CollapseIcon
+                    size={14}
+                    className={`transition-transform duration-300 ${
+                      open
+                        ? "transform rotate-180 text-white"
+                        : "text-[#3B3634]/50"
+                    }`}
+                  />
+                </div>
               </Disclosure.Button>
-              <Disclosure.Panel className="pt-4 text-gray-700 space-y-3">
-                <ul className="list-disc ml-5 space-y-2">
+              <Disclosure.Panel className="pb-6 pl-9 text-[#3B3634]/90 font-instrument-sans leading-relaxed space-y-3">
+                <ul className="list-disc ml-5 space-y-2 text-[#3B3634]/80">
                   <li>
-                    <strong>SERWIS</strong> – platforma internetowa
+                    <strong className="text-[#3B3634]">SERWIS</strong> – platforma internetowa
                     umożliwiająca Sprzedającym sprzedaż Towarów, a Kupującym
                     ich zakup.
                   </li>
                   <li>
-                    <strong>ADMINISTRATOR</strong> – podmiot zarządzający
+                    <strong className="text-[#3B3634]">ADMINISTRATOR</strong> – podmiot zarządzający
                     Serwisem.
                   </li>
                   <li>
-                    <strong>UŻYTKOWNIK</strong> – każda osoba korzystająca z
+                    <strong className="text-[#3B3634]">UŻYTKOWNIK</strong> – każda osoba korzystająca z
                     Serwisu.
                   </li>
                   <li>
-                    <strong>ZAREJESTROWANY UŻYTKOWNIK</strong> – Użytkownik,
+                    <strong className="text-[#3B3634]">ZAREJESTROWANY UŻYTKOWNIK</strong> – Użytkownik,
                     który założył konto w Serwisie.
                   </li>
                   <li>
-                    <strong>SPRZEDAJĄCY</strong> – Zarejestrowany Użytkownik,
+                    <strong className="text-[#3B3634]">SPRZEDAJĄCY</strong> – Zarejestrowany Użytkownik,
                     który uzyskał akceptację Administratora na prowadzenie
                     działalności sprzedażowej za pośrednictwem Serwisu.
                   </li>
                   <li>
-                    <strong>KUPUJĄCY</strong> – Użytkownik, który zawiera umowę
+                    <strong className="text-[#3B3634]">KUPUJĄCY</strong> – Użytkownik, który zawiera umowę
                     sprzedaży ze Sprzedającym.
                   </li>
                   <li>
-                    <strong>KONSUMENT</strong> – osoba fizyczna zawierająca
+                    <strong className="text-[#3B3634]">KONSUMENT</strong> – osoba fizyczna zawierająca
                     umowę niezwiązaną bezpośrednio z jej działalnością
                     gospodarczą lub zawodową.
                   </li>
                   <li>
-                    <strong>PRZEDSIĘBIORCA NA PRAWACH KONSUMENTA</strong> –
+                    <strong className="text-[#3B3634]">PRZEDSIĘBIORCA NA PRAWACH KONSUMENTA</strong> –
                     osoba fizyczna zawierająca umowę bezpośrednio związaną z jej
                     działalnością gospodarczą, która nie ma charakteru
                     zawodowego.
                   </li>
                   <li>
-                    <strong>TOWAR</strong> – produkt wystawiony na sprzedaż
+                    <strong className="text-[#3B3634]">TOWAR</strong> – produkt wystawiony na sprzedaż
                     przez Sprzedającego.
                   </li>
                   <li>
-                    <strong>ZAMÓWIENIE</strong> – oświadczenie woli Kupującego
+                    <strong className="text-[#3B3634]">ZAMÓWIENIE</strong> – oświadczenie woli Kupującego
                     zmierzające bezpośrednio do zawarcia umowy sprzedaży z danym
                     Sprzedawcą, składane za pośrednictwem serwisu.
                   </li>
                   <li>
-                    <strong>UMOWA SPRZEDAŻY</strong> – umowa zawierana na
+                    <strong className="text-[#3B3634]">UMOWA SPRZEDAŻY</strong> – umowa zawierana na
                     odległość pomiędzy Kupującym a Sprzedającym, której
                     przedmiotem jest zakup produktu za pośrednictwem platformy
                     www.artovnia.com, zgodnie z ofertą przedstawioną przez
                     Sprzedającego.
                   </li>
                   <li>
-                    <strong>KOSZYK</strong> – funkcjonalność serwisu
+                    <strong className="text-[#3B3634]">KOSZYK</strong> – funkcjonalność serwisu
                     umożliwiająca Kupującemu zapisywanie wybranych produktów
                     przed ich zakupem.
                   </li>
                   <li>
-                    <strong>PROWIZJA</strong> – opłata pobierana przez
+                    <strong className="text-[#3B3634]">PROWIZJA</strong> – opłata pobierana przez
                     Administratora od Sprzedającego za każdą zakończoną
                     sprzedaż, zgodna z zasadami określonymi w Regulaminie.
                   </li>
                   <li>
-                    <strong>RODO</strong> – Rozporządzenie Parlamentu
+                    <strong className="text-[#3B3634]">RODO</strong> – Rozporządzenie Parlamentu
                     Europejskiego i Rady (UE) 2016/679 z dnia 27 kwietnia 2016
                     r. dotyczące ochrony danych osobowych i ich swobodnego
                     przepływu.
                   </li>
                   <li>
-                    <strong>DNI ROBOCZE</strong> – dni od poniedziałku do
+                    <strong className="text-[#3B3634]">DNI ROBOCZE</strong> – dni od poniedziałku do
                     piątku z wyłączeniem dni ustawowo wolnych od pracy
                     obowiązujących na terenie Rzeczypospolitej Polskiej.
                   </li>
                   <li>
-                    <strong>CZAS REALIZACJI ZAMÓWIENIA</strong> – liczony w
+                    <strong className="text-[#3B3634]">CZAS REALIZACJI ZAMÓWIENIA</strong> – liczony w
                     dniach roboczych czas, w jakim Sprzedający przygotowuje
                     produkt do wysyłki, liczony od momentu otrzymania informacji
                     o zaksięgowaniu wpłaty.
                   </li>
                   <li>
-                    <strong>POLITYKA PRYWATNOŚCI</strong> – dokument odrębny od
+                    <strong className="text-[#3B3634]">POLITYKA PRYWATNOŚCI</strong> – dokument odrębny od
                     Regulaminu, określający zasady przetwarzania danych
                     osobowych Użytkowników, dostępny na stronie serwisu.
                   </li>
                   <li>
-                    <strong>REGULAMIN</strong> – niniejszy dokument określający
+                    <strong className="text-[#3B3634]">REGULAMIN</strong> – niniejszy dokument określający
                     zasady korzystania z platformy, prawa i obowiązki
                     Użytkowników oraz Administratora.
                   </li>
@@ -188,27 +271,38 @@ const TermsOfUseContent = () => {
         </Disclosure>
 
         {/* Section 3 - WARUNKI TECHNICZNE */}
-        <Disclosure as="div" className="border-b border-gray-200 pb-6">
+        <Disclosure as="div" className="border-b border-[#3B3634]/10">
           {({ open }) => (
             <>
-              <Disclosure.Button className="flex w-full justify-between items-center text-left">
-                <h2 className="text-xl font-medium font-instrument-sans">
-                  3. WARUNKI TECHNICZNE KORZYSTANIA Z PLATFORMY
-                </h2>
-                <CollapseIcon
-                  size={18}
-                  className={`${
-                    open ? "transform rotate-180" : ""
-                  } text-gray-500`}
-                />
+              <Disclosure.Button className="flex w-full justify-between items-center text-left py-6 group">
+                <h3 className="text-lg font-semibold font-instrument-sans text-[#3B3634] pr-4 group-hover:text-[#3B3634]/80 transition-colors duration-200">
+                  <span className="text-[#3B3634]/40 mr-3 font-normal">03</span>
+                  Warunki techniczne korzystania z platformy
+                </h3>
+                <div
+                  className={`flex-shrink-0 w-8 h-8 border border-[#3B3634]/20 flex items-center justify-center transition-all duration-300 ${
+                    open
+                      ? "bg-[#3B3634]/10 border-[#3B3634]/10 text-white"
+                      : "group-hover:border-[#3B3634]/40"
+                  }`}
+                >
+                  <CollapseIcon
+                    size={14}
+                    className={`transition-transform duration-300 ${
+                      open
+                        ? "transform rotate-180 text-white"
+                        : "text-[#3B3634]/50"
+                    }`}
+                  />
+                </div>
               </Disclosure.Button>
-              <Disclosure.Panel className="pt-4 text-gray-700 space-y-3">
+              <Disclosure.Panel className="pb-6 pl-9 text-[#3B3634]/90 font-instrument-sans leading-relaxed space-y-3">
                 <p>
                   3.1. W celu prawidłowego i pełnego korzystania z
                   funkcjonalności platformy internetowej www.artovnia.com
                   Użytkownik powinien dysponować:
                 </p>
-                <ul className="list-disc ml-5 space-y-1">
+                <ul className="list-disc ml-5 space-y-1 text-[#3B3634]/80">
                   <li>
                     urządzeniem posiadającym dostęp do Internetu (komputerem,
                     laptopem, smartfonem lub tabletem),
@@ -244,7 +338,7 @@ const TermsOfUseContent = () => {
                   działała w sposób ciągły, bez błędów i przerw technicznych.
                   Zastrzega jednak możliwość:
                 </p>
-                <ul className="list-disc ml-5 space-y-1">
+                <ul className="list-disc ml-5 space-y-1 text-[#3B3634]/80">
                   <li>
                     czasowego wyłączenia serwisu lub jego części w celu
                     przeprowadzenia niezbędnych prac konserwacyjnych, aktualizacji
@@ -261,7 +355,7 @@ const TermsOfUseContent = () => {
                   </li>
                 </ul>
                 <p>3.3. Administrator nie ponosi odpowiedzialności za:</p>
-                <ul className="list-disc ml-5 space-y-1">
+                <ul className="list-disc ml-5 space-y-1 text-[#3B3634]/80">
                   <li>
                     zakłócenia w działaniu platformy spowodowane nieprawidłowym
                     działaniem sprzętu lub oprogramowania po stronie Użytkownika,
@@ -296,21 +390,32 @@ const TermsOfUseContent = () => {
         </Disclosure>
 
         {/* Section 4 - REJESTRACJA I KONTO */}
-        <Disclosure as="div" className="border-b border-gray-200 pb-6">
+        <Disclosure as="div" className="border-b border-[#3B3634]/10">
           {({ open }) => (
             <>
-              <Disclosure.Button className="flex w-full justify-between items-center text-left">
-                <h2 className="text-xl font-medium font-instrument-sans">
-                  4. REJESTRACJA I KONTO
-                </h2>
-                <CollapseIcon
-                  size={18}
-                  className={`${
-                    open ? "transform rotate-180" : ""
-                  } text-gray-500`}
-                />
+              <Disclosure.Button className="flex w-full justify-between items-center text-left py-6 group">
+                <h3 className="text-lg font-semibold font-instrument-sans text-[#3B3634] pr-4 group-hover:text-[#3B3634]/80 transition-colors duration-200">
+                  <span className="text-[#3B3634]/40 mr-3 font-normal">04</span>
+                  Rejestracja i konto
+                </h3>
+                <div
+                  className={`flex-shrink-0 w-8 h-8 border border-[#3B3634]/20 flex items-center justify-center transition-all duration-300 ${
+                    open
+                      ? "bg-[#3B3634]/10 border-[#3B3634]/10 text-white"
+                      : "group-hover:border-[#3B3634]/40"
+                  }`}
+                >
+                  <CollapseIcon
+                    size={14}
+                    className={`transition-transform duration-300 ${
+                      open
+                        ? "transform rotate-180 text-white"
+                        : "text-[#3B3634]/50"
+                    }`}
+                  />
+                </div>
               </Disclosure.Button>
-              <Disclosure.Panel className="pt-4 text-gray-700 space-y-3">
+              <Disclosure.Panel className="pb-6 pl-9 text-[#3B3634]/90 font-instrument-sans leading-relaxed space-y-3">
                 <p>
                   4.1. Korzystanie z pełnej funkcjonalności platformy
                   www.artovnia.com w tym możliwość dokonywania zakupów i
@@ -324,7 +429,7 @@ const TermsOfUseContent = () => {
                   nabywać prawa i zaciągać zobowiązania we własnym imieniu.
                 </p>
                 <p>4.3. Proces rejestracji polega na:</p>
-                <ul className="list-disc ml-5 space-y-1">
+                <ul className="list-disc ml-5 space-y-1 text-[#3B3634]/80">
                   <li>
                     wypełnieniu formularza rejestracyjnego dostępnego na stronie
                     serwisu,
@@ -346,7 +451,7 @@ const TermsOfUseContent = () => {
                   </li>
                 </ul>
                 <p>4.4. Konto Użytkownika dzieli się na:</p>
-                <ul className="list-disc ml-5 space-y-1">
+                <ul className="list-disc ml-5 space-y-1 text-[#3B3634]/80">
                   <li>
                     Konto Kupującego – umożliwia przeglądanie oferty, dodawanie
                     produktów do koszyka, składanie zamówień oraz komunikację ze
@@ -364,7 +469,7 @@ const TermsOfUseContent = () => {
                   konta z uzasadnionych przyczyn.
                 </p>
                 <p>4.6. Użytkownik jest zobowiązany do:</p>
-                <ul className="list-disc ml-5 space-y-1">
+                <ul className="list-disc ml-5 space-y-1 text-[#3B3634]/80">
                   <li>
                     zachowania poufności danych dostępowych do konta (loginu i
                     hasła),
@@ -406,22 +511,32 @@ const TermsOfUseContent = () => {
         </Disclosure>
 
         {/* Section 5 - ZAWARCIE UMOWY */}
-        <Disclosure as="div" className="border-b border-gray-200 pb-6">
+        <Disclosure as="div" className="border-b border-[#3B3634]/10">
           {({ open }) => (
             <>
-              <Disclosure.Button className="flex w-full justify-between items-center text-left">
-                <h2 className="text-xl font-medium font-instrument-sans">
-                  5. ZAWARCIE UMOWY KUPNA-SPRZEDAŻY POMIĘDZY KUPUJĄCYM A
-                  SPRZEDAJĄCYM
-                </h2>
-                <CollapseIcon
-                  size={18}
-                  className={`${
-                    open ? "transform rotate-180" : ""
-                  } text-gray-500`}
-                />
+              <Disclosure.Button className="flex w-full justify-between items-center text-left py-6 group">
+                <h3 className="text-lg font-semibold font-instrument-sans text-[#3B3634] pr-4 group-hover:text-[#3B3634]/80 transition-colors duration-200">
+                  <span className="text-[#3B3634]/40 mr-3 font-normal">05</span>
+                  Zawarcie umowy kupna-sprzedaży
+                </h3>
+                <div
+                  className={`flex-shrink-0 w-8 h-8 border border-[#3B3634]/20 flex items-center justify-center transition-all duration-300 ${
+                    open
+                      ? "bg-[#3B3634]/10 border-[#3B3634]/10 text-white"
+                      : "group-hover:border-[#3B3634]/40"
+                  }`}
+                >
+                  <CollapseIcon
+                    size={14}
+                    className={`transition-transform duration-300 ${
+                      open
+                        ? "transform rotate-180 text-white"
+                        : "text-[#3B3634]/50"
+                    }`}
+                  />
+                </div>
               </Disclosure.Button>
-              <Disclosure.Panel className="pt-4 text-gray-700 space-y-3">
+              <Disclosure.Panel className="pb-6 pl-9 text-[#3B3634]/90 font-instrument-sans leading-relaxed space-y-3">
                 <p>
                   5.1. Zawarcie umowy kupna-sprzedaży następuje bezpośrednio
                   pomiędzy Kupującym a Sprzedającym, z chwilą skutecznego
@@ -432,7 +547,7 @@ const TermsOfUseContent = () => {
                   5.2. Złożenie zamówienia odbywa się poprzez funkcjonalność
                   platformy i wymaga:
                 </p>
-                <ul className="list-disc ml-5 space-y-1">
+                <ul className="list-disc ml-5 space-y-1 text-[#3B3634]/80">
                   <li>wyboru produktu,</li>
                   <li>uzupełnienia danych niezbędnych do dostawy,</li>
                   <li>wyboru metody płatności,</li>
@@ -457,7 +572,7 @@ const TermsOfUseContent = () => {
                   5.5. Administrator nie jest stroną umowy kupna-sprzedaży.
                   Odpowiedzialność za realizację umowy, w tym:
                 </p>
-                <ul className="list-disc ml-5 space-y-1">
+                <ul className="list-disc ml-5 space-y-1 text-[#3B3634]/80">
                   <li>wysyłkę produktu,</li>
                   <li>jego zgodność z opisem,</li>
                   <li>wystawienie rachunku lub faktury,</li>
@@ -500,21 +615,32 @@ const TermsOfUseContent = () => {
         </Disclosure>
 
         {/* Section 6 - SPRZEDAŻ I ROZLICZENIA */}
-        <Disclosure as="div" className="border-b border-gray-200 pb-6">
+        <Disclosure as="div" className="border-b border-[#3B3634]/10">
           {({ open }) => (
             <>
-              <Disclosure.Button className="flex w-full justify-between items-center text-left">
-                <h2 className="text-xl font-medium font-instrument-sans">
-                  6. SPRZEDAŻ I ROZLICZENIA
-                </h2>
-                <CollapseIcon
-                  size={18}
-                  className={`${
-                    open ? "transform rotate-180" : ""
-                  } text-gray-500`}
-                />
+              <Disclosure.Button className="flex w-full justify-between items-center text-left py-6 group">
+                <h3 className="text-lg font-semibold font-instrument-sans text-[#3B3634] pr-4 group-hover:text-[#3B3634]/80 transition-colors duration-200">
+                  <span className="text-[#3B3634]/40 mr-3 font-normal">06</span>
+                  Sprzedaż i rozliczenia
+                </h3>
+                <div
+                  className={`flex-shrink-0 w-8 h-8 border border-[#3B3634]/20 flex items-center justify-center transition-all duration-300 ${
+                    open
+                      ? "bg-[#3B3634]/10 border-[#3B3634]/10 text-white"
+                      : "group-hover:border-[#3B3634]/40"
+                  }`}
+                >
+                  <CollapseIcon
+                    size={14}
+                    className={`transition-transform duration-300 ${
+                      open
+                        ? "transform rotate-180 text-white"
+                        : "text-[#3B3634]/50"
+                    }`}
+                  />
+                </div>
               </Disclosure.Button>
-              <Disclosure.Panel className="pt-4 text-gray-700 space-y-3">
+              <Disclosure.Panel className="pb-6 pl-9 text-[#3B3634]/90 font-instrument-sans leading-relaxed space-y-3">
                 <p>
                   6.1. Sprzedający może wystawiać swoje produkty do sprzedaży na
                   platformie po aktywacji konta Sprzedawcy i wypełnieniu
@@ -560,7 +686,7 @@ const TermsOfUseContent = () => {
                   6.8. Administrator zastrzega sobie prawo do wstrzymania wypłaty
                   środków w przypadku:
                 </p>
-                <ul className="list-disc ml-5 space-y-1">
+                <ul className="list-disc ml-5 space-y-1 text-[#3B3634]/80">
                   <li>
                     wystąpienia sporów lub reklamacji dotyczących zrealizowanych
                     zamówień,
@@ -579,28 +705,39 @@ const TermsOfUseContent = () => {
         </Disclosure>
 
         {/* Section 7 - PRAWA I OBOWIĄZKI SPRZEDAJĄCEGO */}
-        <Disclosure as="div" className="border-b border-gray-200 pb-6">
+        <Disclosure as="div" className="border-b border-[#3B3634]/10">
           {({ open }) => (
             <>
-              <Disclosure.Button className="flex w-full justify-between items-center text-left">
-                <h2 className="text-xl font-medium font-instrument-sans">
-                  7. PRAWA I OBOWIĄZKI SPRZEDAJĄCEGO
-                </h2>
-                <CollapseIcon
-                  size={18}
-                  className={`${
-                    open ? "transform rotate-180" : ""
-                  } text-gray-500`}
-                />
+              <Disclosure.Button className="flex w-full justify-between items-center text-left py-6 group">
+                <h3 className="text-lg font-semibold font-instrument-sans text-[#3B3634] pr-4 group-hover:text-[#3B3634]/80 transition-colors duration-200">
+                  <span className="text-[#3B3634]/40 mr-3 font-normal">07</span>
+                  Prawa i obowiązki sprzedającego
+                </h3>
+                <div
+                  className={`flex-shrink-0 w-8 h-8 border border-[#3B3634]/20 flex items-center justify-center transition-all duration-300 ${
+                    open
+                      ? "bg-[#3B3634]/10 border-[#3B3634]/10 text-white"
+                      : "group-hover:border-[#3B3634]/40"
+                  }`}
+                >
+                  <CollapseIcon
+                    size={14}
+                    className={`transition-transform duration-300 ${
+                      open
+                        ? "transform rotate-180 text-white"
+                        : "text-[#3B3634]/50"
+                    }`}
+                  />
+                </div>
               </Disclosure.Button>
-              <Disclosure.Panel className="pt-4 text-gray-700 space-y-3">
+              <Disclosure.Panel className="pb-6 pl-9 text-[#3B3634]/90 font-instrument-sans leading-relaxed space-y-3">
                 <p>
                   7.1. Sprzedający ma prawo korzystać z serwisu www.artovnia.com w
                   celu prezentowania i sprzedaży własnych produktów zgodnie z
                   postanowieniami Regulaminu.
                 </p>
                 <p>7.2. Sprzedający zobowiązuje się do:</p>
-                <ul className="list-disc ml-5 space-y-1">
+                <ul className="list-disc ml-5 space-y-1 text-[#3B3634]/80">
                   <li>
                     oferowania wyłącznie produktów, do których posiada pełne prawa
                     do sprzedaży – w szczególności praw własności lub licencji,
@@ -729,28 +866,39 @@ const TermsOfUseContent = () => {
         </Disclosure>
 
         {/* Section 8 - ZAWIESZENIE KONTA SPRZEDAJĄCEGO */}
-        <Disclosure as="div" className="border-b border-gray-200 pb-6">
+        <Disclosure as="div" className="border-b border-[#3B3634]/10">
           {({ open }) => (
             <>
-              <Disclosure.Button className="flex w-full justify-between items-center text-left">
-                <h2 className="text-xl font-medium font-instrument-sans">
-                  8. ZAWIESZENIE KONTA SPRZEDAJĄCEGO
-                </h2>
-                <CollapseIcon
-                  size={18}
-                  className={`${
-                    open ? "transform rotate-180" : ""
-                  } text-gray-500`}
-                />
+              <Disclosure.Button className="flex w-full justify-between items-center text-left py-6 group">
+                <h3 className="text-lg font-semibold font-instrument-sans text-[#3B3634] pr-4 group-hover:text-[#3B3634]/80 transition-colors duration-200">
+                  <span className="text-[#3B3634]/40 mr-3 font-normal">08</span>
+                  Zawieszenie konta sprzedającego
+                </h3>
+                <div
+                  className={`flex-shrink-0 w-8 h-8 border border-[#3B3634]/20 flex items-center justify-center transition-all duration-300 ${
+                    open
+                      ? "bg-[#3B3634]/10 border-[#3B3634]/10 text-white"
+                      : "group-hover:border-[#3B3634]/40"
+                  }`}
+                >
+                  <CollapseIcon
+                    size={14}
+                    className={`transition-transform duration-300 ${
+                      open
+                        ? "transform rotate-180 text-white"
+                        : "text-[#3B3634]/50"
+                    }`}
+                  />
+                </div>
               </Disclosure.Button>
-              <Disclosure.Panel className="pt-4 text-gray-700 space-y-3">
+              <Disclosure.Panel className="pb-6 pl-9 text-[#3B3634]/90 font-instrument-sans leading-relaxed space-y-3">
                 <p>
                   8.1. Administrator ma prawo zawiesić konto Sprzedającego w
                   przypadku naruszenia przez niego postanowień niniejszego
                   Regulaminu, obowiązującego prawa lub dobrych obyczajów, w
                   szczególności gdy:
                 </p>
-                <ul className="list-disc ml-5 space-y-1">
+                <ul className="list-disc ml-5 space-y-1 text-[#3B3634]/80">
                   <li>
                     Sprzedający nie realizuje zamówień w terminie określonym w
                     opisie produktu lub w Regulaminie,
@@ -794,7 +942,7 @@ const TermsOfUseContent = () => {
                   8.4. Jeżeli po upomnieniu naruszenia nie ustają lub sytuacja się
                   powtarza, Administrator może bez dalszego ostrzeżenia:
                 </p>
-                <ul className="list-disc ml-5 space-y-1">
+                <ul className="list-disc ml-5 space-y-1 text-[#3B3634]/80">
                   <li>zawiesić konto Sprzedającego na czas nieokreślony,</li>
                   <li>trwale usunąć konto Sprzedającego,</li>
                   <li>
@@ -835,26 +983,37 @@ const TermsOfUseContent = () => {
         </Disclosure>
 
         {/* Section 9 - ODPOWIEDZIALNOŚĆ */}
-        <Disclosure as="div" className="border-b border-gray-200 pb-6">
+        <Disclosure as="div" className="border-b border-[#3B3634]/10">
           {({ open }) => (
             <>
-              <Disclosure.Button className="flex w-full justify-between items-center text-left">
-                <h2 className="text-xl font-medium font-instrument-sans">
-                  9. ODPOWIEDZIALNOŚĆ
-                </h2>
-                <CollapseIcon
-                  size={18}
-                  className={`${
-                    open ? "transform rotate-180" : ""
-                  } text-gray-500`}
-                />
+              <Disclosure.Button className="flex w-full justify-between items-center text-left py-6 group">
+                <h3 className="text-lg font-semibold font-instrument-sans text-[#3B3634] pr-4 group-hover:text-[#3B3634]/80 transition-colors duration-200">
+                  <span className="text-[#3B3634]/40 mr-3 font-normal">09</span>
+                  Odpowiedzialność
+                </h3>
+                <div
+                  className={`flex-shrink-0 w-8 h-8 border border-[#3B3634]/20 flex items-center justify-center transition-all duration-300 ${
+                    open
+                      ? "bg-[#3B3634]/10 border-[#3B3634]/10 text-white"
+                      : "group-hover:border-[#3B3634]/40"
+                  }`}
+                >
+                  <CollapseIcon
+                    size={14}
+                    className={`transition-transform duration-300 ${
+                      open
+                        ? "transform rotate-180 text-white"
+                        : "text-[#3B3634]/50"
+                    }`}
+                  />
+                </div>
               </Disclosure.Button>
-              <Disclosure.Panel className="pt-4 text-gray-700 space-y-3">
+              <Disclosure.Panel className="pb-6 pl-9 text-[#3B3634]/90 font-instrument-sans leading-relaxed space-y-3">
                 <p>
                   9.1. Administrator zapewnia techniczne funkcjonowanie platformy Artovnia.com, umożliwiające zawieranie umów sprzedaży pomiędzy Użytkownikami, jednak nie jest stroną tych umów. Odpowiedzialność za realizację transakcji, zgodność oferty z opisem oraz jakość i legalność sprzedawanych produktów spoczywa wyłącznie na Sprzedających.
                 </p>
                 <p>9.2. Administrator nie ponosi odpowiedzialności za:</p>
-                <ul className="list-disc ml-5 space-y-1">
+                <ul className="list-disc ml-5 space-y-1 text-[#3B3634]/80">
                   <li>
                     niewykonanie lub nienależyte wykonanie umowy sprzedaży zawartej
                     pomiędzy Sprzedającym a Kupującym,
@@ -884,7 +1043,7 @@ const TermsOfUseContent = () => {
                   </li>
                 </ul>
                 <p>9.3. Administrator zastrzega sobie prawo do:</p>
-                <ul className="list-disc ml-5 space-y-1">
+                <ul className="list-disc ml-5 space-y-1 text-[#3B3634]/80">
                   <li>
                     usunięcia ofert naruszających przepisy prawa, Regulamin, dobre
                     obyczaje lub godzących w wizerunek platformy,
@@ -907,7 +1066,7 @@ const TermsOfUseContent = () => {
                   9.4. Sprzedający ponosi pełną odpowiedzialność za wszelkie skutki
                   prawne wynikające z wystawienia do sprzedaży produktu, który:
                 </p>
-                <ul className="list-disc ml-5 space-y-1">
+                <ul className="list-disc ml-5 space-y-1 text-[#3B3634]/80">
                   <li>jest nielegalny,</li>
                   <li>
                     narusza prawa autorskie, prawa własności intelektualnej lub dobra
@@ -955,21 +1114,32 @@ const TermsOfUseContent = () => {
         </Disclosure>
 
         {/* Section 10 - ZWROTY I REKLAMACJE */}
-        <Disclosure as="div" className="border-b border-gray-200 pb-6">
+        <Disclosure as="div" className="border-b border-[#3B3634]/10">
           {({ open }) => (
             <>
-              <Disclosure.Button className="flex w-full justify-between items-center text-left">
-                <h2 className="text-xl font-medium font-instrument-sans">
-                  10. ZWROTY I REKLAMACJE
-                </h2>
-                <CollapseIcon
-                  size={18}
-                  className={`${
-                    open ? "transform rotate-180" : ""
-                  } text-gray-500`}
-                />
+              <Disclosure.Button className="flex w-full justify-between items-center text-left py-6 group">
+                <h3 className="text-lg font-semibold font-instrument-sans text-[#3B3634] pr-4 group-hover:text-[#3B3634]/80 transition-colors duration-200">
+                  <span className="text-[#3B3634]/40 mr-3 font-normal">10</span>
+                  Zwroty i reklamacje
+                </h3>
+                <div
+                  className={`flex-shrink-0 w-8 h-8 border border-[#3B3634]/20 flex items-center justify-center transition-all duration-300 ${
+                    open
+                      ? "bg-[#3B3634]/10 border-[#3B3634]/10 text-white"
+                      : "group-hover:border-[#3B3634]/40"
+                  }`}
+                >
+                  <CollapseIcon
+                    size={14}
+                    className={`transition-transform duration-300 ${
+                      open
+                        ? "transform rotate-180 text-white"
+                        : "text-[#3B3634]/50"
+                    }`}
+                  />
+                </div>
               </Disclosure.Button>
-              <Disclosure.Panel className="pt-4 text-gray-700 space-y-3">
+              <Disclosure.Panel className="pb-6 pl-9 text-[#3B3634]/90 font-instrument-sans leading-relaxed space-y-3">
                 <h3 className="font-medium text-base">
                   10.1. Prawo odstąpienia od umowy zawartej na odległość (zakup od
                   Sprzedającego - Przedsiębiorcy)
@@ -1015,7 +1185,7 @@ const TermsOfUseContent = () => {
                 <p>
                   10.1.7. Zwrot towaru nie jest możliwy w przypadku przedmiotów:
                 </p>
-                <ul className="list-disc ml-5 space-y-1">
+                <ul className="list-disc ml-5 space-y-1 text-[#3B3634]/80">
                   <li>
                     wykonanych na indywidualne zamówienie (np. personalizowanych),
                   </li>
@@ -1044,7 +1214,7 @@ const TermsOfUseContent = () => {
                   celu złożenia reklamacji.
                 </p>
                 <p>10.2.3. Reklamacja powinna zawierać:</p>
-                <ul className="list-disc ml-5 space-y-1">
+                <ul className="list-disc ml-5 space-y-1 text-[#3B3634]/80">
                   <li>imię i nazwisko Kupującego,</li>
                   <li>datę zawarcia umowy i datę otrzymania towaru,</li>
                   <li>opis niezgodności towaru z umową,</li>
@@ -1064,7 +1234,7 @@ const TermsOfUseContent = () => {
                   uzasadnioną.
                 </p>
                 <p>10.2.5. Kupujący może żądać:</p>
-                <ul className="list-disc ml-5 space-y-1">
+                <ul className="list-disc ml-5 space-y-1 text-[#3B3634]/80">
                   <li>naprawy lub wymiany towaru na wolny od wad,</li>
                   <li>
                     obniżenia ceny lub odstąpienia od umowy, jeśli:
@@ -1126,21 +1296,32 @@ const TermsOfUseContent = () => {
         </Disclosure>
 
         {/* Section 11 - OPINIE KUPUJĄCYCH */}
-        <Disclosure as="div" className="border-b border-gray-200 pb-6">
+        <Disclosure as="div" className="border-b border-[#3B3634]/10">
           {({ open }) => (
             <>
-              <Disclosure.Button className="flex w-full justify-between items-center text-left">
-                <h2 className="text-xl font-medium font-instrument-sans">
-                  11. OPINIE KUPUJĄCYCH
-                </h2>
-                <CollapseIcon
-                  size={18}
-                  className={`${
-                    open ? "transform rotate-180" : ""
-                  } text-gray-500`}
-                />
+              <Disclosure.Button className="flex w-full justify-between items-center text-left py-6 group">
+                <h3 className="text-lg font-semibold font-instrument-sans text-[#3B3634] pr-4 group-hover:text-[#3B3634]/80 transition-colors duration-200">
+                  <span className="text-[#3B3634]/40 mr-3 font-normal">11</span>
+                  Opinie kupujących
+                </h3>
+                <div
+                  className={`flex-shrink-0 w-8 h-8 border border-[#3B3634]/20 flex items-center justify-center transition-all duration-300 ${
+                    open
+                      ? "bg-[#3B3634]/10 border-[#3B3634]/10 text-white"
+                      : "group-hover:border-[#3B3634]/40"
+                  }`}
+                >
+                  <CollapseIcon
+                    size={14}
+                    className={`transition-transform duration-300 ${
+                      open
+                        ? "transform rotate-180 text-white"
+                        : "text-[#3B3634]/50"
+                    }`}
+                  />
+                </div>
               </Disclosure.Button>
-              <Disclosure.Panel className="pt-4 text-gray-700 space-y-3">
+              <Disclosure.Panel className="pb-6 pl-9 text-[#3B3634]/90 font-instrument-sans leading-relaxed space-y-3">
                 <p>
                   11.1. Po zrealizowaniu zamówienia Kupujący ma możliwość
                   wystawienia opinii dotyczącej zakupionego produktu oraz jakości
@@ -1154,7 +1335,7 @@ const TermsOfUseContent = () => {
                   naruszających dobra osobiste.
                 </p>
                 <p>11.3. Wystawiona opinia może zawierać:</p>
-                <ul className="list-disc ml-5 space-y-1">
+                <ul className="list-disc ml-5 space-y-1 text-[#3B3634]/80">
                   <li>
                     ocenę w formie punktowej lub gwiazdek (jeśli taka funkcja jest
                     dostępna),
@@ -1172,7 +1353,7 @@ const TermsOfUseContent = () => {
                   11.5. Administrator zastrzega sobie prawo do moderowania, ukrycia
                   lub usunięcia opinii w przypadku, gdy:
                 </p>
-                <ul className="list-disc ml-5 space-y-1">
+                <ul className="list-disc ml-5 space-y-1 text-[#3B3634]/80">
                   <li>
                     opinia zawiera treści wulgarne, obraźliwe, dyskryminujące lub
                     naruszające prawo,
@@ -1198,7 +1379,7 @@ const TermsOfUseContent = () => {
                   Administratora za pośrednictwem formularza kontaktowego lub
                   wiadomości e-mail. Zgłoszenie powinno zawierać:
                 </p>
-                <ul className="list-disc ml-5 space-y-1">
+                <ul className="list-disc ml-5 space-y-1 text-[#3B3634]/80">
                   <li>numer zamówienia,</li>
                   <li>treść opinii (jeśli już została wystawiona),</li>
                   <li>uzasadnienie podejrzenia nadużycia,</li>
@@ -1233,21 +1414,32 @@ const TermsOfUseContent = () => {
         </Disclosure>
 
         {/* Section 12 - DANE OSOBOWE */}
-        <Disclosure as="div" className="border-b border-gray-200 pb-6">
+        <Disclosure as="div" className="border-b border-[#3B3634]/10">
           {({ open }) => (
             <>
-              <Disclosure.Button className="flex w-full justify-between items-center text-left">
-                <h2 className="text-xl font-medium font-instrument-sans">
-                  12. DANE OSOBOWE KUPUJĄCYCH I SPRZEDAJĄCYCH
-                </h2>
-                <CollapseIcon
-                  size={18}
-                  className={`${
-                    open ? "transform rotate-180" : ""
-                  } text-gray-500`}
-                />
+              <Disclosure.Button className="flex w-full justify-between items-center text-left py-6 group">
+                <h3 className="text-lg font-semibold font-instrument-sans text-[#3B3634] pr-4 group-hover:text-[#3B3634]/80 transition-colors duration-200">
+                  <span className="text-[#3B3634]/40 mr-3 font-normal">12</span>
+                  Dane osobowe kupujących i sprzedających
+                </h3>
+                <div
+                  className={`flex-shrink-0 w-8 h-8 border border-[#3B3634]/20 flex items-center justify-center transition-all duration-300 ${
+                    open
+                      ? "bg-[#3B3634]/10 border-[#3B3634]/10 text-white"
+                      : "group-hover:border-[#3B3634]/40"
+                  }`}
+                >
+                  <CollapseIcon
+                    size={14}
+                    className={`transition-transform duration-300 ${
+                      open
+                        ? "transform rotate-180 text-white"
+                        : "text-[#3B3634]/50"
+                    }`}
+                  />
+                </div>
               </Disclosure.Button>
-              <Disclosure.Panel className="pt-4 text-gray-700 space-y-3">
+              <Disclosure.Panel className="pb-6 pl-9 text-[#3B3634]/90 font-instrument-sans leading-relaxed space-y-3">
                 <p>
                   12.1. Administratorem danych osobowych użytkowników korzystających
                   z serwisu (zarówno Kupujących, jak i Sprzedających) jest
@@ -1257,7 +1449,7 @@ const TermsOfUseContent = () => {
                   Parlamentu Europejskiego i Rady (UE) 2016/679 (tzw. RODO).
                 </p>
                 <p>12.2. Dane osobowe Użytkowników przetwarzane są w celu:</p>
-                <ul className="list-disc ml-5 space-y-1">
+                <ul className="list-disc ml-5 space-y-1 text-[#3B3634]/80">
                   <li>umożliwienia korzystania z funkcjonalności platformy,</li>
                   <li>realizacji transakcji sprzedaży,</li>
                   <li>prowadzenia konta użytkownika,</li>
@@ -1316,21 +1508,32 @@ const TermsOfUseContent = () => {
         </Disclosure>
 
         {/* Section 13 - KODY RABATOWE, PROMOCJE, WYPRZEDAŻE */}
-        <Disclosure as="div" className="border-b border-gray-200 pb-6">
+        <Disclosure as="div" className="border-b border-[#3B3634]/10">
           {({ open }) => (
             <>
-              <Disclosure.Button className="flex w-full justify-between items-center text-left">
-                <h2 className="text-xl font-medium font-instrument-sans">
-                  13. KODY RABATOWE, PROMOCJE, WYPRZEDAŻE
-                </h2>
-                <CollapseIcon
-                  size={18}
-                  className={`${
-                    open ? "transform rotate-180" : ""
-                  } text-gray-500`}
-                />
+              <Disclosure.Button className="flex w-full justify-between items-center text-left py-6 group">
+                <h3 className="text-lg font-semibold font-instrument-sans text-[#3B3634] pr-4 group-hover:text-[#3B3634]/80 transition-colors duration-200">
+                  <span className="text-[#3B3634]/40 mr-3 font-normal">13</span>
+                  Kody rabatowe, promocje, wyprzedaże
+                </h3>
+                <div
+                  className={`flex-shrink-0 w-8 h-8 border border-[#3B3634]/20 flex items-center justify-center transition-all duration-300 ${
+                    open
+                      ? "bg-[#3B3634]/10 border-[#3B3634]/10 text-white"
+                      : "group-hover:border-[#3B3634]/40"
+                  }`}
+                >
+                  <CollapseIcon
+                    size={14}
+                    className={`transition-transform duration-300 ${
+                      open
+                        ? "transform rotate-180 text-white"
+                        : "text-[#3B3634]/50"
+                    }`}
+                  />
+                </div>
               </Disclosure.Button>
-              <Disclosure.Panel className="pt-4 text-gray-700 space-y-3">
+              <Disclosure.Panel className="pb-6 pl-9 text-[#3B3634]/90 font-instrument-sans leading-relaxed space-y-3">
                 <p>
                   13.1. Platforma może okresowo organizować akcje promocyjne,
                   wyprzedaże oraz udostępniać kody rabatowe, które umożliwiają
@@ -1338,7 +1541,7 @@ const TermsOfUseContent = () => {
                   dostawy.
                 </p>
                 <p>13.2. Kody rabatowe mogą być:</p>
-                <ul className="list-disc ml-5 space-y-1">
+                <ul className="list-disc ml-5 space-y-1 text-[#3B3634]/80">
                   <li>
                     ogólnodostępne – udostępnione publicznie w serwisie lub w mediach
                     społecznościowych,
@@ -1405,27 +1608,37 @@ const TermsOfUseContent = () => {
         </Disclosure>
 
         {/* Section 14 - WYKORZYSTANIE TREŚCI SPRZEDAJĄCYCH */}
-        <Disclosure as="div" className="border-b border-gray-200 pb-6">
+        <Disclosure as="div" className="border-b border-[#3B3634]/10">
           {({ open }) => (
             <>
-              <Disclosure.Button className="flex w-full justify-between items-center text-left">
-                <h2 className="text-xl font-medium font-instrument-sans">
-                  14. WYKORZYSTANIE TREŚCI SPRZEDAJĄCYCH W DZIAŁANIACH
-                  MARKETINGOWYCH
-                </h2>
-                <CollapseIcon
-                  size={18}
-                  className={`${
-                    open ? "transform rotate-180" : ""
-                  } text-gray-500`}
-                />
+              <Disclosure.Button className="flex w-full justify-between items-center text-left py-6 group">
+                <h3 className="text-lg font-semibold font-instrument-sans text-[#3B3634] pr-4 group-hover:text-[#3B3634]/80 transition-colors duration-200">
+                  <span className="text-[#3B3634]/40 mr-3 font-normal">14</span>
+                  Wykorzystanie treści sprzedających w działaniach marketingowych
+                </h3>
+                <div
+                  className={`flex-shrink-0 w-8 h-8 border border-[#3B3634]/20 flex items-center justify-center transition-all duration-300 ${
+                    open
+                      ? "bg-[#3B3634]/10 border-[#3B3634]/10 text-white"
+                      : "group-hover:border-[#3B3634]/40"
+                  }`}
+                >
+                  <CollapseIcon
+                    size={14}
+                    className={`transition-transform duration-300 ${
+                      open
+                        ? "transform rotate-180 text-white"
+                        : "text-[#3B3634]/50"
+                    }`}
+                  />
+                </div>
               </Disclosure.Button>
-              <Disclosure.Panel className="pt-4 text-gray-700 space-y-3">
+              <Disclosure.Panel className="pb-6 pl-9 text-[#3B3634]/90 font-instrument-sans leading-relaxed space-y-3">
                 <p>
                   14.1. Sprzedający, publikując oferty w serwisie, wyraża zgodę na
                   nieodpłatne wykorzystanie przez Administratora:
                 </p>
-                <ul className="list-disc ml-5 space-y-1">
+                <ul className="list-disc ml-5 space-y-1 text-[#3B3634]/80">
                   <li>zdjęć produktów,</li>
                   <li>opisów produktów,</li>
                   <li>nazwy sklepu,</li>
@@ -1450,7 +1663,7 @@ const TermsOfUseContent = () => {
                   14.3. Treści Sprzedających mogą być wykorzystywane w szczególności
                   w następujących kanałach:
                 </p>
-                <ul className="list-disc ml-5 space-y-1">
+                <ul className="list-disc ml-5 space-y-1 text-[#3B3634]/80">
                   <li>
                     media społecznościowe: Instagram, Facebook, TikTok, Pinterest,
                   </li>
@@ -1506,21 +1719,32 @@ const TermsOfUseContent = () => {
         </Disclosure>
 
         {/* Section 15 - PRZETWARZANIE PŁATNOŚCI I INTEGRACJA ZE STRIPE */}
-        <Disclosure as="div" className="border-b border-gray-200 pb-6">
+        <Disclosure as="div" className="border-b border-[#3B3634]/10">
           {({ open }) => (
             <>
-              <Disclosure.Button className="flex w-full justify-between items-center text-left">
-                <h2 className="text-xl font-medium font-instrument-sans uppercase">
-                  15. Przetwarzanie płatności i integracja ze Stripe
-                </h2>
-                <CollapseIcon
-                  size={18}
-                  className={`${
-                    open ? "transform rotate-180" : ""
-                  } text-gray-500`}
-                />
+              <Disclosure.Button className="flex w-full justify-between items-center text-left py-6 group">
+                <h3 className="text-lg font-semibold font-instrument-sans text-[#3B3634] pr-4 group-hover:text-[#3B3634]/80 transition-colors duration-200">
+                  <span className="text-[#3B3634]/40 mr-3 font-normal">15</span>
+                  Przetwarzanie płatności i integracja ze Stripe
+                </h3>
+                <div
+                  className={`flex-shrink-0 w-8 h-8 border border-[#3B3634]/20 flex items-center justify-center transition-all duration-300 ${
+                    open
+                      ? "bg-[#3B3634]/10 border-[#3B3634]/10 text-white"
+                      : "group-hover:border-[#3B3634]/40"
+                  }`}
+                >
+                  <CollapseIcon
+                    size={14}
+                    className={`transition-transform duration-300 ${
+                      open
+                        ? "transform rotate-180 text-white"
+                        : "text-[#3B3634]/50"
+                    }`}
+                  />
+                </div>
               </Disclosure.Button>
-              <Disclosure.Panel className="pt-4 text-gray-700 space-y-3">
+              <Disclosure.Panel className="pb-6 pl-9 text-[#3B3634]/90 font-instrument-sans leading-relaxed space-y-3">
                 <p>
                   15.1. Obsługa płatności na platformie realizowana jest za
                   pośrednictwem zewnętrznego operatora płatności – firmy Stripe
@@ -1533,7 +1757,7 @@ const TermsOfUseContent = () => {
                   przepisami prawa, w tym z RODO, dyrektywą PSD2 i wymogami PCI DSS.
                 </p>
                 <p>15.3 Dostępne metody płatności w serwisie to:</p>
-                <ul className="list-disc ml-5 space-y-1">
+                <ul className="list-disc ml-5 space-y-1 text-[#3B3634]/80">
                   <li>
                     przelew bankowy (natychmiastowy – poprzez zintegrowany system
                     płatności),
@@ -1628,21 +1852,32 @@ const TermsOfUseContent = () => {
         </Disclosure>
 
         {/* Section 16 - POSTANOWIENIA KOŃCOWE */}
-        <Disclosure as="div" className="border-b border-gray-200 pb-6">
+        <Disclosure as="div" className="border-b border-[#3B3634]/10">
           {({ open }) => (
             <>
-              <Disclosure.Button className="flex w-full justify-between items-center text-left">
-                <h2 className="text-xl font-medium font-instrument-sans">
-                  16. POSTANOWIENIA KOŃCOWE
-                </h2>
-                <CollapseIcon
-                  size={18}
-                  className={`${
-                    open ? "transform rotate-180" : ""
-                  } text-gray-500`}
-                />
+              <Disclosure.Button className="flex w-full justify-between items-center text-left py-6 group">
+                <h3 className="text-lg font-semibold font-instrument-sans text-[#3B3634] pr-4 group-hover:text-[#3B3634]/80 transition-colors duration-200">
+                  <span className="text-[#3B3634]/40 mr-3 font-normal">16</span>
+                  Postanowienia końcowe
+                </h3>
+                <div
+                  className={`flex-shrink-0 w-8 h-8 border border-[#3B3634]/20 flex items-center justify-center transition-all duration-300 ${
+                    open
+                      ? "bg-[#3B3634]/10 border-[#3B3634]/10 text-white"
+                      : "group-hover:border-[#3B3634]/40"
+                  }`}
+                >
+                  <CollapseIcon
+                    size={14}
+                    className={`transition-transform duration-300 ${
+                      open
+                        ? "transform rotate-180 text-white"
+                        : "text-[#3B3634]/50"
+                    }`}
+                  />
+                </div>
               </Disclosure.Button>
-              <Disclosure.Panel className="pt-4 text-gray-700 space-y-3">
+              <Disclosure.Panel className="pb-6 pl-9 text-[#3B3634]/90 font-instrument-sans leading-relaxed space-y-3">
                 <p>
                   16.1. Administrator zastrzega sobie prawo do zmiany Regulaminu.
                   Użytkownicy zostaną powiadomieni o zmianie z co najmniej 15-dniowym
@@ -1663,22 +1898,32 @@ const TermsOfUseContent = () => {
         </Disclosure>
 
         {/* ZAŁĄCZNIK NR 1 - PROMOCJA DLA PIERWSZYCH 100 SPRZEDAWCÓW */}
-        <Disclosure as="div" className="border-b border-gray-200 pb-6">
+        <Disclosure as="div" className="border-b border-[#3B3634]/10">
           {({ open }) => (
             <>
-              <Disclosure.Button className="flex w-full justify-between items-center text-left gap-4">
-                
-                <h2 className="text-xl font-medium font-instrument-sans flex-1">
-                   ZAŁĄCZNIK NR 1 DO REGULAMINU SERWISU ARTOVNIA - PROMOCJA DLA PIERWSZYCH 100 SPRZEDAWCÓW
-                </h2>
-                <CollapseIcon
-                  size={18}
-                  className={`${
-                    open ? "transform rotate-180" : ""
-                  } text-gray-500`}
-                />
+              <Disclosure.Button className="flex w-full justify-between items-center text-left py-6 group gap-4">
+                <h3 className="text-lg font-semibold font-instrument-sans text-[#3B3634] pr-4 group-hover:text-[#3B3634]/80 transition-colors duration-200 flex-1">
+                  <span className="text-[#3B3634]/40 mr-3 font-normal">Załącznik</span>
+                  Promocja dla pierwszych 100 sprzedawców
+                </h3>
+                <div
+                  className={`flex-shrink-0 w-8 h-8 border border-[#3B3634]/20 flex items-center justify-center transition-all duration-300 ${
+                    open
+                      ? "bg-[#3B3634]/10 border-[#3B3634]/10 text-white"
+                      : "group-hover:border-[#3B3634]/40"
+                  }`}
+                >
+                  <CollapseIcon
+                    size={14}
+                    className={`transition-transform duration-300 ${
+                      open
+                        ? "transform rotate-180 text-white"
+                        : "text-[#3B3634]/50"
+                    }`}
+                  />
+                </div>
               </Disclosure.Button>
-              <Disclosure.Panel className="pt-4 text-gray-700 space-y-3">
+              <Disclosure.Panel className="pb-6 pl-9 text-[#3B3634]/90 font-instrument-sans leading-relaxed space-y-3">
                 {/* § 1. Postanowienia ogólne */}
                 <p className="font-medium">§ 1. Postanowienia ogólne</p>
                 <p>
@@ -1706,7 +1951,7 @@ const TermsOfUseContent = () => {
                 <p>
                   2. Administrator zastrzega sobie prawo do:
                 </p>
-                <ul className="list-disc ml-5 space-y-1">
+                <ul className="list-disc ml-5 space-y-1 text-[#3B3634]/80">
                   <li>
                     a. zakończenia Promocji przed osiągnięciem limitu 100 Sprzedawców,
                     lub
@@ -1730,7 +1975,7 @@ const TermsOfUseContent = () => {
                 <p>
                   1. Do Promocji kwalifikują się wyłącznie Sprzedawcy, którzy łącznie:
                 </p>
-                <ul className="list-disc ml-5 space-y-1">
+                <ul className="list-disc ml-5 space-y-1 text-[#3B3634]/80">
                   <li>
                     a. założą konto Sprzedawcy w Serwisie i dokonają jego pełnej
                     konfiguracji, w tym uzupełnią wymagane dane rozliczeniowe oraz
@@ -1761,7 +2006,7 @@ const TermsOfUseContent = () => {
                 <p>
                   2. Prowizja promocyjna:
                 </p>
-                <ul className="list-disc ml-5 space-y-1">
+                <ul className="list-disc ml-5 space-y-1 text-[#3B3634]/80">
                   <li>
                     a. naliczana jest wyłącznie od ceny produktu i nie obejmuje
                     kosztów dostawy,
@@ -1800,37 +2045,47 @@ const TermsOfUseContent = () => {
             </>
           )}
         </Disclosure>
+          </div>
+        </ArtCard>
 
-      </div>
-
-      {/* Footer with Contact Info */}
-      <div className="mt-12 pt-8 border-t border-gray-200">
-        <div className="text-sm text-gray-600">
-          <p className="font-medium mb-2">Ann Sayuri ART Anna Wawrzyniak</p>
-          <p>ul. Leszczyńskiego 4/29, 50-078 Wrocław</p>
-           <p>
-  E-mail:{" "}
-  <span
-    className="underline underline-offset-2 cursor-pointer hover:opacity-70 transition-opacity"
-    onClick={() =>
-      window.location.href =
-        atob("bWFpbHRvOmluZm8uYXJ0b3ZuaWFAZ21haWwuY29t")
-    }
-    role="link"
-    tabIndex={0}
-    onKeyDown={(e) => {
-      if (e.key === "Enter" || e.key === " ") {
-        window.location.href =
-          atob("bWFpbHRvOmluZm8uYXJ0b3ZuaWFAZ21haWwuY29t")
-      }
-    }}
-  >
-    {"info.artovnia" + "@" + "gmail.com"}
-  </span>
-</p>
-          <p>NIP: 9261642417</p>
-          <p>REGON: 522385177</p>
-        </div>
+        {/* Footer Contact Card */}
+        <ArtCard className="text-center">
+          <h2 className="font-instrument-serif text-2xl md:text-3xl font-normal italic text-[#3B3634] mb-6">
+            Administrator serwisu
+          </h2>
+          <div className="text-[#3B3634]/80 font-instrument-sans space-y-1 leading-relaxed">
+            <p className="font-semibold text-[#3B3634]">
+              Ann Sayuri ART Anna Wawrzyniak
+            </p>
+            <p>ul. Leszczyńskiego 4/29</p>
+            <p>50-078 Wrocław</p>
+            <BrushDivider className="my-5" />
+            <p>
+              E-mail:{" "}
+              <span
+                className="text-[#3B3634] hover:text-[#3B3634]/70 underline underline-offset-4 transition-colors duration-200 cursor-pointer"
+                onClick={() =>
+                  (window.location.href = atob(
+                    "bWFpbHRvOmluZm8uYXJ0b3ZuaWFAZ21haWwuY29t"
+                  ))
+                }
+                role="link"
+                tabIndex={0}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    window.location.href = atob(
+                      "bWFpbHRvOmluZm8uYXJ0b3ZuaWFAZ21haWwuY29t"
+                    )
+                  }
+                }}
+              >
+                {"info.artovnia" + "@" + "gmail.com"}
+              </span>
+            </p>
+            <p>NIP: 9261642417</p>
+            <p>REGON: 522385177</p>
+          </div>
+        </ArtCard>
       </div>
     </div>
   )

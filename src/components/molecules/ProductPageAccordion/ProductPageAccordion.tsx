@@ -58,7 +58,7 @@ export const ProductPageAccordion = ({
         aria-controls={panelId}
         id={headingId}
         className="flex justify-between items-center cursor-pointer xl:px-4 py-4 w-full text-left
-                   hover:bg-[#3B3634]/5 transition-all duration-200
+                   lg:hover:bg-[#3B3634]/5 transition-all duration-200
                    active:scale-[0.99]"
       >
         <span className="text-2xl font-instrument-serif text-[#3B3634] tracking-tight">

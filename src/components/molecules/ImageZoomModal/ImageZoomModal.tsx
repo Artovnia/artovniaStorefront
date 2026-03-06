@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import ReactDOM from 'react-dom'
 import Image from 'next/image'
 import { useGalleryPrefetch } from '@/hooks/useGalleryPrefetch'
@@ -44,7 +44,9 @@ export const ImageZoomModal = ({
   const [zoomPosition, setZoomPosition] = useState({ x: 50, y: 50 })
   const [mounted, setMounted] = useState(false)
   const [isImageTransitioning, setIsImageTransitioning] = useState(false)
+  const [transitionFromIndex, setTransitionFromIndex] = useState<number | null>(null)
   const [transitionDirection, setTransitionDirection] = useState<'next' | 'prev'>('next')
+  const transitionTimeoutRef = useRef<number | null>(null)
   const { prefetchGalleryImage } = useGalleryPrefetch()
 
   const getImageKey = useCallback((image: MedusaProductImage, index: number) => {
@@ -56,22 +58,29 @@ export const ImageZoomModal = ({
     const safeIndex = (index + images.length) % images.length
     const targetUrl = images[safeIndex]?.url
     if (targetUrl) {
-      prefetchGalleryImage(targetUrl)
+      prefetchGalleryImage(targetUrl, 100)
     }
   }, [images, prefetchGalleryImage])
 
   const transitionToIndex = useCallback((nextIndex: number, direction: 'next' | 'prev') => {
+    if (nextIndex === currentIndex) return
+
     setTransitionDirection(direction)
     setIsImageTransitioning(true)
+    setTransitionFromIndex(currentIndex)
     setCurrentIndex(nextIndex)
     setIsZoomed(false)
 
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        setIsImageTransitioning(false)
-      })
-    })
-  }, [])
+    if (transitionTimeoutRef.current) {
+      window.clearTimeout(transitionTimeoutRef.current)
+    }
+
+    transitionTimeoutRef.current = window.setTimeout(() => {
+      setIsImageTransitioning(false)
+      setTransitionFromIndex(null)
+      transitionTimeoutRef.current = null
+    }, 300)
+  }, [currentIndex])
 
   // Update current index when initialIndex changes
   useEffect(() => {
@@ -81,7 +90,12 @@ export const ImageZoomModal = ({
   // Mount/unmount effect for portal
   useEffect(() => {
     setMounted(true)
-    return () => setMounted(false)
+    return () => {
+      if (transitionTimeoutRef.current) {
+        window.clearTimeout(transitionTimeoutRef.current)
+      }
+      setMounted(false)
+    }
   }, [])
 
   // Handle keyboard navigation
@@ -170,6 +184,7 @@ export const ImageZoomModal = ({
   if (!isOpen || !images.length) return null
 
   const currentImage = images[currentIndex]
+  const outgoingImage = transitionFromIndex !== null ? images[transitionFromIndex] : null
   
   // The modal content
   const modalContent = (
@@ -221,6 +236,21 @@ export const ImageZoomModal = ({
           }}
         >
           <div className="relative">
+            {outgoingImage && (
+              <Image
+                key={`zoom-outgoing-${getImageKey(outgoingImage, transitionFromIndex ?? 0)}`}
+                src={decodeURIComponent(outgoingImage.url)}
+                alt={`Product image ${transitionFromIndex !== null ? transitionFromIndex + 1 : currentIndex + 1}`}
+                width={1200}
+                height={1200}
+                quality={100}
+                className={`absolute inset-0 max-w-full max-h-[80vh] w-auto h-auto object-contain pointer-events-none will-change-transform ${
+                  transitionDirection === 'next'
+                    ? 'animate-[zoom-modal-slide-out-next_300ms_ease-out_forwards]'
+                    : 'animate-[zoom-modal-slide-out-prev_300ms_ease-out_forwards]'
+                }`}
+              />
+            )}
             <Image
               key={`zoom-main-${getImageKey(currentImage, currentIndex)}`}
               src={decodeURIComponent(currentImage.url)}
@@ -233,8 +263,8 @@ export const ImageZoomModal = ({
               } ${
                 isImageTransitioning
                   ? transitionDirection === 'next'
-                    ? 'opacity-0 translate-x-3'
-                    : 'opacity-0 -translate-x-3'
+                    ? 'opacity-0  scale-[1.015]'
+                    : 'opacity-0  scale-[1.015]'
                   : 'opacity-100 translate-x-0'
               }`}
               style={{
@@ -284,6 +314,30 @@ export const ImageZoomModal = ({
           ))}
         </div>
       )}
+
+      <style jsx>{`
+        @keyframes zoom-modal-slide-out-next {
+          from {
+            opacity: 1;
+            transform: translateX(0) scale(1);
+          }
+          to {
+            opacity: 0;
+            transform: translateX(0) scale(0.985);
+          }
+        }
+
+        @keyframes zoom-modal-slide-out-prev {
+          from {
+            opacity: 1;
+            transform: translateX(0) scale(1);
+          }
+          to {
+            opacity: 0;
+            transform: translateX(0) scale(0.985);
+          }
+        }
+      `}</style>
     </div>
   )
   

@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation';
 import { ForwardIcon } from '@/icons';
 
 interface BreadcrumbsProps {
-  items: { label: string; path: string }[];
+  items: { label: string; path: string; isHome?: boolean }[];
   className?: string;
 }
 
@@ -21,7 +21,7 @@ export function Breadcrumbs({
       aria-label='Breadcrumb'
     >
       <ol className='flex flex-wrap items-center gap-2 gap-y-1'>
-        {items.map(({ path, label }, index) => {
+        {items.map(({ path, label, isHome }, index) => {
           const isActive = pathname === path;
           return (
             <li
@@ -38,7 +38,27 @@ export function Breadcrumbs({
                 )}
                 title={label}
               >
-                {label}
+                {isHome ? (
+                  <>
+                    <svg
+                      className='w-4 h-4 md:hidden'
+                      viewBox='0 0 24 24'
+                      fill='none'
+                      stroke='currentColor'
+                      strokeWidth='1.8'
+                      strokeLinecap='round'
+                      strokeLinejoin='round'
+                      aria-hidden='true'
+                    >
+                      <path d='M3 10.5 12 3l9 7.5' />
+                      <path d='M5.5 9.5V21h13V9.5' />
+                    </svg>
+                    <span className='hidden md:inline'>{label}</span>
+                    <span className='sr-only md:hidden'>{label}</span>
+                  </>
+                ) : (
+                  label
+                )}
               </Link>
             </li>
           );

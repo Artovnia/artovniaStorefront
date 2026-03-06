@@ -365,7 +365,7 @@ export const TicketForm: React.FC<TicketFormProps> = ({
         )}
       </div>
 
-      <Button type="submit" isLoading={isLoading} className="w-full">
+      <Button type="submit" isLoading={isLoading} className="w-full font-normal">
         Wyślij zgłoszenie
       </Button>
     </form>

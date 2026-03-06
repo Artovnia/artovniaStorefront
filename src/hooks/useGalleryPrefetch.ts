@@ -109,10 +109,11 @@ export function useGalleryPrefetch() {
   }, [])
 
   /**
-   * Prefetch a gallery image at main-image quality (80).
+   * Prefetch a gallery image at a caller-provided quality.
+   * Defaults to main-image quality (80).
    */
-  const prefetchGalleryImage = useCallback((imageUrl: string) => {
-    prefetchImage(imageUrl, MAIN_IMAGE_QUALITY)
+  const prefetchGalleryImage = useCallback((imageUrl: string, quality = MAIN_IMAGE_QUALITY) => {
+    prefetchImage(imageUrl, quality)
   }, [prefetchImage])
 
   /**

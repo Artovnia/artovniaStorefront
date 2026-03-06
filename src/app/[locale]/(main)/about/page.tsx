@@ -75,7 +75,7 @@ export default async function AboutPage() {
           }
         >
           {/* Back Navigation */}
-          <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 md:pt-10">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 md:pt-10">
             <Link
               href="/"
               className="inline-flex items-center text-gray-500 hover:text-gray-900 transition-colors font-instrument-sans text-sm group"

@@ -24,7 +24,7 @@ export const MobileNavbar = ({
     <div className='xl:hidden flex items-center gap-2'>
       <button 
         onClick={handleOpenMenu}
-        className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+        className="p-2 rounded-full transition-colors"
         aria-label="Otwórz menu kategorii"
         aria-expanded={isMenuOpen}
         aria-haspopup="dialog"
