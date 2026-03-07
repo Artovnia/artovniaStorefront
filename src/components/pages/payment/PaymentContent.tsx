@@ -30,7 +30,7 @@ const ArtCard = ({
   className?: string
 }) => (
   <div
-    className={`relative bg-white/50 backdrop-blur-sm border border-[#3B3634]/10 p-8 md:p-10 ${className}`}
+    className={`relative bg-white/50 backdrop-blur-sm border border-[#3B3634]/10 px-2 py-4 md:px-8 md:py-8 ${className}`}
   >
    
     {children}
@@ -43,7 +43,7 @@ const PaymentContent = () => {
   return (
     <div className="payment-content">
       {/* Header */}
-      <header className="mb-12 text-center">
+      <header className="mb-6 md:mb-12 text-center">
         <h1 className="font-instrument-serif text-4xl md:text-5xl lg:text-6xl mb-6 font-normal italic text-[#3B3634] tracking-tight">
           Formy płatności
         </h1>
@@ -56,12 +56,12 @@ const PaymentContent = () => {
         </div>
       </header>
 
-      <BrushDivider className="mb-12" />
+      <BrushDivider className="mb-6 md:mb-12" />
 
       <div className="max-w-none space-y-10">
         {/* Stripe Provider Badge */}
         <ArtCard>
-          <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-2 md:gap-6">
             <div className="flex-1">
               <p className="text-lg leading-relaxed text-[#3B3634]/80 font-instrument-sans">
                 Wszystkie płatności są przetwarzane przez{" "}
@@ -93,9 +93,9 @@ const PaymentContent = () => {
             Dostępne metody płatności
           </h2>
 
-          <div className="grid md:grid-cols-2 gap-6">
+          <div className="grid md:grid-cols-2 gap-4 md:gap-6">
             {/* Credit Cards */}
-            <div className="group p-6 border border-[#3B3634]/10 hover:border-[#3B3634]/30 transition-all duration-300">
+            <div className="group p-2 md:p-6 border border-[#3B3634]/10 hover:border-[#3B3634]/30 transition-all duration-300">
               <div className="flex items-start space-x-4">
                 <div className="flex-shrink-0 w-12 h-12 border-2 border-[#3B3634]/30 flex items-center justify-center group-hover:bg-[#3B3634] group-hover:border-[#3B3634] transition-colors duration-300">
                   <svg
@@ -132,7 +132,7 @@ const PaymentContent = () => {
             </div>
 
             {/* BLIK */}
-            <div className="group p-6 border border-[#3B3634]/10 hover:border-[#3B3634]/30 transition-all duration-300">
+            <div className="group p-2 md:p-6 border border-[#3B3634]/10 hover:border-[#3B3634]/30 transition-all duration-300">
               <div className="flex items-start space-x-4">
                 <div className="flex-shrink-0 w-16 h-12 flex items-center justify-center">
                   <Image
@@ -161,7 +161,7 @@ const PaymentContent = () => {
             </div>
 
             {/* Przelewy24 */}
-            <div className="group p-6 border border-[#3B3634]/10 hover:border-[#3B3634]/30 transition-all duration-300">
+            <div className="group p-2 md:p-6 border border-[#3B3634]/10 hover:border-[#3B3634]/30 transition-all duration-300">
               <div className="flex items-start space-x-4">
                 <div className="flex-shrink-0 w-16 h-12 flex items-center justify-center">
                   <Image
@@ -195,7 +195,7 @@ const PaymentContent = () => {
             </div>
 
             {/* Mobile Payments */}
-            <div className="group p-6 border border-[#3B3634]/10 hover:border-[#3B3634]/30 transition-all duration-300">
+            <div className="group p-2 md:p-6 border border-[#3B3634]/10 hover:border-[#3B3634]/30 transition-all duration-300">
               <div className="flex items-start space-x-4">
                 <div className="flex-shrink-0 w-12 h-12 border-2 border-[#3B3634]/30 flex items-center justify-center group-hover:bg-[#3B3634] group-hover:border-[#3B3634] transition-colors duration-300">
                   <svg
@@ -250,7 +250,7 @@ const PaymentContent = () => {
             </h2>
           </div>
 
-          <div className="grid md:grid-cols-2 gap-6">
+          <div className="grid md:grid-cols-2 gap-2 md:gap-6">
             {[
               {
                 icon: (
@@ -346,7 +346,7 @@ const PaymentContent = () => {
                 desc: "Środki są zabezpieczone do momentu potwierdzenia odbioru produktów przez kupującego. Twoje zakupy są chronione.",
               },
             ].map((item) => (
-              <div key={item.step} className="flex items-start gap-6">
+              <div key={item.step} className="flex items-start gap-2 md:gap-6">
                 <div className="flex-shrink-0 w-12 h-12 bg-[#3B3634] text-white flex items-center justify-center font-instrument-sans font-semibold text-lg">
                   {item.step}
                 </div>

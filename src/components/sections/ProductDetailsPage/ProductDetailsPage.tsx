@@ -5,11 +5,8 @@ import { BatchPriceProvider } from "@/components/context/BatchPriceProvider"
 import { PromotionDataProvider } from "@/components/context/PromotionDataProvider"
 import { ProductUserDataProvider } from "@/components/context/ProductUserDataProvider"
 import {
-  listProductsLean,
   getProductPromotions,
-  listSuggestedProducts,
 } from "../../../lib/data/products"
-import { PDP_SELLER_CARD_FIELDS } from "@/lib/constants/product-fields"
 import { getVendorCompleteStatus } from "../../../lib/data/vendor-availability"
 import { getProductDeliveryTimeframe } from "@/lib/data/delivery-timeframe"
 import { getProductMeasurements } from "@/lib/data/measurements"
@@ -17,12 +14,11 @@ import ProductErrorBoundary from "@/components/molecules/ProductErrorBoundary/Pr
 import { Breadcrumbs } from "@/components/atoms/Breadcrumbs/Breadcrumbs"
 import { buildProductBreadcrumbs } from "@/lib/utils/breadcrumbs"
 import { generateProductJsonLd, generateBreadcrumbJsonLd } from "@/lib/helpers/seo"
-import { Link } from "@/i18n/routing"
 import { getBatchLowestPrices } from "@/lib/data/price-history"
 import { HttpTypes } from "@medusajs/types"
 import { Suspense } from "react"
 
-import { ProductPageUserContent } from "./ProductPageUserContent"
+import { DeferredProductPageContent } from "./DeferredProductPageContent"
 
 export const ProductDetailsPage = async ({
   handle,
@@ -47,34 +43,18 @@ export const ProductDetailsPage = async ({
   const selectedVariantId = Array.isArray(product.variants) && product.variants.length > 0 && product.variants[0]?.id
     ? product.variants[0].id
     : undefined
-  const supportedLocales = ['en', 'pl']
-  const currentLocale = supportedLocales.includes(locale) ? locale : 'en'
+  const currentLocale = "pl"
   const breadcrumbsPromise = buildProductBreadcrumbs(product, locale)
 
-  // ✅ OPTIMIZATION: Parallel fetch EVERYTHING (including prices) - NO WATERFALL
+  // ✅ OPTIMIZATION: Keep only above-the-fold critical fetches in main PDP path.
   // Removed noStore() to enable ISR caching - user data now fetched client-side
   const [
-    sellerProductsResult,
     vendorStatusResult,
     promotionalProductsResult,
-    categoryProductsResult,
     productPricesResult,
     deliveryTimeframeResult,
     measurementsResult,
   ] = await Promise.allSettled([
-    // Seller products — lean fields only (cards don't need full product payload)
-    product.seller?.id && region
-      ? listProductsLean({
-          seller_id: product.seller!.id,
-          regionId: region.id,
-          queryParams: {
-            limit: 8,
-            // Canonical seller-card fields keep cache keys stable across callsites.
-            fields: PDP_SELLER_CARD_FIELDS,
-          },
-        }).then(r => r.response.products).catch(() => [])
-      : Promise.resolve([]),
-
     // Vendor status — no Promise.race wrapper (causes memory leaks/unhandled rejections)
     // getVendorCompleteStatus has its own AbortSignal.timeout(10000) internally
     product.seller?.id
@@ -94,12 +74,6 @@ export const ProductDetailsPage = async ({
     // PromotionDataProvider will fetch promotions for card products (seller/suggested) client-side
     getProductPromotions(product.id).catch(() => []),
 
-    // ✅ Suggested products: "Może Ci się spodobać" section
-    region
-      ? listSuggestedProducts({ product, regionId: region.id, limit: 8 })
-          .catch(() => ({ products: [], categoryName: '', categoryHandle: '' }))
-      : Promise.resolve({ products: [], categoryName: '', categoryHandle: '' }),
-
     // ✅ OPTIMIZATION: Fetch product's own prices IN PARALLEL (not after Promise.allSettled)
     productVariantIds.length > 0 && region
       ? getBatchLowestPrices(productVariantIds, 'PLN', region.id, 30)
@@ -109,12 +83,6 @@ export const ProductDetailsPage = async ({
 
     getProductMeasurements(product.id, selectedVariantId, currentLocale),
   ])
-
-  // Extract results with fallbacks
-  const sellerProducts =
-    sellerProductsResult.status === "fulfilled"
-      ? sellerProductsResult.value
-      : []
 
   // ✅ Extract batched vendor status
   const vendorStatus =
@@ -138,13 +106,6 @@ export const ProductDetailsPage = async ({
     : product
 
   const initialVariantAttributes = undefined
-
-  const suggestedProductsData =
-    categoryProductsResult.status === "fulfilled"
-      ? categoryProductsResult.value as { products: any[]; categoryName: string; categoryHandle: string }
-      : { products: [], categoryName: '', categoryHandle: '' }
-
-  const suggestedProducts = suggestedProductsData.products
   const sellerForDetails = product.seller as HttpTypes.StoreProduct["seller"]
 
   const productPrices = productPricesResult.status === "fulfilled"
@@ -283,90 +244,13 @@ export const ProductDetailsPage = async ({
                   </div>
                 </div>
 
-                {/* ✅ OPTIMIZATION: Defer below-fold content to prioritize gallery images */}
-                <Suspense fallback={<div className="my-24 h-96 bg-gray-50 animate-pulse" />}>
-                  <div className="my-12 xl:mt-40 text-black max-w-[1920px] mx-auto" aria-label={`Więcej produktów od ${product.seller?.name || 'sprzedawcy'}`}>
-                    {/* Custom heading with mixed styling and button */}
-                    <div className="mb-6 px-4 sm:px-6 lg:px-8">
-                      {/* Desktop Layout: Grid with centered heading and right-aligned button */}
-                      <div className="hidden lg:grid lg:grid-cols-[1fr_auto_1fr] lg:items-center">
-                        <div></div>
-                        <h2 className="heading-lg font-bold tracking-tight text-black text-center">
-                          <span className="font-instrument-serif">Więcej od </span>
-                          <span className="font-instrument-serif italic">
-                            {product.seller?.name}
-                          </span>
-                        </h2>
-                        <div className="flex justify-end">
-                          {product.seller?.handle && (
-                            <Link 
-                              href={`/sellers/${product.seller.handle}`}
-                              className="group relative text-[#3B3634] font-instrument-sans font-medium px-4 py-2 overflow-hidden transition-all duration-300 hover:text-white"
-                              aria-label={`Zobacz wszystkie produkty od ${product.seller.name}`}
-                            >
-                              <span className="absolute inset-0 bg-[#3B3634] transform translate-x-[-100%] group-hover:translate-x-0 transition-transform duration-300 ease-out" aria-hidden="true"></span>
-                              <span className="relative flex items-center gap-2">
-                                Zobacz wszystkie
-                                <span className="inline-block transition-transform duration-300 group-hover:translate-x-1">
-                                  →
-                                </span>
-                              </span>
-                            </Link>
-                          )}
-                        </div>
-                      </div>
-
-                      {/* Mobile Layout: Elegant artist signature approach */}
-                      <div className="lg:hidden space-y-4">
-                        <h2 className="heading-lg font-bold tracking-tight text-black text-center">
-                          <span className="font-instrument-serif">Więcej od </span>
-                          <span className="font-instrument-serif italic">
-                            {product.seller?.name}
-                          </span>
-                        </h2>
-                        
-                        {product.seller?.handle && (
-                          <div className="flex justify-center">
-                            <Link 
-                              href={`/sellers/${product.seller.handle}`}
-                              className="group inline-flex items-center gap-3 font-instrument-serif italic text-[17px] text-[#3B3634] border-b-[1.5px] border-[#3B3634] pb-0.5 active:opacity-60 transition-all duration-200"
-                            >
-                              <span className="relative">
-                                Odkryj kolekcję
-                                <span className="absolute -bottom-[1.5px] left-0 w-0 h-[1.5px] bg-[#3B3634] group-active:w-full transition-all duration-300"></span>
-                              </span>
-                              <svg 
-                                className="w-4 h-4 transition-transform duration-200 group-active:translate-x-0.5" 
-                                fill="none" 
-                                viewBox="0 0 24 24" 
-                                stroke="currentColor"
-                                aria-hidden="true"
-                              >
-                                <path 
-                                  strokeLinecap="round" 
-                                  strokeLinejoin="round" 
-                                  strokeWidth={1.5} 
-                                  d="M17 8l4 4m0 0l-4 4m4-4H3" 
-                                />
-                              </svg>
-                            </Link>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* ✅ User-specific content rendered via client component */}
-                    <ProductPageUserContent
-                      productId={product.id}
-                      sellerProducts={sellerProducts as any}
-                      suggestedProducts={suggestedProducts as any}
-                      suggestedCategoryName={suggestedProductsData.categoryName}
-                      suggestedCategoryHandle={suggestedProductsData.categoryHandle}
-                      prefetchedReviews={prefetchedProductReviews}
-                      sellerName={product.seller?.name}
-                      sellerHandle={product.seller?.handle}
-                    />
-                  </div>
+                {/* ✅ OPTIMIZATION: Defer below-fold content to prioritize gallery/details first paint */}
+                <Suspense fallback={null}>
+                  <DeferredProductPageContent
+                    product={product}
+                    region={region}
+                    prefetchedReviews={prefetchedProductReviews}
+                  />
                 </Suspense>
               </VendorAvailabilityProvider>
             </ProductUserDataProvider>

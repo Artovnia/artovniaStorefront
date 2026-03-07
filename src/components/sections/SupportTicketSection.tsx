@@ -15,7 +15,7 @@ export const SupportTicketSection: React.FC<SupportTicketSectionProps> = ({
   return (
     <div className="w-full space-y-8">
       {/* Contact form card */}
-      <div className="relative bg-white/50 backdrop-blur-sm border border-[#3B3634]/10 p-8">
+      <div className="relative bg-white/50 backdrop-blur-sm border border-[#3B3634]/10 px-2 py-4 md:px-8 md:py-8">
       
 
         <div className="mb-8">

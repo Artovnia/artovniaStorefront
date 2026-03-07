@@ -31,7 +31,7 @@ const ArtCard = ({
   className?: string
 }) => (
   <div
-    className={`relative bg-white/50 backdrop-blur-sm border border-[#3B3634]/10 p-8 md:p-10 ${className}`}
+    className={`relative bg-white/50 backdrop-blur-sm border border-[#3B3634]/10 px-2 py-4 md:px-8 md:py-8 ${className}`}
   >
    
     {children}
@@ -269,7 +269,7 @@ const SellingGuideContent = () => {
   return (
     <div className="selling-guide-content">
       {/* Header */}
-      <header className="mb-12 text-center">
+      <header className="mb-6 md:mb-12 text-center">
         <h1 className="font-instrument-serif text-4xl md:text-5xl lg:text-6xl mb-6 font-normal italic text-[#3B3634] tracking-tight">
           Jak sprzedawać na Artovni?
         </h1>
@@ -283,7 +283,7 @@ const SellingGuideContent = () => {
         </div>
       </header>
 
-      <BrushDivider className="mb-12" />
+      <BrushDivider className="mb-6 md:mb-12" />
 
       <div className="max-w-none space-y-10">
         {/* Intro Card */}
@@ -363,7 +363,7 @@ const SellingGuideContent = () => {
                       <div
                         className={`flex-shrink-0 w-8 h-8 border border-[#3B3634]/20 flex items-center justify-center transition-all duration-300 ${
                           open
-                            ? "bg-[#3B3634] border-[#3B3634]"
+                            ? "bg-[#3B3634]/10 border-[#3B3634]"
                             : "group-hover:border-[#3B3634]/40"
                         }`}
                       >
@@ -377,7 +377,7 @@ const SellingGuideContent = () => {
                         />
                       </div>
                     </Disclosure.Button>
-                    <Disclosure.Panel className="pb-6 pl-9 text-[#3B3634]/90 font-instrument-sans leading-relaxed">
+                    <Disclosure.Panel className="pb-6 lg:pl-9 text-[#3B3634]/90 font-instrument-sans leading-relaxed">
                       {section.content}
                     </Disclosure.Panel>
                   </>

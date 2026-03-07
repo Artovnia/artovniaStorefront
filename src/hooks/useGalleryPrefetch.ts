@@ -24,8 +24,8 @@ const ALL_WIDTHS = [80, 160, 252, 370, 640, 828, 1200, 1920]
 // Must match the quality used in ProductCarousel's main LqipImage (quality={80})
 const MAIN_IMAGE_QUALITY = 80
 
-// KenBurns images use quality={70}
-const KENBURNS_QUALITY = 70
+// Keep KenBurns quality aligned with main gallery quality for cache-key reuse.
+const KENBURNS_QUALITY = 80
 
 // LQIP: tiny placeholder for instant visual feedback
 const LQIP_QUALITY = 10

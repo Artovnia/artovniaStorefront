@@ -31,7 +31,7 @@ const ArtCard = ({
   className?: string
 }) => (
   <div
-    className={`relative bg-white/50 backdrop-blur-sm border border-[#3B3634]/10 p-8 md:p-10 ${className}`}
+    className={`relative bg-white/50 backdrop-blur-sm border border-[#3B3634]/10 px-2 py-4 md:px-8 md:py-8 ${className}`}
   >
    
     {children}
@@ -45,7 +45,7 @@ const TermsOfUseContent = () => {
   return (
     <div className="terms-content">
       {/* Header Section */}
-      <header className="mb-12 text-center">
+      <header className="mb-6 md:mb-12 text-center">
         <h1 className="font-instrument-serif text-4xl md:text-5xl lg:text-6xl mb-6 font-normal italic text-[#3B3634] tracking-tight">
           Regulamin Serwisu Artovnia
         </h1>
@@ -64,7 +64,7 @@ const TermsOfUseContent = () => {
         </div>
       </header>
 
-      <BrushDivider className="mb-12" />
+      <BrushDivider className="mb-6 md:mb-12" />
 
       <div className="max-w-none space-y-10">
         {/* Terms Sections Accordion */}
@@ -118,7 +118,7 @@ const TermsOfUseContent = () => {
                   />
                 </div>
               </Disclosure.Button>
-              <Disclosure.Panel className="pb-6 pl-9 text-[#3B3634]/90 font-instrument-sans leading-relaxed space-y-3">
+              <Disclosure.Panel className="pb-6 lg:pl-9 text-[#3B3634]/90 font-instrument-sans leading-relaxed space-y-3">
                 <p>
                   1.1. Niniejszy regulamin (dalej &quot;Regulamin&quot;)
                   określa zasady korzystania z internetowej platformy
@@ -172,7 +172,7 @@ const TermsOfUseContent = () => {
                   />
                 </div>
               </Disclosure.Button>
-              <Disclosure.Panel className="pb-6 pl-9 text-[#3B3634]/90 font-instrument-sans leading-relaxed space-y-3">
+              <Disclosure.Panel className="pb-6 lg:pl-9 text-[#3B3634]/90 font-instrument-sans leading-relaxed space-y-3">
                 <ul className="list-disc ml-5 space-y-2 text-[#3B3634]/80">
                   <li>
                     <strong className="text-[#3B3634]">SERWIS</strong> – platforma internetowa
@@ -296,7 +296,7 @@ const TermsOfUseContent = () => {
                   />
                 </div>
               </Disclosure.Button>
-              <Disclosure.Panel className="pb-6 pl-9 text-[#3B3634]/90 font-instrument-sans leading-relaxed space-y-3">
+              <Disclosure.Panel className="pb-6 lg:pl-9 text-[#3B3634]/90 font-instrument-sans leading-relaxed space-y-3">
                 <p>
                   3.1. W celu prawidłowego i pełnego korzystania z
                   funkcjonalności platformy internetowej www.artovnia.com
@@ -415,7 +415,7 @@ const TermsOfUseContent = () => {
                   />
                 </div>
               </Disclosure.Button>
-              <Disclosure.Panel className="pb-6 pl-9 text-[#3B3634]/90 font-instrument-sans leading-relaxed space-y-3">
+              <Disclosure.Panel className="pb-6 lg:pl-9 text-[#3B3634]/90 font-instrument-sans leading-relaxed space-y-3">
                 <p>
                   4.1. Korzystanie z pełnej funkcjonalności platformy
                   www.artovnia.com w tym możliwość dokonywania zakupów i
@@ -536,7 +536,7 @@ const TermsOfUseContent = () => {
                   />
                 </div>
               </Disclosure.Button>
-              <Disclosure.Panel className="pb-6 pl-9 text-[#3B3634]/90 font-instrument-sans leading-relaxed space-y-3">
+              <Disclosure.Panel className="pb-6 lg:pl-9 text-[#3B3634]/90 font-instrument-sans leading-relaxed space-y-3">
                 <p>
                   5.1. Zawarcie umowy kupna-sprzedaży następuje bezpośrednio
                   pomiędzy Kupującym a Sprzedającym, z chwilą skutecznego
@@ -640,7 +640,7 @@ const TermsOfUseContent = () => {
                   />
                 </div>
               </Disclosure.Button>
-              <Disclosure.Panel className="pb-6 pl-9 text-[#3B3634]/90 font-instrument-sans leading-relaxed space-y-3">
+              <Disclosure.Panel className="pb-6 lg:pl-9 text-[#3B3634]/90 font-instrument-sans leading-relaxed space-y-3">
                 <p>
                   6.1. Sprzedający może wystawiać swoje produkty do sprzedaży na
                   platformie po aktywacji konta Sprzedawcy i wypełnieniu
@@ -730,7 +730,7 @@ const TermsOfUseContent = () => {
                   />
                 </div>
               </Disclosure.Button>
-              <Disclosure.Panel className="pb-6 pl-9 text-[#3B3634]/90 font-instrument-sans leading-relaxed space-y-3">
+              <Disclosure.Panel className="pb-6 lg:pl-9 text-[#3B3634]/90 font-instrument-sans leading-relaxed space-y-3">
                 <p>
                   7.1. Sprzedający ma prawo korzystać z serwisu www.artovnia.com w
                   celu prezentowania i sprzedaży własnych produktów zgodnie z
@@ -891,7 +891,7 @@ const TermsOfUseContent = () => {
                   />
                 </div>
               </Disclosure.Button>
-              <Disclosure.Panel className="pb-6 pl-9 text-[#3B3634]/90 font-instrument-sans leading-relaxed space-y-3">
+              <Disclosure.Panel className="pb-6 lg:pl-9 text-[#3B3634]/90 font-instrument-sans leading-relaxed space-y-3">
                 <p>
                   8.1. Administrator ma prawo zawiesić konto Sprzedającego w
                   przypadku naruszenia przez niego postanowień niniejszego
@@ -1008,7 +1008,7 @@ const TermsOfUseContent = () => {
                   />
                 </div>
               </Disclosure.Button>
-              <Disclosure.Panel className="pb-6 pl-9 text-[#3B3634]/90 font-instrument-sans leading-relaxed space-y-3">
+              <Disclosure.Panel className="pb-6 lg:pl-9 text-[#3B3634]/90 font-instrument-sans leading-relaxed space-y-3">
                 <p>
                   9.1. Administrator zapewnia techniczne funkcjonowanie platformy Artovnia.com, umożliwiające zawieranie umów sprzedaży pomiędzy Użytkownikami, jednak nie jest stroną tych umów. Odpowiedzialność za realizację transakcji, zgodność oferty z opisem oraz jakość i legalność sprzedawanych produktów spoczywa wyłącznie na Sprzedających.
                 </p>
@@ -1139,7 +1139,7 @@ const TermsOfUseContent = () => {
                   />
                 </div>
               </Disclosure.Button>
-              <Disclosure.Panel className="pb-6 pl-9 text-[#3B3634]/90 font-instrument-sans leading-relaxed space-y-3">
+              <Disclosure.Panel className="pb-6 lg:pl-9 text-[#3B3634]/90 font-instrument-sans leading-relaxed space-y-3">
                 <h3 className="font-medium text-base">
                   10.1. Prawo odstąpienia od umowy zawartej na odległość (zakup od
                   Sprzedającego - Przedsiębiorcy)
@@ -1321,7 +1321,7 @@ const TermsOfUseContent = () => {
                   />
                 </div>
               </Disclosure.Button>
-              <Disclosure.Panel className="pb-6 pl-9 text-[#3B3634]/90 font-instrument-sans leading-relaxed space-y-3">
+              <Disclosure.Panel className="pb-6 lg:pl-9 text-[#3B3634]/90 font-instrument-sans leading-relaxed space-y-3">
                 <p>
                   11.1. Po zrealizowaniu zamówienia Kupujący ma możliwość
                   wystawienia opinii dotyczącej zakupionego produktu oraz jakości
@@ -1439,7 +1439,7 @@ const TermsOfUseContent = () => {
                   />
                 </div>
               </Disclosure.Button>
-              <Disclosure.Panel className="pb-6 pl-9 text-[#3B3634]/90 font-instrument-sans leading-relaxed space-y-3">
+              <Disclosure.Panel className="pb-6 lg:pl-9 text-[#3B3634]/90 font-instrument-sans leading-relaxed space-y-3">
                 <p>
                   12.1. Administratorem danych osobowych użytkowników korzystających
                   z serwisu (zarówno Kupujących, jak i Sprzedających) jest
@@ -1533,7 +1533,7 @@ const TermsOfUseContent = () => {
                   />
                 </div>
               </Disclosure.Button>
-              <Disclosure.Panel className="pb-6 pl-9 text-[#3B3634]/90 font-instrument-sans leading-relaxed space-y-3">
+              <Disclosure.Panel className="pb-6 lg:pl-9 text-[#3B3634]/90 font-instrument-sans leading-relaxed space-y-3">
                 <p>
                   13.1. Platforma może okresowo organizować akcje promocyjne,
                   wyprzedaże oraz udostępniać kody rabatowe, które umożliwiają
@@ -1633,7 +1633,7 @@ const TermsOfUseContent = () => {
                   />
                 </div>
               </Disclosure.Button>
-              <Disclosure.Panel className="pb-6 pl-9 text-[#3B3634]/90 font-instrument-sans leading-relaxed space-y-3">
+              <Disclosure.Panel className="pb-6 lg:pl-9 text-[#3B3634]/90 font-instrument-sans leading-relaxed space-y-3">
                 <p>
                   14.1. Sprzedający, publikując oferty w serwisie, wyraża zgodę na
                   nieodpłatne wykorzystanie przez Administratora:
@@ -1744,7 +1744,7 @@ const TermsOfUseContent = () => {
                   />
                 </div>
               </Disclosure.Button>
-              <Disclosure.Panel className="pb-6 pl-9 text-[#3B3634]/90 font-instrument-sans leading-relaxed space-y-3">
+              <Disclosure.Panel className="pb-6 lg:pl-9 text-[#3B3634]/90 font-instrument-sans leading-relaxed space-y-3">
                 <p>
                   15.1. Obsługa płatności na platformie realizowana jest za
                   pośrednictwem zewnętrznego operatora płatności – firmy Stripe
@@ -1877,7 +1877,7 @@ const TermsOfUseContent = () => {
                   />
                 </div>
               </Disclosure.Button>
-              <Disclosure.Panel className="pb-6 pl-9 text-[#3B3634]/90 font-instrument-sans leading-relaxed space-y-3">
+              <Disclosure.Panel className="pb-6 lg:pl-9 text-[#3B3634]/90 font-instrument-sans leading-relaxed space-y-3">
                 <p>
                   16.1. Administrator zastrzega sobie prawo do zmiany Regulaminu.
                   Użytkownicy zostaną powiadomieni o zmianie z co najmniej 15-dniowym
@@ -1923,7 +1923,7 @@ const TermsOfUseContent = () => {
                   />
                 </div>
               </Disclosure.Button>
-              <Disclosure.Panel className="pb-6 pl-9 text-[#3B3634]/90 font-instrument-sans leading-relaxed space-y-3">
+              <Disclosure.Panel className="pb-6 lg:pl-9 text-[#3B3634]/90 font-instrument-sans leading-relaxed space-y-3">
                 {/* § 1. Postanowienia ogólne */}
                 <p className="font-medium">§ 1. Postanowienia ogólne</p>
                 <p>

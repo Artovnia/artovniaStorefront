@@ -31,7 +31,7 @@ const ArtCard = ({
   className?: string
 }) => (
   <div
-    className={`relative bg-white/50 backdrop-blur-sm border border-[#3B3634]/10 p-8 md:p-10 ${className}`}
+    className={`relative bg-white/50 backdrop-blur-sm border border-[#3B3634]/10 px-2 py-4 md:px-8 md:py-8 ${className}`}
   >
  
     {children}
@@ -520,13 +520,13 @@ const privacySections = [
 ]
 
 const PrivacyPolicyContent = () => {
-  const [lastUpdated] = useState(new Date(2025, 10, 3))
+  const [lastUpdated] = useState(new Date(2025, 1, 20))
   const [effectiveDate] = useState(new Date(2025, 10, 3))
 
   return (
     <div className="privacy-content">
       {/* Header */}
-      <header className="mb-12 text-center">
+      <header className="mb-6 md:mb-12 text-center">
         <h1 className="font-instrument-serif text-4xl md:text-5xl lg:text-6xl mb-6 font-normal italic text-[#3B3634] tracking-tight">
           Polityka Prywatności
         </h1>
@@ -545,7 +545,7 @@ const PrivacyPolicyContent = () => {
         </div>
       </header>
 
-      <BrushDivider className="mb-12" />
+      <BrushDivider className="mb-6 md:mb-12" />
 
       <div className="max-w-none space-y-10">
         {/* Quick Info Card */}
@@ -660,7 +660,7 @@ const PrivacyPolicyContent = () => {
                         />
                       </div>
                     </Disclosure.Button>
-                    <Disclosure.Panel className="pb-6 pl-9 text-[#3B3634]/90 font-instrument-sans leading-relaxed">
+                    <Disclosure.Panel className="pb-6 lg:pl-9 text-[#3B3634]/90 font-instrument-sans leading-relaxed">
                       {section.content}
                     </Disclosure.Panel>
                   </>

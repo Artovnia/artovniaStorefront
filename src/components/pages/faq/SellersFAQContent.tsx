@@ -31,7 +31,7 @@ const ArtCard = ({
   className?: string
 }) => (
   <div
-    className={`relative bg-white/50 backdrop-blur-sm border border-[#3B3634]/10 p-8 md:p-10 ${className}`}
+    className={`relative bg-white/50 backdrop-blur-sm border border-[#3B3634]/10 px-2 py-4 md:px-8 md:py-8 ${className}`}
   >
    
     {children}
@@ -307,7 +307,7 @@ const SellersFAQContent = () => {
   return (
     <div className="sellers-faq-content">
       {/* Header */}
-      <header className="mb-12 text-center">
+      <header className="mb-6 md:mb-12 text-center">
         <h1 className="font-instrument-serif text-4xl md:text-5xl lg:text-6xl mb-6 font-normal italic text-[#3B3634] tracking-tight">
           FAQ dla twórców
         </h1>
@@ -321,7 +321,7 @@ const SellersFAQContent = () => {
         </div>
       </header>
 
-      <BrushDivider className="mb-12" />
+      <BrushDivider className="mb-6 md:mb-12" />
 
       <div className="max-w-none space-y-10">
         {/* Intro Card */}
@@ -409,7 +409,7 @@ const SellersFAQContent = () => {
                         />
                       </div>
                     </Disclosure.Button>
-                    <Disclosure.Panel className="pb-6 pl-9 text-[#3B3634]/90 font-instrument-sans space-y-3 leading-relaxed">
+                    <Disclosure.Panel className="pb-6 lg:pl-9 text-[#3B3634]/90 font-instrument-sans space-y-3 leading-relaxed">
                       {item.answer}
                     </Disclosure.Panel>
                   </>

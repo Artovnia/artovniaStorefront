@@ -148,7 +148,7 @@ export const KenBurnsSlide = ({
               src={image.url}
               alt={`${alt} - ${index + 1}`}
               fill
-              quality={70}
+              quality={80}
               className="object-cover"
               sizes="(max-width: 640px) 100vw, 50vw"
               loading="lazy"

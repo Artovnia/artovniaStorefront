@@ -268,7 +268,7 @@ export const ProductCarousel = ({
                         src={slide.url}
                         alt={title}
                         fill
-                        quality={70}
+                        quality={80}
                         loading="lazy"
                         fetchPriority="low"
                         placeholder="empty"

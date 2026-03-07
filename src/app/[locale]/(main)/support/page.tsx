@@ -65,9 +65,9 @@ export default async function SupportPage() {
       <div className="relative min-h-screen bg-[#F4F0EB] overflow-hidden">
         
 
-        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+        <div className="relative z-10 max-w-7xl mx-auto px-2 sm:px-6 lg:px-8 py-8">
           {/* Header illustration — open letter with paint accents */}
-          <div className="mb-8 flex justify-center">
+          <div className=" flex justify-center">
             <svg
               className="w-32 h-32 text-[#3B3634]"
               viewBox="0 0 200 200"

@@ -43,6 +43,7 @@ export const GalleryProductCard = ({
   const productUrl = `/products/${product.handle}`;
   const cardRef = useRef<HTMLDivElement>(null);
   const hasRoutePrefetched = useRef(false);
+  const touchRoutePrefetchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     setIsMounted(true);
@@ -104,6 +105,21 @@ export const GalleryProductCard = ({
             v.calculated_price.original_amount
       ));
 
+  const prefetchRouteOnce = () => {
+    if (hasRoutePrefetched.current) return;
+    hasRoutePrefetched.current = true;
+
+    try {
+      router.prefetch(productUrl);
+    } catch {}
+  };
+
+  const clearTouchRoutePrefetchTimer = () => {
+    if (!touchRoutePrefetchTimerRef.current) return;
+    clearTimeout(touchRoutePrefetchTimerRef.current);
+    touchRoutePrefetchTimerRef.current = null;
+  };
+
   const handlePrefetch = () => {
     const isTouchDevice =
       typeof window !== "undefined" &&
@@ -112,13 +128,32 @@ export const GalleryProductCard = ({
     const imageUrl = product.thumbnail || product.images?.[0]?.url;
     prefetchProductImage(imageUrl);
 
-    if (isTouchDevice || hasRoutePrefetched.current) return;
-    hasRoutePrefetched.current = true;
-
-    try {
-      router.prefetch(productUrl);
-    } catch {}
+    if (isTouchDevice) return;
+    prefetchRouteOnce();
   };
+
+  const handleTouchStart = () => {
+    const imageUrl = product.thumbnail || product.images?.[0]?.url;
+    prefetchProductImage(imageUrl);
+
+    if (hasRoutePrefetched.current) return;
+    clearTouchRoutePrefetchTimer();
+
+    touchRoutePrefetchTimerRef.current = setTimeout(() => {
+      prefetchRouteOnce();
+      touchRoutePrefetchTimerRef.current = null;
+    }, 180);
+  };
+
+  const handleTouchEnd = () => {
+    clearTouchRoutePrefetchTimer();
+  };
+
+  useEffect(() => {
+    return () => {
+      clearTouchRoutePrefetchTimer();
+    };
+  }, []);
 
   const { cheapestPrice } = product?.id
     ? getProductPrice({ product })
@@ -141,7 +176,9 @@ export const GalleryProductCard = ({
       ref={cardRef}
       className="group relative flex flex-col h-full w-[160px] sm:w-[252px]"
       onMouseEnter={handlePrefetch}
-      onTouchStart={handlePrefetch}
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
+      onTouchCancel={handleTouchEnd}
     >
       {/* ── Image ── */}
       {/* Exact same dimensions as ProductCard */}

@@ -29,7 +29,7 @@ const ArtCard = ({
   className?: string
 }) => (
   <div
-    className={`relative bg-white/50 backdrop-blur-sm border border-[#3B3634]/10 p-8 md:p-10 ${className}`}
+    className={`relative bg-white/50 backdrop-blur-sm border border-[#3B3634]/10 px-2 py-4 md:px-8 md:py-8 ${className}`}
   >
    
     {children}
@@ -189,7 +189,7 @@ const ReturnsContent = () => {
   return (
     <div className="returns-content">
       {/* Header */}
-      <header className="mb-12 text-center">
+      <header className="mb-6 md:mb-12 text-center">
         <h1 className="font-instrument-serif text-4xl md:text-5xl lg:text-6xl mb-6 font-normal italic text-[#3B3634] tracking-tight">
           Zwroty i reklamacje
         </h1>
@@ -202,7 +202,7 @@ const ReturnsContent = () => {
         </div>
       </header>
 
-      <BrushDivider className="mb-12" />
+      <BrushDivider className="mb-6 md:mb-12" />
 
       <div className="max-w-none space-y-10">
         {/* Key Info */}
@@ -258,7 +258,7 @@ const ReturnsContent = () => {
             {returnSteps.map((item, index) => (
               <div
                 key={item.step}
-                className="relative flex items-start gap-6"
+                className="relative flex items-start gap-2 md:gap-6"
               >
                 {index < returnSteps.length - 1 && (
                   <div className="absolute left-6 top-14 bottom-0 w-px bg-[#3B3634]/10" />
@@ -271,7 +271,7 @@ const ReturnsContent = () => {
                 </div>
 
                 <div
-                  className={`flex-1 group p-6 border border-[#3B3634]/10 hover:border-[#3B3634]/25 transition-all duration-300 ${
+                  className={`flex-1 group p-2 md:p-6 border border-[#3B3634]/10 hover:border-[#3B3634]/25 transition-all duration-300 ${
                     index < returnSteps.length - 1 ? "mb-6" : ""
                   }`}
                 >
@@ -326,7 +326,7 @@ const ReturnsContent = () => {
             </h2>
           </div>
 
-          <div className="grid md:grid-cols-2 gap-6">
+          <div className="grid md:grid-cols-2 gap-2 md:gap-6">
             {returnConditions.map((item, i) => (
               <div key={i} className="flex items-start gap-4">
                 <div className="flex-shrink-0 w-10 h-10 border border-[#3B3634]/20 flex items-center justify-center">
@@ -378,11 +378,11 @@ const ReturnsContent = () => {
             </h2>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-6">
+          <div className="grid md:grid-cols-3 gap-2 md:gap-6">
             {complaints.map((item, i) => (
               <div
                 key={i}
-                className="group p-6 border border-[#3B3634]/10 hover:border-[#3B3634]/25 transition-all duration-300"
+                className="group p-2 md:p-6 border border-[#3B3634]/10 hover:border-[#3B3634]/25 transition-all duration-300"
               >
                 <div className="flex items-start space-x-4">
                   <div className="flex-shrink-0 w-12 h-12 border-2 border-[#3B3634]/20 flex items-center justify-center group-hover:bg-[#3B3634] group-hover:border-[#3B3634] transition-colors duration-300">

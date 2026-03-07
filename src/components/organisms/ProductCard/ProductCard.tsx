@@ -95,6 +95,7 @@ const ProductCardComponent = ({
   const [isMounted, setIsMounted] = useState(false)
   const productUrl = `/products/${product.handle}`
   const cardRef = useRef<HTMLDivElement>(null)
+  const touchRoutePrefetchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   
   
   // Ensure component is mounted on client-side to prevent hydration mismatch
@@ -214,6 +215,23 @@ const ProductCardComponent = ({
   
   // ✅ OPTIMIZATION: Track if route prefetch already ran to avoid duplicate requests
   const hasRoutePrefetched = useRef(false)
+
+  const prefetchRouteOnce = () => {
+    if (hasRoutePrefetched.current) return
+    hasRoutePrefetched.current = true
+
+    try {
+      router.prefetch(productUrl)
+    } catch {
+      // Route prefetch failed, non-critical
+    }
+  }
+
+  const clearTouchRoutePrefetchTimer = () => {
+    if (!touchRoutePrefetchTimerRef.current) return
+    clearTimeout(touchRoutePrefetchTimerRef.current)
+    touchRoutePrefetchTimerRef.current = null
+  }
   
   // Prefetch detail-page image on hover/touch and route payload only on non-touch intent.
   // This avoids broad route prefetch fan-out during mobile browsing.
@@ -227,15 +245,33 @@ const ProductCardComponent = ({
     prefetchProductImage(imageUrl)
 
     // Route prefetch only on desktop/focus intent and only once per card.
-    if (isTouchDevice || hasRoutePrefetched.current) return
-    hasRoutePrefetched.current = true
-
-    try {
-      router.prefetch(productUrl)
-    } catch {
-      // Route prefetch failed, non-critical
-    }
+    if (isTouchDevice) return
+    prefetchRouteOnce()
   }
+
+  const handleTouchStart = () => {
+    const imageUrl = product.thumbnail
+    prefetchProductImage(imageUrl)
+
+    if (hasRoutePrefetched.current) return
+    clearTouchRoutePrefetchTimer()
+
+    // Long-touch intent prefetch: avoids broad mobile fan-out on simple scrolling taps.
+    touchRoutePrefetchTimerRef.current = setTimeout(() => {
+      prefetchRouteOnce()
+      touchRoutePrefetchTimerRef.current = null
+    }, 180)
+  }
+
+  const handleTouchEnd = () => {
+    clearTouchRoutePrefetchTimer()
+  }
+
+  useEffect(() => {
+    return () => {
+      clearTouchRoutePrefetchTimer()
+    }
+  }, [])
   
   // ✅ SAFETY CHECK: Don't render card if product is invalid
   if (!product?.id || !product?.title) {
@@ -254,7 +290,9 @@ const ProductCardComponent = ({
       )}
       ref={cardRef}
       onMouseEnter={handlePrefetch}
-      onTouchStart={handlePrefetch}
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
+      onTouchCancel={handleTouchEnd}
       onFocus={handlePrefetch}
       aria-label={`${product.title}`}
     >
