@@ -4,7 +4,14 @@ import React, { useState } from "react";
 import Image from "next/image";
 import { format } from "date-fns";
 import { pl } from "date-fns/locale";
-import { motion, useInView } from "framer-motion";
+import {
+  motion,
+  useInView,
+  useScroll,
+  useTransform,
+  useMotionValue,
+  useSpring,
+} from "framer-motion";
 import { useRef } from "react";
 
 // Animation variants
@@ -38,6 +45,16 @@ const staggerContainer = {
   },
 };
 
+const staggerFast = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.08,
+    },
+  },
+};
+
 const AnimatedSection = ({
   children,
   className = "",
@@ -62,49 +79,385 @@ const AnimatedSection = ({
 };
 
 const BrushDivider = ({ className = "" }: { className?: string }) => (
-  <svg
+  <motion.svg
     className={`w-48 h-3 ${className}`}
     viewBox="0 0 300 15"
     fill="none"
+    initial={{ pathLength: 0, opacity: 0 }}
+    whileInView={{ pathLength: 1, opacity: 1 }}
+    viewport={{ once: false }}
+    transition={{ duration: 1.2, ease: "easeOut" }}
   >
-    <path
+    <motion.path
       d="M5 8c40-5 80-3 120 0s80 5 120 1c15-2 30-3 45-1"
       stroke="currentColor"
       strokeWidth="2.5"
       strokeLinecap="round"
+      initial={{ pathLength: 0 }}
+      whileInView={{ pathLength: 1 }}
+      viewport={{ once: false }}
+      transition={{ duration: 1.2, ease: "easeOut" }}
     />
-  </svg>
+  </motion.svg>
 );
 
-const CornerAccents = ({
-  className = "border-[#3B3634]/15",
-}: {
-  className?: string;
-}) => (
-  <>
-    <div
-      className={`absolute top-0 left-0 w-4 h-4 border-t-2 border-l-2 ${className}`}
-    />
-    <div
-      className={`absolute top-0 right-0 w-4 h-4 border-t-2 border-r-2 ${className}`}
-    />
-    <div
-      className={`absolute bottom-0 left-0 w-4 h-4 border-b-2 border-l-2 ${className}`}
-    />
-    <div
-      className={`absolute bottom-0 right-0 w-4 h-4 border-b-2 border-r-2 ${className}`}
-    />
-  </>
-);
+
+interface FounderCardProps {
+  name: string;
+  role: string;
+  badge: string;
+  badgeLabel: string;
+  imageSrc: string;
+  imageAlt: string;
+  paragraphs: string[];
+  interests: string[];
+  reversed?: boolean;
+  link?: { href: string; label: string };
+  priority?: boolean;
+  desktopImagePosition?: string;
+  mobileImagePosition?: string;
+}
+
+const FounderCard = ({
+  name,
+  role,
+  badge,
+  badgeLabel,
+  imageSrc,
+  imageAlt,
+  paragraphs,
+  interests,
+  reversed = false,
+  link,
+  priority = false,
+  desktopImagePosition = "50% 50%",
+  mobileImagePosition = "50% 50%",
+}: FounderCardProps) => {
+  const cardRef = useRef(null);
+  const isInView = useInView(cardRef, { once: false, margin: "-80px" });
+  const { scrollYProgress } = useScroll({
+    target: cardRef,
+    offset: ["start end", "end start"],
+  });
+  const imageY = useTransform(scrollYProgress, [0, 1], ["-4%", "4%"]);
+  const cardY = useTransform(scrollYProgress, [0, 1], ["2%", "-2%"]);
+
+  const imageVariant = reversed ? fadeInRight : fadeInLeft;
+  const textVariant = reversed ? fadeInLeft : fadeInRight;
+
+  return (
+    <motion.div
+      ref={cardRef}
+      initial="hidden"
+      animate={isInView ? "visible" : "hidden"}
+      variants={staggerContainer}
+      className="relative"
+    >
+      {/* Desktop layout */}
+      <div
+        className={`hidden md:grid md:grid-cols-12 items-stretch min-h-[540px] lg:min-h-[750px] ${
+          reversed ? "" : ""
+        }`}
+      >
+        {/* Image column */}
+        <motion.div
+          variants={imageVariant}
+          transition={{ duration: 0.8, ease: "easeOut" }}
+          className={`relative ${
+            reversed
+              ? "col-start-6 col-end-13 row-start-1"
+              : "col-start-1 col-end-8 row-start-1"
+          }`}
+        >
+          <motion.div
+            style={{ y: imageY }}
+            className="relative w-full h-full overflow-hidden rounded-2xl"
+          >
+            <Image
+              src={imageSrc}
+              alt={imageAlt}
+              fill
+              className="object-cover"
+              style={{ objectPosition: desktopImagePosition }}
+              priority={priority}
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
+
+            
+
+            {/* Founder label on image */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: false }}
+              transition={{ delay: 0.5, duration: 0.5 }}
+              className={`absolute bottom-5 ${reversed ? "right-5" : "left-5"}`}
+            >
+              <span className="inline-block px-4 py-1.5 bg-white/10 backdrop-blur-md rounded-full text-xs text-white font-instrument-sans tracking-wide border border-white/10">
+                {badgeLabel}
+              </span>
+            </motion.div>
+          </motion.div>
+        </motion.div>
+
+        {/* Text card - overlapping the image */}
+        <motion.div
+          variants={textVariant}
+          transition={{ duration: 0.8, ease: "easeOut", delay: 0.15 }}
+          style={{ y: cardY }}
+          className={`relative z-10 flex items-center ${
+            reversed
+              ? "col-start-1 col-end-7 row-start-1"
+              : "col-start-7 col-end-13 row-start-1"
+          }`}
+        >
+          <div
+            className={`relative w-full bg-[#2E2A28]/95 backdrop-blur-xl border border-white/[0.08] rounded-2xl shadow-2xl shadow-black/30 ${
+              reversed ? "mr-auto ml-0" : "ml-auto mr-0"
+            }`}
+          >
+            
+
+            {/* Accent line at top */}
+            <motion.div
+              initial={{ scaleX: 0 }}
+              whileInView={{ scaleX: 1 }}
+              viewport={{ once: false }}
+              transition={{ delay: 0.5, duration: 0.8, ease: "easeOut" }}
+              className={`absolute top-0 ${
+                reversed ? "right-0 origin-right" : "left-0 origin-left"
+              } w-24 h-[2px] bg-gradient-to-r from-primary/80 to-transparent rounded-full md:hidden`}
+            />
+
+            <div className="px-8 py-9 lg:px-10 lg:py-11">
+              <div className="flex items-baseline justify-between mb-1">
+                <motion.h3
+                  variants={fadeInUp}
+                  transition={{ duration: 0.5 }}
+                  className="font-instrument-serif text-3xl lg:text-4xl font-medium text-white"
+                >
+                  {name}
+                </motion.h3>
+                {link && (
+                  <motion.a
+                    variants={fadeInUp}
+                    href={link.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    whileHover={{ scale: 1.05 }}
+                    className="text-sm underline decoration-white/30 underline-offset-4 font-instrument-sans text-white/50 hover:text-white transition-colors"
+                  >
+                    {link.label}
+                  </motion.a>
+                )}
+              </div>
+
+              <motion.p
+                variants={fadeInUp}
+                transition={{ duration: 0.5, delay: 0.05 }}
+                className="text-[11px] uppercase tracking-[0.2em] text-white/90 mb-6 font-instrument-sans font-medium"
+              >
+                {role}
+              </motion.p>
+
+              <motion.div
+                variants={fadeInUp}
+                transition={{ duration: 0.5, delay: 0.1 }}
+                className="w-10 h-[1px] bg-white/15 mb-6"
+              />
+
+              {paragraphs.map((text, i) => (
+                <motion.p
+                  key={i}
+                  variants={fadeInUp}
+                  transition={{ duration: 0.5, delay: 0.15 + i * 0.08 }}
+                  className="text-white/90 leading-relaxed text-sm mb-3 last:mb-0"
+                >
+                  {text}
+                </motion.p>
+              ))}
+
+              <motion.div
+                variants={fadeInUp}
+                transition={{ delay: 0.4, duration: 0.5 }}
+                className="mt-7 pt-5 border-t border-white/[0.06]"
+              >
+                <p className="text-[10px] uppercase tracking-[0.2em] text-white/50 mb-3 font-instrument-sans">
+                  Po godzinach
+                </p>
+                <motion.div
+                  variants={staggerFast}
+                  initial="hidden"
+                  whileInView="visible"
+                  viewport={{ once: false }}
+                  className="flex flex-wrap gap-2"
+                >
+                  {interests.map((interest, index) => (
+                    <motion.span
+                      key={interest}
+                      variants={{
+                        hidden: { opacity: 0, scale: 0.8, y: 10 },
+                        visible: { opacity: 1, scale: 1, y: 0 },
+                      }}
+                      transition={{ duration: 0.3 }}
+                      whileHover={{
+                        scale: 1.08,
+                        y: -2,
+                        backgroundColor: "rgba(255,255,255,0.08)",
+                      }}
+                      className="px-3 py-1.5 ring-1 ring-white/15 hover:ring-white/30 rounded-full text-xs text-gray-500 transition-colors cursor-default hover:text-white/80"
+                    >
+                      {interest}
+                    </motion.span>
+                  ))}
+                </motion.div>
+              </motion.div>
+            </div>
+          </div>
+        </motion.div>
+      </div>
+
+      {/* Mobile layout */}
+      <div className="md:hidden">
+        <motion.div
+          variants={scaleIn}
+          transition={{ duration: 0.7, ease: "easeOut" }}
+          className="relative rounded-2xl overflow-hidden bg-[#2E2A28]"
+        >
+          {/* Image portion */}
+          <div className="relative aspect-[4/5] overflow-hidden">
+            <Image
+              src={imageSrc}
+              alt={imageAlt}
+              fill
+              className="object-cover"
+              style={{ objectPosition: mobileImagePosition }}
+              priority={priority}
+            />
+            <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-[#2E2A28]" />
+
+           
+
+            {/* Label */}
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: false }}
+              transition={{ delay: 0.3, duration: 0.4 }}
+              className="absolute bottom-20 left-5"
+            >
+              <span className="inline-block px-3 py-1 bg-white/10 backdrop-blur-md rounded-full text-xs text-white font-instrument-sans border border-white/10">
+                {badgeLabel}
+              </span>
+            </motion.div>
+
+            {/* Name overlay on image */}
+            <div className="absolute bottom-0 left-0 right-0 px-6 pb-2">
+              <motion.h3
+                variants={fadeInUp}
+                transition={{ duration: 0.5 }}
+                className="font-instrument-serif text-3xl font-medium text-white"
+              >
+                {name}
+              </motion.h3>
+            </div>
+          </div>
+
+          {/* Text portion - seamlessly connected */}
+          <div className="relative px-6 pb-7 pt-2">
+            {/* Accent line */}
+            <motion.div
+              initial={{ scaleX: 0 }}
+              whileInView={{ scaleX: 1 }}
+              viewport={{ once: false }}
+              transition={{ delay: 0.3, duration: 0.6 }}
+              className="w-16 h-[2px] bg-gradient-to-r from-white/80 to-transparent rounded-full mb-4 origin-left md:hidden"
+            />
+
+            <div className="flex items-baseline justify-between mb-4">
+              <motion.p
+                variants={fadeInUp}
+                className="text-[11px] uppercase tracking-[0.2em] text-white/90 font-instrument-sans font-medium"
+              >
+                {role}
+              </motion.p>
+              {link && (
+                <motion.a
+                  variants={fadeInUp}
+                  href={link.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-xs underline decoration-white/30 underline-offset-4 font-instrument-sans text-white/50 hover:text-white transition-colors"
+                >
+                  {link.label}
+                </motion.a>
+              )}
+            </div>
+
+            {paragraphs.map((text, i) => (
+              <motion.p
+                key={i}
+                variants={fadeInUp}
+                transition={{ duration: 0.5, delay: 0.1 + i * 0.08 }}
+                className="text-white/90 leading-relaxed text-sm mb-3 last:mb-0"
+              >
+                {text}
+              </motion.p>
+            ))}
+
+            <motion.div
+              variants={fadeInUp}
+              transition={{ delay: 0.3, duration: 0.5 }}
+              className="mt-6 pt-5 border-t border-white/[0.06]"
+            >
+              <p className="text-[10px] uppercase tracking-[0.2em] text-white/50 mb-3 font-instrument-sans">
+                Po godzinach
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {interests.map((interest, index) => (
+                  <motion.span
+                    key={interest}
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    whileInView={{ opacity: 1, scale: 1 }}
+                    viewport={{ once: false }}
+                    transition={{
+                      delay: 0.4 + index * 0.08,
+                      duration: 0.3,
+                    }}
+                    className="px-3 py-1.5 ring-1 ring-white/15 rounded-full text-xs text-gray-500 hover:text-white/80 hover:ring-white/30 transition-colors cursor-default"
+                  >
+                    {interest}
+                  </motion.span>
+                ))}
+              </div>
+            </motion.div>
+          </div>
+        </motion.div>
+      </div>
+    </motion.div>
+  );
+};
 
 const AboutUsContent = () => {
   const [lastUpdated] = useState(new Date(2026, 0, 24));
+  const heroRef = useRef(null);
+  const { scrollYProgress: heroScroll } = useScroll({
+    target: heroRef,
+    offset: ["start start", "end start"],
+  });
+  const heroOpacity = useTransform(heroScroll, [0, 0.5], [1, 0]);
+  const heroY = useTransform(heroScroll, [0, 0.5], [0, 60]);
 
   return (
     <div className="about-us-content overflow-hidden">
       {/* Hero Section */}
-      <section className="relative py-16 md:py-24">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <section ref={heroRef} className="relative py-16 md:py-24">
+       
+
+        <motion.div
+          style={{ opacity: heroOpacity, y: heroY }}
+          className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8"
+        >
           <AnimatedSection className="max-w-3xl">
             <motion.p
               variants={fadeInUp}
@@ -120,7 +473,15 @@ const AboutUsContent = () => {
             >
               Tworzymy przestrzeń
               <br />
-              <span className="text-primary">dla sztuki</span>
+              <motion.span
+                className="text-primary inline-block"
+                initial={{ opacity: 0, x: -20 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                viewport={{ once: false }}
+                transition={{ delay: 0.4, duration: 0.7, ease: "easeOut" }}
+              >
+                dla sztuki
+              </motion.span>
             </motion.h1>
             <motion.div
               variants={fadeInUp}
@@ -135,11 +496,11 @@ const AboutUsContent = () => {
               className="text-lg md:text-xl text-gray-600 leading-relaxed max-w-2xl"
             >
               Artovnia to rodzinna inicjatywa, która powstała z pasji do
-              sztuki, designu i rękodzieła. Łączymy artystów z
-              miłośnikami piękna.
+              sztuki, designu i rękodzieła. Łączymy artystów z miłośnikami
+              piękna.
             </motion.p>
           </AnimatedSection>
-        </div>
+        </motion.div>
       </section>
 
       {/* Story Section */}
@@ -166,9 +527,9 @@ const AboutUsContent = () => {
                   sprzedawać swoje dzieła.
                 </p>
                 <p>
-                  Wierzymy w autentyczność, kreatywność i wspieranie
-                  małych twórców. Artovnia to nie tylko marketplace – to
-                  społeczność ludzi, którzy cenią piękno i unikalność.
+                  Wierzymy w autentyczność, kreatywność i wspieranie małych
+                  twórców. Artovnia to nie tylko marketplace – to społeczność
+                  ludzi, którzy cenią piękno i unikalność.
                 </p>
               </motion.div>
             </AnimatedSection>
@@ -220,9 +581,11 @@ const AboutUsContent = () => {
       </section>
 
       {/* Founders Section */}
-      <section className="py-16 md:py-24 bg-[#3B3634]">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <AnimatedSection className="text-center mb-14 md:mb-18">
+      <section className="py-16 md:py-24 bg-[#3B3634] relative overflow-hidden">
+      
+
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+          <AnimatedSection className="text-center mb-16 md:mb-24">
             <motion.p
               variants={fadeInUp}
               transition={{ duration: 0.6 }}
@@ -246,223 +609,57 @@ const AboutUsContent = () => {
             </motion.div>
           </AnimatedSection>
 
-          <div className="grid md:grid-cols-2 gap-10 lg:gap-14 max-w-4xl mx-auto">
-            {/* Ania */}
-            <AnimatedSection>
-              <motion.div
-                variants={fadeInUp}
-                transition={{ duration: 0.7 }}
-                className="group h-full flex flex-col"
-              >
-                <motion.div
-                  whileHover={{ y: -10 }}
-                  transition={{ duration: 0.3 }}
-                  className="relative aspect-[3/4] rounded-2xl overflow-hidden mb-8 bg-gray-700"
-                >
-                  <Image
-                    src="/images/oNas/Ania.webp"
-                    alt="Ania - Artystka malarka"
-                    fill
-                    className="object-cover transition-transform duration-700 group-hover:scale-110"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: false }}
-                    transition={{ delay: 0.4, duration: 0.5 }}
-                    className="absolute bottom-0 left-0 right-0 p-6"
-                  >
-                    <span className="inline-block px-3 py-1 bg-white/20 backdrop-blur-sm rounded-full text-xs text-white font-instrument-sans mb-2">
-                      Współzałożycielka
-                    </span>
-                  </motion.div>
-                </motion.div>
+          {/* Ania — image left, text right */}
+          <div className="max-w-6xl mx-auto mb-16 md:mb-28">
+            <FounderCard
+              name="Ania"
+              role="Art Director / Content & Community"
+              badge="🎨"
+              badgeLabel="Współzałożycielka"
+              imageSrc="/images/oNas/Ania.webp"
+              imageAlt="Ania - Artystka malarka"
+              desktopImagePosition="60% 22%"
+              mobileImagePosition="50% 38%"
+              priority
+              paragraphs={[
+                "Artystka malarka i pomysłodawczyni Artovni. Od lat tworzy i sprzedaje własną sztukę, dzięki czemu doskonale zna realia pracy twórczej oraz wyzwania, z jakimi mierzą się artyści i rękodzielnicy — od procesu tworzenia, przez promocję, aż po sprzedaż i budowanie własnej marki.",
+                "W Artovni odpowiada za content, social media oraz kontakt ze sprzedawcami i klientami. Jest pierwszym punktem styku dla Twórców i dba o to, aby platforma była miejscem przyjaznym, transparentnym i realnie wspierającym rozwój kreatywnych marek.",
+              ]}
+              interests={[
+                "🎨 Malarstwo",
+                "📚 Taniec",
+                "🌿 Natura",
+                "☕ Kawa",
+              ]}
+            />
+          </div>
 
-                <div className="relative bg-white/[0.05]  px-6 py-7 flex-1 flex flex-col">
-                  <CornerAccents className="border-white/15" />
+          
 
-                  <motion.h3
-                    variants={fadeInUp}
-                    className="font-instrument-serif text-2xl font-medium text-white mb-1"
-                  >
-                    Ania
-                  </motion.h3>
-                  <motion.p
-                    variants={fadeInUp}
-                    className="text-xs uppercase tracking-wider text-white/70  mb-5 font-instrument-sans font-medium"
-                  >
-                    Art Director / Content & Community
-                  </motion.p>
-                  <motion.p
-                    variants={fadeInUp}
-                    className="text-gray-300 leading-relaxed text-sm mb-3"
-                  >
-                    Artystka malarka i pomysłodawczyni Artovni. Od lat
-                    tworzy i sprzedaje własną sztukę, dzięki czemu
-                    doskonale zna realia pracy twórczej oraz wyzwania, z
-                    jakimi mierzą się artyści i rękodzielnicy — od
-                    procesu tworzenia, przez promocję, aż po sprzedaż i
-                    budowanie własnej marki.
-                  </motion.p>
-                  <motion.p
-                    variants={fadeInUp}
-                    className="text-gray-300 leading-relaxed text-sm mb-auto"
-                  >
-                    W Artovni odpowiada za content, social media oraz
-                    kontakt ze sprzedawcami i klientami. Jest pierwszym
-                    punktem styku dla Twórców i dba o to, aby platforma
-                    była miejscem przyjaznym, transparentnym i realnie
-                    wspierającym rozwój kreatywnych marek.
-                  </motion.p>
-
-                  <motion.div
-                    variants={fadeInUp}
-                    transition={{ delay: 0.3 }}
-                    className="mt-6 pt-5 border-t border-white/10"
-                  >
-                    <p className="text-xs uppercase tracking-wider text-white/80 mb-3 font-instrument-sans">
-                      Po godzinach
-                    </p>
-                    <div className="flex flex-wrap gap-2">
-                      {[
-                        "🎨 Malarstwo",
-                        "📚 Taniec",
-                        "🌿 Natura",
-                        "☕ Kawa",
-                      ].map((interest, index) => (
-                        <motion.span
-                          key={interest}
-                          initial={{ opacity: 0, scale: 0.8 }}
-                          whileInView={{ opacity: 1, scale: 1 }}
-                          viewport={{ once: false }}
-                          transition={{
-                            delay: 0.4 + index * 0.1,
-                            duration: 0.3,
-                          }}
-                          whileHover={{ scale: 1.05, y: -2 }}
-                          className="px-3 py-1.5 ring-1 ring-white/20 hover:ring-white/40 hover:bg-white/[0.06] rounded-full text-xs text-gray-400 transition-colors cursor-default hover:text-white"
-                        >
-                          {interest}
-                        </motion.span>
-                      ))}
-                    </div>
-                  </motion.div>
-                </div>
-              </motion.div>
-            </AnimatedSection>
-
-            {/* Arek */}
-            <AnimatedSection>
-              <motion.div
-                variants={fadeInUp}
-                transition={{ duration: 0.7, delay: 0.2 }}
-                className="group h-full flex flex-col"
-              >
-                <motion.div
-                  whileHover={{ y: -10 }}
-                  transition={{ duration: 0.3 }}
-                  className="relative aspect-[3/4] rounded-2xl overflow-hidden mb-8 bg-gray-700"
-                >
-                  <Image
-                    src="/placeholder.webp"
-                    alt="Arek - Programista"
-                    fill
-                    className="object-cover transition-transform duration-700 group-hover:scale-110"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true }}
-                    transition={{ delay: 0.5, duration: 0.5 }}
-                    className="absolute bottom-0 left-0 right-0 p-6"
-                  >
-                    <span className="inline-block px-3 py-1 bg-white/20 backdrop-blur-sm rounded-full text-xs text-white font-instrument-sans mb-2">
-                      Współzałożyciel
-                    </span>
-                  </motion.div>
-                </motion.div>
-
-                <div className="relative bg-white/[0.05]  px-6 py-7 flex-1 flex flex-col">
-                  <CornerAccents className="border-white/15" />
-
-                  <motion.h3
-                    variants={fadeInUp}
-                    className="font-instrument-serif flex flex-row items-baseline justify-between text-2xl font-medium text-white mb-1"
-                  >
-                    Arek
-                    <a
-                      href="https://appcrates.pl"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-sm underline decoration-white/40 underline-offset-4 transition-colors hover:scale-110  font-instrument-sans"
-                    >
-                      appcrates.pl
-                    </a>
-                  </motion.h3>
-                  <motion.p
-                    variants={fadeInUp}
-                    className="text-xs uppercase tracking-wider text-white/70 mb-5 font-instrument-sans font-medium"
-                  >
-                    Developer
-                  </motion.p>
-                  <motion.p
-                    variants={fadeInUp}
-                    className="text-gray-300 leading-relaxed text-sm mb-3"
-                  >
-                    Odpowiedzialny za techniczne aspekty platformy oraz
-                    projektowanie i rozwój rozwiązań, które zapewniają
-                    użytkownikom płynne, intuicyjne i niezawodne
-                    doświadczenie na każdym etapie korzystania z Artovni.
-                    Dba o stabilność, bezpieczeństwo i skalowalność
-                    systemu, tak aby platforma mogła rozwijać się razem z
-                    potrzebami Twórców i klientów.
-                  </motion.p>
-                  <motion.p
-                    variants={fadeInUp}
-                    className="text-gray-300 leading-relaxed text-sm mb-auto"
-                  >
-                    Uwielbia tworzyć nowe rzeczy i rozwiązywać problemy w
-                    sposób techniczny. Człowiek od procesów, który dba o
-                    to, by każdy element działał perfekcyjnie.
-                  </motion.p>
-
-                  <motion.div
-                    variants={fadeInUp}
-                    transition={{ delay: 0.3 }}
-                    className="mt-6 pt-5 border-t border-white/10"
-                  >
-                    <p className="text-xs uppercase tracking-wider text-white/80 mb-3 font-instrument-sans">
-                      Po godzinach
-                    </p>
-                    <div className="flex flex-wrap gap-2">
-                      {[
-                        "⛰️ Góry",
-                        "🏃 Sport",
-                        "🧠 Nauka",
-                        "🏎️ Simracing",
-                      ].map((interest, index) => (
-                        <motion.span
-                          key={interest}
-                          initial={{ opacity: 0, scale: 0.8 }}
-                          whileInView={{ opacity: 1, scale: 1 }}
-                          viewport={{ once: false }}
-                          transition={{
-                            delay: 0.4 + index * 0.1,
-                            duration: 0.3,
-                          }}
-                          whileHover={{ scale: 1.05, y: -2 }}
-                          className="px-3 py-1.5 ring-1 ring-white/20 hover:ring-white/40 hover:bg-white/[0.06] rounded-full text-xs text-gray-400 transition-colors cursor-default hover:text-white"
-                        >
-                          {interest}
-                        </motion.span>
-                      ))}
-                    </div>
-                  </motion.div>
-                </div>
-              </motion.div>
-            </AnimatedSection>
+          {/* Arek — text left, image right */}
+          <div className="max-w-6xl mx-auto">
+            <FounderCard
+              name="Arek"
+              role="Developer"
+              badge="💻"
+              badgeLabel="Współzałożyciel"
+              imageSrc="/images/oNas/arek.webp"
+              imageAlt="Arek - Programista"
+              desktopImagePosition="50% 36%"
+              mobileImagePosition="50% 32%"
+              reversed
+              link={{ href: "https://appcrates.pl", label: "appcrates.pl" }}
+              paragraphs={[
+                "Odpowiedzialny za techniczne aspekty platformy oraz projektowanie i rozwój rozwiązań, które zapewniają użytkownikom płynne, intuicyjne i niezawodne doświadczenie na każdym etapie korzystania z Artovni. Dba o stabilność, bezpieczeństwo i skalowalność systemu, tak aby platforma mogła rozwijać się razem z potrzebami Twórców i klientów.",
+                "Uwielbia tworzyć nowe rzeczy i rozwiązywać problemy w sposób techniczny. Człowiek od procesów, który dba o to, by każdy element działał perfekcyjnie.",
+              ]}
+              interests={[
+                "⛰️ Góry",
+                "🏃 Sport",
+                "🧠 Nauka",
+                "🏎️ Simracing",
+              ]}
+            />
           </div>
         </div>
       </section>
@@ -626,8 +823,11 @@ const AboutUsContent = () => {
       </section> */}
 
       {/* Mission Section */}
-      <section className="py-16 md:py-24 bg-[#F4F0EB]">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <section className="py-16 md:py-24 bg-[#F4F0EB] relative overflow-hidden">
+       
+       
+
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
           <AnimatedSection className="text-center mb-14">
             <motion.h2
               variants={fadeInUp}
@@ -740,14 +940,18 @@ const AboutUsContent = () => {
                 key={index}
                 variants={fadeInUp}
                 transition={{ duration: 0.5, delay: index * 0.1 }}
-                whileHover={{ y: -6, transition: { duration: 0.2 } }}
-                className="group relative bg-white/70 backdrop-blur-sm border border-[#3B3634]/[0.08]  p-8 transition-all duration-300 hover:bg-white hover:shadow-lg hover:shadow-[#3B3634]/[0.06]"
+                whileHover={{
+                  y: -6,
+                  boxShadow: "0 20px 40px rgba(59,54,52,0.08)",
+                  transition: { duration: 0.25 },
+                }}
+                className="group relative bg-white/70 backdrop-blur-sm border border-[#3B3634]/[0.08] p-8 transition-colors duration-300 hover:bg-white"
               >
-                <CornerAccents className="border-[#3B3634]/10" />
+                
 
                 <motion.div
                   whileHover={{ rotate: 360 }}
-                  transition={{ duration: 0.5 }}
+                  transition={{ duration: 0.6, ease: "easeInOut" }}
                   className="w-12 h-12 rounded-full bg-[#3B3634]/[0.07] flex items-center justify-center text-[#3B3634] mb-5 group-hover:bg-[#3B3634] group-hover:text-white transition-colors duration-300"
                 >
                   {item.icon}
@@ -763,8 +967,6 @@ const AboutUsContent = () => {
           </AnimatedSection>
         </div>
       </section>
-
-      
     </div>
   );
 };

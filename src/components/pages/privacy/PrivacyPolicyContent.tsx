@@ -88,7 +88,7 @@ const privacySections = [
           2.1. Administrator przetwarza dane Użytkowników w
           następujących przypadkach:
         </p>
-        <ul className="list-disc ml-5 space-y-2 text-[#3B3634]/80">
+        <ul className="list-disc ml-5 space-y-2 text-[#3B3634]/90">
           <li>
             <strong className="text-[#3B3634]">
               Rejestracja konta:
@@ -146,7 +146,7 @@ const privacySections = [
           podstaw prawnych przewidzianych w art. 6 RODO. Cele te
           obejmują:
         </p>
-        <ul className="list-disc ml-5 space-y-2 text-[#3B3634]/80">
+        <ul className="list-disc ml-5 space-y-2 text-[#3B3634]/90">
           <li>
             <strong className="text-[#3B3634]">
               Realizacja umowy lub działania przed zawarciem umowy
@@ -188,7 +188,7 @@ const privacySections = [
           Administrator może przetwarzać dane osobowe także w
           następujących celach:
         </p>
-        <ul className="list-disc ml-5 space-y-2 text-[#3B3634]/80">
+        <ul className="list-disc ml-5 space-y-2 text-[#3B3634]/90">
           <li>
             prowadzenia korespondencji i obsługi zapytań
             przesyłanych przez formularz kontaktowy,
@@ -224,7 +224,7 @@ const privacySections = [
     content: (
       <div className="space-y-3">
         <p>Administrator może udostępniać dane osobowe:</p>
-        <ul className="list-disc ml-5 space-y-2 text-[#3B3634]/80">
+        <ul className="list-disc ml-5 space-y-2 text-[#3B3634]/90">
           <li>operatorom płatności,</li>
           <li>firmom kurierskim i logistycznym,</li>
           <li>
@@ -253,7 +253,7 @@ const privacySections = [
         <p>
           5.1. Każdemu Użytkownikowi przysługuje prawo do:
         </p>
-        <ul className="list-disc ml-5 space-y-2 text-[#3B3634]/80">
+        <ul className="list-disc ml-5 space-y-2 text-[#3B3634]/90">
           <li>
             <strong className="text-[#3B3634]">
               dostępu do danych osobowych
@@ -347,7 +347,7 @@ const privacySections = [
           6.1. Serwis korzysta z plików cookies oraz narzędzi
           analitycznych i marketingowych w celach:
         </p>
-        <ul className="list-disc ml-5 space-y-2 text-[#3B3634]/80">
+        <ul className="list-disc ml-5 space-y-2 text-[#3B3634]/90">
           <li>zapewnienia prawidłowego działania Serwisu,</li>
           <li>zapamiętywania preferencji Użytkownika,</li>
           <li>
@@ -368,7 +368,7 @@ const privacySections = [
           6.3. W ramach Serwisu stosowane są następujące rodzaje
           cookies:
         </p>
-        <ul className="list-disc ml-5 space-y-2 text-[#3B3634]/80">
+        <ul className="list-disc ml-5 space-y-2 text-[#3B3634]/90">
           <li>
             <strong className="text-[#3B3634]">Niezbędne</strong> –
             umożliwiające prawidłowe działanie Serwisu,
@@ -397,7 +397,7 @@ const privacySections = [
           6.4. Administrator może korzystać z następujących narzędzi
           zewnętrznych:
         </p>
-        <ul className="list-disc ml-5 space-y-2 text-[#3B3634]/80">
+        <ul className="list-disc ml-5 space-y-2 text-[#3B3634]/90">
           <li>
             <strong className="text-[#3B3634]">
               Google Analytics
@@ -439,7 +439,7 @@ const privacySections = [
             href="https://policies.google.com/technologies/partner-sites"
             target="_blank"
             rel="noopener noreferrer"
-            className="text-[#3B3634] hover:text-[#3B3634]/70 underline underline-offset-4 transition-colors duration-200"
+            className="text-[#3B3634] hover:text-[#3B3634]/90 underline underline-offset-4 transition-colors duration-200"
           >
             policies.google.com/technologies/partner-sites
           </a>
@@ -449,7 +449,7 @@ const privacySections = [
             href="https://www.facebook.com/about/privacy/"
             target="_blank"
             rel="noopener noreferrer"
-            className="text-[#3B3634] hover:text-[#3B3634]/70 underline underline-offset-4 transition-colors duration-200"
+            className="text-[#3B3634] hover:text-[#3B3634]/90 underline underline-offset-4 transition-colors duration-200"
           >
             facebook.com/about/privacy
           </a>
@@ -462,7 +462,7 @@ const privacySections = [
     content: (
       <div className="space-y-3">
         <p>Dane osobowe przechowywane są:</p>
-        <ul className="list-disc ml-5 space-y-2 text-[#3B3634]/80">
+        <ul className="list-disc ml-5 space-y-2 text-[#3B3634]/90">
           <li>
             przez okres trwania umowy i do czasu przedawnienia
             roszczeń,
@@ -487,7 +487,7 @@ const privacySections = [
           Administrator zapewnia ochronę danych poprzez stosowanie
           odpowiednich środków technicznych i organizacyjnych, w tym:
         </p>
-        <ul className="list-disc ml-5 space-y-2 text-[#3B3634]/80">
+        <ul className="list-disc ml-5 space-y-2 text-[#3B3634]/90">
           <li>szyfrowanie SSL,</li>
           <li>kontrolę dostępu,</li>
           <li>systemy kopii zapasowych,</li>
@@ -530,10 +530,10 @@ const PrivacyPolicyContent = () => {
         <h1 className="font-instrument-serif text-4xl md:text-5xl lg:text-6xl mb-6 font-normal italic text-[#3B3634] tracking-tight">
           Polityka Prywatności
         </h1>
-        <p className="text-lg md:text-xl text-[#3B3634]/60 font-instrument-sans mb-4 max-w-xl mx-auto leading-relaxed">
+        <p className="text-lg md:text-xl text-[#3B3634]/90 font-instrument-sans mb-4 max-w-xl mx-auto leading-relaxed">
           Serwis Artovnia.com
         </p>
-        <div className="text-sm text-[#3B3634]/40 font-instrument-sans space-y-0.5">
+        <div className="text-sm text-[#3B3634]/90 font-instrument-sans space-y-0.5">
           <p>
             Data wejścia w życie:{" "}
             {format(effectiveDate, "d MMMM yyyy", { locale: pl })}
@@ -567,7 +567,7 @@ const PrivacyPolicyContent = () => {
               <h2 className="font-instrument-serif text-2xl font-normal italic text-[#3B3634] mb-4">
                 Najważniejsze informacje
               </h2>
-              <ul className="list-disc ml-5 space-y-2 text-[#3B3634]/80 font-instrument-sans leading-relaxed">
+              <ul className="list-disc ml-5 space-y-2 text-[#3B3634]/90 font-instrument-sans leading-relaxed">
                 <li>
                   Administratorem danych osobowych jest Ann Sayuri
                   ART Anna Wawrzyniak, ul. Leszczyńskiego 4/29,
@@ -637,8 +637,8 @@ const PrivacyPolicyContent = () => {
                 {({ open }) => (
                   <>
                     <Disclosure.Button className="flex w-full justify-between items-center text-left py-6 group">
-                      <h3 className="text-lg font-semibold font-instrument-sans text-[#3B3634] pr-4 group-hover:text-[#3B3634]/80 transition-colors duration-200">
-                        <span className="text-[#3B3634]/40 mr-3 font-normal">
+                      <h3 className="text-lg font-semibold font-instrument-sans text-[#3B3634] pr-4 group-hover:text-[#3B3634]/90 transition-colors duration-200">
+                        <span className="text-[#3B3634]/70 mr-3 font-normal">
                           {String(index + 1).padStart(2, "0")}
                         </span>
                         {section.title}
@@ -675,7 +675,7 @@ const PrivacyPolicyContent = () => {
           <h2 className="font-instrument-serif text-2xl md:text-3xl font-normal italic text-[#3B3634] mb-6">
             Administrator danych
           </h2>
-          <div className="text-[#3B3634]/80 font-instrument-sans space-y-1 leading-relaxed">
+          <div className="text-[#3B3634]/90 font-instrument-sans space-y-1 leading-relaxed">
             <p className="font-semibold text-[#3B3634]">
               Ann Sayuri ART Anna Wawrzyniak
             </p>
@@ -685,7 +685,7 @@ const PrivacyPolicyContent = () => {
             <p>
               E-mail:{" "}
               <span
-                className="text-[#3B3634] hover:text-[#3B3634]/70 underline underline-offset-4 transition-colors duration-200 cursor-pointer"
+                className="text-[#3B3634] hover:text-[#3B3634]/90 underline underline-offset-4 transition-colors duration-200 cursor-pointer"
                 onClick={() =>
                   (window.location.href = atob(
                     "bWFpbHRvOmluZm8uYXJ0b3ZuaWFAZ21haWwuY29t"

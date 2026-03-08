@@ -45,7 +45,7 @@ const guideSections = [
       <div className="space-y-6">
         <div>
           <h3 className="font-semibold text-lg text-[#3B3634] mb-2 font-instrument-sans">
-            <span className="text-[#3B3634]/40 font-normal mr-2">
+            <span className="text-[#3B3634]/90 font-normal mr-2">
               1.
             </span>
             Załóż konto sprzedawcy
@@ -60,7 +60,7 @@ const guideSections = [
 
         <div>
           <h3 className="font-semibold text-lg text-[#3B3634] mb-2 font-instrument-sans">
-            <span className="text-[#3B3634]/40 font-normal mr-2">
+            <span className="text-[#3B3634]/90 font-normal mr-2">
               2.
             </span>
             Uzupełnij wymagane dane
@@ -69,7 +69,7 @@ const guideSections = [
             Po zatwierdzeniu konta zaloguj się do panelu sprzedawcy i
             uzupełnij wszystkie niezbędne informacje:
           </p>
-          <ul className="list-disc ml-5 space-y-1.5 text-[#3B3634]/80">
+          <ul className="list-disc ml-5 space-y-1.5 text-[#3B3634]/90">
             <li>
               dane sprzedawcy (imię i nazwisko lub nazwa firmy, NIP –
               jeśli dotyczy)
@@ -91,7 +91,7 @@ const guideSections = [
 
         <div>
           <h3 className="font-semibold text-lg text-[#3B3634] mb-2 font-instrument-sans">
-            <span className="text-[#3B3634]/40 font-normal mr-2">
+            <span className="text-[#3B3634]/90 font-normal mr-2">
               3.
             </span>
             Dodaj produkty do swojego sklepu
@@ -114,7 +114,7 @@ const guideSections = [
               autorski charakter produktu.
             </p>
             <p className="mb-2">Administrator może:</p>
-            <ul className="list-disc ml-5 space-y-1.5 text-[#3B3634]/80">
+            <ul className="list-disc ml-5 space-y-1.5 text-[#3B3634]/90">
               <li>
                 poprosić o poprawki techniczne (np. dodanie zdjęcia w
                 wyższej rozdzielczości)
@@ -139,7 +139,7 @@ const guideSections = [
 
         <div>
           <h3 className="font-semibold text-lg text-[#3B3634] mb-2 font-instrument-sans">
-            <span className="text-[#3B3634]/40 font-normal mr-2">
+            <span className="text-[#3B3634]/90 font-normal mr-2">
               4.
             </span>
             Rozpocznij sprzedaż
@@ -156,7 +156,7 @@ const guideSections = [
   {
     title: "Warunki współpracy",
     content: (
-      <ul className="list-disc ml-5 space-y-2.5 text-[#3B3634]/80">
+      <ul className="list-disc ml-5 space-y-2.5 text-[#3B3634]/90">
         <li>
           Założenie i prowadzenie konta sprzedawcy jest całkowicie
           bezpłatne.
@@ -188,7 +188,7 @@ const guideSections = [
         </p>
         <div>
           <p className="mb-2">Sprzedawca musi:</p>
-          <ul className="list-disc ml-5 space-y-1.5 text-[#3B3634]/80">
+          <ul className="list-disc ml-5 space-y-1.5 text-[#3B3634]/90">
             <li>
               udostępnić adres do zwrotów (może się różnić od adresu
               kontaktowego)
@@ -219,7 +219,7 @@ const guideSections = [
           bezpieczeństwa produktów (GPSR), obowiązującym od 13 grudnia
           2024 r., sprzedawca ma obowiązek:
         </p>
-        <ul className="list-disc ml-5 space-y-1.5 text-[#3B3634]/80">
+        <ul className="list-disc ml-5 space-y-1.5 text-[#3B3634]/90">
           <li>
             opisać sposób bezpiecznego użytkowania produktu (np.
             ograniczenia wiekowe)
@@ -244,7 +244,7 @@ const guideSections = [
   {
     title: "Dlaczego warto sprzedawać na Artovni?",
     content: (
-      <ul className="list-disc ml-5 space-y-2.5 text-[#3B3634]/80">
+      <ul className="list-disc ml-5 space-y-2.5 text-[#3B3634]/90">
         <li>
           Możliwość dotarcia do klientów szukających oryginalnych i
           ręcznie tworzonych produktów
@@ -273,7 +273,7 @@ const SellingGuideContent = () => {
         <h1 className="font-instrument-serif text-4xl md:text-5xl lg:text-6xl mb-6 font-normal italic text-[#3B3634] tracking-tight">
           Jak sprzedawać na Artovni?
         </h1>
-        <p className="text-lg md:text-xl text-[#3B3634]/60 font-instrument-sans mb-4 max-w-xl mx-auto leading-relaxed">
+        <p className="text-lg md:text-xl text-[#3B3634]/90 font-instrument-sans mb-4 max-w-xl mx-auto leading-relaxed">
           Wszystko, czego potrzebujesz, aby otworzyć własny sklep i
           dołączyć do naszej społeczności twórców
         </p>
@@ -304,7 +304,7 @@ const SellingGuideContent = () => {
                 <circle cx="11" cy="11" r="2" />
               </svg>
             </div>
-            <p className="text-lg leading-relaxed text-[#3B3634]/80 font-instrument-sans">
+            <p className="text-lg leading-relaxed text-[#3B3634]/90 font-instrument-sans">
               Artovnia to polska platforma stworzona z myślą o
               artystach, projektantach i rękodzielnikach, którzy chcą
               prezentować i sprzedawać swoje{" "}
@@ -354,7 +354,7 @@ const SellingGuideContent = () => {
                 {({ open }) => (
                   <>
                     <Disclosure.Button className="flex w-full justify-between items-center text-left py-6 group">
-                      <h3 className="text-lg font-semibold font-instrument-sans text-[#3B3634] pr-4 group-hover:text-[#3B3634]/80 transition-colors duration-200">
+                      <h3 className="text-lg font-semibold font-instrument-sans text-[#3B3634] pr-4 group-hover:text-[#3B3634]/90 transition-colors duration-200">
                         <span className="text-[#3B3634]/40 mr-3 font-normal">
                           {String(index + 1).padStart(2, "0")}
                         </span>
@@ -392,13 +392,13 @@ const SellingGuideContent = () => {
           <h2 className="font-instrument-serif text-2xl md:text-3xl font-normal italic text-[#3B3634] mb-4">
             Zacznij sprzedawać już dziś
           </h2>
-          <p className="text-[#3B3634]/80 font-instrument-sans mb-4 max-w-lg mx-auto leading-relaxed">
+          <p className="text-[#3B3634]/90 font-instrument-sans mb-4 max-w-lg mx-auto leading-relaxed">
             Kliknij w przycisk &ldquo;Twój sklep&rdquo; (lub ikonka
             sklepu na urządzeniach mobilnych), wypełnij formularz
             rejestracyjny i dołącz do społeczności twórców Artovni.
           </p>
           <BrushDivider className="my-6" />
- <p className="text-[#3B3634]/50 font-instrument-sans text-sm italic">
+ <p className="text-[#3B3634]/90 font-instrument-sans text-sm italic">
            Jeśli masz pytania, zajrzyj do sekcji FAQ dla sprzedawców
             lub skontaktuj się z nami na{" "}
           

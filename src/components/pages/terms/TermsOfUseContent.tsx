@@ -49,7 +49,7 @@ const TermsOfUseContent = () => {
         <h1 className="font-instrument-serif text-4xl md:text-5xl lg:text-6xl mb-6 font-normal italic text-[#3B3634] tracking-tight">
           Regulamin Serwisu Artovnia
         </h1>
-        <p className="text-lg md:text-xl text-[#3B3634]/60 font-instrument-sans mb-4 max-w-xl mx-auto leading-relaxed">
+        <p className="text-lg md:text-xl text-[#3B3634]/90 font-instrument-sans mb-4 max-w-xl mx-auto leading-relaxed">
           Zasady korzystania z platformy
         </p>
         <div className="text-sm text-[#3B3634]/40 font-instrument-sans space-y-0.5">
@@ -97,7 +97,7 @@ const TermsOfUseContent = () => {
           {({ open }) => (
             <>
               <Disclosure.Button className="flex w-full justify-between items-center text-left py-6 group">
-                <h3 className="text-lg font-semibold font-instrument-sans text-[#3B3634] pr-4 group-hover:text-[#3B3634]/80 transition-colors duration-200">
+                <h3 className="text-lg font-semibold font-instrument-sans text-[#3B3634] pr-4 group-hover:text-[#3B3634]/90 transition-colors duration-200">
                   <span className="text-[#3B3634]/40 mr-3 font-normal">01</span>
                   Postanowienia ogólne
                 </h3>
@@ -151,7 +151,7 @@ const TermsOfUseContent = () => {
           {({ open }) => (
             <>
               <Disclosure.Button className="flex w-full justify-between items-center text-left py-6 group">
-                <h3 className="text-lg font-semibold font-instrument-sans text-[#3B3634] pr-4 group-hover:text-[#3B3634]/80 transition-colors duration-200">
+                <h3 className="text-lg font-semibold font-instrument-sans text-[#3B3634] pr-4 group-hover:text-[#3B3634]/90 transition-colors duration-200">
                   <span className="text-[#3B3634]/40 mr-3 font-normal">02</span>
                   Definicje
                 </h3>
@@ -275,7 +275,7 @@ const TermsOfUseContent = () => {
           {({ open }) => (
             <>
               <Disclosure.Button className="flex w-full justify-between items-center text-left py-6 group">
-                <h3 className="text-lg font-semibold font-instrument-sans text-[#3B3634] pr-4 group-hover:text-[#3B3634]/80 transition-colors duration-200">
+                <h3 className="text-lg font-semibold font-instrument-sans text-[#3B3634] pr-4 group-hover:text-[#3B3634]/90 transition-colors duration-200">
                   <span className="text-[#3B3634]/40 mr-3 font-normal">03</span>
                   Warunki techniczne korzystania z platformy
                 </h3>
@@ -302,7 +302,7 @@ const TermsOfUseContent = () => {
                   funkcjonalności platformy internetowej www.artovnia.com
                   Użytkownik powinien dysponować:
                 </p>
-                <ul className="list-disc ml-5 space-y-1 text-[#3B3634]/80">
+                <ul className="list-disc ml-5 space-y-1 text-[#3B3634]/90">
                   <li>
                     urządzeniem posiadającym dostęp do Internetu (komputerem,
                     laptopem, smartfonem lub tabletem),
@@ -338,7 +338,7 @@ const TermsOfUseContent = () => {
                   działała w sposób ciągły, bez błędów i przerw technicznych.
                   Zastrzega jednak możliwość:
                 </p>
-                <ul className="list-disc ml-5 space-y-1 text-[#3B3634]/80">
+                <ul className="list-disc ml-5 space-y-1 text-[#3B3634]/90">
                   <li>
                     czasowego wyłączenia serwisu lub jego części w celu
                     przeprowadzenia niezbędnych prac konserwacyjnych, aktualizacji
@@ -355,7 +355,7 @@ const TermsOfUseContent = () => {
                   </li>
                 </ul>
                 <p>3.3. Administrator nie ponosi odpowiedzialności za:</p>
-                <ul className="list-disc ml-5 space-y-1 text-[#3B3634]/80">
+                <ul className="list-disc ml-5 space-y-1 text-[#3B3634]/90">
                   <li>
                     zakłócenia w działaniu platformy spowodowane nieprawidłowym
                     działaniem sprzętu lub oprogramowania po stronie Użytkownika,
@@ -394,7 +394,7 @@ const TermsOfUseContent = () => {
           {({ open }) => (
             <>
               <Disclosure.Button className="flex w-full justify-between items-center text-left py-6 group">
-                <h3 className="text-lg font-semibold font-instrument-sans text-[#3B3634] pr-4 group-hover:text-[#3B3634]/80 transition-colors duration-200">
+                <h3 className="text-lg font-semibold font-instrument-sans text-[#3B3634] pr-4 group-hover:text-[#3B3634]/90 transition-colors duration-200">
                   <span className="text-[#3B3634]/40 mr-3 font-normal">04</span>
                   Rejestracja i konto
                 </h3>
@@ -429,7 +429,7 @@ const TermsOfUseContent = () => {
                   nabywać prawa i zaciągać zobowiązania we własnym imieniu.
                 </p>
                 <p>4.3. Proces rejestracji polega na:</p>
-                <ul className="list-disc ml-5 space-y-1 text-[#3B3634]/80">
+                <ul className="list-disc ml-5 space-y-1 text-[#3B3634]/90">
                   <li>
                     wypełnieniu formularza rejestracyjnego dostępnego na stronie
                     serwisu,
@@ -451,7 +451,7 @@ const TermsOfUseContent = () => {
                   </li>
                 </ul>
                 <p>4.4. Konto Użytkownika dzieli się na:</p>
-                <ul className="list-disc ml-5 space-y-1 text-[#3B3634]/80">
+                <ul className="list-disc ml-5 space-y-1 text-[#3B3634]/90">
                   <li>
                     Konto Kupującego – umożliwia przeglądanie oferty, dodawanie
                     produktów do koszyka, składanie zamówień oraz komunikację ze
@@ -469,7 +469,7 @@ const TermsOfUseContent = () => {
                   konta z uzasadnionych przyczyn.
                 </p>
                 <p>4.6. Użytkownik jest zobowiązany do:</p>
-                <ul className="list-disc ml-5 space-y-1 text-[#3B3634]/80">
+                <ul className="list-disc ml-5 space-y-1 text-[#3B3634]/90 ">
                   <li>
                     zachowania poufności danych dostępowych do konta (loginu i
                     hasła),
@@ -515,7 +515,7 @@ const TermsOfUseContent = () => {
           {({ open }) => (
             <>
               <Disclosure.Button className="flex w-full justify-between items-center text-left py-6 group">
-                <h3 className="text-lg font-semibold font-instrument-sans text-[#3B3634] pr-4 group-hover:text-[#3B3634]/80 transition-colors duration-200">
+                <h3 className="text-lg font-semibold font-instrument-sans text-[#3B3634] pr-4 group-hover:text-[#3B3634]/90 transition-colors duration-200">
                   <span className="text-[#3B3634]/40 mr-3 font-normal">05</span>
                   Zawarcie umowy kupna-sprzedaży
                 </h3>
@@ -547,7 +547,7 @@ const TermsOfUseContent = () => {
                   5.2. Złożenie zamówienia odbywa się poprzez funkcjonalność
                   platformy i wymaga:
                 </p>
-                <ul className="list-disc ml-5 space-y-1 text-[#3B3634]/80">
+                <ul className="list-disc ml-5 space-y-1 text-[#3B3634]/90">
                   <li>wyboru produktu,</li>
                   <li>uzupełnienia danych niezbędnych do dostawy,</li>
                   <li>wyboru metody płatności,</li>
@@ -572,7 +572,7 @@ const TermsOfUseContent = () => {
                   5.5. Administrator nie jest stroną umowy kupna-sprzedaży.
                   Odpowiedzialność za realizację umowy, w tym:
                 </p>
-                <ul className="list-disc ml-5 space-y-1 text-[#3B3634]/80">
+                <ul className="list-disc ml-5 space-y-1 text-[#3B3634]/90">
                   <li>wysyłkę produktu,</li>
                   <li>jego zgodność z opisem,</li>
                   <li>wystawienie rachunku lub faktury,</li>
@@ -619,7 +619,7 @@ const TermsOfUseContent = () => {
           {({ open }) => (
             <>
               <Disclosure.Button className="flex w-full justify-between items-center text-left py-6 group">
-                <h3 className="text-lg font-semibold font-instrument-sans text-[#3B3634] pr-4 group-hover:text-[#3B3634]/80 transition-colors duration-200">
+                <h3 className="text-lg font-semibold font-instrument-sans text-[#3B3634] pr-4 group-hover:text-[#3B3634]/90 transition-colors duration-200">
                   <span className="text-[#3B3634]/40 mr-3 font-normal">06</span>
                   Sprzedaż i rozliczenia
                 </h3>
@@ -686,7 +686,7 @@ const TermsOfUseContent = () => {
                   6.8. Administrator zastrzega sobie prawo do wstrzymania wypłaty
                   środków w przypadku:
                 </p>
-                <ul className="list-disc ml-5 space-y-1 text-[#3B3634]/80">
+                <ul className="list-disc ml-5 space-y-1 text-[#3B3634]/90">
                   <li>
                     wystąpienia sporów lub reklamacji dotyczących zrealizowanych
                     zamówień,
@@ -709,7 +709,7 @@ const TermsOfUseContent = () => {
           {({ open }) => (
             <>
               <Disclosure.Button className="flex w-full justify-between items-center text-left py-6 group">
-                <h3 className="text-lg font-semibold font-instrument-sans text-[#3B3634] pr-4 group-hover:text-[#3B3634]/80 transition-colors duration-200">
+                <h3 className="text-lg font-semibold font-instrument-sans text-[#3B3634] pr-4 group-hover:text-[#3B3634]/90 transition-colors duration-200">
                   <span className="text-[#3B3634]/40 mr-3 font-normal">07</span>
                   Prawa i obowiązki sprzedającego
                 </h3>
@@ -737,7 +737,7 @@ const TermsOfUseContent = () => {
                   postanowieniami Regulaminu.
                 </p>
                 <p>7.2. Sprzedający zobowiązuje się do:</p>
-                <ul className="list-disc ml-5 space-y-1 text-[#3B3634]/80">
+                <ul className="list-disc ml-5 space-y-1 text-[#3B3634]/90">
                   <li>
                     oferowania wyłącznie produktów, do których posiada pełne prawa
                     do sprzedaży – w szczególności praw własności lub licencji,
@@ -870,7 +870,7 @@ const TermsOfUseContent = () => {
           {({ open }) => (
             <>
               <Disclosure.Button className="flex w-full justify-between items-center text-left py-6 group">
-                <h3 className="text-lg font-semibold font-instrument-sans text-[#3B3634] pr-4 group-hover:text-[#3B3634]/80 transition-colors duration-200">
+                <h3 className="text-lg font-semibold font-instrument-sans text-[#3B3634] pr-4 group-hover:text-[#3B3634]/90 transition-colors duration-200">
                   <span className="text-[#3B3634]/40 mr-3 font-normal">08</span>
                   Zawieszenie konta sprzedającego
                 </h3>
@@ -898,7 +898,7 @@ const TermsOfUseContent = () => {
                   Regulaminu, obowiązującego prawa lub dobrych obyczajów, w
                   szczególności gdy:
                 </p>
-                <ul className="list-disc ml-5 space-y-1 text-[#3B3634]/80">
+                <ul className="list-disc ml-5 space-y-1 text-[#3B3634]/90">
                   <li>
                     Sprzedający nie realizuje zamówień w terminie określonym w
                     opisie produktu lub w Regulaminie,
@@ -942,7 +942,7 @@ const TermsOfUseContent = () => {
                   8.4. Jeżeli po upomnieniu naruszenia nie ustają lub sytuacja się
                   powtarza, Administrator może bez dalszego ostrzeżenia:
                 </p>
-                <ul className="list-disc ml-5 space-y-1 text-[#3B3634]/80">
+                <ul className="list-disc ml-5 space-y-1 text-[#3B3634]/90">
                   <li>zawiesić konto Sprzedającego na czas nieokreślony,</li>
                   <li>trwale usunąć konto Sprzedającego,</li>
                   <li>
@@ -987,7 +987,7 @@ const TermsOfUseContent = () => {
           {({ open }) => (
             <>
               <Disclosure.Button className="flex w-full justify-between items-center text-left py-6 group">
-                <h3 className="text-lg font-semibold font-instrument-sans text-[#3B3634] pr-4 group-hover:text-[#3B3634]/80 transition-colors duration-200">
+                <h3 className="text-lg font-semibold font-instrument-sans text-[#3B3634] pr-4 group-hover:text-[#3B3634]/90 transition-colors duration-200">
                   <span className="text-[#3B3634]/40 mr-3 font-normal">09</span>
                   Odpowiedzialność
                 </h3>
@@ -1013,7 +1013,7 @@ const TermsOfUseContent = () => {
                   9.1. Administrator zapewnia techniczne funkcjonowanie platformy Artovnia.com, umożliwiające zawieranie umów sprzedaży pomiędzy Użytkownikami, jednak nie jest stroną tych umów. Odpowiedzialność za realizację transakcji, zgodność oferty z opisem oraz jakość i legalność sprzedawanych produktów spoczywa wyłącznie na Sprzedających.
                 </p>
                 <p>9.2. Administrator nie ponosi odpowiedzialności za:</p>
-                <ul className="list-disc ml-5 space-y-1 text-[#3B3634]/80">
+                <ul className="list-disc ml-5 space-y-1 text-[#3B3634]/90">
                   <li>
                     niewykonanie lub nienależyte wykonanie umowy sprzedaży zawartej
                     pomiędzy Sprzedającym a Kupującym,
@@ -1043,7 +1043,7 @@ const TermsOfUseContent = () => {
                   </li>
                 </ul>
                 <p>9.3. Administrator zastrzega sobie prawo do:</p>
-                <ul className="list-disc ml-5 space-y-1 text-[#3B3634]/80">
+                <ul className="list-disc ml-5 space-y-1 text-[#3B3634]/90">
                   <li>
                     usunięcia ofert naruszających przepisy prawa, Regulamin, dobre
                     obyczaje lub godzących w wizerunek platformy,
@@ -1066,7 +1066,7 @@ const TermsOfUseContent = () => {
                   9.4. Sprzedający ponosi pełną odpowiedzialność za wszelkie skutki
                   prawne wynikające z wystawienia do sprzedaży produktu, który:
                 </p>
-                <ul className="list-disc ml-5 space-y-1 text-[#3B3634]/80">
+                <ul className="list-disc ml-5 space-y-1 text-[#3B3634]/90">
                   <li>jest nielegalny,</li>
                   <li>
                     narusza prawa autorskie, prawa własności intelektualnej lub dobra
@@ -1118,7 +1118,7 @@ const TermsOfUseContent = () => {
           {({ open }) => (
             <>
               <Disclosure.Button className="flex w-full justify-between items-center text-left py-6 group">
-                <h3 className="text-lg font-semibold font-instrument-sans text-[#3B3634] pr-4 group-hover:text-[#3B3634]/80 transition-colors duration-200">
+                <h3 className="text-lg font-semibold font-instrument-sans text-[#3B3634] pr-4 group-hover:text-[#3B3634]/90 transition-colors duration-200">
                   <span className="text-[#3B3634]/40 mr-3 font-normal">10</span>
                   Zwroty i reklamacje
                 </h3>
@@ -1185,7 +1185,7 @@ const TermsOfUseContent = () => {
                 <p>
                   10.1.7. Zwrot towaru nie jest możliwy w przypadku przedmiotów:
                 </p>
-                <ul className="list-disc ml-5 space-y-1 text-[#3B3634]/80">
+                <ul className="list-disc ml-5 space-y-1 text-[#3B3634]/90">
                   <li>
                     wykonanych na indywidualne zamówienie (np. personalizowanych),
                   </li>
@@ -1214,7 +1214,7 @@ const TermsOfUseContent = () => {
                   celu złożenia reklamacji.
                 </p>
                 <p>10.2.3. Reklamacja powinna zawierać:</p>
-                <ul className="list-disc ml-5 space-y-1 text-[#3B3634]/80">
+                <ul className="list-disc ml-5 space-y-1 text-[#3B3634]/90">
                   <li>imię i nazwisko Kupującego,</li>
                   <li>datę zawarcia umowy i datę otrzymania towaru,</li>
                   <li>opis niezgodności towaru z umową,</li>
@@ -1234,7 +1234,7 @@ const TermsOfUseContent = () => {
                   uzasadnioną.
                 </p>
                 <p>10.2.5. Kupujący może żądać:</p>
-                <ul className="list-disc ml-5 space-y-1 text-[#3B3634]/80">
+                <ul className="list-disc ml-5 space-y-1 text-[#3B3634]/90">
                   <li>naprawy lub wymiany towaru na wolny od wad,</li>
                   <li>
                     obniżenia ceny lub odstąpienia od umowy, jeśli:
@@ -1300,7 +1300,7 @@ const TermsOfUseContent = () => {
           {({ open }) => (
             <>
               <Disclosure.Button className="flex w-full justify-between items-center text-left py-6 group">
-                <h3 className="text-lg font-semibold font-instrument-sans text-[#3B3634] pr-4 group-hover:text-[#3B3634]/80 transition-colors duration-200">
+                <h3 className="text-lg font-semibold font-instrument-sans text-[#3B3634] pr-4 group-hover:text-[#3B3634]/90 transition-colors duration-200">
                   <span className="text-[#3B3634]/40 mr-3 font-normal">11</span>
                   Opinie kupujących
                 </h3>
@@ -1335,7 +1335,7 @@ const TermsOfUseContent = () => {
                   naruszających dobra osobiste.
                 </p>
                 <p>11.3. Wystawiona opinia może zawierać:</p>
-                <ul className="list-disc ml-5 space-y-1 text-[#3B3634]/80">
+                <ul className="list-disc ml-5 space-y-1 text-[#3B3634]/90">
                   <li>
                     ocenę w formie punktowej lub gwiazdek (jeśli taka funkcja jest
                     dostępna),
@@ -1353,7 +1353,7 @@ const TermsOfUseContent = () => {
                   11.5. Administrator zastrzega sobie prawo do moderowania, ukrycia
                   lub usunięcia opinii w przypadku, gdy:
                 </p>
-                <ul className="list-disc ml-5 space-y-1 text-[#3B3634]/80">
+                <ul className="list-disc ml-5 space-y-1 text-[#3B3634]/90">
                   <li>
                     opinia zawiera treści wulgarne, obraźliwe, dyskryminujące lub
                     naruszające prawo,
@@ -1379,7 +1379,7 @@ const TermsOfUseContent = () => {
                   Administratora za pośrednictwem formularza kontaktowego lub
                   wiadomości e-mail. Zgłoszenie powinno zawierać:
                 </p>
-                <ul className="list-disc ml-5 space-y-1 text-[#3B3634]/80">
+                <ul className="list-disc ml-5 space-y-1 text-[#3B3634]/90">
                   <li>numer zamówienia,</li>
                   <li>treść opinii (jeśli już została wystawiona),</li>
                   <li>uzasadnienie podejrzenia nadużycia,</li>
@@ -1418,7 +1418,7 @@ const TermsOfUseContent = () => {
           {({ open }) => (
             <>
               <Disclosure.Button className="flex w-full justify-between items-center text-left py-6 group">
-                <h3 className="text-lg font-semibold font-instrument-sans text-[#3B3634] pr-4 group-hover:text-[#3B3634]/80 transition-colors duration-200">
+                <h3 className="text-lg font-semibold font-instrument-sans text-[#3B3634] pr-4 group-hover:text-[#3B3634]/90 transition-colors duration-200">
                   <span className="text-[#3B3634]/40 mr-3 font-normal">12</span>
                   Dane osobowe kupujących i sprzedających
                 </h3>
@@ -1449,7 +1449,7 @@ const TermsOfUseContent = () => {
                   Parlamentu Europejskiego i Rady (UE) 2016/679 (tzw. RODO).
                 </p>
                 <p>12.2. Dane osobowe Użytkowników przetwarzane są w celu:</p>
-                <ul className="list-disc ml-5 space-y-1 text-[#3B3634]/80">
+                <ul className="list-disc ml-5 space-y-1 text-[#3B3634]/90">
                   <li>umożliwienia korzystania z funkcjonalności platformy,</li>
                   <li>realizacji transakcji sprzedaży,</li>
                   <li>prowadzenia konta użytkownika,</li>
@@ -1512,7 +1512,7 @@ const TermsOfUseContent = () => {
           {({ open }) => (
             <>
               <Disclosure.Button className="flex w-full justify-between items-center text-left py-6 group">
-                <h3 className="text-lg font-semibold font-instrument-sans text-[#3B3634] pr-4 group-hover:text-[#3B3634]/80 transition-colors duration-200">
+                <h3 className="text-lg font-semibold font-instrument-sans text-[#3B3634] pr-4 group-hover:text-[#3B3634]/90 transition-colors duration-200">
                   <span className="text-[#3B3634]/40 mr-3 font-normal">13</span>
                   Kody rabatowe, promocje, wyprzedaże
                 </h3>
@@ -1541,7 +1541,7 @@ const TermsOfUseContent = () => {
                   dostawy.
                 </p>
                 <p>13.2. Kody rabatowe mogą być:</p>
-                <ul className="list-disc ml-5 space-y-1 text-[#3B3634]/80">
+                <ul className="list-disc ml-5 space-y-1 text-[#3B3634]/90">
                   <li>
                     ogólnodostępne – udostępnione publicznie w serwisie lub w mediach
                     społecznościowych,
@@ -1612,7 +1612,7 @@ const TermsOfUseContent = () => {
           {({ open }) => (
             <>
               <Disclosure.Button className="flex w-full justify-between items-center text-left py-6 group">
-                <h3 className="text-lg font-semibold font-instrument-sans text-[#3B3634] pr-4 group-hover:text-[#3B3634]/80 transition-colors duration-200">
+                <h3 className="text-lg font-semibold font-instrument-sans text-[#3B3634] pr-4 group-hover:text-[#3B3634]/90 transition-colors duration-200">
                   <span className="text-[#3B3634]/40 mr-3 font-normal">14</span>
                   Wykorzystanie treści sprzedających w działaniach marketingowych
                 </h3>
@@ -1638,7 +1638,7 @@ const TermsOfUseContent = () => {
                   14.1. Sprzedający, publikując oferty w serwisie, wyraża zgodę na
                   nieodpłatne wykorzystanie przez Administratora:
                 </p>
-                <ul className="list-disc ml-5 space-y-1 text-[#3B3634]/80">
+                <ul className="list-disc ml-5 space-y-1 text-[#3B3634]/90">
                   <li>zdjęć produktów,</li>
                   <li>opisów produktów,</li>
                   <li>nazwy sklepu,</li>
@@ -1663,7 +1663,7 @@ const TermsOfUseContent = () => {
                   14.3. Treści Sprzedających mogą być wykorzystywane w szczególności
                   w następujących kanałach:
                 </p>
-                <ul className="list-disc ml-5 space-y-1 text-[#3B3634]/80">
+                <ul className="list-disc ml-5 space-y-1 text-[#3B3634]/90">
                   <li>
                     media społecznościowe: Instagram, Facebook, TikTok, Pinterest,
                   </li>
@@ -1757,7 +1757,7 @@ const TermsOfUseContent = () => {
                   przepisami prawa, w tym z RODO, dyrektywą PSD2 i wymogami PCI DSS.
                 </p>
                 <p>15.3 Dostępne metody płatności w serwisie to:</p>
-                <ul className="list-disc ml-5 space-y-1 text-[#3B3634]/80">
+                <ul className="list-disc ml-5 space-y-1 text-[#3B3634]/90">
                   <li>
                     przelew bankowy (natychmiastowy – poprzez zintegrowany system
                     płatności),
@@ -1856,7 +1856,7 @@ const TermsOfUseContent = () => {
           {({ open }) => (
             <>
               <Disclosure.Button className="flex w-full justify-between items-center text-left py-6 group">
-                <h3 className="text-lg font-semibold font-instrument-sans text-[#3B3634] pr-4 group-hover:text-[#3B3634]/80 transition-colors duration-200">
+                <h3 className="text-lg font-semibold font-instrument-sans text-[#3B3634] pr-4 group-hover:text-[#3B3634]/90 transition-colors duration-200">
                   <span className="text-[#3B3634]/40 mr-3 font-normal">16</span>
                   Postanowienia końcowe
                 </h3>
@@ -1902,7 +1902,7 @@ const TermsOfUseContent = () => {
           {({ open }) => (
             <>
               <Disclosure.Button className="flex w-full justify-between items-center text-left py-6 group gap-4">
-                <h3 className="text-lg font-semibold font-instrument-sans text-[#3B3634] pr-4 group-hover:text-[#3B3634]/80 transition-colors duration-200 flex-1">
+                <h3 className="text-lg font-semibold font-instrument-sans text-[#3B3634] pr-4 group-hover:text-[#3B3634]/90 transition-colors duration-200 flex-1">
                   <span className="text-[#3B3634]/40 mr-3 font-normal">Załącznik</span>
                   Promocja dla pierwszych 100 sprzedawców
                 </h3>
@@ -1951,7 +1951,7 @@ const TermsOfUseContent = () => {
                 <p>
                   2. Administrator zastrzega sobie prawo do:
                 </p>
-                <ul className="list-disc ml-5 space-y-1 text-[#3B3634]/80">
+                <ul className="list-disc ml-5 space-y-1 text-[#3B3634]/90">
                   <li>
                     a. zakończenia Promocji przed osiągnięciem limitu 100 Sprzedawców,
                     lub
@@ -1975,7 +1975,7 @@ const TermsOfUseContent = () => {
                 <p>
                   1. Do Promocji kwalifikują się wyłącznie Sprzedawcy, którzy łącznie:
                 </p>
-                <ul className="list-disc ml-5 space-y-1 text-[#3B3634]/80">
+                <ul className="list-disc ml-5 space-y-1 text-[#3B3634]/90">
                   <li>
                     a. założą konto Sprzedawcy w Serwisie i dokonają jego pełnej
                     konfiguracji, w tym uzupełnią wymagane dane rozliczeniowe oraz
@@ -2006,7 +2006,7 @@ const TermsOfUseContent = () => {
                 <p>
                   2. Prowizja promocyjna:
                 </p>
-                <ul className="list-disc ml-5 space-y-1 text-[#3B3634]/80">
+                <ul className="list-disc ml-5 space-y-1 text-[#3B3634]/90">
                   <li>
                     a. naliczana jest wyłącznie od ceny produktu i nie obejmuje
                     kosztów dostawy,
@@ -2053,7 +2053,7 @@ const TermsOfUseContent = () => {
           <h2 className="font-instrument-serif text-2xl md:text-3xl font-normal italic text-[#3B3634] mb-6">
             Administrator serwisu
           </h2>
-          <div className="text-[#3B3634]/80 font-instrument-sans space-y-1 leading-relaxed">
+          <div className="text-[#3B3634]/90 font-instrument-sans space-y-1 leading-relaxed">
             <p className="font-semibold text-[#3B3634]">
               Ann Sayuri ART Anna Wawrzyniak
             </p>
@@ -2063,7 +2063,7 @@ const TermsOfUseContent = () => {
             <p>
               E-mail:{" "}
               <span
-                className="text-[#3B3634] hover:text-[#3B3634]/70 underline underline-offset-4 transition-colors duration-200 cursor-pointer"
+                className="text-[#3B3634] hover:text-[#3B3634]/80 underline underline-offset-4 transition-colors duration-200 cursor-pointer"
                 onClick={() =>
                   (window.location.href = atob(
                     "bWFpbHRvOmluZm8uYXJ0b3ZuaWFAZ21haWwuY29t"

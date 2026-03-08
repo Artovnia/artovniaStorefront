@@ -197,7 +197,7 @@ export default async function SupportPage() {
           <h1 className="text-3xl sm:text-4xl  text-[#3B3634] mb-3 text-center font-instrument-serif font-normal">
             Wsparcie klienta
           </h1>
-          <p className="text-lg sm:text-xl text-[#3B3634]/70 mb-12 max-w-7xl mx-auto leading-relaxed text-center font-instrument-sans">
+          <p className="text-lg sm:text-xl text-[#3B3634]/90 mb-12 max-w-7xl mx-auto leading-relaxed text-center font-instrument-sans">
             Jesteśmy tutaj, aby pomóc! Wyślij zgłoszenie, a nasz zespół
             udzieli Ci wsparcia.
           </p>

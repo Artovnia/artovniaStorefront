@@ -251,7 +251,7 @@ const FAQContent = () => {
         <h1 className="font-instrument-serif text-4xl md:text-5xl lg:text-6xl mb-6 font-normal italic text-[#3B3634] tracking-tight">
           Najczęściej zadawane pytania
         </h1>
-        <p className="text-lg md:text-xl text-[#3B3634]/60 font-instrument-sans mb-4 max-w-xl mx-auto leading-relaxed">
+        <p className="text-lg md:text-xl text-[#3B3634]/90 font-instrument-sans mb-4 max-w-xl mx-auto leading-relaxed">
           Znajdziesz tutaj odpowiedzi na pytania dotyczące zakupów na
           platformie Artovnia
         </p>
@@ -361,7 +361,7 @@ const FAQContent = () => {
         {/* Footer CTA */}
         <div className="text-center pt-2 pb-4">
           <BrushDivider className="mb-8" />
-           <p className="text-[#3B3634]/50 font-instrument-sans text-sm italic">
+           <p className="text-[#3B3634]/90 font-instrument-sans text-sm italic">
             Nie znalazłeś odpowiedzi na swoje pytanie? Napisz do nas
             na{" "}
           

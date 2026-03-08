@@ -343,16 +343,16 @@ const ProductCardComponent = ({
             )}
           </div>
           {/* Hover overlay — inside the same Link to avoid nested interactive elements */}
-          <span className="absolute bg-[#3B3634] opacity-90 text-white h-auto lg:h-[48px] lg:group-hover:flex hidden w-full uppercase bottom-0 z-10 overflow-hidden items-center justify-center font-medium text-sm" aria-hidden="true">
+         {/*  <span className="absolute bg-[#3B3634] opacity-90 text-white h-auto lg:h-[48px] lg:group-hover:flex hidden w-full uppercase bottom-0 z-10 overflow-hidden items-center justify-center font-medium text-sm" aria-hidden="true">
             Zobacz więcej
-          </span>
+          </span> */}
         </Link>
       </div>
       <Link href={productUrl} prefetch={false} tabIndex={-1} aria-hidden="true">
         <div className="flex justify-between flex-grow mt-2">
           <div className="w-full font-instrument-sans">
             {/* 📝 PRODUCT TITLE: font-medium (weight: 500) - Medium prominence, less bold than current price */}
-            <h3 className={`text-md font-instrument-sans truncate mb-1 leading-tight font-medium ${themeMode === 'light' ? 'text-white' : ''}`}>
+            <h3 className={`text-md font-instrument-sans truncate leading-tight font-medium ${themeMode === 'light' ? 'text-white' : ''}`}>
               {product.title}
             </h3>
             
@@ -369,13 +369,13 @@ const ProductCardComponent = ({
               
               
               return sellerName ? (
-                <p className={`font-instrument-sans text-sm mb-1 font-normal ${themeMode === 'light' ? 'text-white/80' : 'text-black'}`}>
+                <p className={`font-instrument-sans text-sm mb-1  font-normal ${themeMode === 'light' ? 'text-white/80' : 'text-black'}`}>
                   {sellerName}
                 </p>
               ) : null
             })()}
             
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 leading-tight">
               {hasAnyDiscount ? (
                 <>
                   {/* Always use promotional pricing data when any discount is detected */}
@@ -384,11 +384,11 @@ const ProductCardComponent = ({
                       {/* 💰 PROMOTIONAL PRICE: font-bold (700) + larger size (text-lg sm:text-xl) */}
                       
                       {/*    👉 To tweak size, edit text-lg sm:text-xl below */}
-                      <p className={`font-instrument-sans font-semibold text-md sm:text-md text-[#3B3634] ${themeMode === 'light' ? 'text-white' : ''}`}>
+                      <p className={`font-instrument-sans font-semibold text-md sm:text-md text-[#3B3634] leading-tight ${themeMode === 'light' ? 'text-white' : ''}`}>
                         {promotionalPricing.promotionalPrice}
                       </p>
                       {/* 📊 ORIGINAL PRICE: Strikethrough, smaller, gray - de-emphasized */}
-                      <p className="text-xs text-gray-500 line-through">
+                      <p className="text-xs text-gray-500 line-through leading-tight">
                         <span className="sr-only">Cena przed promocją: </span>
                         {promotionalPricing.originalPrice}
                       </p>
@@ -397,14 +397,14 @@ const ProductCardComponent = ({
                     <>
                       {/* 💰 PRICE LIST DISCOUNT: font-bold (700) + larger size (text-lg sm:text-xl) */}
                       {/*    👉 To tweak size, edit text-lg sm:text-xl below */}
-                      <p className={`font-instrument-sans font-semibold text-md sm:text-md text-[#3B3634] ${themeMode === 'light' ? 'text-white' : ''}`}>
+                      <p className={`font-instrument-sans font-semibold text-md sm:text-md text-[#3B3634] leading-tight ${themeMode === 'light' ? 'text-white' : ''}`}>
                         {activePrice?.calculated_price?.replace(/PLN\s+([\d,.]+)/, '$1 zł')}
                       </p>
                       {/* 📊 ORIGINAL PRICE: Strikethrough, smaller, gray - de-emphasized */}
                       {activePrice?.calculated_price
                         ? activePrice?.calculated_price !==
                             activePrice?.original_price && (
-                            <p className="text-xs text-gray-500 line-through">
+                            <p className="text-xs text-gray-500 line-through leading-tight">
                               <span className="sr-only">Cena przed promocją: </span>
                               {activePrice?.original_price?.replace(/PLN\s+([\d,.]+)/, '$1 zł')}
                             </p>
@@ -417,7 +417,7 @@ const ProductCardComponent = ({
                 <>
                   {/* 💰 REGULAR PRICE: font-bold (700) + larger size (text-lg sm:text-xl) */}
                   {/*    👉 To tweak size, edit text-lg sm:text-xl below */}
-                  <p className={`font-instrument-sans font-semibold text-md sm:text-md ${themeMode === 'light' ? 'text-white' : ''}`}>
+                  <p className={`font-instrument-sans font-semibold text-md sm:text-md leading-tight ${themeMode === 'light' ? 'text-white' : ''}`}>
                     {activePrice?.calculated_price?.replace(/PLN\s+([\d,.]+)/, '$1 zł')}
                   </p>
                 </>
@@ -427,7 +427,7 @@ const ProductCardComponent = ({
             {/* Lowest Price Display - compact version with info icon tooltip for ProductCard */}
             {/* Only render when this specific product has an actual discount/promotion. */}
             {displayedVariant?.id && hasAnyDiscount && (
-              <div className="mt-0">
+              <div className="-mt-1 leading-tight">
                 <CompactLowestPriceDisplay
                   variantId={displayedVariant.id}
                   currencyCode="PLN"

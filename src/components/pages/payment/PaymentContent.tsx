@@ -47,7 +47,7 @@ const PaymentContent = () => {
         <h1 className="font-instrument-serif text-4xl md:text-5xl lg:text-6xl mb-6 font-normal italic text-[#3B3634] tracking-tight">
           Formy płatności
         </h1>
-        <p className="text-lg md:text-xl text-[#3B3634]/60 font-instrument-sans mb-4 max-w-lg mx-auto leading-relaxed">
+        <p className="text-lg md:text-xl text-[#3B3634]/90 font-instrument-sans mb-4 max-w-lg mx-auto leading-relaxed">
           Bezpieczne i wygodne metody płatności dla Twojego komfortu
         </p>
         <div className="text-sm text-[#3B3634]/40 font-instrument-sans">
@@ -63,14 +63,13 @@ const PaymentContent = () => {
         <ArtCard>
           <div className="flex flex-col md:flex-row items-center justify-between gap-2 md:gap-6">
             <div className="flex-1">
-              <p className="text-lg leading-relaxed text-[#3B3634]/80 font-instrument-sans">
+              <p className="text-lg leading-relaxed text-[#3B3634]/90 font-instrument-sans">
                 Wszystkie płatności są przetwarzane przez{" "}
                 <strong className="font-semibold text-[#3B3634]">
                   Stripe
                 </strong>{" "}
                 - globalnego lidera w zakresie bezpiecznych płatności online.
-                Płatność odbywa się jednorazowo za całe zamówienie, niezależnie
-                od liczby sprzedawców.
+                Płatność odbywa się jednorazowo za całe zamówienie, niezależnie od ilu sprzedawców jednocześnie dokonujesz zakupu.
               </p>
             </div>
             <div className="flex items-center gap-4">
@@ -112,7 +111,7 @@ const PaymentContent = () => {
                   <h3 className="font-instrument-sans font-semibold text-lg mb-2 text-[#3B3634]">
                     Karty płatnicze
                   </h3>
-                  <p className="text-[#3B3634]/60 font-instrument-sans text-sm mb-3">
+                  <p className="text-[#3B3634]/90 font-instrument-sans text-sm mb-3">
                     Visa, Mastercard, American Express - płatność natychmiastowa
                     z zabezpieczeniem 3D Secure.
                   </p>
@@ -147,7 +146,7 @@ const PaymentContent = () => {
                   <h3 className="font-instrument-sans font-semibold text-lg mb-2 text-[#3B3634]">
                     BLIK
                   </h3>
-                  <p className="text-[#3B3634]/60 font-instrument-sans text-sm mb-3">
+                  <p className="text-[#3B3634]/90 font-instrument-sans text-sm mb-3">
                     Szybka płatność mobilna - wystarczy 6-cyfrowy kod z
                     aplikacji bankowej.
                   </p>
@@ -176,7 +175,7 @@ const PaymentContent = () => {
                   <h3 className="font-instrument-sans font-semibold text-lg mb-2 text-[#3B3634]">
                     Przelewy24
                   </h3>
-                  <p className="text-[#3B3634]/60 font-instrument-sans text-sm mb-3">
+                  <p className="text-[#3B3634]/90 font-instrument-sans text-sm mb-3">
                     Bezpośrednie przelewy z kont w największych polskich bankach.
                   </p>
                   <div className="flex gap-2 flex-wrap">
@@ -212,7 +211,7 @@ const PaymentContent = () => {
                   <h3 className="font-instrument-sans font-semibold text-lg mb-2 text-[#3B3634]">
                     Płatności mobilne
                   </h3>
-                  <p className="text-[#3B3634]/60 font-instrument-sans text-sm mb-3">
+                  <p className="text-[#3B3634]/90 font-instrument-sans text-sm mb-3">
                     Apple Pay, Google Pay - wygodne płatności jednym dotknięciem.
                   </p>
                   <div className="flex gap-2">
@@ -311,7 +310,7 @@ const PaymentContent = () => {
                   <h3 className="font-instrument-sans font-semibold text-[#3B3634] mb-1">
                     {item.title}
                   </h3>
-                  <p className="text-[#3B3634]/60 text-sm font-instrument-sans">
+                  <p className="text-[#3B3634]/90 text-sm font-instrument-sans">
                     {item.desc}
                   </p>
                 </div>
@@ -354,7 +353,7 @@ const PaymentContent = () => {
                   <h3 className="font-instrument-sans font-semibold text-xl mb-3 text-[#3B3634]">
                     {item.title}
                   </h3>
-                  <p className="text-[#3B3634]/60 font-instrument-sans leading-relaxed">
+                  <p className="text-[#3B3634]/90 font-instrument-sans leading-relaxed">
                     {item.desc}
                   </p>
                 </div>

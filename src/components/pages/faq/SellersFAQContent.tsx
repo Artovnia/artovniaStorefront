@@ -311,7 +311,7 @@ const SellersFAQContent = () => {
         <h1 className="font-instrument-serif text-4xl md:text-5xl lg:text-6xl mb-6 font-normal italic text-[#3B3634] tracking-tight">
           FAQ dla twórców
         </h1>
-        <p className="text-lg md:text-xl text-[#3B3634]/60 font-instrument-sans mb-4 max-w-xl mx-auto leading-relaxed">
+        <p className="text-lg md:text-xl text-[#3B3634]/90 font-instrument-sans mb-4 max-w-xl mx-auto leading-relaxed">
           Znajdziesz tutaj odpowiedzi na najczęściej zadawane pytania
           dotyczące sprzedaży na platformie Artovnia
         </p>
@@ -342,7 +342,7 @@ const SellersFAQContent = () => {
                 <circle cx="11" cy="11" r="2" />
               </svg>
             </div>
-            <p className="text-lg leading-relaxed text-[#3B3634]/80 font-instrument-sans">
+            <p className="text-lg leading-relaxed text-[#3B3634]/90 font-instrument-sans">
               Poniżej znajdziesz odpowiedzi na najczęściej zadawane
               pytania{" "}
               <strong className="text-[#3B3634] font-semibold">
@@ -423,7 +423,7 @@ const SellersFAQContent = () => {
         <div className="text-center pt-2 pb-4">
           <BrushDivider className="mb-8" />
 
-            <p className="text-[#3B3634]/50 font-instrument-sans text-sm italic">
+            <p className="text-[#3B3634]/90 font-instrument-sans text-sm italic">
             Nie znalazłeś odpowiedzi na swoje pytanie? Napisz do nas
             na{" "}
           

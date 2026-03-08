@@ -171,7 +171,7 @@ const HowToBuyContent = () => {
         <h1 className="font-instrument-serif text-4xl md:text-5xl lg:text-6xl mb-6 font-normal italic text-[#3B3634] tracking-tight">
           Jak kupować?
         </h1>
-        <p className="text-lg md:text-xl text-[#3B3634]/60 font-instrument-sans mb-4 max-w-xl mx-auto leading-relaxed">
+        <p className="text-lg md:text-xl text-[#3B3634]/90 font-instrument-sans mb-4 max-w-xl mx-auto leading-relaxed">
           Prosty przewodnik po zakupach na Artovni – od przeglądania po
           otrzymanie paczki
         </p>
@@ -200,7 +200,7 @@ const HowToBuyContent = () => {
                 <path d="M12 16v-4M12 8h.01" />
               </svg>
             </div>
-            <p className="text-lg leading-relaxed text-[#3B3634]/80 font-instrument-sans">
+            <p className="text-lg leading-relaxed text-[#3B3634]/90 font-instrument-sans">
               Zakupów na Artovni możesz dokonać zarówno jako{" "}
               <strong className="text-[#3B3634] font-semibold">gość</strong>,
               jak i po{" "}
@@ -239,16 +239,7 @@ const HowToBuyContent = () => {
           <div className="space-y-0">
             {steps.map((item, index) => (
               <div key={item.step} className="relative flex items-start gap-2 md:gap-6">
-                {/* Vertical connector line */}
-                {index < steps.length - 1 && (
-                  <div className="absolute left-6 top-14 bottom-0 w-px bg-[#3B3634]/10" />
-                )}
-
-                <div className="relative z-10 flex-shrink-0">
-                  <div className="w-12 h-12 bg-[#3B3634] text-white flex items-center justify-center font-instrument-sans font-semibold text-lg">
-                    {item.step}
-                  </div>
-                </div>
+                
 
                 <div
                   className={`flex-1 group p-2 md:p-6 border border-[#3B3634]/10 hover:border-[#3B3634]/25 transition-all duration-300 ${
@@ -272,7 +263,7 @@ const HowToBuyContent = () => {
                       <h3 className="font-instrument-sans font-semibold text-xl mb-2 text-[#3B3634]">
                         {item.title}
                       </h3>
-                      <p className="text-[#3B3634]/60 font-instrument-sans leading-relaxed">
+                      <p className="text-[#3B3634]/90 font-instrument-sans leading-relaxed">
                         {item.desc}
                       </p>
                     </div>
@@ -329,7 +320,7 @@ const HowToBuyContent = () => {
                     <h3 className="font-instrument-sans font-semibold text-lg mb-1.5 text-[#3B3634]">
                       {item.title}
                     </h3>
-                    <p className="text-[#3B3634]/60 text-sm font-instrument-sans leading-relaxed">
+                    <p className="text-[#3B3634]/90 text-sm font-instrument-sans leading-relaxed">
                       {item.desc}
                     </p>
                   </div>
@@ -362,7 +353,7 @@ const HowToBuyContent = () => {
             </h2>
           </div>
 
-          <p className="text-[#3B3634]/70 font-instrument-sans leading-relaxed mb-8 text-lg">
+          <p className="text-[#3B3634]/90 font-instrument-sans leading-relaxed mb-8 text-lg">
             Informacje o czasie realizacji i dostępności (od ręki lub na
             zamówienie) znajdziesz w opisie każdego produktu. Zwróć uwagę na:
           </p>
@@ -388,7 +379,7 @@ const HowToBuyContent = () => {
                 <h3 className="font-instrument-sans font-semibold text-[#3B3634] mb-2">
                   {item.title}
                 </h3>
-                <p className="text-[#3B3634]/55 text-sm font-instrument-sans leading-relaxed">
+                <p className="text-[#3B3634]/90 text-sm font-instrument-sans leading-relaxed">
                   {item.desc}
                 </p>
               </div>
@@ -399,7 +390,7 @@ const HowToBuyContent = () => {
         {/* Final CTA hint */}
         <div className="text-center pt-2 pb-4">
           <BrushDivider className="mb-8" />
-          <p className="text-[#3B3634]/50 font-instrument-sans text-sm italic">
+          <p className="text-[#3B3634]/90 font-instrument-sans text-sm italic">
             Masz pytania? Napisz do nas na{" "}
           
 

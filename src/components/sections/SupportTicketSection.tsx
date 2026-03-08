@@ -53,7 +53,7 @@ export const SupportTicketSection: React.FC<SupportTicketSectionProps> = ({
             </svg>
           </div>
 
-          <div className="text-base text-[#3B3634]/70 font-instrument-sans space-y-4 leading-relaxed">
+          <div className="text-base text-[#3B3634]/90 font-instrument-sans space-y-4 leading-relaxed">
             <p>
               Ten formularz służy do kontaktu z naszym zespołem w sprawach
               takich jak:
@@ -125,7 +125,7 @@ export const SupportTicketSection: React.FC<SupportTicketSectionProps> = ({
           </svg>
         </div>
 
-        <div className="text-[#3B3634]/70 font-instrument-sans text-base leading-relaxed space-y-4">
+        <div className="text-[#3B3634]/90 font-instrument-sans text-base leading-relaxed space-y-4">
           <p className="text-lg font-medium text-[#3B3634]">
             Ann Sayuri ART Anna Wawrzyniak
           </p>
@@ -167,7 +167,7 @@ export const SupportTicketSection: React.FC<SupportTicketSectionProps> = ({
               <span>
                 E-mail:{" "}
                 <span
-                  className="text-[#3B3634] underline underline-offset-4 cursor-pointer hover:text-[#3B3634]/70 transition-colors duration-200"
+                  className="text-[#3B3634] underline underline-offset-4 cursor-pointer hover:text-[#3B3634]/90 transition-colors duration-200"
                   onClick={() =>
                     (window.location.href = atob(
                       "bWFpbHRvOmluZm8uYXJ0b3ZuaWFAZ21haWwuY29t"
